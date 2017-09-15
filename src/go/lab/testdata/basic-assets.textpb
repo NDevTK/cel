@@ -1,0 +1,118 @@
+# Configuration file used for testing.
+#
+#
+
+service_account: {
+	id: "runner"
+	display_name: "Laboratory Test Runner"
+}
+
+service_account: {
+	id: "deployer"
+	display_name: "Deployment Account"
+}
+
+network: {
+  name: "chrome-auth-lab"
+  description: "auth lab network"
+  ipv4_address_range: "10.1.0.0/16"
+
+  firewall_rule: {
+	name: "foo"
+	description: "foo firewall"
+
+	allowed: {
+	  protocol: "tcp"
+	  ports: "5"
+	  ports: "10"
+	}
+
+	allowed: {
+	  protocol: "*"
+	  ports: "30"
+	  ports: "10-20"
+	}
+
+	source_tag: "a"
+	source_tag: "b"
+	target_tag: "a"
+	target_tag: "b"
+  }
+}
+
+network: {
+  name: "chrome-auth-lab-split"
+  description: "auth lab network (2)"
+  ipv4_address_range: "10.1.0.0/16"
+
+  firewall_rule: {
+	name: "foo"
+	description: "foo firewall"
+
+	allowed: {
+	  protocol: "tcp"
+	  ports: "5"
+	  ports: "10"
+	}
+
+	allowed: {
+	  protocol: "*"
+	  ports: "30"
+	  ports: "10-20"
+	}
+
+	source_tag: "a"
+	source_tag: "b"
+	target_tag: "c"
+	target_tag: "d"
+  }
+}
+
+source_image: {
+	name: "win-2016"
+	latest: {
+		family: "windows-2016"
+		project: "windows-cloud"
+	}
+}
+
+instance_type: {
+  name: "foo"
+  create_options: {
+    zone: "us-east1-b"
+    machine_type: "n1-standard-1"
+    interface: {
+	  network: "chrome-auth-lab"
+    }
+  }
+}
+
+instance: {
+  name: "a",
+  role: "active-directory",
+  description: "The A machine"
+  type: "foo"
+  create_options: {
+	machine_type: "n1-standard-1"
+	image: "win-2016"
+	preemptible: true
+	cryptokey: {
+	  keyring: "lab"
+	  cryptokey: "ad"
+	}
+	service_account: {
+	  id: "runner"
+	  scope: "foo"
+	  scope: "https://something.or.the.other/asdfsdf"
+	}
+  }
+}
+
+windows_domain: {
+  name: "foo.chrome"
+  account: {
+	name: "foouser"
+	role: ADMIN
+	full_name: "foo user"
+  }
+}

@@ -1,0 +1,8 @@
+# Configuration file used for testing.
+#
+#
+
+project: "test:google.com:chrome-auth-lab",
+deployment_bucket: "gs://chrome-auth-lab-staging/image/",
+domain_key_bucket: "gs://chrome-auth-lab-staging/image/",
+

@@ -1,0 +1,928 @@
+HTTP/2.0 200 OK
+Content-Length: 26062
+Alt-Svc: quic=":443"; ma=2592000; v="39,38,37,36,35"
+Cache-Control: private, max-age=0, must-revalidate, no-transform
+Content-Type: application/json; charset=UTF-8
+Date: Wed, 02 Aug 2017 16:14:16 GMT
+Etag: "AhMNZHfgI8vVha8d7DAAA2BB2rY/iO8ylkbgCD2S5XJ-ypDgiNr-i8U"
+Expires: Wed, 02 Aug 2017 16:14:16 GMT
+Server: GSE
+Vary: Origin
+Vary: X-Origin
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+X-Xss-Protection: 1; mode=block
+
+{
+ "kind": "compute#firewallList",
+ "id": "projects/chrome-auth-lab-dev/global/firewalls",
+ "items": [
+  {
+   "kind": "compute#firewall",
+   "id": "7393367438725567741",
+   "creationTimestamp": "2017-08-01T13:52:34.920-07:00",
+   "name": "alt-2wnao3jebww7ldrn463stwke",
+   "description": "Source resource: \"corp/external/rir_aggregate\"\nDestination resource: \"gcp/gce/g-on-g-default\"\nExposure: \"gcp/gce/g-on-g-default\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "104.132.0.0/14",
+    "113.197.104.0/22",
+    "185.25.28.0/22",
+    "193.200.222.0/24",
+    "89.207.224.0/21"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "22",
+      "3389"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-2wnao3jebww7ldrn463stwke"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "5420602188448486624",
+   "creationTimestamp": "2017-08-01T13:52:31.341-07:00",
+   "name": "alt-7mzjmae3tlidh4yoidvnpe53",
+   "description": "Source resource: \"prod/external\"\nDestination resource: \"gcp/gce/g-on-g-default/https-server\"\nExposure: \"gcp/gce/g-on-g-default/https-server\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "108.170.224.0/19",
+    "108.177.8.0/21",
+    "108.177.96.0/19",
+    "172.102.8.0/21",
+    "172.217.0.0/19",
+    "173.194.0.0/16",
+    "185.150.148.0/22",
+    "192.104.160.0/23",
+    "209.107.176.0/20",
+    "209.85.128.0/17",
+    "216.239.32.0/19",
+    "216.252.220.0/22",
+    "216.58.192.0/19",
+    "64.233.160.0/19",
+    "66.102.0.0/20",
+    "66.249.64.0/19",
+    "72.14.192.0/18",
+    "74.125.0.0/16",
+    "8.8.4.0/24",
+    "8.8.8.0/24"
+   ],
+   "targetTags": [
+    "https-server"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "443"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-7mzjmae3tlidh4yoidvnpe53"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "1467338350169773311",
+   "creationTimestamp": "2017-08-01T13:52:32.089-07:00",
+   "name": "alt-edxu7tk6rmumr244pfzdiwgp-icmp",
+   "description": "(non-flow term) gcp/g-on-g-default:g-on-g-default\ngce/accept-internal-gce-traffic:accept-internal-gce-traffic",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "icmp"
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-edxu7tk6rmumr244pfzdiwgp-icmp"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "7635940242346562814",
+   "creationTimestamp": "2017-08-01T13:52:33.931-07:00",
+   "name": "alt-edxu7tk6rmumr244pfzdiwgp-tcp",
+   "description": "(non-flow term) gcp/g-on-g-default:g-on-g-default\ngce/accept-internal-gce-traffic:accept-internal-gce-traffic",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp"
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-edxu7tk6rmumr244pfzdiwgp-tcp"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "1603440267437626594",
+   "creationTimestamp": "2017-08-01T13:52:29.178-07:00",
+   "name": "alt-edxu7tk6rmumr244pfzdiwgp-udp",
+   "description": "(non-flow term) gcp/g-on-g-default:g-on-g-default\ngce/accept-internal-gce-traffic:accept-internal-gce-traffic",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "udp"
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-edxu7tk6rmumr244pfzdiwgp-udp"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "3113274928731608290",
+   "creationTimestamp": "2017-08-01T13:52:29.824-07:00",
+   "name": "alt-pjf5geul3rfwfyd5mynbasya",
+   "description": "Source resource: \"prod/external\"\nDestination resource: \"gcp/gce/g-on-g-default\"\nExposure: \"gcp/gce/g-on-g-default\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "108.170.224.0/19",
+    "108.177.8.0/21",
+    "108.177.96.0/19",
+    "172.102.8.0/21",
+    "172.217.0.0/19",
+    "173.194.0.0/16",
+    "185.150.148.0/22",
+    "192.104.160.0/23",
+    "209.107.176.0/20",
+    "209.85.128.0/17",
+    "216.239.32.0/19",
+    "216.252.220.0/22",
+    "216.58.192.0/19",
+    "64.233.160.0/19",
+    "66.102.0.0/20",
+    "66.249.64.0/19",
+    "72.14.192.0/18",
+    "74.125.0.0/16",
+    "8.8.4.0/24",
+    "8.8.8.0/24"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "22",
+      "3389"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-pjf5geul3rfwfyd5mynbasya"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "5405363747561493731",
+   "creationTimestamp": "2017-08-01T13:52:28.495-07:00",
+   "name": "alt-rpeifunzrsxxfwyacvtmctpr",
+   "description": "Source resource: \"corp/external/isp_nat\"\nDestination resource: \"gcp/gce/g-on-g-default\"\nExposure: \"gcp/gce/g-on-g-default\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "1.255.24.224/30",
+    "104.132.209.64/27",
+    "108.60.126.196/30",
+    "112.1.2.253/32",
+    "116.236.215.224/30",
+    "12.207.174.170/31",
+    "121.242.22.194/32",
+    "121.83.201.70/31",
+    "128.177.174.32/30",
+    "142.46.205.150/32",
+    "162.210.106.84/30",
+    "162.217.73.50/31",
+    "173.8.179.66/32",
+    "180.163.110.194/32",
+    "180.168.218.163/32",
+    "180.168.218.166/31",
+    "187.120.6.181/32",
+    "189.201.136.232/31",
+    "190.216.182.34/32",
+    "190.216.182.36/32",
+    "190.216.182.38/31",
+    "190.60.240.244/31",
+    "190.81.175.140/31",
+    "194.213.196.224/30",
+    "194.30.251.196/31",
+    "194.38.129.50/31",
+    "195.110.92.128/31",
+    "195.191.214.84/32",
+    "195.55.118.74/32",
+    "195.81.83.178/32",
+    "195.81.83.181/32",
+    "195.81.83.182/32",
+    "200.162.94.1/32",
+    "200.162.94.4/31",
+    "200.162.94.6/32",
+    "200.27.220.44/31",
+    "200.61.14.157/32",
+    "203.144.201.1/32",
+    "203.144.201.3/32",
+    "203.156.122.228/31",
+    "203.192.157.48/30",
+    "203.222.167.145/32",
+    "203.222.167.148/31",
+    "203.39.247.241/32",
+    "203.39.247.244/31",
+    "207.101.9.224/29",
+    "207.173.165.52/31",
+    "207.251.59.228/31",
+    "207.47.10.130/32",
+    "208.184.125.241/32",
+    "208.184.125.244/31",
+    "208.74.177.146/31",
+    "209.242.229.225/32",
+    "209.242.229.226/31",
+    "210.10.224.240/30",
+    "212.106.0.244/31",
+    "212.154.124.225/32",
+    "212.161.88.36/31",
+    "212.179.82.66/31",
+    "212.91.114.0/30",
+    "213.132.56.198/31",
+    "213.155.151.233/32",
+    "213.155.151.238/31",
+    "213.215.247.164/30",
+    "213.241.46.96/28",
+    "213.241.53.160/28",
+    "213.246.228.160/28",
+    "217.110.230.34/31",
+    "217.110.230.36/30",
+    "217.117.30.224/30",
+    "217.19.150.193/32",
+    "220.225.236.169/32",
+    "31.154.8.68/30",
+    "41.190.151.164/31",
+    "41.21.229.160/30",
+    "41.77.78.102/31",
+    "41.84.200.5/32",
+    "50.203.248.52/30",
+    "50.205.159.228/30",
+    "50.206.123.16/30",
+    "50.207.118.32/30",
+    "62.1.56.52/31",
+    "62.167.12.178/32",
+    "62.168.68.0/30",
+    "62.254.203.192/31",
+    "62.75.28.1/32",
+    "64.132.83.226/31",
+    "65.47.199.108/30",
+    "66.29.163.77/32",
+    "67.209.207.228/31",
+    "67.79.9.136/29",
+    "69.80.246.212/31",
+    "70.103.242.197/32",
+    "72.14.227.20/31",
+    "75.147.130.131/32",
+    "76.220.105.185/32",
+    "78.11.55.145/32",
+    "78.11.55.146/31",
+    "80.169.35.116/30",
+    "80.81.68.18/32",
+    "80.81.68.20/31",
+    "82.113.44.160/30",
+    "84.16.169.114/32",
+    "84.16.169.116/31",
+    "87.201.148.224/30",
+    "91.120.56.34/31",
+    "94.200.103.216/31",
+    "94.31.47.160/30",
+    "99.65.75.25/32",
+    "99.65.75.26/32"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "22",
+      "3389"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-rpeifunzrsxxfwyacvtmctpr"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "4136079209400194273",
+   "creationTimestamp": "2017-08-01T13:52:30.640-07:00",
+   "name": "alt-uuaca3r2wn7yqlbdyzue5lrn",
+   "description": "Source resource: \"corp/external/rir_aggregate\"\nDestination resource: \"gcp/gce/g-on-g-default/https-server\"\nExposure: \"gcp/gce/g-on-g-default/https-server\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "104.132.0.0/14",
+    "113.197.104.0/22",
+    "185.25.28.0/22",
+    "193.200.222.0/24",
+    "89.207.224.0/21"
+   ],
+   "targetTags": [
+    "https-server"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "443"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-uuaca3r2wn7yqlbdyzue5lrn"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "2574823331327726847",
+   "creationTimestamp": "2017-08-01T13:52:32.975-07:00",
+   "name": "alt-x233wi3sx7onq4enxk4rf6mk",
+   "description": "Source resource: \"corp/external/isp_nat\"\nDestination resource: \"gcp/gce/g-on-g-default/https-server\"\nExposure: \"gcp/gce/g-on-g-default/https-server\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/alt",
+   "sourceRanges": [
+    "1.255.24.224/30",
+    "104.132.209.64/27",
+    "108.60.126.196/30",
+    "112.1.2.253/32",
+    "116.236.215.224/30",
+    "12.207.174.170/31",
+    "121.242.22.194/32",
+    "121.83.201.70/31",
+    "128.177.174.32/30",
+    "142.46.205.150/32",
+    "162.210.106.84/30",
+    "162.217.73.50/31",
+    "173.8.179.66/32",
+    "180.163.110.194/32",
+    "180.168.218.163/32",
+    "180.168.218.166/31",
+    "187.120.6.181/32",
+    "189.201.136.232/31",
+    "190.216.182.34/32",
+    "190.216.182.36/32",
+    "190.216.182.38/31",
+    "190.60.240.244/31",
+    "190.81.175.140/31",
+    "194.213.196.224/30",
+    "194.30.251.196/31",
+    "194.38.129.50/31",
+    "195.110.92.128/31",
+    "195.191.214.84/32",
+    "195.55.118.74/32",
+    "195.81.83.178/32",
+    "195.81.83.181/32",
+    "195.81.83.182/32",
+    "200.162.94.1/32",
+    "200.162.94.4/31",
+    "200.162.94.6/32",
+    "200.27.220.44/31",
+    "200.61.14.157/32",
+    "203.144.201.1/32",
+    "203.144.201.3/32",
+    "203.156.122.228/31",
+    "203.192.157.48/30",
+    "203.222.167.145/32",
+    "203.222.167.148/31",
+    "203.39.247.241/32",
+    "203.39.247.244/31",
+    "207.101.9.224/29",
+    "207.173.165.52/31",
+    "207.251.59.228/31",
+    "207.47.10.130/32",
+    "208.184.125.241/32",
+    "208.184.125.244/31",
+    "208.74.177.146/31",
+    "209.242.229.225/32",
+    "209.242.229.226/31",
+    "210.10.224.240/30",
+    "212.106.0.244/31",
+    "212.154.124.225/32",
+    "212.161.88.36/31",
+    "212.179.82.66/31",
+    "212.91.114.0/30",
+    "213.132.56.198/31",
+    "213.155.151.233/32",
+    "213.155.151.238/31",
+    "213.215.247.164/30",
+    "213.241.46.96/28",
+    "213.241.53.160/28",
+    "213.246.228.160/28",
+    "217.110.230.34/31",
+    "217.110.230.36/30",
+    "217.117.30.224/30",
+    "217.19.150.193/32",
+    "220.225.236.169/32",
+    "31.154.8.68/30",
+    "41.190.151.164/31",
+    "41.21.229.160/30",
+    "41.77.78.102/31",
+    "41.84.200.5/32",
+    "50.203.248.52/30",
+    "50.205.159.228/30",
+    "50.206.123.16/30",
+    "50.207.118.32/30",
+    "62.1.56.52/31",
+    "62.167.12.178/32",
+    "62.168.68.0/30",
+    "62.254.203.192/31",
+    "62.75.28.1/32",
+    "64.132.83.226/31",
+    "65.47.199.108/30",
+    "66.29.163.77/32",
+    "67.209.207.228/31",
+    "67.79.9.136/29",
+    "69.80.246.212/31",
+    "70.103.242.197/32",
+    "72.14.227.20/31",
+    "75.147.130.131/32",
+    "76.220.105.185/32",
+    "78.11.55.145/32",
+    "78.11.55.146/31",
+    "80.169.35.116/30",
+    "80.81.68.18/32",
+    "80.81.68.20/31",
+    "82.113.44.160/30",
+    "84.16.169.114/32",
+    "84.16.169.116/31",
+    "87.201.148.224/30",
+    "91.120.56.34/31",
+    "94.200.103.216/31",
+    "94.31.47.160/30",
+    "99.65.75.25/32",
+    "99.65.75.26/32"
+   ],
+   "targetTags": [
+    "https-server"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "443"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/alt-x233wi3sx7onq4enxk4rf6mk"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "2571460505088764462",
+   "creationTimestamp": "2017-07-18T16:07:45.589-07:00",
+   "name": "default-2wnao3jebww7ldrn463stwke",
+   "description": "Source resource: \"corp/external/rir_aggregate\"\nDestination resource: \"gcp/gce/g-on-g-default\"\nExposure: \"gcp/gce/g-on-g-default\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "104.132.0.0/14",
+    "113.197.104.0/22",
+    "185.25.28.0/22",
+    "193.200.222.0/24",
+    "89.207.224.0/21"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "22",
+      "3389"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-2wnao3jebww7ldrn463stwke"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "3087084089321400913",
+   "creationTimestamp": "2017-07-18T16:07:42.498-07:00",
+   "name": "default-7mzjmae3tlidh4yoidvnpe53",
+   "description": "Source resource: \"prod/external\"\nDestination resource: \"gcp/gce/g-on-g-default/https-server\"\nExposure: \"gcp/gce/g-on-g-default/https-server\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "108.170.224.0/19",
+    "108.177.8.0/21",
+    "108.177.96.0/19",
+    "172.102.8.0/21",
+    "172.217.0.0/19",
+    "173.194.0.0/16",
+    "185.150.148.0/22",
+    "192.104.160.0/23",
+    "209.107.176.0/20",
+    "209.85.128.0/17",
+    "216.239.32.0/19",
+    "216.252.220.0/22",
+    "216.58.192.0/19",
+    "64.233.160.0/19",
+    "66.102.0.0/20",
+    "66.249.64.0/19",
+    "72.14.192.0/18",
+    "74.125.0.0/16",
+    "8.8.4.0/24",
+    "8.8.8.0/24"
+   ],
+   "targetTags": [
+    "https-server"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "443"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-7mzjmae3tlidh4yoidvnpe53"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "811165959799908947",
+   "creationTimestamp": "2017-07-18T16:07:40.958-07:00",
+   "name": "default-edxu7tk6rmumr244pfzdiwgp-icmp",
+   "description": "(non-flow term) gcp/g-on-g-default:g-on-g-default\ngce/accept-internal-gce-traffic:accept-internal-gce-traffic",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "icmp"
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-edxu7tk6rmumr244pfzdiwgp-icmp"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "8641804025253276244",
+   "creationTimestamp": "2017-07-18T16:07:39.488-07:00",
+   "name": "default-edxu7tk6rmumr244pfzdiwgp-tcp",
+   "description": "(non-flow term) gcp/g-on-g-default:g-on-g-default\ngce/accept-internal-gce-traffic:accept-internal-gce-traffic",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp"
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-edxu7tk6rmumr244pfzdiwgp-tcp"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "2912612965750614575",
+   "creationTimestamp": "2017-07-18T16:07:44.762-07:00",
+   "name": "default-edxu7tk6rmumr244pfzdiwgp-udp",
+   "description": "(non-flow term) gcp/g-on-g-default:g-on-g-default\ngce/accept-internal-gce-traffic:accept-internal-gce-traffic",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "udp"
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-edxu7tk6rmumr244pfzdiwgp-udp"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "4008557133561014866",
+   "creationTimestamp": "2017-07-18T16:07:41.835-07:00",
+   "name": "default-pjf5geul3rfwfyd5mynbasya",
+   "description": "Source resource: \"prod/external\"\nDestination resource: \"gcp/gce/g-on-g-default\"\nExposure: \"gcp/gce/g-on-g-default\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "108.170.224.0/19",
+    "108.177.8.0/21",
+    "108.177.96.0/19",
+    "172.102.8.0/21",
+    "172.217.0.0/19",
+    "173.194.0.0/16",
+    "185.150.148.0/22",
+    "192.104.160.0/23",
+    "209.107.176.0/20",
+    "209.85.128.0/17",
+    "216.239.32.0/19",
+    "216.252.220.0/22",
+    "216.58.192.0/19",
+    "64.233.160.0/19",
+    "66.102.0.0/20",
+    "66.249.64.0/19",
+    "72.14.192.0/18",
+    "74.125.0.0/16",
+    "8.8.4.0/24",
+    "8.8.8.0/24"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "22",
+      "3389"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-pjf5geul3rfwfyd5mynbasya"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "2952219075390155347",
+   "creationTimestamp": "2017-07-18T16:07:40.176-07:00",
+   "name": "default-rpeifunzrsxxfwyacvtmctpr",
+   "description": "Source resource: \"corp/external/isp_nat\"\nDestination resource: \"gcp/gce/g-on-g-default\"\nExposure: \"gcp/gce/g-on-g-default\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "1.255.24.224/30",
+    "104.132.209.64/27",
+    "108.60.126.196/30",
+    "112.1.2.253/32",
+    "116.236.215.224/30",
+    "12.207.174.170/31",
+    "121.242.22.194/32",
+    "121.83.201.70/31",
+    "128.177.174.32/30",
+    "142.46.205.150/32",
+    "162.210.106.84/30",
+    "162.217.73.50/31",
+    "173.8.179.66/32",
+    "180.163.110.194/32",
+    "180.168.218.163/32",
+    "180.168.218.166/31",
+    "187.120.6.181/32",
+    "189.201.136.232/31",
+    "190.216.182.34/32",
+    "190.216.182.36/32",
+    "190.216.182.38/31",
+    "190.60.240.244/31",
+    "190.81.175.140/31",
+    "194.213.196.224/30",
+    "194.30.251.196/31",
+    "194.38.129.50/31",
+    "195.110.92.128/31",
+    "195.191.214.84/32",
+    "195.55.118.74/32",
+    "195.81.83.178/32",
+    "195.81.83.181/32",
+    "195.81.83.182/32",
+    "200.162.94.1/32",
+    "200.162.94.4/31",
+    "200.162.94.6/32",
+    "200.27.220.44/31",
+    "200.61.14.157/32",
+    "203.144.201.1/32",
+    "203.144.201.3/32",
+    "203.156.122.228/31",
+    "203.192.157.48/30",
+    "203.222.167.145/32",
+    "203.222.167.148/31",
+    "203.39.247.241/32",
+    "203.39.247.244/31",
+    "207.101.9.224/29",
+    "207.173.165.52/31",
+    "207.251.59.228/31",
+    "207.47.10.130/32",
+    "208.184.125.241/32",
+    "208.184.125.244/31",
+    "208.74.177.146/31",
+    "209.242.229.225/32",
+    "209.242.229.226/31",
+    "210.10.224.240/30",
+    "212.106.0.244/31",
+    "212.154.124.225/32",
+    "212.161.88.36/31",
+    "212.179.82.66/31",
+    "212.91.114.0/30",
+    "213.132.56.198/31",
+    "213.155.151.233/32",
+    "213.155.151.238/31",
+    "213.215.247.164/30",
+    "213.241.46.96/28",
+    "213.241.53.160/28",
+    "213.246.228.160/28",
+    "217.110.230.34/31",
+    "217.110.230.36/30",
+    "217.117.30.224/30",
+    "217.19.150.193/32",
+    "220.225.236.169/32",
+    "31.154.8.68/30",
+    "41.190.151.164/31",
+    "41.21.229.160/30",
+    "41.77.78.102/31",
+    "41.84.200.5/32",
+    "50.203.248.52/30",
+    "50.205.159.228/30",
+    "50.206.123.16/30",
+    "50.207.118.32/30",
+    "62.1.56.52/31",
+    "62.167.12.178/32",
+    "62.168.68.0/30",
+    "62.254.203.192/31",
+    "62.75.28.1/32",
+    "64.132.83.226/31",
+    "65.47.199.108/30",
+    "66.29.163.77/32",
+    "67.209.207.228/31",
+    "67.79.9.136/29",
+    "69.80.246.212/31",
+    "70.103.242.197/32",
+    "72.14.227.20/31",
+    "75.147.130.131/32",
+    "76.220.105.185/32",
+    "78.11.55.145/32",
+    "78.11.55.146/31",
+    "80.169.35.116/30",
+    "80.81.68.18/32",
+    "80.81.68.20/31",
+    "82.113.44.160/30",
+    "84.16.169.114/32",
+    "84.16.169.116/31",
+    "87.201.148.224/30",
+    "91.120.56.34/31",
+    "94.200.103.216/31",
+    "94.31.47.160/30",
+    "99.65.75.25/32",
+    "99.65.75.26/32"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "22",
+      "3389"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-rpeifunzrsxxfwyacvtmctpr"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "6631563248288344656",
+   "creationTimestamp": "2017-07-18T16:07:43.193-07:00",
+   "name": "default-uuaca3r2wn7yqlbdyzue5lrn",
+   "description": "Source resource: \"corp/external/rir_aggregate\"\nDestination resource: \"gcp/gce/g-on-g-default/https-server\"\nExposure: \"gcp/gce/g-on-g-default/https-server\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "104.132.0.0/14",
+    "113.197.104.0/22",
+    "185.25.28.0/22",
+    "193.200.222.0/24",
+    "89.207.224.0/21"
+   ],
+   "targetTags": [
+    "https-server"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "443"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-uuaca3r2wn7yqlbdyzue5lrn"
+  },
+  {
+   "kind": "compute#firewall",
+   "id": "2985812479923399248",
+   "creationTimestamp": "2017-07-18T16:07:43.909-07:00",
+   "name": "default-x233wi3sx7onq4enxk4rf6mk",
+   "description": "Source resource: \"corp/external/isp_nat\"\nDestination resource: \"gcp/gce/g-on-g-default/https-server\"\nExposure: \"gcp/gce/g-on-g-default/https-server\"",
+   "network": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/networks/default",
+   "sourceRanges": [
+    "1.255.24.224/30",
+    "104.132.209.64/27",
+    "108.60.126.196/30",
+    "112.1.2.253/32",
+    "116.236.215.224/30",
+    "12.207.174.170/31",
+    "121.242.22.194/32",
+    "121.83.201.70/31",
+    "128.177.174.32/30",
+    "142.46.205.150/32",
+    "162.210.106.84/30",
+    "162.217.73.50/31",
+    "173.8.179.66/32",
+    "180.163.110.194/32",
+    "180.168.218.163/32",
+    "180.168.218.166/31",
+    "187.120.6.181/32",
+    "189.201.136.232/31",
+    "190.216.182.34/32",
+    "190.216.182.36/32",
+    "190.216.182.38/31",
+    "190.60.240.244/31",
+    "190.81.175.140/31",
+    "194.213.196.224/30",
+    "194.30.251.196/31",
+    "194.38.129.50/31",
+    "195.110.92.128/31",
+    "195.191.214.84/32",
+    "195.55.118.74/32",
+    "195.81.83.178/32",
+    "195.81.83.181/32",
+    "195.81.83.182/32",
+    "200.162.94.1/32",
+    "200.162.94.4/31",
+    "200.162.94.6/32",
+    "200.27.220.44/31",
+    "200.61.14.157/32",
+    "203.144.201.1/32",
+    "203.144.201.3/32",
+    "203.156.122.228/31",
+    "203.192.157.48/30",
+    "203.222.167.145/32",
+    "203.222.167.148/31",
+    "203.39.247.241/32",
+    "203.39.247.244/31",
+    "207.101.9.224/29",
+    "207.173.165.52/31",
+    "207.251.59.228/31",
+    "207.47.10.130/32",
+    "208.184.125.241/32",
+    "208.184.125.244/31",
+    "208.74.177.146/31",
+    "209.242.229.225/32",
+    "209.242.229.226/31",
+    "210.10.224.240/30",
+    "212.106.0.244/31",
+    "212.154.124.225/32",
+    "212.161.88.36/31",
+    "212.179.82.66/31",
+    "212.91.114.0/30",
+    "213.132.56.198/31",
+    "213.155.151.233/32",
+    "213.155.151.238/31",
+    "213.215.247.164/30",
+    "213.241.46.96/28",
+    "213.241.53.160/28",
+    "213.246.228.160/28",
+    "217.110.230.34/31",
+    "217.110.230.36/30",
+    "217.117.30.224/30",
+    "217.19.150.193/32",
+    "220.225.236.169/32",
+    "31.154.8.68/30",
+    "41.190.151.164/31",
+    "41.21.229.160/30",
+    "41.77.78.102/31",
+    "41.84.200.5/32",
+    "50.203.248.52/30",
+    "50.205.159.228/30",
+    "50.206.123.16/30",
+    "50.207.118.32/30",
+    "62.1.56.52/31",
+    "62.167.12.178/32",
+    "62.168.68.0/30",
+    "62.254.203.192/31",
+    "62.75.28.1/32",
+    "64.132.83.226/31",
+    "65.47.199.108/30",
+    "66.29.163.77/32",
+    "67.209.207.228/31",
+    "67.79.9.136/29",
+    "69.80.246.212/31",
+    "70.103.242.197/32",
+    "72.14.227.20/31",
+    "75.147.130.131/32",
+    "76.220.105.185/32",
+    "78.11.55.145/32",
+    "78.11.55.146/31",
+    "80.169.35.116/30",
+    "80.81.68.18/32",
+    "80.81.68.20/31",
+    "82.113.44.160/30",
+    "84.16.169.114/32",
+    "84.16.169.116/31",
+    "87.201.148.224/30",
+    "91.120.56.34/31",
+    "94.200.103.216/31",
+    "94.31.47.160/30",
+    "99.65.75.25/32",
+    "99.65.75.26/32"
+   ],
+   "targetTags": [
+    "https-server"
+   ],
+   "allowed": [
+    {
+     "IPProtocol": "tcp",
+     "ports": [
+      "443"
+     ]
+    }
+   ],
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls/default-x233wi3sx7onq4enxk4rf6mk"
+  }
+ ],
+ "selfLink": "https://www.googleapis.com/compute/v1/projects/chrome-auth-lab-dev/global/firewalls"
+}

@@ -1,0 +1,8 @@
+bin/
+pkg/
+src/cloud.google.com/
+src/golang.org/
+src/google.golang.org/
+src/github.com/
+*.swp
+

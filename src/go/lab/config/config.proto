@@ -1,0 +1,473 @@
+syntax = "proto3";
+package config;
+
+// A network.
+//
+// Supported networks for the enterprise lab have autoCreateSubnetworks set to
+// false.
+message Network {
+  // Name of the network. The partial URL for the network will be constructed
+  // as "/projects/<project-name>/global/networks/<network-name>" where
+  // <network-name> is the value of this |name| field.
+  string name = 1;
+
+  // Description of network.
+  string description = 2;
+
+  // IPV4 address range in CIDR format. Lab networks are required to specify
+  // IPv4 subranges within 10.0.0.0/9. No two networks may have overlapping
+  // ranges.
+  //
+  // Subnetworks are created automatically for each zone which contains an
+  // instance. They can also be specified explicitly where necessary when
+  // deterministic IP address range assignment is desired.
+  string ipv4_address_range = 3;
+
+  // Firewall rules. Networks aren't created in auto mode, so firewall rules
+  // are required to allow ingress traffic to the instances.
+  repeated FirewallRule firewall_rule = 4;
+
+  // Subnetworks.
+  //
+  // See https://cloud.google.com/compute/docs/vpc/#vpc_networks_and_subnets . Each
+  // VPC network needs to be subdivided into subnetworks that are local to a region.
+  //
+  // Defining subnetworks in this manner is optional, and only necessary where
+  // IP address range assignment needs to be deterministic. If a subnetwork for
+  // a region is not specified, and an instance in that network is placed into
+  // a zone that's not covered by an existing subnetwork, one will be created
+  // automatically.
+  message Subnetwork {
+	// Name of the subnetwork. Must comply with RFC 1035.
+	string name = 1;
+
+	// Optional description. This would be a good place to explain why this
+	// subnetwork is being explicitly specified.
+	string description = 2;
+
+	// Region name. E.g. "us-central1".
+	string region = 3;
+
+	// IPv4 address range in CIDR format. Must be a strict subset of the
+	// enclosing network's |ipv4_address_range|.
+	string ipv4_address_range = 4;
+  }
+  repeated Subnetwork subnetwork = 5;
+
+  // Peer network names. Specify just the network name. The full URL is not necessary.
+  //
+  // See https://cloud.google.com/compute/docs/vpc/vpc-peering for more
+  // information about network peering. The builtin networks will automatically
+  // peer with all created networks. This is required for correctly deploying
+  // the test infrastructure.
+  //
+  // If network A sets network B as its peer, then both A and B will have full
+  // mesh routing for all their subnetworks. It is not necessary for network B
+  // to specify A as a peer.
+  repeated string peer = 6;
+
+  // Setting |allow_internal_access| causes the 'default-allow-internal'
+  // firewall rule to be applied which allows all internal traffic.
+  bool allow_internal_access = 7;
+}
+
+// Firewall rules.
+//
+// See [1] https://cloud.google.com/compute/docs/reference/latest/firewalls for
+// details. The configuration file currently only allows specifying firewall
+// rules based on instance tags.
+//
+// Note: Google owned GCE projects will override these firewall rules.
+// Hence the rules are unenforceable for such projects. See go/gce-enforcer.
+// Googlers need to request exceptions for their projects in order for these
+// network configurations to work.
+//
+// In the absence of any firewall rules, instances within the network will
+// not be able to talk to each other due to the *-default-deny-ingress rule
+// (explained in [1]).
+//
+// Setting |allow_internal_access| causes the 'default-allow-internal'
+// firewall rule to be applied which allows all internal traffic.
+//
+// These rules do not allow remote access to instances from outside the GCE
+// project. Such rules should be added manually if needed.
+message FirewallRule {
+  // Label for firewall rule.
+  string name = 1;
+
+  // An optional description.
+  string description = 2;
+
+  // Describes the type of traffic that's allowed by this firewall exception.
+  message Allowed {
+	// One of "tcp", "udp", "icmp", "sctp" etc.. The special protocol "*"
+	// causes TCP, UDP, and ICMP protocols to be added to the allow list.
+	// Both TCP and UDP will allow traffic from the ports specified under
+	// |ports|.
+	string protocol = 1;
+
+	// Individual ports in string form or '-' separated ranges. E.g.: "22",
+	// "80","443","12345-12349", or my favorite "1-65535"
+	repeated string ports = 2;
+  }
+  repeated Allowed allowed = 3;
+
+  // Tags that should be on the VM initiating the traffic.
+  repeated string source_tag = 4;
+
+  // Tags that should be on the VM receiving the traffic.
+  repeated string target_tag = 5;
+}
+
+// A source disk image.
+message SourceImage {
+
+  // The name is used to refer to a source image from InstanceCreateOptions (or
+  // other places as applicable) and has no significance outside of the
+  // configuration file.
+  string name = 1;
+
+  // Describes the latest image from a public or private image source. See
+  // https://cloud.google.com/compute/docs/images#os-compute-support
+  //
+  // When creating an instance that uses a OS family + project,
+  // the instance will use the most recent matching image. If you want an
+  // instance to use a specific version of an image (not recommended), then use
+  // the full URL of that image with the |fixed| field set below.
+  message Latest {
+
+	// Image family. See
+	// https://cloud.google.com/compute/docs/images#image_families
+	// This field should be set to the family label, *not* the full URL.
+	string family = 1;
+
+	// Image project. I.e. the project providing the image.
+	string project = 2;
+  }
+
+  // Describes a specific version of an image using a partial URL.
+  message Fixed {
+
+	// Partial image URL. Looks like projects/*/global/images/*. E.g.:
+	// projects/windows-sql-cloud/global/images/sql-2016-web-windows-2016-dc-v20170615
+	// Note that project deployment may fail if the specified image has been
+	// deprecated.
+	string image_url = 1;
+  }
+
+  // TODO(asanka): Support instance templates as source images.
+
+  // Obviously only one of these types can be specified per image.
+  oneof source_type {
+	Latest latest = 2;
+	Fixed fixed = 3;
+  }
+}
+
+// Describes a service account.
+message ServiceAccount {
+  // Unique ID for the service account. The email address and the URL of the
+  // service account will be derived from this. IDs must be unique within a
+  // single project.
+  string id = 1;
+
+  // Display name. Could be anything. Used in the UI.
+  string display_name = 2;
+}
+
+// A service account bound to a VM instance. The service account identified by
+// |id| must be defined a |ServiceAccount| resource elsewhere.
+message InstanceServiceAccount {
+  // Unique ID of service account. This must correspond to a ServiceAccount
+  // declared elsewhere in the configuration. The email address will be
+  // resolved after the corresponding service account has been looked up or
+  // created in the GCE project.
+  string id = 1;
+
+  // One or more authorization scopes to be granted to the account. Obviously
+  // these must be a subset of those that can be granted to the service
+  // account.
+  //
+  // |scope| can either be a label, or a full URL. When specifying the label,
+  // the "https://www.googleapis.com/auth/" prefix is applied implictly. Note
+  // that 'logging.write' and 'devstorage.read_only' are required. Otherwise
+  // the automated deployment steps will fail.
+  repeated string scope = 2;
+}
+
+// A Google Cloud KMS key. The key will be placed in the 'global' location with
+// the project identified by the LabConfig.
+message Key {
+  // Keyring name. Only the name should be specified here.  Not the full or
+  // partial URL. The name will be resolved against the 'global' location for
+  // the lab's project.
+  string keyring = 1;
+
+  // Cryptokey name. Only the name is required, not the full or partial URL.
+  // The key is resolved against the keyring specified above.  E.g.: lab-key
+  string cryptokey = 2;
+}
+
+// Options for creating a VM. The name of the instance is inherited from the
+// parent Instance. Hence there is no separate field for it.
+message InstanceCreateOptions {
+  
+  // GCE Zone. If empty, will inherit LabConfig.default_zone. E.g.:
+  // "us-east1-b"
+  string zone = 1;
+
+  // Lab instances are assigned a disk with the following attributes:
+  //   AutoDelete = true
+  //   Boot = true
+  //   DeviceName = undefined
+  //   DiskEncryptionKey = undefined
+  //   Index = undefined
+  //   Interface = 'SCSI'
+  //   Mode = 'READ_WRITE'
+  //   Source = undefined
+  //   Type = 'PERSISTENT'
+  //   DiskName = undefined
+  //   DiskSizeGb = undefined
+  //   DiskType = undefined
+  //   SourceImageEncryptionKey = undefined
+  //
+  // The base image for the instance. Should match the .name field of one of the
+  // SourceImages described in the containing LabConfig. 
+  string image = 3;
+
+  // Short machine type. E.g.: "n1-standard-1". Should be available under the
+  // instance's zone.  See: https://cloud.google.com/compute/docs/machine-types
+  string machine_type = 4;
+
+  // Instance metadata. Mapping key to value. Additional metadata will be added
+  // by the lab management scripts.
+  map<string, string> metadata = 5;
+
+  // Network interfaces. It is possible to have up to 8 of these. At least one
+  // is requried. If an instance's instance type specifies interfaces and an
+  // instance has no interfaces, then the interface will inherit the interfaces
+  // from the instance type. Otherwise only the interfaces defined in the
+  // instance are available in the VM.
+  repeated NetworkInterface interface = 6;
+
+  // Set to true if the machine should be restarted automatically.
+  bool automatic_restart = 7;
+
+  // See on_host_maintenance.
+  enum MaintenanceOption {
+	// Attempt to migrate the VM during on-host maintenance. (Default)
+	MIGRATE = 0;
+
+	// Terminate the VM. If |automatic_restart| is true, then the VM will be
+	// restarted automatically when safe to do so.
+	TERMINATE = 1;
+  }
+
+  // Action to be taken during on-host maintenance. This value is not
+  // inheritable. If a value is not specified for the instance, it will
+  // default to MIGRATE.
+  MaintenanceOption on_host_maintenance = 8;
+
+  // Whether the instance should be preemptible. Only set to true for
+  // instances that users will interact with manually.
+  //
+  // *Note*: If this field is set to |true| for an instance type then *all*
+  // instances based on that type will become preemptible regardless of whether
+  // the preemptible field is specified for an instance.
+  bool preemptible = 9;
+
+  // Service account to use as the default authentication principal for the VM.
+  // One must be specified unless the VM doesn't require access to GCE
+  // resources.
+  InstanceServiceAccount service_account = 10;
+
+  // KMS crypto key to use for passing in domain account or other privileged
+  // information into this VM instance.
+  //
+  // The crypto_key is required for all instances.
+  Key cryptokey = 11;
+
+  // Tags to apply to this instance. These are used within the lab to assign
+  // instances to a network partition. Possible values are 'commons', 'group-a'
+  // and 'group-b'.
+  repeated string tag = 12;
+}
+
+message NetworkInterface {
+  // Nickname of network hosting this instance. The nickname needs to be
+  // resolvable via LabConfig.networks or should be a global network that's
+  // identified via "projects/<project>/global/networks/<network>".
+  string network = 1;
+
+  // Internal static IPv4 address, if there should be one. Leave undefined
+  // for ephemeral address. E.g.: "10.240.0.1". Not valid when specified for
+  // an instance type.
+  string internal_ip = 2;
+
+  // Whether the network interface has a route from the internet. If true, the
+  // network interface will receive an access config that'll either assign an
+  // ephemeral external IP or a static external IP based on the value in
+  // |external_ip_name|. Not valid when specified for an instance type.
+  bool externally_visible = 3;
+
+  // If not empty, this should be a named external IP from the external IP
+  // pool in the HostEnvironment. Not valid when specified for an instance
+  // type. Not valid when |externally_visible| is false.
+  string external_ip_name = 4;
+}
+
+// Describes a single instance.
+message Instance {
+  // Hostname of the machine. This performs double duty as the GCE instance
+  // name in addition to the hostname.
+  //
+  // Note: Windows VMs are limited to 15 characters for its hostname due to the
+  // fact that we need to use the NetBIOS name for deploying via DSC.
+  string name = 1;
+
+  // Description for this instance.
+  string description = 2;
+
+  // The name of the role served by this machine. The role has no meaning to
+  // GCE, and is used solely for managing configuration settings via DSC.
+  string role = 3;
+
+  // Type of instance. Must be one of the instance types defined in Assets. Can
+  // be left empty if there's no base type.
+  string type = 4;
+
+  // Parameters for creating the machine. Values specified here override those
+  // that are determined based on the instance type in |type|.
+  InstanceCreateOptions create_options = 5;
+}
+
+// Describes an instance type.
+//
+// Instance types exist purely for the convenience of describing lots of
+// instances that reuse the same set of create_options with few modifications.
+message InstanceType {
+  // Instance type name.
+  string name = 1;
+
+  // Create options. The properties here may be overridden by individual
+  // instances.
+  InstanceCreateOptions create_options = 2;
+}
+
+// A Windows domain account.
+message WindowsDomainAccount {
+  // Username of the account. Should be short and not include anything funky
+  // like whitespace. The domain of the account is inferred from its container.
+  string name = 1;
+
+  // The user's role:
+  enum Role {
+	// A minion account is what's used for running tests. There can be many
+	// differnet types of minion accounts for dealing with things like per-user
+	// policies etc. (Default)
+	MINION = 0;
+
+	// There should be at least one account that fulfils the ADMIN role. Such an
+	// account is used for setting up domain joins and other administrative
+	// tasks internally.
+	ADMIN = 1;
+
+	// The Windows safe mode administrator account for the domain. There should
+	// be at least one of these.
+	SAFE_MODE_ADMIN = 2;
+  }
+  Role role = 2;
+
+  // The user's full name for the purpose of creating the account. If not
+  // specified or empty, the |name| will be used as the full name.
+  string full_name = 3;
+}
+
+// A Windows AD domain. Note that this is not the place to add details about
+// how to configured the AD domain. That's a job for the DSC definition. The
+// domain details from here are only used for managing domain account
+// credentials.
+message WindowsDomain {
+  string name = 1;
+  repeated WindowsDomainAccount account = 2;
+}
+
+// EncryptedData objects are generated by the lab administrative logic and is
+// defined here. They are not meant to be produced manually or via a textpb
+// file.
+//
+// TODO(asanka): Move to a separate .proto file.
+message EncryptedData {
+  // Key version used to encrypt the data. This is the partial URL of the
+  // keyversion. E.g.:
+  // projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*
+  string key_version = 2;
+
+  // Encrypted raw data. No encoding. Opaque.
+  bytes encrypted = 3;
+}
+
+// Describes an external IP address that can be attached to an instance. The
+// lifetime of the IP address is restricted to the lifetime of the instance.
+// I.e. when the instance is purged, its corresponding IP address will also be
+// released.
+message ExternalIP {
+  // Name to use for the IP address.
+  string name = 2;
+
+  // Description of the IP address. Defaults to "External <version> address
+  // for <instance>".
+  string description = 3;
+
+  // Version of address to use. Note that the enumeration values here
+  // correspond to the protocol names expected by GCE's
+  // compute.addresses.insert API.
+  enum Version {
+	IPV4 = 0;
+	IPV6 = 1;
+  }
+  Version version = 4;
+
+  // The address.
+  string address = 5;
+}
+
+message HostEnvironment {
+  // Project name. E.g.: "google.com:chrome-auth-lab". This field is required.
+  string project = 1;
+
+  // Storage bucket to be used for deploying binaries to the VMs.
+  // E.g.: "gs://chrome-auth-lab-staging/image"
+  //
+  // This bucket should be readable from all the VMs, and it should be writeable
+  // from the machine used to build the deployment data.
+  string deployment_bucket = 2;
+
+  // Storage bucket to be used for storing keys. These keys should only be
+  // accessible to the VM that's acting as the authoring node for the network.
+  // E.g.: "gs://chrome-auth-lab-keys/domain"
+  string domain_key_bucket = 3;
+
+  // Named external static IP addresses.
+  repeated ExternalIP static_ip = 4;
+}
+
+message Assets {
+  // All service accounts.
+  repeated ServiceAccount service_account = 1;
+
+  // All networks.
+  repeated Network network = 2;
+
+  // All source disk images.
+  repeated SourceImage source_image = 3;
+
+  // All instance types.
+  repeated InstanceType instance_type = 4;
+
+  // All VM instances.
+  repeated Instance instance = 5;
+
+  // All Windows domains.
+  repeated WindowsDomain windows_domain = 6;
+}
