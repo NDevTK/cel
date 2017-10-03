@@ -1,0 +1,62 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package iis;
+option go_package="asset";
+
+import "schema/asset/network.proto";
+
+// Corresponding PS DSC Modules:
+// * https://github.com/PowerShell/xWebAdministration
+
+message Server {
+  // Name of server instance.
+  string name = 1;
+
+  // Name of host machine. Should refer to a |WindowsMachine| entry.
+  // Container information for the IIS instance will be inherited from the
+  // WindowsMachine entry.
+  string host = 2;
+}
+
+// Bindings for a website onto a webserver.
+message Bindings {
+  // Hostname. Can be empty for all hostnames.
+  string hostname = 1;
+
+  // Protocol. Must be either HTTP or HTTPS. If using HTTPS, the SSL
+  // information is also required.
+  net.Protocol protocol = 2;
+
+  // Port to use. Leave empty to use the default port based on protocol.
+  uint32 port = 3;
+
+  // Name of a cert.Certificate.
+  string certificate = 4;
+
+  // Whether or not to use SNI. Only applicable when |protocol| is HTTPS. If
+  // this value is false, then only one HTTPS site can be bound to a single
+  // server.
+  bool use_sni = 5;
+}
+
+message Site {
+  // Name of site.
+  string name = 1;
+
+  // Name of server. Should refer to a |Server| entry. A single server can host
+  // multiple sites as long as those sites use distinct binding information.
+  string server = 2;
+
+  Bindings bindings = 3;
+}
+
+message Application {
+  // Name of application.
+  string name = 1;
+
+  // Name of the iis.Site that's hosting this application.
+  string site = 2;
+}

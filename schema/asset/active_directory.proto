@@ -1,0 +1,139 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package winad;
+option go_package="asset";
+
+import "schema/asset/network.proto";
+
+message ActiveDirectoryDomain {
+  string name = 1;
+};
+
+message ActiveDirectoryDomainController {
+  string domain = 1;
+  string machine = 2;
+}
+
+// Describes a container that a Windows asset can reside in.
+//
+// Resources like machines, users, and groups can be specified per domain, per
+// machine, or per organizational unit. When specifying one of these asset
+// types, use the WindowsContainer member to specify where to create the asset.
+message WindowsContainer {
+  oneof container {
+    // Domain name.
+    string domain = 1;
+
+    // Machine name.
+    string machine = 2;
+
+    // Organizational unit.
+    string ou = 3;
+  }
+}
+
+message WindowsGroup {
+  // Name of the group. Exclude the domain name.
+  string name = 1;
+
+  // Human readable description of the group.
+  string description = 2;
+
+  // Container for the group. A container must be specified for a WindowsGroup.
+  WindowsContainer container = 3;
+
+  // Well-known security identifier. The string should be of the form S-* and
+  // should correspond to a known SID as described in
+  // https://support.microsoft.com/en-us/help/243330/well-known-security-identifiers-in-windows-operating-systems.
+  //
+  // Only specify this field if this group corresponds to a well known group.
+  string well_known_sid = 4;
+}
+
+message WindowsUser {
+  // Name of the user. Exclude the domain name.
+  //
+  // E.g.: joe
+  string name = 1;
+
+  // Description. A.k.a. Full name.
+  string description = 2;
+
+  // Container for the user. A container must be specified for a WindowsUser.
+  WindowsContainer container = 3;
+
+  // Password. Can be left blank in which case each instantiation of the lab
+  // will cause a new password to be generated.
+  string password = 5;
+}
+
+// NetworkInterface describes a single network interface on a machine.
+message NetworkInterface {
+  // Name of |schema.Network| entry describing the network that this interface
+  // is attached to.
+  string network = 1;
+
+  // Fixed address, if this interface is to have one. Leave undefined if the
+  // interface should obatain an address automatically.
+  net.FixedAddress fixed_address = 2;
+}
+
+// A Windows machine.
+//
+message WindowsMachine {
+  // Name of the machine. This name will become the hostname for the machine,
+  // both absolute and domain relative (if applicable). Hence must be globally
+  // unique.
+  //
+  // For Windows machines, it's advisable to have *short* hostnames, ideally
+  // shorter than 11 characters. This allows the name to do double duty as a
+  // NetBios name as well as a DNS hostname.
+  string name = 1;
+
+  // Container. Only |domain| and |ou| values are acceptable. Currently
+  // |machine| is not a valid option. If no container is specified, the machine
+  // will be brought up as a standalone workstation or server depending on the
+  // installed operating system.
+  //
+  // This field should be empty for a machine that's referenced in a
+  // ActiveDirectoryDomainController entry.
+  //
+  // Specifying this field results in the machine being joined to the specified
+  // domain and, if necessary, placed in the specified container.
+  WindowsContainer container = 3;
+
+  // The name of a host.MachineType entry that describes the host machine.
+  string host_machine_type = 4;
+
+  // System locale. If left unspecified, the default is left unchanged. Use the
+  // following PowerShell command to determine the list of available locales on
+  // a Windows machine:
+  //
+  // ``` ps1
+  // [System.Globalization.CultureInfo]::GetCultures([System.Globalization.CultureTypes]::AllCultures).name
+  // ```
+  //
+  // PS DSC Reference:
+  // * https://github.com/PowerShell/SystemLocaleDsc
+  string locale = 5;
+
+  // Set the system timezone. If left unspecified, the default is left
+  // unchanged. Use the following PowerShell command to determine the lsit of
+  // available timezone identifiers on a Windows machine:
+  //
+  // ``` ps1
+  // [System.TimeZoneInfo]::GetSystemTimeZones().Id
+  // ```
+  //
+  // PS DSC Reference:
+  // * https://github.com/PowerShell/xTimeZone
+  string timezone = 6;
+
+  // Network interfaces. There can be more than one for multihomed machines.
+  // There MUST be at least one of these.
+  repeated NetworkInterface network_interface = 7;
+}
+

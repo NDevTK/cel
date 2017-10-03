@@ -12,20 +12,50 @@ Most of the code is in Go. See the [README](/src/go/README.md/) file.
 
 ## Building
 
-Make sure you have [Go](https://golang.org/) and
-[depot_tools](https://dev.chromium.org/developers/how-tos/install-depot-tools)
-installed. If you are setup for developing Chromium, you only need to worry
-about Go.
+### Prerequisites
+
+* [Go](https://golang.org/)
+
+* [Git](https://git-scm.com/)
+
+* [Depot Tools](https://dev.chromium.org/developers/how-tos/install-depot-tools)
+
+* [Dep](https://github.com/golang/dep)
+
+If you are a Chromium developer, you only need to worry about `Go` and `Dep`.
+
+### Get The Source
+
+There are two ways to get the source. One is to use managed deps, and the other
+is to use plain `go get`. The latter workflow doesn't quite work yet due to this
+repository not being integrated with `go.chromium.org`. So this page only
+mentions the managed dependency workflow.
 
 1. Clone this repository.
 
-2. Make sure it builds.
+  Assumes that `$GOPATH` is a single path and not a `:` delimited list.
+
+  ``` sh
+  mkdir -p ${GOPATH}/src/chromium.googlesource.com/enterprise 
+  cd ${GOPATH}/src/chromium.googlesource.com/enterprise
+  git clone https://chromium.googlesource.com/enterprise/cel
+  ```
+
+2. Get the dependencies.
+
+  ``` sh
+  dep ensure
+  ```
+
+### Build It
+
+1. Just use `go build`.
 
    ``` sh
-   python build.py build
+   go build .
    ```
 
-3. Also make sure the tests pass.
+2. Also make sure the tests pass.
 
    ``` sh
    python build.py test
@@ -33,47 +63,5 @@ about Go.
 
 ## Contributing
 
-Same requirements apply as for the Chromium project. If you are not a Chromium
-contributor, then please sign the [CLA](https://cla.developers.google.com/).
+See [CONTRIBUTING](./CONTRIBUTING.md).
 
-1. Create a new branch:
-
-   ``` sh
-   git new-branch your-awesome-feature
-   ```
-   
-   This will create a new branch called `your-awesome-feature` configured to
-   track the `master` branch off the CEL repository.
-
-2. Make your changes. Commit as often as you need. All the commits gets squashed
-   in the next step.
-
-3. Upload your changes:
-
-   ``` sh
-   git cl upload
-   ```
-
-   If successful, `git-cl` will create a new codereview entry. Send it out for
-   review. Move `cel-reviews@chromium.org` from the CC line to the reviewers
-   line if you don't know of a specific reviewer.
-
-4. The review may result in changes being requested. Address review comments and
-   make additional comments are necessary. The codereview you created in step 3 is
-   associated with a Git branch. So you can run `git cl upload` to upload new
-   patchsets as necessary.
-
-5. Once the change is approved, someone will submit the change.
-
-6. Good job!
-
-   Optionally, you can clean up your local repository following a successful
-   submission by running the following:
-
-   ``` sh
-   git rebase-update
-   ```
-
-   (This assumes that you are using the Git rebase workflow. See
-   [here](https://chromium.googlesource.com/chromium/tools/depot_tools.git) for
-   more details).

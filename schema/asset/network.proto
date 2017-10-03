@@ -1,0 +1,61 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax="proto3";
+package net;
+option go_package="asset";
+
+message Network {
+  // Name of the network.
+  string name = 1;
+
+  // The address range assigned to the network.
+  AddressRange address_range = 2;
+}
+
+message NetworkPeer {
+}
+
+// Address is an IPv4 or IPv6 address.
+message Address {
+  oneof address_type {
+    // IPv4 address.
+    string ipv4 = 1;
+
+    // IPv6 address.
+    string ipv6 = 2;
+  }
+}
+
+// AddressRange is an IPv4 or IPv6 CIDR range.
+message AddressRange {
+  oneof address_type {
+    // IPv4 CIDR range.
+    string ipv4_range = 1;
+
+    // IPv6 CIDR range.
+    string ipv6_range = 2;
+  }
+}
+
+// FixedAddress described an address that is determined either by the host
+// environment or by the asset manifest.
+message FixedAddress {
+  oneof address_type {
+    Address address = 1;
+
+    // One of the available addresses from the named |host.AddressPool| will be
+    // used.
+    string address_pool = 2;
+  }
+}
+
+// List of web protocols. Not necessarily exhaustive. We just need a convenient
+// enum so that we don't need to defined it everywhere. Values should be self
+// explanatory.
+enum Protocol {
+  UNKNOWN = 0;
+  HTTP = 1;
+  HTTPS = 2;
+}

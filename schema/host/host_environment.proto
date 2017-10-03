@@ -1,0 +1,31 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package host_environment;
+option go_package="host";
+
+import "schema/asset/network.proto";
+
+// GCP project hosting.
+message Project {
+  string name = 1;
+}
+
+// Describes a type of machine (virtual or otherwise).
+message MachineType {
+  string name = 1;
+}
+
+message AddressPool {
+  string name = 1;
+  repeated net.Address address = 2;
+}
+
+message HostEnvironment {
+  Project project = 1;
+
+  repeated MachineType machine_type = 2;
+  repeated AddressPool address_pool = 3;
+}
