@@ -4,54 +4,26 @@
 
 package cel
 
-import (
-	"cloud.google.com/go/logging"
-)
-
-// LogEntrySource is an interface for retrieving a logging.Entry structure
-// given a severity. It is to be used with Log*() methods of Config as follows:
+// Logger is an abstract logging facility. The log entries should be considered
+// relatively heavyweight, and can carry large payloads.
 //
-// First define your LogEntrySource:
+// Each method corresponds to a severity level, and argument is the payload. It
+// can be used as follows:
 //
-//   type myLogEntrySource struct {
-//       Message string `json:"m"`
-//       Error string `json:"err,omitempty"`
-//       ...
-//   }
+//     var l Logger
+//     l.LogError(p)
 //
-// Then introduce an Entry() method that returns a logging.Entry:
-//
-//   func (e myLogEntrySource) Entry(s logging.Severity) logging.Entry {
-//     return logging.Entry{
-//       Severity: s,
-//       Payload: e}
-//   }
-//
-// Note that Entry.Payload needs to be serializable via encoding/json, hence
-// the `json` annotations on the entry structure. Common JSON fields are:
-//
-//     * "m"   : For a descriptive message. E.g. : "failed to fetch foo"
-//     * "err" : For a text serialized error mesage describing the error. This
-//               can usually be sourced from error.Error().
-//
-// Then you can log an event like so:
-//
-//     c.LogInfo(myLogEntrySource{
-//         Message: "failed to fetch foo",
-//         Error: err.Error(),
-//         ...
-//     })
-//
-type LogEntrySource interface {
-	Entry(s logging.Severity) logging.Entry
-}
-
-// Logger is an object that's responsible for posting log messages to a some
-// log provider.
+// The argument |p| should be JSON serializable into something sensible.
 type Logger interface {
-	// LogInfo logs an entry |e| with a severity of Info.
-	LogInfo(e LogEntrySource)
+	// LogDebug logs a DEBUG event with |v| as the payload. See Logger for details.
+	LogDebug(v interface{})
 
-	// LogError logs an entry |e| with a severity of Error.
-	LogError(e LogEntrySource)
+	// LogInfo logs a INFO event with |v| as the payload. See Logger for details.
+	LogInfo(v interface{})
+
+	// LogWarning logs a WARNING event with |v| as the payload. See Logger for details.
+	LogWarning(v interface{})
+
+	// LogError logs a ERROR event with |v| as the payload. See Logger for details.
+	LogError(v interface{})
 }

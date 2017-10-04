@@ -20,6 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 	"unicode"
@@ -39,6 +40,8 @@ type RestDescription struct {
 	Version           string `json:"version"`
 
 	Schemas map[string]*Property `json:"schemas"`
+
+	GoPackage string `json:"-"`
 }
 
 type Property struct {
@@ -57,6 +60,7 @@ type Property struct {
 type Arguments struct {
 	DiscoveryJsonFile string
 	OutputProtoFile   string
+	GoPackage         string
 }
 
 const kIndent = 2
@@ -211,7 +215,15 @@ func EmitProtoForProperty(level int, name string, p *Property, w io.Writer) (str
 
 	index := 1
 	is_first := true
-	for name, pp := range p.Properties {
+
+	properties := make([]string, 0, len(p.Properties))
+	for name, _ := range p.Properties {
+		properties = append(properties, name)
+	}
+	sort.Strings(properties)
+
+	for _, name := range properties {
+		pp := p.Properties[name]
 		if is_first {
 			is_first = false
 		} else {
@@ -246,6 +258,8 @@ func DoIt(args *Arguments) error {
 		return err
 	}
 
+	desc.GoPackage = args.GoPackage + "/" + desc.Name
+
 	f, err := os.Create(args.OutputProtoFile)
 	if err != nil {
 		return err
@@ -266,6 +280,7 @@ func DoIt(args *Arguments) error {
 
 syntax="proto3";
 package {{.Name}};
+option go_package="{{.GoPackage}}";
 
 
 `
@@ -275,8 +290,14 @@ package {{.Name}};
 		return err
 	}
 
-	for _, p := range desc.Schemas {
-		_, err = EmitProtoForProperty(0, "", p, f)
+	schemas := make([]string, 0, len(desc.Schemas))
+	for s, _ := range desc.Schemas {
+		schemas = append(schemas, s)
+	}
+	sort.Strings(schemas)
+
+	for _, s := range schemas {
+		_, err = EmitProtoForProperty(0, "", desc.Schemas[s], f)
 		if err != nil {
 			return err
 		}
@@ -322,6 +343,8 @@ func main() {
 
 	flagset.StringVar(&args.DiscoveryJsonFile, "i", "", "discovery JSON filename")
 	flagset.StringVar(&args.OutputProtoFile, "o", "", "output .proto filename")
+	flagset.StringVar(&args.GoPackage, "g", "chromium.googlesource.com/enterprise/cel/go/gcp",
+		"root of go_package option to emit")
 	flagset.Usage = func() {
 		PrintUsage()
 		flagset.PrintDefaults()

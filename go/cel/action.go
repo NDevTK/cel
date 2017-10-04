@@ -7,7 +7,6 @@ package cel
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"runtime/debug"
 )
 
 // Action annotates an error by wrapping it with an enclosing error.

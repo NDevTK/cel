@@ -62,5 +62,10 @@ func (A *Assets) Get(namespace, id string) Asset {
 
 // GetNodeForAsset returns the DependencyNode corresponding to an asset.
 func (A *Assets) GetNodeForAsset(a Asset) *DependencyNode {
-	return A.ByNamespaceAndId[a.Namespace()][a.Id()]
+	if t, ok := A.ByNamespaceAndId[a.Namespace()]; ok {
+		if d, ok := t[a.Id()]; ok {
+			return d
+		}
+	}
+	return nil
 }

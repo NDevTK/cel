@@ -49,11 +49,15 @@ func TestResolve(t *testing.T) {
 		t.Error("'a' node is not ready to be resolved despite not having any dependencies")
 	}
 
+	if A.GetNodeForAsset(b_asset).Ready() {
+		t.Errorf("asset b is ready to be resolved despite depending on unresolved asset a")
+	}
+
 	if len(A.All) != 2 {
 		t.Error("a.All incorrect")
 	}
 
-	if err := ResolveAssets(A, nil); err != nil {
+	if err := ResolveAssets(A); err != nil {
 		t.Error(err)
 	}
 
@@ -81,7 +85,7 @@ func TestResolve_Big(t *testing.T) {
 		A.Add(assets[i])
 	}
 
-	if err := ResolveAssets(A, nil); err != nil {
+	if err := ResolveAssets(A); err != nil {
 		t.Error(err)
 	}
 
@@ -118,7 +122,7 @@ func TestResolve_Triangle(t *testing.T) {
 		}
 	}
 
-	if err = ResolveAssets(A, nil); err != nil {
+	if err = ResolveAssets(A); err != nil {
 		t.Error(err)
 	}
 

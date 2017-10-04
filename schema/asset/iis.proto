@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 syntax = "proto3";
-package iis;
-option go_package="asset";
+package asset;
+option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
 import "schema/asset/network.proto";
 
@@ -28,7 +28,7 @@ message Bindings {
 
   // Protocol. Must be either HTTP or HTTPS. If using HTTPS, the SSL
   // information is also required.
-  net.Protocol protocol = 2;
+  Protocol protocol = 2;
 
   // Port to use. Leave empty to use the default port based on protocol.
   uint32 port = 3;

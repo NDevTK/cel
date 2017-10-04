@@ -5,8 +5,8 @@
 package cel
 
 import (
-	"fmt"
-	"sync/atomic"
+	"github.com/pkg/errors"
+	"sync"
 )
 
 // kMaxParallelOperations is the maximum number of resolver jobs that are going
@@ -112,23 +112,20 @@ func checkForCycles(A *Assets) []*DependencyNode {
 //
 // The dependencies that are allowed between different type of assets is as
 // follows:
-//
-//      +---+                       +---+
-//      |   |                       |   |
-//      |   v                       |   v
-//  +---+-------+             +-----+-------+
-//  |           |             |             |
-//  | Permanent +------------>| Resolvable  |
-//  |           |             |             |
-//  +-----+-----+   +---+     +-------+-----+
-//        |         |   |             |
-//        |         |   v             |
-//        |     +---+--------+        |
-//        |     |            |        |
-//        +---->|   Script   |<-------+
-//              |            |
-//              +------------+
-//
+//                    ┌─┐                         ┌──┐
+//                    │ ↓                         │  ↓
+//               ╔════╧══════╗               ╔════╧═══════╗
+//               ║           ║               ║            ║
+//               ║ Permanent ║←──────────────╢ Resolvable ║
+//               ║           ║               ║            ║
+//               ╚═══════════╝               ╚════════════╝
+//                     ↑            ┌─┐            ↑
+//                     │            │ ↓            │
+//                     │       ╔════╧═════╗        │
+//                     │       ║          ║        │
+//                     └───────╢  Script  ╟────────┘
+//                             ║          ║
+//                             ╚══════════╝
 // I.e.:
 //   * A Permanent asset must only depend on another permanent asset.
 //   * A Resolvable asset must only depend on a permanent or resolvable asset.
@@ -142,13 +139,11 @@ func AllowedToDependOn(child Asset, parent Asset) error {
 		if _, parent_is_permanent := parent.(PermanentAsset); parent_is_permanent {
 			return nil
 		}
-		return NewError("permanent asset %s depends on non-permanent asset %s",
-			child.FullName(), parent.FullName())
+		return NewInvalidDependencyError(parent, child)
 	}
 
 	if _, parent_is_script := parent.(ScriptAsset); parent_is_script {
-		return NewError("resolvable asset %s depends on unresolvable asset %s",
-			child.FullName(), parent.FullName())
+		return NewInvalidDependencyError(parent, child)
 	}
 	return nil
 }
@@ -177,30 +172,22 @@ func PrepareToResolve(A *Assets) (roots []*DependencyNode, err error) {
 			}
 
 			parent := A.GetNodeForAsset(parent_asset)
+			if parent == nil {
+				return nil, NewUnknownAssetError(parent_asset)
+			}
 			parent.Dependents = append(parent.Dependents, node)
 		}
+	}
+
+	cycle := checkForCycles(A)
+	if len(cycle) != 0 {
+		return nil, NewDependencyCycleError(cycle)
 	}
 
 	for _, node := range A.All {
 		if node.Ready() {
 			roots = append(roots, node)
 		}
-	}
-	if len(roots) == 0 {
-		return nil, NewError("no root nodes found")
-	}
-
-	cycle := checkForCycles(A)
-	if len(cycle) != 0 {
-		cycle_string := ""
-		for _, node := range cycle {
-			if len(cycle_string) != 0 {
-				cycle_string += " -> "
-			}
-			cycle_string += fmt.Sprintf("%s:%s", node.Asset.Namespace(), node.Asset.Id())
-		}
-		cycle_string += fmt.Sprintf(" -> %s:%s", cycle[0].Asset.Namespace(), cycle[0].Asset.Id())
-		return nil, NewError("asset dependencies contain cycles: %s", cycle_string)
 	}
 
 	return
@@ -219,115 +206,83 @@ func PrepareToResolve(A *Assets) (roots []*DependencyNode, err error) {
 //
 // It is not necessary to call PrepareToResolve() prior to calling this
 // function since it will call PrepareToResolve() on its own.
-func ResolveAssets(A *Assets, S *Session) error {
+func ResolveAssets(A *Assets) error {
 	roots, err := PrepareToResolve(A)
 	if err != nil {
 		return err
 	}
 
-	// |resolvable| needs enough of a buffer to prevent the workers from being
-	// starved due to the buffer size issues. Since there are
-	// kMaxParallelOperations workers, we should be able to queue that many
-	// nodes for resolution.
-	resolvable := make(chan *DependencyNode, kMaxParallelOperations)
+	// The maximum number of workers we are going to allow.
+	W := min(kMaxParallelOperations, len(A.All))
 
-	// |waiting| should have a buffer that's big enough to prevent
-	// |prepareToResolve| getting blocked when writing to the channel. The
-	// waiting channel accepts batches of DependencyNodes.
-	//
-	// These batches are created when a DependencyNode successfully resolves.
-	// If the goroutine that resolved the node attempts to queue each node to
-	// the resolvable channel, it'd be posssible for the queuing operation to
-	// block due to the channel buffer being full. For a dependency graph that
-	// is very wide and shallow, this may cause all resolver goroutines to be
-	// blocked during the queuing phase leaving none to drain the resolvable
-	// channel. This would lead to a stall.
-	//
-	// To prevent this, we use a |waiting| channel that accepts batches of
-	// nodes, and the primary thread is tasked with draining the |waiting|
-	// channel and populating the |resolvable| channel. The selection of the
-	// queue sizes guarantees that the resolver routines won't block.
-	waiting := make(chan []*DependencyNode, kMaxParallelOperations)
+	// resolvable is a channel where all nodes that are ready to resolve will
+	// be pushed through. When a node is resolved, it may result in a new set
+	// of nodes that are now ready to be resolved. These nodes will be enqueued
+	// to |resolvable| via dispatchBatch() below.
+	resolvable := make(chan *DependencyNode, W)
 
-	// pending == count of nodes in |waiting| + |resolvable| + waiting to be
-	// enqueued to resolvable + being worked on by a worker.
-	var pending int32
-	pending = int32(len(roots))
+	// wg will be incremented *before* any nodes are enqueued to resolvable,
+	// and decremented *after* the node is resolved -- successfully or
+	// otherwise. Every node that is enqueued here *must* be resolved one way
+	// or another. The resolver is done when the counter reaches zero.
+	wg := sync.WaitGroup{}
 
-	waiting <- roots
-
-	// Here we kick off the resolver routines.
-	for i := 0; i < kMaxParallelOperations; i += 1 {
-		go resolveNodesFromChannel(S, resolvable, waiting, &pending)
+	// Here we kick off our worker pool. The pool is here only to limit the
+	// number of possible outstanding network requests.
+	for i := 0; i < W; i += 1 {
+		go resolveNodesFromChannel(resolvable, &wg)
 	}
 
-	// And the |waiting| channel drainer.
-	for {
-		b := <-waiting
-		if b == nil {
-			break
-		}
-		if len(b) == 0 {
-			panic("invalid batch")
-		}
+	// Kick of the first batch.
+	wg.Add(len(roots))
+	go dispatchBatch(roots, resolvable)
 
-		for _, d := range b {
-			resolvable <- d
-		}
-	}
+	wg.Wait()
+	// Closing |resolvable| ends the |resolveNodesFromChannel| goroutines.
+	close(resolvable)
 
 	// Once we get here, there are no more pending tasks. Any nodes left
-	// unresolved didn't have their dependencies resolved.
-	errors := []error{}
+	// unresolved didn't have their dependencies resolved. This is to be
+	// expected if upstream dependent nodes failed to resolve for some reason.
+	error_list := []error{}
 	for _, d := range A.All {
 		if !d.Processed {
-			errors = append(errors, NewError("asset %s:%s was unresolvable. It has %d unresolved dependencies",
-				d.Asset.Namespace(), d.Asset.Id(), d.UnresolvedDependencies))
+			// Not really an error.
+			error_list = append(error_list, NewSkippedResolutionError(d))
 			continue
 		}
 
 		if d.Result != nil {
-			errors = append(errors, WrapErrorWithMessage(d.Result,
-				"asset %s:%s failed to resolve", d.Asset.Namespace(), d.Asset.Id()))
+			error_list = append(error_list, errors.Wrapf(d.Result,
+				"asset %s failed to resolve", d.Asset.FullName()))
 		}
 	}
-	return WrapErrorList(errors)
+	return WrapErrorList(error_list)
 }
 
 // resolveNodesFromChannel fetches DependencyNodes from |resolvable|, resolves
 // them, and if successful, enqueues a batch of newly resolvable
-// DependencyNodes to |waiting|.
+// DependencyNodes back to |resolvable|.
 //
-// It also atomically updates |pending| so that the latter continues to reflect
-// the number of pending requests.
-//
-// Terminates when there are no more pending nodes, or if the |resolvable|
-// channel is closed. This function is meant to be invoked as a goroutine.
-func resolveNodesFromChannel(S *Session, resolvable chan *DependencyNode, waiting chan []*DependencyNode,
-	pending *int32) {
-	for {
-		d := <-resolvable
-		if d == nil {
-			return
-		}
-
-		next, err := d.Resolve(S)
-		if err != nil {
-			LogAssetError(S, d.Asset, err)
-			return
-		}
+// Terminates when the |resolvable| channel is closed.
+func resolveNodesFromChannel(resolvable chan *DependencyNode, wg *sync.WaitGroup) {
+	for d := range resolvable {
+		next, _ := d.Resolve()
 
 		if len(next) > 0 {
-			atomic.AddInt32(pending, int32(len(next)))
-			waiting <- next
+			wg.Add(len(next))
+			go dispatchBatch(next, resolvable)
 		}
 
-		if atomic.AddInt32(pending, -1) == 0 {
-			// d was the last DependencyNode to complete. There's nothing in the pending pipelines.
-			close(resolvable)
-			close(waiting)
-			return
-		}
+		wg.Done()
+	}
+}
+
+// dispatchBatch enqueues a batch of |DependencyNode|s to |resolvable|. Should
+// be called from a goroutine in order to not block resolution.
+func dispatchBatch(block []*DependencyNode, resolvable chan *DependencyNode) {
+	for _, n := range block {
+		resolvable <- n
 	}
 }
 

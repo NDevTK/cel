@@ -16,6 +16,7 @@ func WrapErrorList(list []error) error {
 	}
 
 	w := wrappedErrors{}
+	w.innerErrors = make([]error, len(list))
 	copy(w.innerErrors, list)
 	return &w
 }

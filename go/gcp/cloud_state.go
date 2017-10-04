@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package lab
+package gcp
 
 import (
-	"go/lab/config"
+	"chromium.googlesource.com/enterprise/cel/go/cel"
+	"chromium.googlesource.com/enterprise/cel/go/host"
 	"golang.org/x/net/context"
 	compute "google.golang.org/api/compute/v1"
 	iam "google.golang.org/api/iam/v1"
@@ -14,8 +15,12 @@ import (
 	"sync/atomic"
 )
 
+// A reasonably high limit such that a generic list of things isn't expected to
+// exceed this.
+const kMaxGenericListCount = 1000
+
 // Maximum number of instances that we expect to see in a lab.
-const kMaxInstanceListCount = 500
+const kMaxInstanceListCount = kMaxGenericListCount
 
 // Maximum number of service accounts we are going to support. It's just an
 // arbitrarily large number that's big enough for anyone.
@@ -28,9 +33,9 @@ const kMaxSubnetworkListCount = 128
 // Maximum number of reserved static IP addresses. Just setting this to the
 // maximum number of instances since there can't be more reserved addresses
 // than there are instances.
-const kMaxAddressCount = kMaxInstanceListCount
+const kMaxAddressCount = kMaxGenericListCount
 
-// CloudState contains the last known state of a single project's GCE assets.
+// CloudState contains the last known state of a single project's GCP assets.
 //
 // For each asset type, there's a FooChanged member and a SetFooChanged()
 // method. The method should be called if some consumer knows that the asset
@@ -39,80 +44,87 @@ const kMaxAddressCount = kMaxInstanceListCount
 //
 // If one needs to refresh the entire cache, the easiest method is to call
 // QueryGceState() and construct a new cache.
+//
+// Annotated for easy serialization.
 type CloudState struct {
 	// Project described by this cached state.
 	Project string `json:"project"`
 
+	// The host environment defines which resources need monitoring. Should not
+	// be modified.
+	HostEnvironment *host.HostEnvironment `json:"host_environment"`
+
 	// All static external IP addresses reserved by the project.
-	Addresses          map[string]*compute.Address `json:"addresses"`
-	addresses_uptodate int32
+	Addresses map[string]*compute.Address `json:"addresses"`
 
 	// All service accounts for the project by unique ID.
-	ServiceAccounts           map[string]*iam.ServiceAccount `json:"service_accounts"`
-	service_accounts_uptodate int32
+	ServiceAccounts map[string]*iam.ServiceAccount `json:"service_accounts"`
 
 	// Instances by instance label
-	Instances          map[string]*compute.Instance `json:"instances"`
-	instances_uptodate int32
+	Instances map[string]*compute.Instance `json:"instances"`
 
 	// Network by network label
-	Networks          map[string]*compute.Network `json:"networks"`
-	networks_uptodate int32
+	Networks map[string]*compute.Network `json:"networks"`
 
 	// Subnetwork by network label, and region
-	Subnetworks          map[string]map[string]*compute.Subnetwork `json:"subnetworks"`
-	subnetworks_uptodate int32
+	Subnetworks map[string]map[string]*compute.Subnetwork `json:"subnetworks"`
 
 	// Firewalls by network label and firewall label.
-	Firewalls          map[string]map[string]*compute.Firewall `json:"firewall"`
-	firewalls_uptodate int32
+	Firewalls map[string]map[string]*compute.Firewall `json:"firewall"`
 
 	// Images by image name. Only the Images were requested are going to be
 	// synchronized. The name of the image used here is the name used as the
-	// key in the map of config.SourceImages passed into QueryGceState.
-	Images          map[string]*compute.Image `json:"image"`
-	images_uptodate int32
-
-	// MonitoredImages is a map of GCE images that should be monitored. The key
-	// is an arbitrary string that will be used as the key when constructing
-	// the Images map above.
-	MonitoredImages map[string]*config.SourceImage `json:"sourceimage"`
+	// image name used in |HostEnvironment|.
+	Images map[string]*compute.Image `json:"image"`
 
 	// Zones by zone label.
-	Zones          map[string]*compute.Zone `json:"zone"`
-	zones_uptodate int32
+	Zones map[string]*compute.Zone `json:"zone"`
 }
 
 func (g *CloudState) FetchServiceAccounts(ctx context.Context, client *http.Client) (err error) {
-	defer Action(&err, "querying service accounts")
+	defer cel.Action(&err, "querying service accounts")
 
 	service, err := iam.New(client)
 	if err != nil {
 		return
 	}
 
-	g.ServiceAccounts = make(map[string]*iam.ServiceAccount)
-	l, err := service.Projects.ServiceAccounts.List(ProjectResource(g.Project)).
-		PageSize(kMaxServiceAccountCount).Context(ctx).Do()
+	ServiceAccounts := make(map[string]*iam.ServiceAccount)
+	next_page_token := ""
 
-	if IsNotFoundError(err) {
-		g.service_accounts_uptodate = 1
-		return nil
-	}
-
-	if err != nil {
-		return
-	}
-
-	for _, a := range l.Accounts {
-		name := a.Email
-		idx := strings.IndexRune(a.Email, '@')
-		if idx > 0 {
-			name = a.Email[:idx]
+	for {
+		call := s.rvice.Projects.ServiceAccounts.List(ProjectResource(g.Project))
+		call.PageSize(kMaxServiceAccountCount).Context(ctx)
+		if next_page_token != "" {
+			call.PageToken(next_page_token)
 		}
-		g.ServiceAccounts[name] = a
+		l, err := call.Do()
+
+		if IsNotFoundError(err) {
+			return nil
+		}
+
+		if err != nil {
+			return
+		}
+
+		for _, a := range l.Accounts {
+			name := a.Email
+			idx := strings.IndexRune(a.Email, '@')
+			if idx > 0 {
+				name = a.Email[:idx]
+			}
+			ServiceAccounts[name] = a
+		}
+
+		if l.NextPageToken == "" {
+			break
+		}
+
+		next_page_token = l.NextPageToken
 	}
-	g.service_accounts_uptodate = 1
+
+	g.ServiceAccounts = ServiceAccounts
 	return nil
 }
 
@@ -350,13 +362,6 @@ func (g *CloudState) FetchStale(ctx context.Context, client *http.Client) (err e
 	return WaitFor(c, pending)
 }
 
-func (g *CloudState) SetServiceAccountsChanged() { atomic.StoreInt32(&g.service_accounts_uptodate, 0) }
-func (g *CloudState) SetInstancesChanged()       { atomic.StoreInt32(&g.instances_uptodate, 0) }
-func (g *CloudState) SetNetworksChanged()        { atomic.StoreInt32(&g.networks_uptodate, 0) }
-func (g *CloudState) SetFirewallsChanged()       { atomic.StoreInt32(&g.firewalls_uptodate, 0) }
-func (g *CloudState) SetImagesChanged()          { atomic.StoreInt32(&g.images_uptodate, 0) }
-func (g *CloudState) SetZonesChanged()           { atomic.StoreInt32(&g.zones_uptodate, 0) }
-
 // QueryCloudState queries GCE assets and returns a CloudState object containing the cached state.
 //
 // |project| is the name of the GCE project to cache, and |images| is a map of
@@ -367,11 +372,11 @@ func (g *CloudState) SetZonesChanged()           { atomic.StoreInt32(&g.zones_up
 // The |images| map should be a mapping from an arbitrary string to a
 // config.SourceImage object. The same key will be used as the mapping key to
 // strong the corresopnding compute.Image record.
-func QueryCloudState(ctx context.Context, client *http.Client,
-	project string, images map[string]*config.SourceImage) (*CloudState, error) {
+func QueryCloudState(ctx context.Context, client *http.Client, project string, dependencies *host.Dependencies) (*CloudState, error) {
 
 	g := CloudState{
-		Project:         project,
+		Project: project,
+
 		MonitoredImages: images}
 
 	err := g.FetchStale(ctx, client)

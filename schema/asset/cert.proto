@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 syntax = "proto3";
-package cert;
-option go_package="asset";
+package asset;
+option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
 message Certificate {
   string name = 1;

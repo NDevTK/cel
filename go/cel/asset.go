@@ -4,10 +4,9 @@
 
 package cel
 
-import (
-	"cloud.google.com/go/logging"
-)
+import ()
 
+// Asset is the foundation for a deployment.
 type Asset interface {
 	Namespace() string
 	Id() string
@@ -16,28 +15,35 @@ type Asset interface {
 }
 
 type Checker interface {
-	Check(s *Session) error
+	Check() error
+}
+
+type Resolver interface {
+	Resolve() error
+	Purge() error
+}
+
+type ScriptGenerator interface {
+	GenerateScript() error
 }
 
 type ResolvableAsset interface {
 	Asset
 	Checker
-
-	Resolve(s *Session) error
-	Purge(s *Session) error
+	Resolver
 }
 
 type ScriptAsset interface {
 	Asset
-
-	GenerateScript(s *Session) error
+	ScriptGenerator
 }
 
 type PermanentAsset interface {
 	Asset
 	Checker
 
-	PermanentAsset()
+	// PermanentAsset method is only used for identifying this interface.
+	IsPermanentAsset()
 }
 
 type BaseNamedAsset struct {
@@ -63,15 +69,9 @@ func (s *BaseNamedAsset) DependsOn() []Asset {
 }
 
 type assetLogEntry struct {
-	Namespace string
-	Id        string
-	Error     string
-}
-
-func (d assetLogEntry) Entry(s logging.Severity) logging.Entry {
-	return logging.Entry{
-		Severity: s,
-		Payload:  d}
+	Namespace string `json:"namespace"`
+	Id        string `json:"id"`
+	Error     string `json:"error_string"`
 }
 
 func LogAssetError(l Logger, a Asset, err error) {

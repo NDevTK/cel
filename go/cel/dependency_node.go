@@ -13,7 +13,7 @@ type DependencyNode struct {
 
 	UnresolvedDependencies int32 // Volatile. Final value is zero. int32 because it can be incremented atomically.
 	Processed              bool  // Flips once from false -> true. Final value is true.
-	Result                 error // Only valid if Resolved == true. Final value when Resolved == true.
+	Result                 error // Only valid if Resolved == true. Contains final value when Resolved == true.
 
 	// Other dependecy nodes that depend on this. I.e. this node must be
 	// resolved before Dependents can be resolved.
@@ -45,7 +45,7 @@ func (d *DependencyNode) Ready() bool {
 // once, or call it before Ready() returns true. If the resolution was
 // successful, it also returns a list of DependencyNodes that are now ready to
 // be resolved.
-func (d *DependencyNode) Resolve(S *Session) (ready []*DependencyNode, err error) {
+func (d *DependencyNode) Resolve() (ready []*DependencyNode, err error) {
 	if !d.Ready() {
 		return nil, NewError("asset %s has %d unmet dependencies, but Resolve() was called to resolve it.",
 			d.Asset.FullName(),
@@ -55,22 +55,21 @@ func (d *DependencyNode) Resolve(S *Session) (ready []*DependencyNode, err error
 	if d.Processed {
 		return nil, NewError("asset %s was already resolved.", d.Asset.FullName())
 	}
+	d.Processed = true
 
 	switch a := d.Asset.(type) {
 	case ResolvableAsset:
-		d.Result = a.Resolve(S)
+		d.Result = a.Resolve()
 
 	case PermanentAsset:
-		d.Result = a.Check(S)
+		d.Result = a.Check()
 
 	case ScriptAsset:
-		d.Result = a.GenerateScript(S)
+		d.Result = a.GenerateScript()
 
 	default:
-		return nil, NewError("unknown asset type for %s", d.Asset.FullName())
+		d.Result = NewError("unknown asset type for %s", d.Asset.FullName())
 	}
-
-	d.Processed = true
 
 	if d.Result != nil {
 		return nil, d.Result

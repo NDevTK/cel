@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 syntax = "proto3";
-package winad;
-option go_package="asset";
+package asset;
+option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
 import "schema/asset/network.proto";
 
@@ -78,7 +78,7 @@ message NetworkInterface {
 
   // Fixed address, if this interface is to have one. Leave undefined if the
   // interface should obatain an address automatically.
-  net.FixedAddress fixed_address = 2;
+  FixedAddress fixed_address = 2;
 }
 
 // A Windows machine.
