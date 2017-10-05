@@ -6,16 +6,18 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
-// dns.Zone describes a DNS zone. Conceptually it encompasses the same
+// DNSZone describes a DNS zone. Conceptually it encompasses the same
 // information included in a DNS zone file as described in
 // https://en.wikipedia.org/wiki/Zone_file
 message DNSZone {
+  // Origin described by zone. E.g. foo.example.com.
   string origin = 1;
 
+  // DNS records that should be included in the zone.
   repeated DNSRecord record = 2;
 }
 
-// dns.Record describes a single DNS record in a Zone.
+// DNSRecord describes a single DNS record in a Zone.
 message DNSRecord {
   // Name on record.
   string name = 1;

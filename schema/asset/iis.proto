@@ -6,11 +6,17 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
+import "schema/asset/common.proto";
 import "schema/asset/network.proto";
 
 // Corresponding PS DSC Modules:
 // * https://github.com/PowerShell/xWebAdministration
 
+// An IIS server.
+//
+// The following Windows features will be automatically installed for all IIS servers.
+//   *  Web-Common-HTTP
+//   *  Web-Security
 message Server {
   // Name of server instance.
   string name = 1;
@@ -23,7 +29,7 @@ message Server {
 
 // Bindings for a website onto a webserver.
 message Bindings {
-  // Hostname. Can be empty for all hostnames.
+  // Hostname. Can be empty to bind to all hostnames.
   string hostname = 1;
 
   // Protocol. Must be either HTTP or HTTPS. If using HTTPS, the SSL
@@ -33,7 +39,8 @@ message Bindings {
   // Port to use. Leave empty to use the default port based on protocol.
   uint32 port = 3;
 
-  // Name of a cert.Certificate.
+  // Name of a Certificate. This certificate should include a private key. See
+  // the definition in cert.proto.
   string certificate = 4;
 
   // Whether or not to use SNI. Only applicable when |protocol| is HTTPS. If
@@ -42,6 +49,7 @@ message Bindings {
   bool use_sni = 5;
 }
 
+// A single web site.
 message Site {
   // Name of site.
   string name = 1;
@@ -50,7 +58,15 @@ message Site {
   // multiple sites as long as those sites use distinct binding information.
   string server = 2;
 
+  // Bindings. These are bindings. Specify bindings here.
   Bindings bindings = 3;
+
+  // Relative path to directory containing the files that will be hosted on
+  // this site. The entire subtree will be copied over to the target host.
+  //
+  // While it is legal, avoid nesting sites and applications within a single
+  // directory tree.
+  FileReference contents = 4;
 }
 
 message Application {
@@ -59,4 +75,12 @@ message Application {
 
   // Name of the iis.Site that's hosting this application.
   string site = 2;
+
+  // Relative path to directory containing the files that will be hosted on
+  // this application. The entire subtree will be copied over to the target
+  // host.
+  //
+  // While it is legal, avoid nesting sites and applications within a single
+  // directory tree.
+  FileReference contents = 3;
 }

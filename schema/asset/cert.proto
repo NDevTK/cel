@@ -6,6 +6,31 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
+import "schema/asset/common.proto";
+
+// An x509 certificate.
 message Certificate {
+  // A convenient identifier for this certificate.
   string name = 1;
+
+  // PEM encoded file containing a *single* certificate, and no private key.
+  FileReference certficate = 2;
+
+  // PEM encoded private key.
+  FileReference private_key = 3;
 }
+
+// A pool of certifiates. Usually used to establish a set of trust roots.
+message CertificatePool {
+  // A convenient identifier for this certificate pool
+  string name = 1;
+
+  // Named certificates. Should match one of the |Certificate| entries
+  // specified in this manifest.
+  repeated string include_named = 2;
+
+  // PEM encoded file containing one or more certificates. Note that private
+  // keys cannot be specified this way.
+  repeated FileReference include_file = 3;
+}
+

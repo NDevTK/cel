@@ -13,11 +13,13 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// dns.Zone describes a DNS zone. Conceptually it encompasses the same
+// DNSZone describes a DNS zone. Conceptually it encompasses the same
 // information included in a DNS zone file as described in
 // https://en.wikipedia.org/wiki/Zone_file
 type DNSZone struct {
-	Origin string       `protobuf:"bytes,1,opt,name=origin" json:"origin,omitempty"`
+	// Origin described by zone. E.g. foo.example.com.
+	Origin string `protobuf:"bytes,1,opt,name=origin" json:"origin,omitempty"`
+	// DNS records that should be included in the zone.
 	Record []*DNSRecord `protobuf:"bytes,2,rep,name=record" json:"record,omitempty"`
 }
 
@@ -40,7 +42,7 @@ func (m *DNSZone) GetRecord() []*DNSRecord {
 	return nil
 }
 
-// dns.Record describes a single DNS record in a Zone.
+// DNSRecord describes a single DNS record in a Zone.
 type DNSRecord struct {
 	// Name on record.
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`

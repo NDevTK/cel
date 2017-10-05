@@ -15,7 +15,7 @@
 // Note that all the .proto files that go into a single package should be
 // specified on the same protoc invocation.
 //
-//go:generate protoc --go_out=../../../ schema/asset/active_directory.proto schema/asset/cert.proto schema/asset/dns.proto schema/asset/iis.proto schema/asset/network.proto
+//go:generate protoc --go_out=../../../ schema/asset/active_directory.proto schema/asset/cert.proto schema/asset/dns.proto schema/asset/iis.proto schema/asset/network.proto schema/asset/common.proto
 //go:generate protoc --go_out=../../../ schema/host/host_environment.proto
 //go:generate protoc --go_out=../../../ schema/gcp/compute/compute-api.proto
 
