@@ -4,7 +4,7 @@ Chrome Enterprise Lab is an inaccurately named set of tools for building
 enterprise labs quickly and easily. The labs so built can be used for system
 level end-to-end testing of Google Chrome/Chromium.
 
-Have a peek at the [Design](http://goto.google.com/chrome-enterprise-lab) document.
+Have a peek at the [Design](/docs/design-overview.md) document.
 
 Also have a peek at the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
@@ -33,19 +33,19 @@ mentions the managed dependency workflow.
 
 1. Clone this repository.
 
-  Assumes that `$GOPATH` is a single path and not a `:` delimited list.
+   Assumes that `$GOPATH` is a single path and not a `:` delimited list.
 
-  ``` sh
-  mkdir -p ${GOPATH}/src/chromium.googlesource.com/enterprise 
-  cd ${GOPATH}/src/chromium.googlesource.com/enterprise
-  git clone https://chromium.googlesource.com/enterprise/cel
-  ```
+   ``` sh
+   mkdir -p ${GOPATH}/src/chromium.googlesource.com/enterprise 
+   cd ${GOPATH}/src/chromium.googlesource.com/enterprise
+   git clone https://chromium.googlesource.com/enterprise/cel
+   ```
 
 2. Get the dependencies.
 
-  ``` sh
-  dep ensure
-  ```
+   ``` sh
+   dep ensure
+   ```
 
 ### Build It
 
