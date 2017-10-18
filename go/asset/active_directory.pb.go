@@ -11,14 +11,23 @@ It is generated from these files:
 	schema/asset/dns.proto
 	schema/asset/iis.proto
 	schema/asset/network.proto
-	schema/asset/common.proto
+	schema/asset/asset_manifest.proto
 
 It has these top-level messages:
 	ActiveDirectoryDomain
 	ActiveDirectoryDomainController
+	ActiveDirectoryOrganizationalUnit
+	ActiveDirectoryGroupPolicy
+	ActiveDirectoryGroupPolicyLink
+	ActiveDirectoryRegistryPolicy
+	ActiveDirectoryRegistryPrefPolicy
+	RegistryKey
+	RegistryValue
 	WindowsContainer
 	WindowsGroup
 	GroupReference
+	UserReference
+	UserOrGroupReference
 	WindowsUser
 	NetworkInterface
 	WindowsMachine
@@ -26,22 +35,24 @@ It has these top-level messages:
 	CertificatePool
 	DNSZone
 	DNSRecord
-	Server
-	Bindings
-	Site
-	Application
+	IISServer
+	IISBindings
+	IISSite
+	IISApplication
 	Network
 	NetworkPeer
 	Address
 	AddressRange
 	FixedAddress
-	FileReference
+	AssetManifest
 */
 package asset
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import common1 "chromium.googlesource.com/enterprise/cel/go/common"
+import _ "chromium.googlesource.com/enterprise/cel/go/common"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -53,6 +64,40 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
+// Type of registry values. The default is STRING.
+type RegistryValueType int32
+
+const (
+	RegistryValueType_STRING        RegistryValueType = 0
+	RegistryValueType_EXPAND_STRING RegistryValueType = 1
+	RegistryValueType_BINARY        RegistryValueType = 2
+	RegistryValueType_DWORD         RegistryValueType = 3
+	RegistryValueType_MULTI_STRING  RegistryValueType = 4
+	RegistryValueType_QWORD         RegistryValueType = 5
+)
+
+var RegistryValueType_name = map[int32]string{
+	0: "STRING",
+	1: "EXPAND_STRING",
+	2: "BINARY",
+	3: "DWORD",
+	4: "MULTI_STRING",
+	5: "QWORD",
+}
+var RegistryValueType_value = map[string]int32{
+	"STRING":        0,
+	"EXPAND_STRING": 1,
+	"BINARY":        2,
+	"DWORD":         3,
+	"MULTI_STRING":  4,
+	"QWORD":         5,
+}
+
+func (x RegistryValueType) String() string {
+	return proto.EnumName(RegistryValueType_name, int32(x))
+}
+func (RegistryValueType) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 // Active Directory functional level. A.k.a. Domain Mode. See
 // https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/active-directory-functional-levels
@@ -124,9 +169,39 @@ func (ActiveDirectoryDomain_Type) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor0, []int{0, 1}
 }
 
+// The action to take when processing the GPO.
+type ActiveDirectoryRegistryPrefPolicy_Action int32
+
+const (
+	ActiveDirectoryRegistryPrefPolicy_CREATE  ActiveDirectoryRegistryPrefPolicy_Action = 0
+	ActiveDirectoryRegistryPrefPolicy_REPLACE ActiveDirectoryRegistryPrefPolicy_Action = 1
+	ActiveDirectoryRegistryPrefPolicy_UPDATE  ActiveDirectoryRegistryPrefPolicy_Action = 2
+	ActiveDirectoryRegistryPrefPolicy_DELETE  ActiveDirectoryRegistryPrefPolicy_Action = 3
+)
+
+var ActiveDirectoryRegistryPrefPolicy_Action_name = map[int32]string{
+	0: "CREATE",
+	1: "REPLACE",
+	2: "UPDATE",
+	3: "DELETE",
+}
+var ActiveDirectoryRegistryPrefPolicy_Action_value = map[string]int32{
+	"CREATE":  0,
+	"REPLACE": 1,
+	"UPDATE":  2,
+	"DELETE":  3,
+}
+
+func (x ActiveDirectoryRegistryPrefPolicy_Action) String() string {
+	return proto.EnumName(ActiveDirectoryRegistryPrefPolicy_Action_name, int32(x))
+}
+func (ActiveDirectoryRegistryPrefPolicy_Action) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{6, 0}
+}
+
 // Describes an Active Directory domain or forest.
 type ActiveDirectoryDomain struct {
-	// FQDN of ActiveDirectory domain.
+	// FQDN of the domain in lower case.
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	// Parent domain name. Only specify this if this domain is going to be a
 	// child domain.
@@ -188,10 +263,11 @@ func (m *ActiveDirectoryDomain) GetForestMode() ActiveDirectoryDomain_Mode {
 
 // Describes a single Active Directory Domain Controller.
 type ActiveDirectoryDomainController struct {
-	// Name of the domain. Must match a ActiveDirectoryDomain entry.
-	Domain string `protobuf:"bytes,1,opt,name=domain" json:"domain,omitempty"`
-	// Machine hosting the ADDS. Must match a WindowsMachine entry.
-	Machine string `protobuf:"bytes,2,opt,name=machine" json:"machine,omitempty"`
+	// Name of the domain. Must match the `name` field of an
+	// ActiveDirectoryDomain entry.
+	AdDomain string `protobuf:"bytes,1,opt,name=ad_domain,json=adDomain" json:"ad_domain,omitempty"`
+	// Machine hosting the ADDS. Must match the `name` of a WindowsMachine entry.
+	WindowsMachine string `protobuf:"bytes,2,opt,name=windows_machine,json=windowsMachine" json:"windows_machine,omitempty"`
 	// Whether or not to install a DNS server on this machine. The default is
 	// almost always |true| unless the domain already exists and the existing
 	// domain controller does not host a DNS server.
@@ -240,16 +316,16 @@ func (m *ActiveDirectoryDomainController) GetOptionalDns() isActiveDirectoryDoma
 	return nil
 }
 
-func (m *ActiveDirectoryDomainController) GetDomain() string {
+func (m *ActiveDirectoryDomainController) GetAdDomain() string {
 	if m != nil {
-		return m.Domain
+		return m.AdDomain
 	}
 	return ""
 }
 
-func (m *ActiveDirectoryDomainController) GetMachine() string {
+func (m *ActiveDirectoryDomainController) GetWindowsMachine() string {
 	if m != nil {
-		return m.Machine
+		return m.WindowsMachine
 	}
 	return ""
 }
@@ -336,6 +412,586 @@ func _ActiveDirectoryDomainController_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
+// Describes an Active Directory Organizational Unit.
+//
+// Note that this message omits location properties like postal code, city,
+// state, and country. Use the 'property' field to specify these if required.
+//
+// E.g.:
+//     ad_organizational_unit {
+//        name: 'foo'
+//        ...
+//        property { key: 'l', value: 'Cambridge' }
+//        property { key: 'st', value: 'MA' }
+//        ..
+//     }
+type ActiveDirectoryOrganizationalUnit struct {
+	// Name of the OU. Also populates the 'name' property of the AD object unless
+	// overridden by |full_name|.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// The 'name' property of the AD object. Only specify this if |name| can't be
+	// used to store the display name.
+	FullName string `protobuf:"bytes,2,opt,name=full_name,json=fullName" json:"full_name,omitempty"`
+	// The container in which this OU is created. Only the 'ad_domain' and
+	// 'ad_organizational_unit' values are valid.
+	Container *WindowsContainer `protobuf:"bytes,3,opt,name=container" json:"container,omitempty"`
+	// The AD DS server which should service the request for creating the OU if
+	// necessary. If left unspecified, any of the candidate AD DS instances
+	// associated with 'container' will be used.
+	Server string `protobuf:"bytes,4,opt,name=server" json:"server,omitempty"`
+	// Use the referred AD OU as the template. Any properties specified in this
+	// message will override corresponding properties from the template OU. Any
+	// properties specified in the template, but not in this message will be
+	// copied over.
+	BasedOn string `protobuf:"bytes,5,opt,name=based_on,json=basedOn" json:"based_on,omitempty"`
+	// The 'displayName' property of the AD object.
+	DisplayName string `protobuf:"bytes,6,opt,name=display_name,json=displayName" json:"display_name,omitempty"`
+	// The 'description' property of the AD object.
+	Description string `protobuf:"bytes,7,opt,name=description" json:"description,omitempty"`
+	// The principal managing this OU. Note that the 'container' property for a
+	// user or a group is implicit and should be omitted.
+	ManagedBy *UserOrGroupReference `protobuf:"bytes,8,opt,name=managed_by,json=managedBy" json:"managed_by,omitempty"`
+	// Additional properties. The key is the ldapDisplayName of the property. The
+	// value can be a single string. Repeat using the same key to specify more
+	// than one value for a single key.
+	//
+	// E.g.:
+	//     property {
+	//       key: 'favColors'
+	//       value: 'pink'
+	//     }
+	//
+	//     property {
+	//       key: 'favColors'
+	//       value: 'purple'
+	//     }
+	Property map[string]string `protobuf:"bytes,9,rep,name=property" json:"property,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) Reset()         { *m = ActiveDirectoryOrganizationalUnit{} }
+func (m *ActiveDirectoryOrganizationalUnit) String() string { return proto.CompactTextString(m) }
+func (*ActiveDirectoryOrganizationalUnit) ProtoMessage()    {}
+func (*ActiveDirectoryOrganizationalUnit) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{2}
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetFullName() string {
+	if m != nil {
+		return m.FullName
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetContainer() *WindowsContainer {
+	if m != nil {
+		return m.Container
+	}
+	return nil
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetServer() string {
+	if m != nil {
+		return m.Server
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetBasedOn() string {
+	if m != nil {
+		return m.BasedOn
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetDisplayName() string {
+	if m != nil {
+		return m.DisplayName
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetManagedBy() *UserOrGroupReference {
+	if m != nil {
+		return m.ManagedBy
+	}
+	return nil
+}
+
+func (m *ActiveDirectoryOrganizationalUnit) GetProperty() map[string]string {
+	if m != nil {
+		return m.Property
+	}
+	return nil
+}
+
+// Describes an Active Directory GPO. The GPO itself may not contain anything
+// particularly important on creation, and is entirely based on the starter
+// GPO. The GPO is also not linked anywhere by default. Use the
+// ActiveDirectoryGroupPolicyLink message to create links, and
+// ActiveDirectoryRegistryPolicy to add registry based policies.
+//
+// E.g.:
+//
+//     # Create a group policy.
+//     ad_group_policy {
+//       name: 'foo'
+//       ad_domain: 'my-domain'
+//     }
+//
+//     # Add some registry values to it.
+//     ad_registry_policy {
+//       name: 'reg-pol-0001'
+//       ad_group_policy: 'foo'
+//
+//       key {
+//         path: 'HKCU\\Software\\My Company\\Foo\\Bar'
+//
+//         value {
+//           name: 'version'
+//           value: '1.0'
+//         }
+//
+//         value {
+//           name: 'FooCount'
+//           type: DWORD
+//           value: '10'
+//         }
+//       }
+//     }
+//
+//     # And link it to one or more OUs.
+//     ad_group_policy_link {
+//       name: 'foo-link'
+//       ad_group_policy: 'foo'
+//       container { ad_organizational_unit: 'my-ou' }
+//       container { ad_organizational_unit: 'your-ou' }
+//       enforced: true
+//     }
+type ActiveDirectoryGroupPolicy struct {
+	// The name of the GPO.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// The full name. Only use this if the full name cannot be specified in |name|.
+	FullName string `protobuf:"bytes,2,opt,name=full_name,json=fullName" json:"full_name,omitempty"`
+	// The domain in which this GPO is created.
+	AdDomain string `protobuf:"bytes,3,opt,name=ad_domain,json=adDomain" json:"ad_domain,omitempty"`
+	// A comment for the GPO. This can contain up to 2047 characters.
+	Comment string `protobuf:"bytes,4,opt,name=comment" json:"comment,omitempty"`
+	// If a template GPO is specified, that will be used as the starter GPO.
+	// Creates a starter GPO is no value is specified here.
+	BasedOn string `protobuf:"bytes,5,opt,name=based_on,json=basedOn" json:"based_on,omitempty"`
+}
+
+func (m *ActiveDirectoryGroupPolicy) Reset()                    { *m = ActiveDirectoryGroupPolicy{} }
+func (m *ActiveDirectoryGroupPolicy) String() string            { return proto.CompactTextString(m) }
+func (*ActiveDirectoryGroupPolicy) ProtoMessage()               {}
+func (*ActiveDirectoryGroupPolicy) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *ActiveDirectoryGroupPolicy) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryGroupPolicy) GetFullName() string {
+	if m != nil {
+		return m.FullName
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryGroupPolicy) GetAdDomain() string {
+	if m != nil {
+		return m.AdDomain
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryGroupPolicy) GetComment() string {
+	if m != nil {
+		return m.Comment
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryGroupPolicy) GetBasedOn() string {
+	if m != nil {
+		return m.BasedOn
+	}
+	return ""
+}
+
+// Describes one or more GPO links.
+type ActiveDirectoryGroupPolicyLink struct {
+	// A convenient identifier for this set of GPO links.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// The policy that will be linked.
+	AdGroupPolicy string `protobuf:"bytes,2,opt,name=ad_group_policy,json=adGroupPolicy" json:"ad_group_policy,omitempty"`
+	// The list of containers for which the GPO referred to in |ad_group_policy|
+	// will be linked. Only the |ad_domain| and |ad_organizational_unit| fields
+	// can be used. There should be at least one of these.
+	Container []*WindowsContainer `protobuf:"bytes,3,rep,name=container" json:"container,omitempty"`
+	// If specified, sets the enforced state for the GPO links.
+	//
+	// Types that are valid to be assigned to OptionalEnforce:
+	//	*ActiveDirectoryGroupPolicyLink_Enforced
+	OptionalEnforce isActiveDirectoryGroupPolicyLink_OptionalEnforce `protobuf_oneof:"optional_enforce"`
+	// If specified, sets the enabled state for the GPO links.
+	//
+	// Types that are valid to be assigned to OptionalEnabled:
+	//	*ActiveDirectoryGroupPolicyLink_Enabled
+	OptionalEnabled isActiveDirectoryGroupPolicyLink_OptionalEnabled `protobuf_oneof:"optional_enabled"`
+}
+
+func (m *ActiveDirectoryGroupPolicyLink) Reset()                    { *m = ActiveDirectoryGroupPolicyLink{} }
+func (m *ActiveDirectoryGroupPolicyLink) String() string            { return proto.CompactTextString(m) }
+func (*ActiveDirectoryGroupPolicyLink) ProtoMessage()               {}
+func (*ActiveDirectoryGroupPolicyLink) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+type isActiveDirectoryGroupPolicyLink_OptionalEnforce interface {
+	isActiveDirectoryGroupPolicyLink_OptionalEnforce()
+}
+type isActiveDirectoryGroupPolicyLink_OptionalEnabled interface {
+	isActiveDirectoryGroupPolicyLink_OptionalEnabled()
+}
+
+type ActiveDirectoryGroupPolicyLink_Enforced struct {
+	Enforced bool `protobuf:"varint,4,opt,name=enforced,oneof"`
+}
+type ActiveDirectoryGroupPolicyLink_Enabled struct {
+	Enabled bool `protobuf:"varint,5,opt,name=enabled,oneof"`
+}
+
+func (*ActiveDirectoryGroupPolicyLink_Enforced) isActiveDirectoryGroupPolicyLink_OptionalEnforce() {}
+func (*ActiveDirectoryGroupPolicyLink_Enabled) isActiveDirectoryGroupPolicyLink_OptionalEnabled()  {}
+
+func (m *ActiveDirectoryGroupPolicyLink) GetOptionalEnforce() isActiveDirectoryGroupPolicyLink_OptionalEnforce {
+	if m != nil {
+		return m.OptionalEnforce
+	}
+	return nil
+}
+func (m *ActiveDirectoryGroupPolicyLink) GetOptionalEnabled() isActiveDirectoryGroupPolicyLink_OptionalEnabled {
+	if m != nil {
+		return m.OptionalEnabled
+	}
+	return nil
+}
+
+func (m *ActiveDirectoryGroupPolicyLink) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryGroupPolicyLink) GetAdGroupPolicy() string {
+	if m != nil {
+		return m.AdGroupPolicy
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryGroupPolicyLink) GetContainer() []*WindowsContainer {
+	if m != nil {
+		return m.Container
+	}
+	return nil
+}
+
+func (m *ActiveDirectoryGroupPolicyLink) GetEnforced() bool {
+	if x, ok := m.GetOptionalEnforce().(*ActiveDirectoryGroupPolicyLink_Enforced); ok {
+		return x.Enforced
+	}
+	return false
+}
+
+func (m *ActiveDirectoryGroupPolicyLink) GetEnabled() bool {
+	if x, ok := m.GetOptionalEnabled().(*ActiveDirectoryGroupPolicyLink_Enabled); ok {
+		return x.Enabled
+	}
+	return false
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ActiveDirectoryGroupPolicyLink) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ActiveDirectoryGroupPolicyLink_OneofMarshaler, _ActiveDirectoryGroupPolicyLink_OneofUnmarshaler, _ActiveDirectoryGroupPolicyLink_OneofSizer, []interface{}{
+		(*ActiveDirectoryGroupPolicyLink_Enforced)(nil),
+		(*ActiveDirectoryGroupPolicyLink_Enabled)(nil),
+	}
+}
+
+func _ActiveDirectoryGroupPolicyLink_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ActiveDirectoryGroupPolicyLink)
+	// optional_enforce
+	switch x := m.OptionalEnforce.(type) {
+	case *ActiveDirectoryGroupPolicyLink_Enforced:
+		t := uint64(0)
+		if x.Enforced {
+			t = 1
+		}
+		b.EncodeVarint(4<<3 | proto.WireVarint)
+		b.EncodeVarint(t)
+	case nil:
+	default:
+		return fmt.Errorf("ActiveDirectoryGroupPolicyLink.OptionalEnforce has unexpected type %T", x)
+	}
+	// optional_enabled
+	switch x := m.OptionalEnabled.(type) {
+	case *ActiveDirectoryGroupPolicyLink_Enabled:
+		t := uint64(0)
+		if x.Enabled {
+			t = 1
+		}
+		b.EncodeVarint(5<<3 | proto.WireVarint)
+		b.EncodeVarint(t)
+	case nil:
+	default:
+		return fmt.Errorf("ActiveDirectoryGroupPolicyLink.OptionalEnabled has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ActiveDirectoryGroupPolicyLink_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ActiveDirectoryGroupPolicyLink)
+	switch tag {
+	case 4: // optional_enforce.enforced
+		if wire != proto.WireVarint {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeVarint()
+		m.OptionalEnforce = &ActiveDirectoryGroupPolicyLink_Enforced{x != 0}
+		return true, err
+	case 5: // optional_enabled.enabled
+		if wire != proto.WireVarint {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeVarint()
+		m.OptionalEnabled = &ActiveDirectoryGroupPolicyLink_Enabled{x != 0}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ActiveDirectoryGroupPolicyLink_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ActiveDirectoryGroupPolicyLink)
+	// optional_enforce
+	switch x := m.OptionalEnforce.(type) {
+	case *ActiveDirectoryGroupPolicyLink_Enforced:
+		n += proto.SizeVarint(4<<3 | proto.WireVarint)
+		n += 1
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	// optional_enabled
+	switch x := m.OptionalEnabled.(type) {
+	case *ActiveDirectoryGroupPolicyLink_Enabled:
+		n += proto.SizeVarint(5<<3 | proto.WireVarint)
+		n += 1
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+// Describes a set of registry keys that should be applied for a GPO.
+type ActiveDirectoryRegistryPolicy struct {
+	// An identifier for the registry policy.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// The GPO that will be affected by this registry policy.
+	AdGroupPolicy string `protobuf:"bytes,2,opt,name=ad_group_policy,json=adGroupPolicy" json:"ad_group_policy,omitempty"`
+	// If true, the registry values defined in this message will be added to the
+	// respective registry keys. The default behavior -- also the behavior when
+	// this field is set to false -- is to delete all the values under each key
+	// prior to adding the new values.
+	Additive bool `protobuf:"varint,3,opt,name=additive" json:"additive,omitempty"`
+	// Set of registry keys and values that will be applied (in order).
+	Key []*RegistryKey `protobuf:"bytes,4,rep,name=key" json:"key,omitempty"`
+}
+
+func (m *ActiveDirectoryRegistryPolicy) Reset()                    { *m = ActiveDirectoryRegistryPolicy{} }
+func (m *ActiveDirectoryRegistryPolicy) String() string            { return proto.CompactTextString(m) }
+func (*ActiveDirectoryRegistryPolicy) ProtoMessage()               {}
+func (*ActiveDirectoryRegistryPolicy) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *ActiveDirectoryRegistryPolicy) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryRegistryPolicy) GetAdGroupPolicy() string {
+	if m != nil {
+		return m.AdGroupPolicy
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryRegistryPolicy) GetAdditive() bool {
+	if m != nil {
+		return m.Additive
+	}
+	return false
+}
+
+func (m *ActiveDirectoryRegistryPolicy) GetKey() []*RegistryKey {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+// Describes a registry change that should happen when applying a GPO.
+type ActiveDirectoryRegistryPrefPolicy struct {
+	// An identifier for the registry policy.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// The GPO that will be affected by this registry policy.
+	AdGroupPolicy string                                   `protobuf:"bytes,2,opt,name=ad_group_policy,json=adGroupPolicy" json:"ad_group_policy,omitempty"`
+	Action        ActiveDirectoryRegistryPrefPolicy_Action `protobuf:"varint,3,opt,name=action,enum=asset.ActiveDirectoryRegistryPrefPolicy_Action" json:"action,omitempty"`
+	// Set of registry keys and values that will be applied (in order).
+	Key []*RegistryKey `protobuf:"bytes,4,rep,name=key" json:"key,omitempty"`
+}
+
+func (m *ActiveDirectoryRegistryPrefPolicy) Reset()         { *m = ActiveDirectoryRegistryPrefPolicy{} }
+func (m *ActiveDirectoryRegistryPrefPolicy) String() string { return proto.CompactTextString(m) }
+func (*ActiveDirectoryRegistryPrefPolicy) ProtoMessage()    {}
+func (*ActiveDirectoryRegistryPrefPolicy) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{6}
+}
+
+func (m *ActiveDirectoryRegistryPrefPolicy) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryRegistryPrefPolicy) GetAdGroupPolicy() string {
+	if m != nil {
+		return m.AdGroupPolicy
+	}
+	return ""
+}
+
+func (m *ActiveDirectoryRegistryPrefPolicy) GetAction() ActiveDirectoryRegistryPrefPolicy_Action {
+	if m != nil {
+		return m.Action
+	}
+	return ActiveDirectoryRegistryPrefPolicy_CREATE
+}
+
+func (m *ActiveDirectoryRegistryPrefPolicy) GetKey() []*RegistryKey {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+// A registry key.
+type RegistryKey struct {
+	// Path to registry key. Either backslashes or forwardslashes can be used as
+	// separators. The first component of the path selects the hive. The
+	// following values and aliases are accepted fas the first component of the
+	// path:
+	//
+	//     HKEY_CLASSES_ROOT, HKCR
+	//     HKEY_CURRENT_USER, HKCU
+	//     HKEY_LOCAL_MACHINE, HKLM
+	//     HKEY_USERS, HKU
+	//     HKEY_CURRENT_CONFIG, HKCC
+	//
+	// E.g.:
+	//     key {
+	//       path: 'HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Foo\\bar'
+	//       value: {
+	//         name: 'x'
+	//         type: STRING
+	//         value: 'y'
+	//       }
+	//     }
+	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
+	// The list of values under the key.
+	Value []*RegistryValue `protobuf:"bytes,2,rep,name=value" json:"value,omitempty"`
+}
+
+func (m *RegistryKey) Reset()                    { *m = RegistryKey{} }
+func (m *RegistryKey) String() string            { return proto.CompactTextString(m) }
+func (*RegistryKey) ProtoMessage()               {}
+func (*RegistryKey) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *RegistryKey) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
+func (m *RegistryKey) GetValue() []*RegistryValue {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
+// A single registry value. The registry key is implied based on the containing
+// message.
+type RegistryValue struct {
+	// Value name. Leave empty to set the default value.
+	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// One of RegistryValueType.
+	Type RegistryValueType `protobuf:"varint,2,opt,name=type,enum=asset.RegistryValueType" json:"type,omitempty"`
+	// The value. THe format is as follows:
+	//
+	// STRING, EXPAND_STRING : A single 'value' with contents.
+	// MULTI_STRING : Multiple 'value' entries each specifying a single string.
+	// DWORD, QWORD : A number as a string. E.g.: '3', '0x
+	Value []string `protobuf:"bytes,3,rep,name=value" json:"value,omitempty"`
+}
+
+func (m *RegistryValue) Reset()                    { *m = RegistryValue{} }
+func (m *RegistryValue) String() string            { return proto.CompactTextString(m) }
+func (*RegistryValue) ProtoMessage()               {}
+func (*RegistryValue) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *RegistryValue) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *RegistryValue) GetType() RegistryValueType {
+	if m != nil {
+		return m.Type
+	}
+	return RegistryValueType_STRING
+}
+
+func (m *RegistryValue) GetValue() []string {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
 // Describes a container that a Windows asset can reside in.
 //
 // Resources like machines, users, and groups can be specified per domain, per
@@ -343,34 +999,34 @@ func _ActiveDirectoryDomainController_OneofSizer(msg proto.Message) (n int) {
 // types, use the WindowsContainer member to specify where to create the asset.
 type WindowsContainer struct {
 	// Types that are valid to be assigned to Container:
-	//	*WindowsContainer_Domain
-	//	*WindowsContainer_Machine
-	//	*WindowsContainer_Ou
+	//	*WindowsContainer_AdDomain
+	//	*WindowsContainer_WindowsMachine
+	//	*WindowsContainer_AdOrganizationalUnit
 	Container isWindowsContainer_Container `protobuf_oneof:"container"`
 }
 
 func (m *WindowsContainer) Reset()                    { *m = WindowsContainer{} }
 func (m *WindowsContainer) String() string            { return proto.CompactTextString(m) }
 func (*WindowsContainer) ProtoMessage()               {}
-func (*WindowsContainer) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*WindowsContainer) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
 type isWindowsContainer_Container interface {
 	isWindowsContainer_Container()
 }
 
-type WindowsContainer_Domain struct {
-	Domain string `protobuf:"bytes,1,opt,name=domain,oneof"`
+type WindowsContainer_AdDomain struct {
+	AdDomain string `protobuf:"bytes,1,opt,name=ad_domain,json=adDomain,oneof"`
 }
-type WindowsContainer_Machine struct {
-	Machine string `protobuf:"bytes,2,opt,name=machine,oneof"`
+type WindowsContainer_WindowsMachine struct {
+	WindowsMachine string `protobuf:"bytes,2,opt,name=windows_machine,json=windowsMachine,oneof"`
 }
-type WindowsContainer_Ou struct {
-	Ou string `protobuf:"bytes,3,opt,name=ou,oneof"`
+type WindowsContainer_AdOrganizationalUnit struct {
+	AdOrganizationalUnit string `protobuf:"bytes,3,opt,name=ad_organizational_unit,json=adOrganizationalUnit,oneof"`
 }
 
-func (*WindowsContainer_Domain) isWindowsContainer_Container()  {}
-func (*WindowsContainer_Machine) isWindowsContainer_Container() {}
-func (*WindowsContainer_Ou) isWindowsContainer_Container()      {}
+func (*WindowsContainer_AdDomain) isWindowsContainer_Container()             {}
+func (*WindowsContainer_WindowsMachine) isWindowsContainer_Container()       {}
+func (*WindowsContainer_AdOrganizationalUnit) isWindowsContainer_Container() {}
 
 func (m *WindowsContainer) GetContainer() isWindowsContainer_Container {
 	if m != nil {
@@ -379,23 +1035,23 @@ func (m *WindowsContainer) GetContainer() isWindowsContainer_Container {
 	return nil
 }
 
-func (m *WindowsContainer) GetDomain() string {
-	if x, ok := m.GetContainer().(*WindowsContainer_Domain); ok {
-		return x.Domain
+func (m *WindowsContainer) GetAdDomain() string {
+	if x, ok := m.GetContainer().(*WindowsContainer_AdDomain); ok {
+		return x.AdDomain
 	}
 	return ""
 }
 
-func (m *WindowsContainer) GetMachine() string {
-	if x, ok := m.GetContainer().(*WindowsContainer_Machine); ok {
-		return x.Machine
+func (m *WindowsContainer) GetWindowsMachine() string {
+	if x, ok := m.GetContainer().(*WindowsContainer_WindowsMachine); ok {
+		return x.WindowsMachine
 	}
 	return ""
 }
 
-func (m *WindowsContainer) GetOu() string {
-	if x, ok := m.GetContainer().(*WindowsContainer_Ou); ok {
-		return x.Ou
+func (m *WindowsContainer) GetAdOrganizationalUnit() string {
+	if x, ok := m.GetContainer().(*WindowsContainer_AdOrganizationalUnit); ok {
+		return x.AdOrganizationalUnit
 	}
 	return ""
 }
@@ -403,9 +1059,9 @@ func (m *WindowsContainer) GetOu() string {
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*WindowsContainer) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _WindowsContainer_OneofMarshaler, _WindowsContainer_OneofUnmarshaler, _WindowsContainer_OneofSizer, []interface{}{
-		(*WindowsContainer_Domain)(nil),
-		(*WindowsContainer_Machine)(nil),
-		(*WindowsContainer_Ou)(nil),
+		(*WindowsContainer_AdDomain)(nil),
+		(*WindowsContainer_WindowsMachine)(nil),
+		(*WindowsContainer_AdOrganizationalUnit)(nil),
 	}
 }
 
@@ -413,15 +1069,15 @@ func _WindowsContainer_OneofMarshaler(msg proto.Message, b *proto.Buffer) error 
 	m := msg.(*WindowsContainer)
 	// container
 	switch x := m.Container.(type) {
-	case *WindowsContainer_Domain:
+	case *WindowsContainer_AdDomain:
 		b.EncodeVarint(1<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Domain)
-	case *WindowsContainer_Machine:
+		b.EncodeStringBytes(x.AdDomain)
+	case *WindowsContainer_WindowsMachine:
 		b.EncodeVarint(2<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Machine)
-	case *WindowsContainer_Ou:
+		b.EncodeStringBytes(x.WindowsMachine)
+	case *WindowsContainer_AdOrganizationalUnit:
 		b.EncodeVarint(3<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Ou)
+		b.EncodeStringBytes(x.AdOrganizationalUnit)
 	case nil:
 	default:
 		return fmt.Errorf("WindowsContainer.Container has unexpected type %T", x)
@@ -432,26 +1088,26 @@ func _WindowsContainer_OneofMarshaler(msg proto.Message, b *proto.Buffer) error 
 func _WindowsContainer_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
 	m := msg.(*WindowsContainer)
 	switch tag {
-	case 1: // container.domain
+	case 1: // container.ad_domain
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
 		x, err := b.DecodeStringBytes()
-		m.Container = &WindowsContainer_Domain{x}
+		m.Container = &WindowsContainer_AdDomain{x}
 		return true, err
-	case 2: // container.machine
+	case 2: // container.windows_machine
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
 		x, err := b.DecodeStringBytes()
-		m.Container = &WindowsContainer_Machine{x}
+		m.Container = &WindowsContainer_WindowsMachine{x}
 		return true, err
-	case 3: // container.ou
+	case 3: // container.ad_organizational_unit
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
 		x, err := b.DecodeStringBytes()
-		m.Container = &WindowsContainer_Ou{x}
+		m.Container = &WindowsContainer_AdOrganizationalUnit{x}
 		return true, err
 	default:
 		return false, nil
@@ -462,18 +1118,18 @@ func _WindowsContainer_OneofSizer(msg proto.Message) (n int) {
 	m := msg.(*WindowsContainer)
 	// container
 	switch x := m.Container.(type) {
-	case *WindowsContainer_Domain:
+	case *WindowsContainer_AdDomain:
 		n += proto.SizeVarint(1<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.Domain)))
-		n += len(x.Domain)
-	case *WindowsContainer_Machine:
+		n += proto.SizeVarint(uint64(len(x.AdDomain)))
+		n += len(x.AdDomain)
+	case *WindowsContainer_WindowsMachine:
 		n += proto.SizeVarint(2<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.Machine)))
-		n += len(x.Machine)
-	case *WindowsContainer_Ou:
+		n += proto.SizeVarint(uint64(len(x.WindowsMachine)))
+		n += len(x.WindowsMachine)
+	case *WindowsContainer_AdOrganizationalUnit:
 		n += proto.SizeVarint(3<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.Ou)))
-		n += len(x.Ou)
+		n += proto.SizeVarint(uint64(len(x.AdOrganizationalUnit)))
+		n += len(x.AdOrganizationalUnit)
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -487,26 +1143,37 @@ type WindowsGroup struct {
 	// sufficient if this group corresponds to a Well Known group. Use the
 	// |well_known_sid| field for that.
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// The actual Unicode Windows group name. Only specify this if the desired
+	// name is different from the |name| field due to not being an RFC 1035
+	// label.
+	FullName string `protobuf:"bytes,2,opt,name=full_name,json=fullName" json:"full_name,omitempty"`
 	// Human readable description of the group.
-	Description string `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
+	Description string `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
 	// Container for the group. A container must be specified for a WindowsGroup.
-	Container *WindowsContainer `protobuf:"bytes,3,opt,name=container" json:"container,omitempty"`
+	Container *WindowsContainer `protobuf:"bytes,4,opt,name=container" json:"container,omitempty"`
 	// Well-known security identifier. The string should be of the form S-* and
 	// should correspond to a known SID as described in
 	// https://support.microsoft.com/en-us/help/243330/well-known-security-identifiers-in-windows-operating-systems.
 	//
 	// Only specify this field if this group corresponds to a well known group.
-	WellKnownSid string `protobuf:"bytes,4,opt,name=well_known_sid,json=wellKnownSid" json:"well_known_sid,omitempty"`
+	WellKnownSid string `protobuf:"bytes,5,opt,name=well_known_sid,json=wellKnownSid" json:"well_known_sid,omitempty"`
 }
 
 func (m *WindowsGroup) Reset()                    { *m = WindowsGroup{} }
 func (m *WindowsGroup) String() string            { return proto.CompactTextString(m) }
 func (*WindowsGroup) ProtoMessage()               {}
-func (*WindowsGroup) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*WindowsGroup) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
 func (m *WindowsGroup) GetName() string {
 	if m != nil {
 		return m.Name
+	}
+	return ""
+}
+
+func (m *WindowsGroup) GetFullName() string {
+	if m != nil {
+		return m.FullName
 	}
 	return ""
 }
@@ -536,7 +1203,7 @@ func (m *WindowsGroup) GetWellKnownSid() string {
 // one of the WindowsGroup entries.
 type GroupReference struct {
 	// The name of the group.
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	WindowsGroup string `protobuf:"bytes,1,opt,name=windows_group,json=windowsGroup" json:"windows_group,omitempty"`
 	// Location. Since GroupReference messages are typically specified as a field
 	// of an object that already has a container, omiting this field results in
 	// the GroupReference inheriting the parent object's container. Take for
@@ -558,11 +1225,11 @@ type GroupReference struct {
 func (m *GroupReference) Reset()                    { *m = GroupReference{} }
 func (m *GroupReference) String() string            { return proto.CompactTextString(m) }
 func (*GroupReference) ProtoMessage()               {}
-func (*GroupReference) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*GroupReference) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
-func (m *GroupReference) GetName() string {
+func (m *GroupReference) GetWindowsGroup() string {
 	if m != nil {
-		return m.Name
+		return m.WindowsGroup
 	}
 	return ""
 }
@@ -574,16 +1241,172 @@ func (m *GroupReference) GetContainer() *WindowsContainer {
 	return nil
 }
 
+// A reference to a user. The combination of |name| and |container| must match
+// one of the WindowsUser entries.
+type UserReference struct {
+	// The name of the user.
+	WindowsUser string `protobuf:"bytes,1,opt,name=windows_user,json=windowsUser" json:"windows_user,omitempty"`
+	// Location. See GroupReference for how the container parameters are
+	// determined by default.
+	Container *WindowsContainer `protobuf:"bytes,2,opt,name=container" json:"container,omitempty"`
+}
+
+func (m *UserReference) Reset()                    { *m = UserReference{} }
+func (m *UserReference) String() string            { return proto.CompactTextString(m) }
+func (*UserReference) ProtoMessage()               {}
+func (*UserReference) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+
+func (m *UserReference) GetWindowsUser() string {
+	if m != nil {
+		return m.WindowsUser
+	}
+	return ""
+}
+
+func (m *UserReference) GetContainer() *WindowsContainer {
+	if m != nil {
+		return m.Container
+	}
+	return nil
+}
+
+// A reference to a user or a group. Provided as a convenience for cases where
+// either a single user or a group can be specified.
+type UserOrGroupReference struct {
+	// Types that are valid to be assigned to Entity:
+	//	*UserOrGroupReference_User
+	//	*UserOrGroupReference_Group
+	Entity isUserOrGroupReference_Entity `protobuf_oneof:"entity"`
+}
+
+func (m *UserOrGroupReference) Reset()                    { *m = UserOrGroupReference{} }
+func (m *UserOrGroupReference) String() string            { return proto.CompactTextString(m) }
+func (*UserOrGroupReference) ProtoMessage()               {}
+func (*UserOrGroupReference) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+
+type isUserOrGroupReference_Entity interface {
+	isUserOrGroupReference_Entity()
+}
+
+type UserOrGroupReference_User struct {
+	User *UserReference `protobuf:"bytes,1,opt,name=user,oneof"`
+}
+type UserOrGroupReference_Group struct {
+	Group *GroupReference `protobuf:"bytes,2,opt,name=group,oneof"`
+}
+
+func (*UserOrGroupReference_User) isUserOrGroupReference_Entity()  {}
+func (*UserOrGroupReference_Group) isUserOrGroupReference_Entity() {}
+
+func (m *UserOrGroupReference) GetEntity() isUserOrGroupReference_Entity {
+	if m != nil {
+		return m.Entity
+	}
+	return nil
+}
+
+func (m *UserOrGroupReference) GetUser() *UserReference {
+	if x, ok := m.GetEntity().(*UserOrGroupReference_User); ok {
+		return x.User
+	}
+	return nil
+}
+
+func (m *UserOrGroupReference) GetGroup() *GroupReference {
+	if x, ok := m.GetEntity().(*UserOrGroupReference_Group); ok {
+		return x.Group
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*UserOrGroupReference) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _UserOrGroupReference_OneofMarshaler, _UserOrGroupReference_OneofUnmarshaler, _UserOrGroupReference_OneofSizer, []interface{}{
+		(*UserOrGroupReference_User)(nil),
+		(*UserOrGroupReference_Group)(nil),
+	}
+}
+
+func _UserOrGroupReference_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*UserOrGroupReference)
+	// entity
+	switch x := m.Entity.(type) {
+	case *UserOrGroupReference_User:
+		b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.User); err != nil {
+			return err
+		}
+	case *UserOrGroupReference_Group:
+		b.EncodeVarint(2<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Group); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("UserOrGroupReference.Entity has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _UserOrGroupReference_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*UserOrGroupReference)
+	switch tag {
+	case 1: // entity.user
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UserReference)
+		err := b.DecodeMessage(msg)
+		m.Entity = &UserOrGroupReference_User{msg}
+		return true, err
+	case 2: // entity.group
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(GroupReference)
+		err := b.DecodeMessage(msg)
+		m.Entity = &UserOrGroupReference_Group{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _UserOrGroupReference_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*UserOrGroupReference)
+	// entity
+	switch x := m.Entity.(type) {
+	case *UserOrGroupReference_User:
+		s := proto.Size(x.User)
+		n += proto.SizeVarint(1<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *UserOrGroupReference_Group:
+		s := proto.Size(x.Group)
+		n += proto.SizeVarint(2<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 // Describes a Active Directory or a Windows local user.
 type WindowsUser struct {
 	// Name of the user. Exclude the domain name.
 	//
 	// E.g.: joe
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	// Description. A.k.a. Full name.
-	Description string `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
+	// The actual Unicode Windows user name. Only specify this if the desired
+	// name is different from the |name| field due to not being an RFC 1035
+	// label.
+	FullName string `protobuf:"bytes,2,opt,name=full_name,json=fullName" json:"full_name,omitempty"`
+	// Description.
+	Description string `protobuf:"bytes,3,opt,name=description" json:"description,omitempty"`
 	// Container for the user. A container must be specified for a WindowsUser.
-	Container *WindowsContainer `protobuf:"bytes,3,opt,name=container" json:"container,omitempty"`
+	Container *WindowsContainer `protobuf:"bytes,4,opt,name=container" json:"container,omitempty"`
 	// Password. Can be left blank in which case each instantiation of the lab
 	// will cause a new password to be generated.
 	Password string `protobuf:"bytes,5,opt,name=password" json:"password,omitempty"`
@@ -594,11 +1417,18 @@ type WindowsUser struct {
 func (m *WindowsUser) Reset()                    { *m = WindowsUser{} }
 func (m *WindowsUser) String() string            { return proto.CompactTextString(m) }
 func (*WindowsUser) ProtoMessage()               {}
-func (*WindowsUser) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*WindowsUser) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
 
 func (m *WindowsUser) GetName() string {
 	if m != nil {
 		return m.Name
+	}
+	return ""
+}
+
+func (m *WindowsUser) GetFullName() string {
+	if m != nil {
+		return m.FullName
 	}
 	return ""
 }
@@ -644,7 +1474,7 @@ type NetworkInterface struct {
 func (m *NetworkInterface) Reset()                    { *m = NetworkInterface{} }
 func (m *NetworkInterface) String() string            { return proto.CompactTextString(m) }
 func (*NetworkInterface) ProtoMessage()               {}
-func (*NetworkInterface) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (*NetworkInterface) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
 
 func (m *NetworkInterface) GetNetwork() string {
 	if m != nil {
@@ -682,7 +1512,7 @@ type WindowsMachine struct {
 	// domain and, if necessary, placed in the specified container.
 	Container *WindowsContainer `protobuf:"bytes,3,opt,name=container" json:"container,omitempty"`
 	// The name of a host.MachineType entry that describes the host machine.
-	HostMachineType string `protobuf:"bytes,4,opt,name=host_machine_type,json=hostMachineType" json:"host_machine_type,omitempty"`
+	MachineType string `protobuf:"bytes,4,opt,name=machine_type,json=machineType" json:"machine_type,omitempty"`
 	// System locale. If left unspecified, the default is left unchanged. Use the
 	// following PowerShell command to determine the list of available locales on
 	// a Windows machine:
@@ -724,15 +1554,18 @@ type WindowsMachine struct {
 	// be used for features that otherwise won't be installed as part of any such
 	// role assignment.
 	WindowsFeature []string `protobuf:"bytes,8,rep,name=windows_feature,json=windowsFeature" json:"windows_feature,omitempty"`
+	// Registry keys to set on the machine. These will be applied prior to the
+	// user login.
+	RegistryKey []*RegistryKey `protobuf:"bytes,9,rep,name=registry_key,json=registryKey" json:"registry_key,omitempty"`
 	// A configuration file. Specify this if you've run Windows Server Manager
 	// and produced a configration file already.
-	ConfigurationFile *FileReference `protobuf:"bytes,9,opt,name=configuration_file,json=configurationFile" json:"configuration_file,omitempty"`
+	ConfigurationFile *common1.FileReference `protobuf:"bytes,10,opt,name=configuration_file,json=configurationFile" json:"configuration_file,omitempty"`
 }
 
 func (m *WindowsMachine) Reset()                    { *m = WindowsMachine{} }
 func (m *WindowsMachine) String() string            { return proto.CompactTextString(m) }
 func (*WindowsMachine) ProtoMessage()               {}
-func (*WindowsMachine) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+func (*WindowsMachine) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
 
 func (m *WindowsMachine) GetName() string {
 	if m != nil {
@@ -748,9 +1581,9 @@ func (m *WindowsMachine) GetContainer() *WindowsContainer {
 	return nil
 }
 
-func (m *WindowsMachine) GetHostMachineType() string {
+func (m *WindowsMachine) GetMachineType() string {
 	if m != nil {
-		return m.HostMachineType
+		return m.MachineType
 	}
 	return ""
 }
@@ -783,7 +1616,14 @@ func (m *WindowsMachine) GetWindowsFeature() []string {
 	return nil
 }
 
-func (m *WindowsMachine) GetConfigurationFile() *FileReference {
+func (m *WindowsMachine) GetRegistryKey() []*RegistryKey {
+	if m != nil {
+		return m.RegistryKey
+	}
+	return nil
+}
+
+func (m *WindowsMachine) GetConfigurationFile() *common1.FileReference {
 	if m != nil {
 		return m.ConfigurationFile
 	}
@@ -793,73 +1633,131 @@ func (m *WindowsMachine) GetConfigurationFile() *FileReference {
 func init() {
 	proto.RegisterType((*ActiveDirectoryDomain)(nil), "asset.ActiveDirectoryDomain")
 	proto.RegisterType((*ActiveDirectoryDomainController)(nil), "asset.ActiveDirectoryDomainController")
+	proto.RegisterType((*ActiveDirectoryOrganizationalUnit)(nil), "asset.ActiveDirectoryOrganizationalUnit")
+	proto.RegisterType((*ActiveDirectoryGroupPolicy)(nil), "asset.ActiveDirectoryGroupPolicy")
+	proto.RegisterType((*ActiveDirectoryGroupPolicyLink)(nil), "asset.ActiveDirectoryGroupPolicyLink")
+	proto.RegisterType((*ActiveDirectoryRegistryPolicy)(nil), "asset.ActiveDirectoryRegistryPolicy")
+	proto.RegisterType((*ActiveDirectoryRegistryPrefPolicy)(nil), "asset.ActiveDirectoryRegistryPrefPolicy")
+	proto.RegisterType((*RegistryKey)(nil), "asset.RegistryKey")
+	proto.RegisterType((*RegistryValue)(nil), "asset.RegistryValue")
 	proto.RegisterType((*WindowsContainer)(nil), "asset.WindowsContainer")
 	proto.RegisterType((*WindowsGroup)(nil), "asset.WindowsGroup")
 	proto.RegisterType((*GroupReference)(nil), "asset.GroupReference")
+	proto.RegisterType((*UserReference)(nil), "asset.UserReference")
+	proto.RegisterType((*UserOrGroupReference)(nil), "asset.UserOrGroupReference")
 	proto.RegisterType((*WindowsUser)(nil), "asset.WindowsUser")
 	proto.RegisterType((*NetworkInterface)(nil), "asset.NetworkInterface")
 	proto.RegisterType((*WindowsMachine)(nil), "asset.WindowsMachine")
+	proto.RegisterEnum("asset.RegistryValueType", RegistryValueType_name, RegistryValueType_value)
 	proto.RegisterEnum("asset.ActiveDirectoryDomain_Mode", ActiveDirectoryDomain_Mode_name, ActiveDirectoryDomain_Mode_value)
 	proto.RegisterEnum("asset.ActiveDirectoryDomain_Type", ActiveDirectoryDomain_Type_name, ActiveDirectoryDomain_Type_value)
+	proto.RegisterEnum("asset.ActiveDirectoryRegistryPrefPolicy_Action", ActiveDirectoryRegistryPrefPolicy_Action_name, ActiveDirectoryRegistryPrefPolicy_Action_value)
 }
 
 func init() { proto.RegisterFile("schema/asset/active_directory.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 875 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x55, 0x5d, 0x6e, 0xdb, 0x46,
-	0x10, 0xb6, 0x7e, 0x2c, 0x4b, 0x43, 0x45, 0xa1, 0x37, 0x75, 0xaa, 0xaa, 0x0f, 0x91, 0xd9, 0x02,
-	0x75, 0xf3, 0x20, 0xc5, 0x34, 0x52, 0xe4, 0xd5, 0xb6, 0xec, 0x38, 0x68, 0x7e, 0x00, 0xd6, 0x41,
-	0x80, 0xf6, 0x81, 0x58, 0x93, 0x43, 0x79, 0x11, 0x72, 0x47, 0xd8, 0xa5, 0xaa, 0xba, 0xb7, 0xe8,
-	0x11, 0x7a, 0x85, 0x1e, 0xa3, 0x97, 0xe9, 0x15, 0x0a, 0xee, 0xae, 0x24, 0xcb, 0x30, 0x50, 0x3f,
-	0xf5, 0x6d, 0x67, 0xbe, 0xe1, 0xcc, 0x37, 0xdf, 0xcc, 0x2e, 0xe1, 0x1b, 0x9d, 0x5c, 0x63, 0xc1,
-	0xc7, 0x5c, 0x6b, 0x2c, 0xc7, 0x3c, 0x29, 0xc5, 0xaf, 0x18, 0xa7, 0x42, 0x61, 0x52, 0x92, 0xba,
-	0x19, 0xcd, 0x14, 0x95, 0xc4, 0xb6, 0x0d, 0x3a, 0xf8, 0x6a, 0x23, 0x36, 0xa1, 0xa2, 0x20, 0x69,
-	0x23, 0x06, 0x83, 0x0d, 0x48, 0x62, 0xb9, 0x20, 0xf5, 0xd9, 0x62, 0xc1, 0x5f, 0x0d, 0xd8, 0x3b,
-	0x36, 0x89, 0x27, 0xcb, 0xbc, 0x13, 0x2a, 0xb8, 0x90, 0x8c, 0x41, 0x53, 0xf2, 0x02, 0xfb, 0xb5,
-	0x61, 0xed, 0xa0, 0x13, 0x99, 0x33, 0x7b, 0x06, 0xde, 0x8c, 0x2b, 0x94, 0x65, 0x6c, 0xa0, 0xba,
-	0x81, 0xc0, 0xba, 0xde, 0x57, 0x01, 0x27, 0xe0, 0xa5, 0xe6, 0xf3, 0xb8, 0xa0, 0x14, 0xfb, 0x8d,
-	0x61, 0xed, 0xa0, 0x17, 0xee, 0x8f, 0x4c, 0xe5, 0xd1, 0xbd, 0x75, 0x46, 0xef, 0x28, 0xc5, 0x08,
-	0xec, 0x57, 0xd5, 0x99, 0xed, 0x43, 0x57, 0x62, 0x79, 0x25, 0x48, 0xdb, 0x2a, 0x4d, 0x53, 0xc5,
-	0x73, 0x3e, 0x53, 0xe6, 0x25, 0x34, 0xcb, 0x9b, 0x19, 0xf6, 0xb7, 0x1f, 0x90, 0xff, 0xf2, 0x66,
-	0x86, 0x91, 0x09, 0xaf, 0xd8, 0x65, 0xa4, 0x50, 0x97, 0x96, 0x5d, 0xeb, 0xc1, 0xec, 0xec, 0x57,
-	0xd5, 0x39, 0x40, 0x68, 0x1a, 0x96, 0x1e, 0xec, 0x4c, 0xce, 0xce, 0x8f, 0x3f, 0xbe, 0xbd, 0xf4,
-	0xb7, 0x2a, 0xe3, 0x93, 0x90, 0xe1, 0x8b, 0x17, 0x47, 0x7e, 0x7d, 0x6d, 0xbc, 0xf2, 0x1b, 0xec,
-	0x11, 0x74, 0x9c, 0x11, 0x85, 0x7e, 0x73, 0x85, 0x1d, 0x86, 0xfe, 0xf6, 0x0a, 0x3b, 0x0c, 0xa3,
-	0xd0, 0x6f, 0xad, 0xb1, 0x1f, 0xfc, 0x9d, 0xe0, 0x6b, 0x68, 0x56, 0xc4, 0x59, 0x07, 0xb6, 0x4f,
-	0x2f, 0xde, 0xbc, 0x9d, 0xf8, 0x5b, 0xac, 0x0d, 0xcd, 0xcb, 0xe8, 0xec, 0xcc, 0xaf, 0x05, 0x7f,
-	0xd4, 0xe1, 0xd9, 0xbd, 0x74, 0x4f, 0x49, 0x96, 0x8a, 0xf2, 0x1c, 0x15, 0x7b, 0x0a, 0x2d, 0xab,
-	0xa9, 0x1b, 0xa0, 0xb3, 0x58, 0x1f, 0x76, 0x0a, 0x9e, 0x5c, 0x0b, 0xb9, 0x1c, 0xdf, 0xd2, 0x64,
-	0xfb, 0xe0, 0x09, 0xa9, 0x4b, 0x9e, 0xe7, 0x71, 0x2a, 0xb5, 0x99, 0x5d, 0xfb, 0x62, 0x2b, 0x02,
-	0xe7, 0x9c, 0x48, 0xcd, 0xbe, 0x87, 0x5d, 0x49, 0x15, 0x1a, 0x93, 0x8c, 0xdd, 0x22, 0x99, 0xf9,
-	0xb4, 0xa3, 0x9e, 0xa4, 0x89, 0xd4, 0x1f, 0xe4, 0x7b, 0xeb, 0x65, 0xcf, 0x4d, 0xe8, 0x34, 0xa7,
-	0x2b, 0x9e, 0xc7, 0x09, 0x2f, 0x79, 0x4e, 0x53, 0x33, 0xaf, 0x76, 0xf4, 0x58, 0xd2, 0x6b, 0xe3,
-	0x3f, 0xb5, 0x6e, 0x16, 0xc2, 0x5e, 0xa2, 0x90, 0x97, 0x68, 0x52, 0xa7, 0x98, 0xe3, 0x94, 0x97,
-	0x82, 0xa4, 0x99, 0x50, 0x3b, 0x7a, 0x62, 0xc1, 0x89, 0xd4, 0x93, 0x15, 0x74, 0xd2, 0x83, 0x2e,
-	0xcd, 0xaa, 0x13, 0x37, 0x74, 0x83, 0x29, 0xf8, 0x9f, 0x84, 0x4c, 0x69, 0xa1, 0x2b, 0x11, 0xb8,
-	0x90, 0xa8, 0x58, 0x7f, 0x53, 0x83, 0x8b, 0xad, 0x95, 0x0a, 0x83, 0x3b, 0x2a, 0x5c, 0x6c, 0xad,
-	0x75, 0xf0, 0xa1, 0x4e, 0x73, 0xd3, 0x7e, 0xe5, 0xae, 0xd3, 0xfc, 0xc4, 0x83, 0x4e, 0xb2, 0x4c,
-	0x1a, 0xfc, 0x59, 0x83, 0xae, 0xab, 0xf4, 0x5a, 0xd1, 0x7c, 0x76, 0xef, 0x45, 0x19, 0x82, 0x97,
-	0xa2, 0x4e, 0x94, 0x30, 0x14, 0x9d, 0xd2, 0xb7, 0x5d, 0xec, 0xe5, 0xad, 0x9c, 0xa6, 0x98, 0x17,
-	0x7e, 0xe9, 0x36, 0xf1, 0x6e, 0x1f, 0xd1, 0x3a, 0x92, 0x7d, 0x0b, 0xbd, 0x05, 0xe6, 0x79, 0xfc,
-	0x59, 0xd2, 0x42, 0xc6, 0x5a, 0xa4, 0xee, 0x7a, 0x74, 0x2b, 0xef, 0x8f, 0x95, 0xf3, 0x27, 0x91,
-	0x06, 0xbf, 0x40, 0xcf, 0x70, 0x8b, 0x30, 0x43, 0x85, 0x32, 0xc1, 0x7b, 0x49, 0x6e, 0x50, 0xa8,
-	0x3f, 0x94, 0x42, 0xf0, 0x77, 0x0d, 0x3c, 0x87, 0x7f, 0xd4, 0xa8, 0xfe, 0xdf, 0xfe, 0x07, 0xd0,
-	0x9e, 0x71, 0xad, 0x17, 0xa4, 0x52, 0xb3, 0x4d, 0x9d, 0x68, 0x65, 0xb3, 0x10, 0x3a, 0x05, 0x16,
-	0x57, 0xa8, 0x62, 0xca, 0xfa, 0xad, 0x61, 0xe3, 0xc0, 0x0b, 0xf7, 0x5c, 0xca, 0x4d, 0x35, 0xa2,
-	0xb6, 0x8d, 0xfb, 0x90, 0x05, 0x19, 0xf8, 0x6e, 0x63, 0xdf, 0xc8, 0x12, 0x55, 0xc6, 0x13, 0xac,
-	0xae, 0xc8, 0x72, 0xb7, 0x6d, 0x4f, 0x4b, 0x93, 0xbd, 0x82, 0x47, 0x99, 0xf8, 0x0d, 0xd3, 0x98,
-	0xa7, 0xa9, 0x42, 0xad, 0x9d, 0x6a, 0x4f, 0x5c, 0x95, 0xf3, 0x0a, 0x3b, 0xb6, 0x50, 0xd4, 0xcd,
-	0x6e, 0x59, 0xc1, 0x3f, 0x75, 0xe8, 0xb9, 0xbe, 0xde, 0xb9, 0x3d, 0xfb, 0xcf, 0x91, 0x3c, 0x5c,
-	0x95, 0xe7, 0xb0, 0x7b, 0x4d, 0xd5, 0xb3, 0x66, 0x53, 0xc7, 0xe6, 0x71, 0xb4, 0x8b, 0xf1, 0xb8,
-	0x02, 0x5c, 0x49, 0xf3, 0xa2, 0x3c, 0x85, 0x56, 0x4e, 0x09, 0xcf, 0xd1, 0xe9, 0xe7, 0xac, 0x4a,
-	0xd9, 0x52, 0x14, 0xf8, 0x3b, 0x49, 0xfb, 0x32, 0x76, 0xa2, 0x95, 0xcd, 0x26, 0xb0, 0xeb, 0x24,
-	0x88, 0xc5, 0x52, 0xa6, 0xfe, 0x8e, 0x51, 0x78, 0x49, 0xef, 0xae, 0x8a, 0x91, 0x2f, 0xef, 0xea,
-	0xfa, 0x1d, 0x3c, 0x5e, 0xd8, 0x26, 0xe2, 0x0c, 0x79, 0x39, 0x57, 0xd8, 0x6f, 0x0f, 0x1b, 0x07,
-	0x9d, 0xa8, 0xe7, 0xdc, 0xe7, 0xd6, 0xcb, 0x4e, 0x81, 0x25, 0x24, 0x33, 0x31, 0x9d, 0x2b, 0x73,
-	0xd9, 0xe3, 0x4c, 0xe4, 0xd8, 0xef, 0x18, 0x39, 0xbe, 0x58, 0x69, 0x9d, 0xe3, 0x7a, 0xa0, 0xbb,
-	0x1b, 0xf1, 0x15, 0x76, 0x72, 0xf4, 0xf3, 0x61, 0x72, 0xad, 0xa8, 0x10, 0xf3, 0x62, 0x34, 0x25,
-	0x9a, 0xe6, 0xa8, 0x69, 0xae, 0x12, 0x1c, 0x25, 0x54, 0x8c, 0xb1, 0x22, 0x35, 0x53, 0x42, 0xe3,
-	0x38, 0xc1, 0x7c, 0x3c, 0x25, 0xfb, 0x73, 0xbc, 0x6a, 0x99, 0xbf, 0xe2, 0xd1, 0xbf, 0x01, 0x00,
-	0x00, 0xff, 0xff, 0xde, 0xd2, 0x5c, 0x88, 0x7a, 0x07, 0x00, 0x00,
+	// 1628 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x58, 0xdd, 0x72, 0x1b, 0x49,
+	0x15, 0xd6, 0x9f, 0xe5, 0xd1, 0x91, 0xe4, 0x1d, 0x77, 0x92, 0xdd, 0x29, 0x05, 0x96, 0x64, 0x76,
+	0x29, 0x92, 0x00, 0xd6, 0x46, 0xa9, 0x6c, 0x65, 0x97, 0x02, 0xca, 0xb2, 0x94, 0xc8, 0xb5, 0x8e,
+	0x6d, 0x7a, 0x6d, 0x0c, 0xdc, 0x4c, 0xb5, 0x67, 0x5a, 0xca, 0x54, 0x46, 0xdd, 0xa2, 0x67, 0x14,
+	0xa3, 0xe5, 0x2e, 0x6f, 0xb0, 0x2f, 0xc2, 0x9d, 0xa9, 0xe2, 0x8e, 0x2b, 0xee, 0x78, 0x16, 0x9e,
+	0x80, 0x2a, 0xaa, 0x7f, 0x66, 0xa4, 0x19, 0xc9, 0x21, 0xe1, 0x8a, 0x3b, 0xf5, 0xf9, 0xe9, 0x73,
+	0xce, 0x77, 0xfe, 0x7a, 0x04, 0x9f, 0xc5, 0xfe, 0x2b, 0x3a, 0x25, 0x5d, 0x12, 0xc7, 0x34, 0xe9,
+	0x12, 0x3f, 0x09, 0xdf, 0x50, 0x2f, 0x08, 0x05, 0xf5, 0x13, 0x2e, 0x16, 0x7b, 0x33, 0xc1, 0x13,
+	0x8e, 0xb6, 0x14, 0xb7, 0x73, 0xd7, 0xc8, 0xfa, 0x7c, 0x3a, 0xe5, 0xac, 0x3b, 0x0e, 0x23, 0x2a,
+	0xe8, 0x58, 0xcb, 0x74, 0x3a, 0xb9, 0x8b, 0x18, 0x4d, 0xae, 0xb8, 0x78, 0x6d, 0x78, 0x05, 0x45,
+	0x3e, 0x4b, 0x42, 0xce, 0x62, 0xcd, 0x74, 0xff, 0x59, 0x85, 0x3b, 0xfb, 0xca, 0xee, 0x20, 0x35,
+	0x3b, 0xe0, 0x53, 0x12, 0x32, 0xd4, 0x81, 0x1a, 0x23, 0x53, 0xea, 0x94, 0xef, 0x95, 0x1f, 0x34,
+	0xfa, 0xf5, 0xb7, 0xd7, 0x4e, 0xc5, 0xda, 0xc2, 0x8a, 0x86, 0x7a, 0xd0, 0x9c, 0x11, 0x41, 0x59,
+	0xe2, 0x29, 0x91, 0x8a, 0x12, 0xd9, 0x7d, 0x7b, 0xed, 0xb4, 0xad, 0x0a, 0x6a, 0x90, 0xc0, 0x0b,
+	0xd4, 0x1d, 0x18, 0xb4, 0xd4, 0xb1, 0xd4, 0xe9, 0x43, 0x53, 0x53, 0xbd, 0x29, 0x0f, 0xa8, 0x53,
+	0xbd, 0x57, 0x7e, 0xb0, 0xd3, 0xbb, 0xbf, 0xa7, 0x3c, 0xde, 0xdb, 0xe8, 0xc2, 0xde, 0x4b, 0x1e,
+	0x50, 0x0c, 0x5a, 0x4b, 0xfe, 0x46, 0xf7, 0xa1, 0xc5, 0x68, 0x72, 0x19, 0xf2, 0x58, 0x1b, 0xae,
+	0x49, 0xc3, 0xb8, 0x69, 0x68, 0xca, 0xcc, 0x53, 0xa8, 0x25, 0x8b, 0x19, 0x75, 0xb6, 0xde, 0xe3,
+	0xfe, 0xb3, 0xc5, 0x8c, 0x62, 0x25, 0x2e, 0xbd, 0x1b, 0x73, 0x41, 0xe3, 0x44, 0x7b, 0x57, 0x7f,
+	0x6f, 0xef, 0xb4, 0x96, 0xfc, 0xed, 0x52, 0xa8, 0x29, 0x2f, 0x9b, 0xb0, 0x3d, 0x18, 0x3e, 0xdf,
+	0x3f, 0x3f, 0x3a, 0xb3, 0x4b, 0xf2, 0x70, 0x11, 0xb2, 0xde, 0x17, 0x5f, 0x3c, 0xb1, 0x2b, 0xcb,
+	0xc3, 0x33, 0xbb, 0x8a, 0xda, 0xd0, 0x30, 0x07, 0xdc, 0xb3, 0x6b, 0x19, 0xef, 0x71, 0xcf, 0xde,
+	0xca, 0x78, 0x8f, 0x7b, 0xb8, 0x67, 0xd7, 0x97, 0xbc, 0x2f, 0xed, 0x6d, 0xf7, 0x2e, 0xd4, 0xa4,
+	0xe3, 0xa8, 0x01, 0x5b, 0x07, 0xa3, 0xc3, 0xa3, 0x81, 0x5d, 0x42, 0x16, 0xd4, 0xce, 0xf0, 0x70,
+	0x68, 0x97, 0xdd, 0xeb, 0x0a, 0xfc, 0x68, 0xa3, 0xbb, 0x07, 0x9c, 0x25, 0x82, 0x47, 0x11, 0x15,
+	0xe8, 0x33, 0x58, 0xa6, 0x28, 0x97, 0xde, 0x0a, 0xb6, 0x48, 0x60, 0xd2, 0xdf, 0x85, 0x8f, 0xae,
+	0x42, 0x16, 0xf0, 0xab, 0xd8, 0x9b, 0x12, 0xff, 0x55, 0xc8, 0xd2, 0x34, 0xa7, 0xa2, 0x3b, 0x86,
+	0xfd, 0x52, 0x73, 0xd1, 0x7d, 0x68, 0x86, 0x2c, 0x4e, 0x48, 0x14, 0x79, 0x01, 0x8b, 0x55, 0x7e,
+	0xad, 0x51, 0x09, 0x83, 0x21, 0x0e, 0x58, 0x8c, 0x1e, 0xc2, 0x2e, 0xe3, 0x92, 0xeb, 0x71, 0xe6,
+	0x99, 0x22, 0x55, 0x39, 0xb4, 0xf0, 0x0e, 0xe3, 0x03, 0x16, 0x9f, 0xb0, 0x63, 0x4d, 0x45, 0x8f,
+	0x94, 0xe8, 0x24, 0xe2, 0x97, 0x24, 0xf2, 0x7c, 0x92, 0x90, 0x88, 0x4f, 0x54, 0x4e, 0x2d, 0xfc,
+	0x11, 0xe3, 0x2f, 0x14, 0xfd, 0x40, 0x93, 0x51, 0x0f, 0xee, 0xf8, 0x82, 0x92, 0x84, 0xaa, 0xab,
+	0x03, 0x1a, 0xd1, 0x09, 0x91, 0x35, 0xae, 0xb2, 0x68, 0xe1, 0x5b, 0x9a, 0x39, 0x60, 0xf1, 0x20,
+	0x63, 0xf5, 0x77, 0xa0, 0xa5, 0x1b, 0x81, 0x28, 0x77, 0xdd, 0xef, 0x6b, 0x70, 0xbf, 0x80, 0xdb,
+	0x89, 0x98, 0x10, 0x16, 0x7e, 0x47, 0xb4, 0xd4, 0x39, 0x0b, 0x13, 0x84, 0x56, 0x7b, 0xc2, 0xf4,
+	0xc2, 0x5d, 0x68, 0x8c, 0xe7, 0x51, 0xb4, 0xd2, 0x09, 0xd8, 0x92, 0x04, 0x55, 0x8d, 0xbf, 0x84,
+	0x86, 0xcf, 0x59, 0x42, 0x42, 0x46, 0x85, 0x82, 0xa4, 0xd9, 0xfb, 0xc4, 0x14, 0xd5, 0x85, 0x86,
+	0xef, 0x20, 0x65, 0x1b, 0x60, 0x4b, 0x78, 0xa9, 0x81, 0xba, 0x50, 0x8f, 0xa9, 0x78, 0x43, 0x85,
+	0xae, 0xf4, 0xfe, 0x27, 0x6f, 0xaf, 0x9d, 0x5b, 0x56, 0x05, 0x15, 0x53, 0x83, 0x8d, 0x18, 0xfa,
+	0x0a, 0xac, 0x4b, 0x12, 0xd3, 0xc0, 0xe3, 0x4c, 0xa1, 0xd5, 0xe8, 0x7f, 0xfa, 0xf6, 0xda, 0xe9,
+	0x58, 0x15, 0xf4, 0x31, 0x09, 0x3c, 0x9e, 0x8b, 0xc8, 0x9b, 0xb3, 0x30, 0xc1, 0xdb, 0x4a, 0xfe,
+	0x84, 0xc9, 0xde, 0x0a, 0xc2, 0x78, 0x16, 0x91, 0x85, 0x0e, 0xa5, 0xae, 0x7b, 0xcb, 0xd0, 0x54,
+	0x34, 0xf7, 0xa0, 0x19, 0xd0, 0xd8, 0x17, 0xa1, 0x42, 0xce, 0xd9, 0x36, 0x12, 0x4b, 0x12, 0xfa,
+	0x1a, 0x60, 0x4a, 0x18, 0x99, 0xd0, 0xc0, 0xbb, 0x5c, 0x38, 0x96, 0x0a, 0xf8, 0xae, 0x09, 0xf8,
+	0x3c, 0xa6, 0xe2, 0x44, 0xbc, 0x10, 0x7c, 0x3e, 0xc3, 0x74, 0x4c, 0x05, 0x65, 0x3e, 0xc5, 0x0d,
+	0x23, 0xde, 0x5f, 0x20, 0x0c, 0xd6, 0x4c, 0xf0, 0x19, 0x15, 0xc9, 0xc2, 0x69, 0xdc, 0xab, 0x3e,
+	0x68, 0xf6, 0xbe, 0xdc, 0xdc, 0x7f, 0xeb, 0x89, 0xd9, 0x3b, 0x35, 0x8a, 0x43, 0x96, 0x88, 0x05,
+	0xce, 0xee, 0xe9, 0xfc, 0x02, 0xda, 0x39, 0x16, 0xb2, 0xa1, 0xfa, 0x9a, 0x2e, 0x4c, 0x02, 0xe5,
+	0x4f, 0x74, 0x1b, 0xb6, 0xde, 0x90, 0x68, 0x9e, 0xe6, 0x4e, 0x1f, 0xbe, 0xae, 0x3c, 0x2b, 0xbb,
+	0x7f, 0x2f, 0x43, 0xa7, 0x60, 0x5a, 0x79, 0x7f, 0xca, 0xa3, 0xd0, 0x5f, 0x7c, 0x78, 0x31, 0xe4,
+	0xfa, 0xae, 0x7a, 0x43, 0xdf, 0x39, 0xb0, 0x2d, 0x07, 0x35, 0x65, 0x89, 0x99, 0x6e, 0xe9, 0x11,
+	0xf5, 0xd6, 0x72, 0x9b, 0x95, 0x03, 0x09, 0xbc, 0x89, 0xf4, 0xcc, 0x9b, 0x29, 0xd7, 0xb2, 0xa4,
+	0xba, 0xff, 0x2e, 0xc3, 0xa7, 0x37, 0x87, 0x70, 0x14, 0xb2, 0xd7, 0x1b, 0xc3, 0xd8, 0x83, 0xe2,
+	0x95, 0x85, 0xe6, 0x6f, 0x93, 0x60, 0x15, 0x8a, 0xa7, 0xf9, 0x32, 0xaf, 0xbe, 0xa3, 0xcc, 0x57,
+	0xcb, 0xfb, 0x07, 0x60, 0x51, 0x36, 0xe6, 0xc2, 0xa7, 0x81, 0x1e, 0x03, 0xa3, 0x12, 0xce, 0x28,
+	0xa8, 0x03, 0xdb, 0x94, 0x91, 0xcb, 0x88, 0x06, 0xba, 0xf1, 0x47, 0x65, 0x9c, 0x12, 0xfa, 0x08,
+	0xec, 0xac, 0x7d, 0x8d, 0x42, 0x81, 0xa6, 0xe4, 0xdc, 0xbf, 0x96, 0xe1, 0x87, 0x85, 0xf8, 0x31,
+	0x9d, 0x84, 0x71, 0x22, 0x16, 0xef, 0xc8, 0xe2, 0xaf, 0x6f, 0x0a, 0xff, 0x46, 0xc0, 0x0b, 0x78,
+	0x74, 0xc0, 0x22, 0x41, 0x10, 0x4a, 0xbb, 0x7a, 0x10, 0xe2, 0xec, 0x8c, 0x3e, 0xd7, 0x15, 0x58,
+	0x53, 0x28, 0x21, 0x83, 0x52, 0xea, 0xd4, 0x37, 0x74, 0xa1, 0xaa, 0xd2, 0xfd, 0xbe, 0xb2, 0x36,
+	0x8f, 0x32, 0xc7, 0x05, 0x1d, 0xbf, 0xc3, 0xf9, 0x0f, 0xcd, 0xdd, 0x0b, 0xa8, 0xcb, 0x87, 0x07,
+	0x67, 0x66, 0x25, 0x77, 0x37, 0x37, 0xdd, 0xba, 0x75, 0x25, 0xc1, 0x19, 0x36, 0xea, 0xef, 0x19,
+	0xd8, 0x57, 0x50, 0xd7, 0x7a, 0x08, 0xa0, 0x7e, 0x80, 0x87, 0xfb, 0x67, 0x43, 0xbd, 0x25, 0xf1,
+	0xf0, 0xf4, 0x68, 0xff, 0x60, 0x68, 0x97, 0x25, 0xe3, 0xfc, 0x74, 0x20, 0x19, 0x15, 0xf9, 0x7b,
+	0x30, 0x3c, 0x1a, 0x9e, 0x0d, 0xed, 0xaa, 0x7b, 0x0e, 0xcd, 0x95, 0xeb, 0xe4, 0x03, 0x65, 0x46,
+	0x92, 0x57, 0xb9, 0x0d, 0x56, 0xc2, 0x8a, 0x86, 0x1e, 0x2d, 0x9b, 0x5a, 0x7a, 0x73, 0xbb, 0xe0,
+	0xcd, 0x6f, 0x25, 0xcf, 0xb4, 0xba, 0x3b, 0x81, 0x76, 0x8e, 0xbe, 0x11, 0xd5, 0x9f, 0x99, 0x67,
+	0x45, 0x45, 0x61, 0xe4, 0x6c, 0xba, 0x6f, 0xe5, 0x35, 0x91, 0xcd, 0x14, 0xd9, 0x0b, 0xe9, 0x4c,
+	0x71, 0xff, 0x56, 0x06, 0xbb, 0xd8, 0x0e, 0xe8, 0xc7, 0x37, 0x2e, 0x63, 0xd9, 0x0c, 0xd9, 0x58,
+	0x78, 0xfc, 0x5f, 0xd6, 0xf1, 0xa8, 0xb4, 0xb6, 0x90, 0x7f, 0x05, 0x37, 0xcc, 0xfc, 0xfc, 0xec,
+	0x19, 0x95, 0xf0, 0x6d, 0x12, 0xac, 0xcf, 0xd4, 0x7e, 0x73, 0xa5, 0xa9, 0xdd, 0x7f, 0x94, 0xa1,
+	0x65, 0x7c, 0x57, 0xc5, 0xf3, 0xe1, 0xd3, 0xaf, 0xb0, 0x3c, 0xaa, 0xeb, 0xcb, 0x23, 0xb7, 0x2c,
+	0x6b, 0x1f, 0xbc, 0x2c, 0x3f, 0x87, 0x9d, 0x2b, 0x1a, 0x45, 0xde, 0x6b, 0xc6, 0xaf, 0x98, 0x17,
+	0x87, 0x7a, 0x6c, 0x34, 0x70, 0x4b, 0x52, 0xbf, 0x91, 0xc4, 0x6f, 0xc3, 0xc0, 0x4d, 0x60, 0x27,
+	0xbf, 0x82, 0xd0, 0x4f, 0xa1, 0x9d, 0x42, 0xab, 0xba, 0xa6, 0xf0, 0x24, 0x6a, 0x5d, 0xad, 0x86,
+	0x9d, 0x9b, 0x74, 0x95, 0x77, 0xfa, 0xb8, 0xe2, 0x9b, 0xfb, 0x47, 0x68, 0xcb, 0xf5, 0xb7, 0x34,
+	0xfa, 0x10, 0xd2, 0x7b, 0xbd, 0x79, 0x4c, 0x45, 0xc1, 0x66, 0xd3, 0xf0, 0xa4, 0xce, 0xff, 0x6a,
+	0xf2, 0xcf, 0x70, 0x7b, 0xd3, 0xc6, 0x45, 0x8f, 0xa0, 0x96, 0x59, 0x5c, 0x76, 0x46, 0xce, 0xbb,
+	0x51, 0x09, 0x2b, 0x19, 0xf4, 0x73, 0xd8, 0xd2, 0x90, 0x68, 0xb3, 0x77, 0x8c, 0x70, 0xfe, 0xc6,
+	0x51, 0x09, 0x6b, 0xa9, 0xbe, 0x05, 0x75, 0xca, 0x92, 0x30, 0x59, 0xb8, 0xff, 0x2a, 0x43, 0xf3,
+	0x62, 0x25, 0x86, 0xff, 0xbf, 0x6a, 0xe9, 0x80, 0x35, 0x23, 0x71, 0x7c, 0xc5, 0x45, 0x5a, 0x27,
+	0xd9, 0x19, 0xf5, 0xa0, 0x31, 0xa5, 0xd3, 0x4b, 0x2a, 0x3c, 0x3e, 0x76, 0xea, 0x6a, 0x82, 0x6c,
+	0x0e, 0x1d, 0x5b, 0x5a, 0xee, 0x64, 0xec, 0x32, 0xb0, 0xcd, 0xdb, 0xf5, 0x90, 0x25, 0x54, 0x8c,
+	0x89, 0x2f, 0x83, 0xd8, 0x4e, 0x5f, 0xb9, 0xf9, 0xfc, 0xa6, 0x64, 0xf4, 0x0c, 0xda, 0xe3, 0xf0,
+	0x4f, 0x34, 0xf0, 0x48, 0x10, 0x08, 0x1a, 0xc7, 0x06, 0xe8, 0x5b, 0xc6, 0xda, 0x73, 0xc9, 0xdb,
+	0xd7, 0x2c, 0xdc, 0x1a, 0xaf, 0x9c, 0xdc, 0xbf, 0x54, 0x61, 0xe7, 0x22, 0xdf, 0xf0, 0x9b, 0x40,
+	0x7e, 0xfa, 0xfe, 0x0f, 0xd0, 0x55, 0x74, 0x1e, 0x42, 0xcb, 0x8c, 0x19, 0x4f, 0x8d, 0xbd, 0xda,
+	0x8a, 0xfb, 0x55, 0xdc, 0x34, 0x3c, 0xf5, 0x19, 0xf2, 0x31, 0xd4, 0x23, 0xee, 0x93, 0x88, 0x1a,
+	0x18, 0xcd, 0x49, 0x02, 0x9c, 0x84, 0x53, 0xfa, 0x1d, 0x67, 0xe9, 0x5b, 0x32, 0x3b, 0xa3, 0x23,
+	0xd8, 0x35, 0x08, 0x78, 0x61, 0x8a, 0x96, 0xb3, 0x9d, 0x7b, 0x37, 0x14, 0xc1, 0xcc, 0x72, 0x68,
+	0xb3, 0x22, 0xcc, 0x3f, 0x59, 0xce, 0xc6, 0x31, 0x25, 0xc9, 0x5c, 0x50, 0xc7, 0x52, 0x73, 0x37,
+	0x9d, 0x88, 0xcf, 0x35, 0x15, 0x3d, 0x85, 0x96, 0x30, 0x13, 0xdb, 0x93, 0xab, 0xaa, 0x71, 0xe3,
+	0xaa, 0x6a, 0x8a, 0x95, 0x45, 0x33, 0x00, 0xe4, 0x73, 0x36, 0x0e, 0x27, 0x73, 0xa1, 0xe6, 0xa3,
+	0x27, 0xbf, 0xbd, 0x1d, 0x30, 0x2d, 0xa1, 0x3f, 0xab, 0xf7, 0x9e, 0x87, 0x11, 0x5d, 0xd6, 0xc5,
+	0x6e, 0x4e, 0x41, 0xf2, 0x1e, 0x8d, 0x61, 0x77, 0x6d, 0x5d, 0xc8, 0xf5, 0xf6, 0xed, 0x19, 0x3e,
+	0x3c, 0x7e, 0x61, 0x97, 0xd0, 0x2e, 0xb4, 0x87, 0xbf, 0x3b, 0xdd, 0x3f, 0x1e, 0x78, 0x86, 0xa4,
+	0x36, 0x61, 0xff, 0xf0, 0x78, 0x1f, 0xff, 0xde, 0xae, 0xc8, 0xcf, 0xbd, 0xc1, 0xc5, 0x09, 0x1e,
+	0xd8, 0x55, 0x64, 0x43, 0xeb, 0xe5, 0xf9, 0xd1, 0xd9, 0x61, 0x2a, 0x58, 0x93, 0xcc, 0xdf, 0x28,
+	0xe6, 0x56, 0xff, 0xc9, 0x1f, 0x1e, 0xfb, 0xaf, 0x04, 0x9f, 0x86, 0xf3, 0xe9, 0xde, 0x84, 0xf3,
+	0x49, 0x44, 0x63, 0x3e, 0x17, 0x3e, 0x95, 0x8e, 0x76, 0xa9, 0x04, 0x6d, 0x26, 0xc2, 0x98, 0x76,
+	0x7d, 0x1a, 0x75, 0x27, 0x5c, 0xff, 0x63, 0x70, 0x59, 0x57, 0xff, 0x06, 0x3c, 0xf9, 0x4f, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0x5f, 0x1f, 0xf8, 0xcf, 0x91, 0x10, 0x00, 0x00,
 }
