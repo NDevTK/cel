@@ -179,7 +179,7 @@ tags. Whenever the list changes, run the following command:
 
    ./update-index.sh
 
-This will replace any line containing the string '-- INSERT-INDEX --' with the
+This will replace any line containing the string 'INSERT-INDEX' with the
 contents of this file. It'll also remove everything  between the BEGIN-INDEX,
 END-INDEX block. So each time the script is run it'll replace the index with the
 latest version.
