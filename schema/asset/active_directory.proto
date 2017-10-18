@@ -89,6 +89,245 @@ message ActiveDirectoryDomainController {
   bool create_dns_delegation = 6;
 }
 
+// Describes an Active Directory Organizational Unit.
+//
+// Note that this message omits location properties like postal code, city,
+// state, and country. Use the 'property' field to specify these if required.
+//
+// E.g.:
+//     ad_organizational_unit {
+//        name: 'foo'
+//        ...
+//        property { key: 'l', value: 'Cambridge' }
+//        property { key: 'st', value: 'MA' }
+//        ..
+//     }
+message ActiveDirectoryOrganizationalUnit {
+  // Name of the OU. Also populates the 'name' property of the AD object unless
+  // overridden by |full_name|.
+  string name = 1;
+
+  // The 'name' property of the AD object. Only specify this if |name| can't be
+  // used to store the display name.
+  string full_name = 2;
+
+  // The container in which this OU is created. Only the 'ad_domain' and
+  // 'ad_organizational_unit' values are valid.
+  WindowsContainer container = 3 [(common.v).type=REQUIRED];
+
+  // The AD DS server which should service the request for creating the OU if
+  // necessary. If left unspecified, any of the candidate AD DS instances
+  // associated with 'container' will be used.
+  string server = 4 [(common.v)={type:ASSET, key:"windows_machine"}];
+
+  // Use the referred AD OU as the template. Any properties specified in this
+  // message will override corresponding properties from the template OU. Any
+  // properties specified in the template, but not in this message will be
+  // copied over.
+  string based_on = 5 [(common.v)={type:ASSET, key:"ad_organizational_unit"}];
+
+  // The 'displayName' property of the AD object.
+  string display_name = 6;
+
+  // The 'description' property of the AD object.
+  string description = 7;
+
+  // The principal managing this OU. Note that the 'container' property for a
+  // user or a group is implicit and should be omitted.
+  UserOrGroupReference managed_by = 8;
+
+  // Additional properties. The key is the ldapDisplayName of the property. The
+  // value can be a single string. Repeat using the same key to specify more
+  // than one value for a single key.
+  //
+  // E.g.:
+  //     property {
+  //       key: 'favColors'
+  //       value: 'pink'
+  //     }
+  //
+  //     property {
+  //       key: 'favColors'
+  //       value: 'purple'
+  //     }
+  map<string,string> property = 9;
+}
+
+// Describes an Active Directory GPO. The GPO itself may not contain anything
+// particularly important on creation, and is entirely based on the starter
+// GPO. The GPO is also not linked anywhere by default. Use the
+// ActiveDirectoryGroupPolicyLink message to create links, and
+// ActiveDirectoryRegistryPolicy to add registry based policies.
+//
+// E.g.:
+//
+//     # Create a group policy.
+//     ad_group_policy {
+//       name: 'foo'
+//       ad_domain: 'my-domain'
+//     }
+//
+//     # Add some registry values to it.
+//     ad_registry_policy {
+//       name: 'reg-pol-0001'
+//       ad_group_policy: 'foo'
+//
+//       key {
+//         path: 'HKCU\\Software\\My Company\\Foo\\Bar'
+//
+//         value {
+//           name: 'version'
+//           value: '1.0'
+//         }
+//
+//         value {
+//           name: 'FooCount'
+//           type: DWORD
+//           value: '10'
+//         }
+//       }
+//     }
+//
+//     # And link it to one or more OUs.
+//     ad_group_policy_link {
+//       name: 'foo-link'
+//       ad_group_policy: 'foo'
+//       container { ad_organizational_unit: 'my-ou' }
+//       container { ad_organizational_unit: 'your-ou' }
+//       enforced: true
+//     }
+message ActiveDirectoryGroupPolicy {
+  // The name of the GPO.
+  string name = 1;
+
+  // The full name. Only use this if the full name cannot be specified in |name|.
+  string full_name = 2;
+
+  // The domain in which this GPO is created.
+  string ad_domain = 3 [(common.v).type=ASSET];
+
+  // A comment for the GPO. This can contain up to 2047 characters.
+  string comment = 4;
+
+  // If a template GPO is specified, that will be used as the starter GPO.
+  // Creates a starter GPO is no value is specified here.
+  string based_on = 5 [(common.v)={type:ASSET, key:"ad_group_policy"}];
+}
+
+// Describes one or more GPO links.
+message ActiveDirectoryGroupPolicyLink {
+  // A convenient identifier for this set of GPO links.
+  string name = 1;
+
+  // The policy that will be linked.
+  string ad_group_policy = 2 [(common.v).type=ASSET];
+
+  // The list of containers for which the GPO referred to in |ad_group_policy|
+  // will be linked. Only the |ad_domain| and |ad_organizational_unit| fields
+  // can be used. There should be at least one of these.
+  repeated WindowsContainer container = 3;
+
+  // If specified, sets the enforced state for the GPO links.
+  oneof optional_enforce { bool enforced = 4; }
+
+  // If specified, sets the enabled state for the GPO links.
+  oneof optional_enabled { bool enabled = 5; }
+}
+
+// Describes a set of registry keys that should be applied for a GPO.
+message ActiveDirectoryRegistryPolicy {
+  // An identifier for the registry policy.
+  string name = 1;
+
+  // The GPO that will be affected by this registry policy.
+  string ad_group_policy = 2 [(common.v)={type:ASSET, key:"ad_group_policy"}];
+
+  // If true, the registry values defined in this message will be added to the
+  // respective registry keys. The default behavior -- also the behavior when
+  // this field is set to false -- is to delete all the values under each key
+  // prior to adding the new values.
+  bool additive = 3;
+
+  // Set of registry keys and values that will be applied (in order).
+  repeated RegistryKey key = 4;
+}
+
+// Describes a registry change that should happen when applying a GPO.
+message ActiveDirectoryRegistryPrefPolicy {
+  // An identifier for the registry policy.
+  string name = 1;
+
+  // The GPO that will be affected by this registry policy.
+  string ad_group_policy = 2 [(common.v).type=ASSET];
+
+  // The action to take when processing the GPO.
+  enum Action {
+    CREATE = 0;
+    REPLACE = 1;
+    UPDATE = 2;
+    DELETE = 3;
+  }
+  Action action = 3;
+
+  // Set of registry keys and values that will be applied (in order).
+  repeated RegistryKey key = 4;
+}
+
+// A registry key.
+message RegistryKey {
+  // Path to registry key. Either backslashes or forwardslashes can be used as
+  // separators. The first component of the path selects the hive. The
+  // following values and aliases are accepted fas the first component of the
+  // path:
+  //
+  //     HKEY_CLASSES_ROOT, HKCR
+  //     HKEY_CURRENT_USER, HKCU
+  //     HKEY_LOCAL_MACHINE, HKLM
+  //     HKEY_USERS, HKU
+  //     HKEY_CURRENT_CONFIG, HKCC
+  //
+  // E.g.:
+  //     key {
+  //       path: 'HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Foo\\bar'
+  //       value: {
+  //         name: 'x'
+  //         type: STRING
+  //         value: 'y'
+  //       }
+  //     }
+  string path = 1 [(common.v).type=REQUIRED];
+
+  // The list of values under the key.
+  repeated RegistryValue value = 2;
+}
+
+// Type of registry values. The default is STRING.
+enum RegistryValueType {
+  STRING = 0;
+  EXPAND_STRING = 1;
+  BINARY = 2;
+  DWORD = 3;
+  MULTI_STRING = 4;
+  QWORD = 5;
+}
+
+// A single registry value. The registry key is implied based on the containing
+// message.
+message RegistryValue {
+  // Value name. Leave empty to set the default value.
+  string name = 1;
+
+  // One of RegistryValueType.
+  RegistryValueType type = 2;
+
+  // The value. THe format is as follows:
+  //
+  // STRING, EXPAND_STRING : A single 'value' with contents.
+  // MULTI_STRING : Multiple 'value' entries each specifying a single string.
+  // DWORD, QWORD : A number as a string. E.g.: '3', '0x
+  repeated string value = 3;
+}
+
 // Describes a container that a Windows asset can reside in.
 //
 // Resources like machines, users, and groups can be specified per domain, per
@@ -155,6 +394,26 @@ message GroupReference {
   // however, that inheriting in this manner isn't always correct since it is
   // possible for users to be members of groups from other containers.
   WindowsContainer container = 2;
+}
+
+// A reference to a user. The combination of |name| and |container| must match
+// one of the WindowsUser entries.
+message UserReference {
+  // The name of the user.
+  string windows_user = 1 [(common.v).type=ASSET];
+
+  // Location. See GroupReference for how the container parameters are
+  // determined by default.
+  WindowsContainer container = 2;
+}
+
+// A reference to a user or a group. Provided as a convenience for cases where
+// either a single user or a group can be specified.
+message UserOrGroupReference {
+  oneof entity {
+    UserReference user = 1;
+    GroupReference group = 2;
+  }
 }
 
 // Describes a Active Directory or a Windows local user.
@@ -264,6 +523,10 @@ message WindowsMachine {
   // be used for features that otherwise won't be installed as part of any such
   // role assignment.
   repeated string windows_feature = 8;
+
+  // Registry keys to set on the machine. These will be applied prior to the
+  // user login.
+  repeated RegistryKey registry_key = 9;
 
   // A configuration file. Specify this if you've run Windows Server Manager
   // and produced a configration file already.
