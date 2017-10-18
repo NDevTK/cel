@@ -3,22 +3,31 @@
 // found in the LICENSE file.
 
 syntax = "proto3";
-package asset;
-option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+package common;
+option go_package="chromium.googlesource.com/enterprise/cel/go/common";
+
+import "schema/common/options.proto";
 
 // A file reference. Use this when the configuration should refer to a file or
 // a directory that's specified as part of the configuraion. All such paths are
-// resolved *relative* to the file in which the reference appears.
+// resolved *relative to the source file* in which the reference appears.
 message FileReference {
 
-  // Relative path. Resolved relative to the location of the .textpb file in
-  // which the reference appears. Absolute paths are not allowed.
+  // Path relative to the location of the .textpb file in which the reference
+  // appears. Absolute paths are not allowed.
   //
   //   * Path separators are always forward slashes.
   //   * No parent directory traversal. I.e. ".." is an invalid path component.
   //   * '.' is a valid component, but you might as well leave it out.
+  //   * The referenced path must exist.
   //
   // This, of course, means that textpb files that refer to other files should
   // live higher up in the directory tree or live beside the relevant files.
-  string relative_path = 1;
+  string path = 1;
+
+  // After the reference is resolved, this field will contain the full path to
+  // the resource and will use path separators consistent with the underlying
+  // platform.
+  string resolved_path = 2 [(v).type=OUTPUT];
 }
+

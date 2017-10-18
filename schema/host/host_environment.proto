@@ -6,17 +6,23 @@ syntax = "proto3";
 package host;
 option go_package="chromium.googlesource.com/enterprise/cel/go/host";
 
+import "schema/common/options.proto";
 import "schema/asset/network.proto";
 import "schema/gcp/compute/compute-api.proto";
 
 // GCP project hosting.
 message Project {
-  // The GCP project name.
+  // The project name.
   string name = 1;
+
+  // The full GCP project name if the name cannot be represented as a label.
+  // E.g. this would be the case for project names of the form
+  // "foo.example.com:project".
+  string full_name = 2;
 
   // The default zone to use when constructing resources. The |zone| also
   // implicitly defines the region.
-  string zone = 2;
+  string zone = 3 [(common.v).type=REQUIRED];
 }
 
 // Dependencies are things that aren't referred to directly by an asset
@@ -24,12 +30,18 @@ message Project {
 
 // Describes a GCE source disk image. See
 // https://cloud.google.com/compute/docs/images#image_families
+//
+// The image can be specified either using the project/family pair or using a
+// direct URL. During asset resolution, a project/family pair will be resolved
+// into a URL. I.e. a resolved Image{} resource always contains the URL of the
+// selected image.
 message Image {
   // Name of the image. Used within the host environment schema to refer to
   // this image.
   string name = 1;
 
-  // The GCP project providing the image.
+  // The GCP project providing the image. Not a foreign key into Project though
+  // since it is legal to refer to images provided by external projects.
   string project = 2;
 
   // The GCP Image family name. Combined with the |project| field, the |family|

@@ -6,12 +6,14 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
+import "schema/common/options.proto";
+
 // DNSZone describes a DNS zone. Conceptually it encompasses the same
 // information included in a DNS zone file as described in
 // https://en.wikipedia.org/wiki/Zone_file
 message DNSZone {
   // Origin described by zone. E.g. foo.example.com.
-  string origin = 1;
+  string name = 1 [(common.v).type=FQDN];
 
   // DNS records that should be included in the zone.
   repeated DNSRecord record = 2;
@@ -20,20 +22,20 @@ message DNSZone {
 // DNSRecord describes a single DNS record in a Zone.
 message DNSRecord {
   // Name on record.
-  string name = 1;
+  string name = 1 [(common.v).type=LABEL];
 
   // TTL in seconds.
-  int32 ttl = 2;
+  int32 ttl = 2 [(common.v).type=REQUIRED];
 
   // Must be omitted or is always IN.
   string record_class = 3;
 
   // Type of record. E.g. A, AAAA, NS, MX, ...
-  string record_type = 4;
+  string record_type = 4 [(common.v).type=REQUIRED];
 
   // Priority value.
   int32 priority = 5;
 
   // Answer section.
-  string answer = 6;
+  string answer = 6 [(common.v).type=REQUIRED];
 }

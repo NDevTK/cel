@@ -6,8 +6,9 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
-import "schema/asset/common.proto";
+import "schema/common/fileref.proto";
 import "schema/asset/network.proto";
+import "schema/common/options.proto";
 
 // Corresponding PS DSC Modules:
 // * https://github.com/PowerShell/xWebAdministration
@@ -17,18 +18,18 @@ import "schema/asset/network.proto";
 // The following Windows features will be automatically installed for all IIS servers.
 //   *  Web-Common-HTTP
 //   *  Web-Security
-message Server {
+message IISServer {
   // Name of server instance.
   string name = 1;
 
   // Name of host machine. Should refer to a |WindowsMachine| entry.
   // Container information for the IIS instance will be inherited from the
   // WindowsMachine entry.
-  string host = 2;
+  string windows_machine = 2 [(common.v).type=ASSET];
 }
 
 // Bindings for a website onto a webserver.
-message Bindings {
+message IISBindings {
   // Hostname. Can be empty to bind to all hostnames.
   string hostname = 1;
 
@@ -41,7 +42,7 @@ message Bindings {
 
   // Name of a Certificate. This certificate should include a private key. See
   // the definition in cert.proto.
-  string certificate = 4;
+  string certificate = 4 [(common.v)={type:ASSET, optional:true}];
 
   // Whether or not to use SNI. Only applicable when |protocol| is HTTPS. If
   // this value is false, then only one HTTPS site can be bound to a single
@@ -50,31 +51,32 @@ message Bindings {
 }
 
 // A single web site.
-message Site {
+message IISSite {
   // Name of site.
   string name = 1;
 
   // Name of server. Should refer to a |Server| entry. A single server can host
   // multiple sites as long as those sites use distinct binding information.
-  string server = 2;
+  string iis_server = 2 [(common.v).type=ASSET];
 
-  // Bindings. These are bindings. Specify bindings here.
-  Bindings bindings = 3;
+  // Bindings. These are bindings. Specify bindings here. If left unset, will
+  // use default bindings (HTTP, port 80, all hostnames).
+  IISBindings bindings = 3;
 
   // Relative path to directory containing the files that will be hosted on
   // this site. The entire subtree will be copied over to the target host.
   //
   // While it is legal, avoid nesting sites and applications within a single
   // directory tree.
-  FileReference contents = 4;
+  common.FileReference contents = 4;
 }
 
-message Application {
+message IISApplication {
   // Name of application.
   string name = 1;
 
   // Name of the iis.Site that's hosting this application.
-  string site = 2;
+  string iis_site = 2 [(common.v).type=ASSET];
 
   // Relative path to directory containing the files that will be hosted on
   // this application. The entire subtree will be copied over to the target
@@ -82,5 +84,14 @@ message Application {
   //
   // While it is legal, avoid nesting sites and applications within a single
   // directory tree.
-  FileReference contents = 3;
+  common.FileReference contents = 3;
+
+  // Relative path to an optional web.config file that will override any
+  // existing web.config in |contents|.
+  common.FileReference web_config_file = 4;
+
+  // Inline web.config contents. Any contents here will be merged with the
+  // |web_config_file| if there is one, a web config file found in the top
+  // level of |contents|.
+  string web_config_string = 5;
 }

@@ -6,7 +6,8 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
-import "schema/asset/common.proto";
+import "schema/common/fileref.proto";
+import "schema/common/options.proto";
 
 // An x509 certificate.
 message Certificate {
@@ -14,10 +15,10 @@ message Certificate {
   string name = 1;
 
   // PEM encoded file containing a *single* certificate, and no private key.
-  FileReference certficate = 2;
+  common.FileReference certficate = 2 [(common.v).type=REQUIRED];
 
-  // PEM encoded private key.
-  FileReference private_key = 3;
+  // PEM encoded private key. Optional.
+  common.FileReference private_key = 3;
 }
 
 // A pool of certifiates. Usually used to establish a set of trust roots.
@@ -27,10 +28,10 @@ message CertificatePool {
 
   // Named certificates. Should match one of the |Certificate| entries
   // specified in this manifest.
-  repeated string include_named = 2;
+  repeated string include_named = 2 [(common.v)={type:ASSET, key:"certificate"}];
 
   // PEM encoded file containing one or more certificates. Note that private
   // keys cannot be specified this way.
-  repeated FileReference include_file = 3;
+  repeated common.FileReference include_file = 3;
 }
 

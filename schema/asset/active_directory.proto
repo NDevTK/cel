@@ -6,17 +6,18 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
-import "schema/asset/common.proto";
+import "schema/common/fileref.proto";
 import "schema/asset/network.proto";
+import "schema/common/options.proto";
 
 // Describes an Active Directory domain or forest.
 message ActiveDirectoryDomain {
-  // FQDN of ActiveDirectory domain.
-  string name = 1;
+  // FQDN of the domain in lower case.
+  string name = 1 [(common.v).type=FQDN];
 
   // Parent domain name. Only specify this if this domain is going to be a
   // child domain.
-  string parent_name = 2;
+  string parent_name = 2 [(common.v)={type:ASSET, key:"ad_domain"}];
 
   // Active Directory functional level. A.k.a. Domain Mode. See
   // https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/active-directory-functional-levels
@@ -55,11 +56,12 @@ message ActiveDirectoryDomain {
 
 // Describes a single Active Directory Domain Controller.
 message ActiveDirectoryDomainController {
-  // Name of the domain. Must match a ActiveDirectoryDomain entry.
-  string domain = 1;
+  // Name of the domain. Must match the `name` field of an
+  // ActiveDirectoryDomain entry.
+  string ad_domain = 1 [(common.v).type=ASSET];
 
-  // Machine hosting the ADDS. Must match a WindowsMachine entry.
-  string machine = 2;
+  // Machine hosting the ADDS. Must match the `name` of a WindowsMachine entry.
+  string windows_machine = 2 [(common.v).type=ASSET];
 
   // Whether or not to install a DNS server on this machine. The default is
   // almost always |true| unless the domain already exists and the existing
@@ -95,13 +97,13 @@ message ActiveDirectoryDomainController {
 message WindowsContainer {
   oneof container {
     // Domain name.
-    string domain = 1;
+    string ad_domain = 1 [(common.v).type=ASSET];
 
     // Machine name.
-    string machine = 2;
+    string windows_machine = 2 [(common.v).type=ASSET];
 
     // Organizational unit.
-    string ou = 3;
+    string ad_organizational_unit = 3 [(common.v).type=ASSET];
   }
 }
 
@@ -112,25 +114,30 @@ message WindowsGroup {
   // |well_known_sid| field for that.
   string name = 1;
 
+  // The actual Unicode Windows group name. Only specify this if the desired
+  // name is different from the |name| field due to not being an RFC 1035
+  // label.
+  string full_name = 2;
+
   // Human readable description of the group.
-  string description = 2;
+  string description = 3;
 
   // Container for the group. A container must be specified for a WindowsGroup.
-  WindowsContainer container = 3;
+  WindowsContainer container = 4 [(common.v).type=REQUIRED];
 
   // Well-known security identifier. The string should be of the form S-* and
   // should correspond to a known SID as described in
   // https://support.microsoft.com/en-us/help/243330/well-known-security-identifiers-in-windows-operating-systems.
   //
   // Only specify this field if this group corresponds to a well known group.
-  string well_known_sid = 4;
+  string well_known_sid = 5;
 }
 
 // A reference to a group. The combination of |name| and |container| must match
 // one of the WindowsGroup entries.
 message GroupReference {
   // The name of the group.
-  string name = 1;
+  string windows_group = 1 [(common.v).type=ASSET];
 
   // Location. Since GroupReference messages are typically specified as a field
   // of an object that already has a container, omiting this field results in
@@ -157,11 +164,16 @@ message WindowsUser {
   // E.g.: joe
   string name = 1;
 
-  // Description. A.k.a. Full name.
-  string description = 2;
+  // The actual Unicode Windows user name. Only specify this if the desired
+  // name is different from the |name| field due to not being an RFC 1035
+  // label.
+  string full_name = 2;
+
+  // Description.
+  string description = 3;
 
   // Container for the user. A container must be specified for a WindowsUser.
-  WindowsContainer container = 3;
+  WindowsContainer container = 4 [(common.v).type=REQUIRED];
 
   // Password. Can be left blank in which case each instantiation of the lab
   // will cause a new password to be generated.
@@ -175,7 +187,7 @@ message WindowsUser {
 message NetworkInterface {
   // Name of Network entry describing the network that this interface is
   // attached to.
-  string network = 1;
+  string network = 1 [(common.v).type=ASSET];
 
   // Fixed address, if this interface is to have one. Leave undefined if the
   // interface should obatain an address automatically.
@@ -206,7 +218,7 @@ message WindowsMachine {
   WindowsContainer container = 3;
 
   // The name of a host.MachineType entry that describes the host machine.
-  string host_machine_type = 4;
+  string machine_type = 4 [(common.v).type=HOST];
 
   // System locale. If left unspecified, the default is left unchanged. Use the
   // following PowerShell command to determine the list of available locales on
@@ -234,7 +246,7 @@ message WindowsMachine {
 
   // Network interfaces. There can be more than one for multihomed machines.
   // There MUST be at least one of these.
-  repeated NetworkInterface network_interface = 7;
+  repeated NetworkInterface network_interface = 7 [(common.v).type=REQUIRED];
 
   // List of additional Windows features or roles to install. The values here
   // should be valid for the selected host machine type. You can use the
@@ -255,6 +267,6 @@ message WindowsMachine {
 
   // A configuration file. Specify this if you've run Windows Server Manager
   // and produced a configration file already.
-  FileReference configuration_file = 9;
+  common.FileReference configuration_file = 10;
 }
 

@@ -7,34 +7,39 @@
 This document specifies guidelines for authoring schema changes for the Chrome
 Enterprise Lab.
 
-The schema is defined by the set of `.proto` files in the [schema] directory.
-See [Protocol Buffers] for details on the syntax. These `.proto`
-files are used to generate Go code which are included in the libraries and
-tools.
+The schema is defined by the set of `.proto` files in directories named `asset`
+and `host` under the [schema][] directory.  See [Protocol Buffers][] for details
+on the syntax for `.proto` files. These `.proto` files are used to generate Go
+code which are included in the libraries and tools.
 
 Refer to the [design document][Design] for overall design. Specifically, readers
-are expected to be familiar with the [ASSET MANIFEST] section and the [HOST
-ENVIRONMENT] sections of the design doc. For convenience, the Chrome Enterprise
+are expected to be familiar with the [ASSET MANIFEST][] section and the [HOST
+ENVIRONMENT][] sections of the design doc. For convenience, the Chrome Enterprise
 Lab may be abbreviated as **CEL** in this document.
 
+*** note
 **The Schema Is a Living Specification.** The asset schema defines the types of
 assets that are supported in the Chrome Enterprise Lab. It's expected that this
 will evolve with the requirements of the Chromium project. Hence it'll never be
 complete and must be designed in such a way that new asset types can be added
 without too much churn.
+***
 
 ## Nomenclature
 
-### Asset Catalog
+### Asset Manifest
 
-The **Asset Catalog** is a collection of assets that are recognized and can be
+The **Asset Manifest** is a collection of assets that are recognized and can be
 deployed by the lab. The canonical asset catalog is the list supported by the
 toolchain at https://chromium.googlesource.com/enterprise/cel and described by
-the `.proto` files in the [schema] directory.
+the `.proto` files in the [schema/asset][] directory.
 
-E.g.: Examples of things that could be included in an asset catalog include
-networks, VM instances, AD domains, IIS servers, MCS servers, authenticated
-proxies, etc.
+Examples of things that could be included in an asset catalog include networks,
+VM instances, AD domains, IIS servers, MCS servers, authenticated proxies, etc.
+
+The Asset Manifest is rooted at the `AssetManifest` message
+([source](../schema/asset/asset_manifest.proto)). All messages that appear in
+`AssetManifest` are called top level assets.
 
 
 ### Asset Inventory
@@ -51,6 +56,22 @@ single canonical inventory.
 
 E.g.: A network with specific properties, a preconfigured AD domain, VM
 instances with specific properties.
+
+Have a look at [an example](../examples/schema/ad/one-domain.asset.textpb) for
+what a partial asset inventory looks like. Multiple assets of the same kind can
+co-exist as long as they have unique identifiers and can be realized without
+conflict.
+
+
+### Host Environment
+
+The **Host Environment** is the set of parameters that are required to define
+how each of the assets in the Asset Inventory are realized. The Enterprise Lab
+currently only supports hosting on Google Cloud Platform (GCP), so the host
+environment is currently specific GCP.
+
+All host environment parameters are rooted at the `HostEnvironment` message
+defined in [`host_environment.proto`](../schema/host/host_environment.proto).
 
 
 ## Guidelines For Authoring Schema
@@ -108,7 +129,7 @@ specific to a GCP project.
 
 *   **DO** be consistent with developer nomenclature. The asset schema should
     map comfortably to how testers and developers think of networks.
-   
+
 *   **DO** be minimalistic.  The Asset Schema *should only include* properties
     that are **material** to the tests being considered, and *should exclude
     anything else*. Any additional required properties that are not material to
@@ -189,38 +210,122 @@ Every `.proto` file should start with:
 
 syntax = "proto3";
 
-package $SUITABLE_PACKAGE_NAME;
-option go_package="$ASSET_OR_HOST";
+package $ASSET_OR_HOST;
+option go_package="chromium.googlesource.com/enterprise/cel/go/$ASSET_OR_HOST";
 ```
 
-Where `$YEAR` should be the year you introduce the proto file, and
-`$SUITABLE_PACAKGE_NAME` should be a single token identifying the package. Don't
-forget to import any dependencies and properly document your messages.
-`$ASSET_OR_HOST` is either `asset` or `host` depending on whether you are
-authoring a proto for the asset manifest or the host manifest.
+Where `$YEAR` should be the year you introduce the proto file.  `$ASSET_OR_HOST`
+is either `asset` or `host` depending on whether you are authoring a proto for
+the asset manifest or the host manifest. Don't forget to import any dependencies
+and properly document your messages.
 
-The Go package has to match the name of the directory. Until we have too much
-schema that we need to organize by subdirectories, we are going to stick with
-one Go package for all of it.
+For ease of copy&paste, use the following for asset protos:
 
+``` proto
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-### Common Field Names
+syntax = "proto3";
+package asset;
+option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+```
 
-*   `name` : Every asset should have a name so that they can be referred to
-    from other assets or tests. If the scope of the name isn't spelled out
-    explicitly, it should be assumed that the name has global scope.
+... and the following for host environment protos:
 
-    Global in this case refers to a scope covering an entire asset inventory.
+``` proto
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-*   `based_on` : In order to minimize boilerplate when defining a group of
-    assets with similar attributes, it should be possible to base one asset
-    definition on another. This is done by adding a `based_on` attribute which
-    names another asset with the same type and in the same namespace.
+syntax = "proto3";
+package host;
+option go_package="chromium.googlesource.com/enterprise/cel/go/host";
+```
 
-*   `description`: Where a longer description is needed, use the field name
-    `description` instead of `details` or similar.
+### Naming Conventions
 
+*   **Top level messages must have a `name` field**: Every top level asset
+    must have a name so that they can be referred to from other assets or tests.
+    If the scope of the name isn't spelled out explicitly, it should be assumed
+    that the name has global scope and case insensitive.
+
+*   **Use RFC 1035 <label>s for names that are used in cross-references**. This
+    is a hard and fast rule for GCP, but we are extending it to all messages
+    where a `name` field needs to be referred from another message. This
+    includes all top-level messages. The identifiers used for cross referencing
+    should be eye-ball verifiable and easy to type. Hence the rule.
+
+    It is possible that this restriction may affect the usefulness of some
+    features. E.g. it should be possible to give a user a name that has unicode
+    characters in it, or specify a FQDN for an ActiveDirectory domain. FQDNs
+    don't comply with the `<label>` production since '.' is disallowed. In such
+    a case, introduce a new field that doesn't need to be typed by hand each
+    time. This second field is usually named `full_name`.
+
+*   **Use `description` for longer descriptions**: Where a longer description is
+    needed, use the field name `description` instead of `details` or some other
+    similar name. Don't use `description` to refer to identifiers (See
+    `full_name` above).
+
+*   **Use the top level field name when referring to top level assets**: Fields
+    that refer to top level assets must use the same name as the field used to
+    define the top level asset.
+
+    E.g.: Let's say we want to associate an IIS site with an IIS server. These
+    are both top level assets defined in `asset_manifest.proto` as follows:
+
+    ``` proto
+    message AssetManifest {
+      ...
+      repeated IISServer iis_server =301;
+      repeated IISSite iis_site = 302;
+      ...
+    }
+    ```
+
+    The `IISServer` message, being a top level asset, has a `name` attribute
+    identifies it.
+
+    ``` proto
+    message IISServer {
+      ...
+      string name = 1;
+      ...
+    }
+    ```
+
+    When referring to a particualr server from the site asset, we use the same
+    field name as that is used in `AssetManifest`. In this case it would be
+    `iis_server`.
+
+    ``` proto
+    message IISSite {
+      ...
+      string name = 1;
+      string iis_server = 2;
+      ...
+    }
+    ```
+
+    During deployment, the `iis_server` field of an `IISSite` asset must match a
+    `name` of an `IISServer` asset.
+
+    See? Simple. The same convention applies to references from assets to host
+    environment except the names should be consistent with the field names in
+    `HostEnvironment` ([source](../schema/host/host_environment.proto)). E.g.: A
+    reference to a machine type from an asset should always be named
+    `machine_type`.
+
+*   **Use a `based_on` field for templating** : In order to minimize boilerplate
+    when defining a group of assets with similar attributes, it should be
+    possible to base one asset definition on another. This is done by adding a
+    `based_on` attribute which names another asset with the same type and in the
+    same namespace.
+
+*** promo
 Overall, be internally consistent.
+***
 
 
 ## Asset Types
@@ -325,44 +430,23 @@ exceptions:
 * A Script Asset must not directly depend on a Host Environment Schema
   component.
 
+## Asset Validation
 
-## Basic Schemas
+Many fields in the asset schema take string fields and contain internal and
+exteranl references. Constraints for these values come from many sources
+including hosting environment. Hence, when adding new assets it's important to
+also add a validator method that fulfils the `Validator` interface
+([source](../go/common/validator.go)). See the `Validator` interface
+documentation for how to write a validator.
 
-*   Network
-    *   Peers
-*   Active Directory Domain
-    *   AD DCs : Need at least one of these
-    *   AD Containers
-    *   ADMX Central Store (`%systemroot%\PolicyDefinitions`) : Don't need this
-	unless people are manually interacting with the domain controller. See
-	[ADMX Technology
-	Review](https://technet.microsoft.com/en-us/library/cc749513(v=ws.10).aspx).
-    *   AD GPOs
-    *   AD Users
-*   DNS Server
-*   Certificate
-*   IIS Server (version depends on the underlying OS)
-    *   HTTP website
-	*   CNAME
-	*   Files
-    *   HTTPS website
-	*   CNAME
-	*   Certificate
-	*   Files
-*   Client machine
-    *   AD Member : Refers to a container
-    *   Local Users
-    *   Auto Login User : Required for Test Hosts. Can name a domain user.
-    *   Test Host
-*   Proxy server
-    *   Type
-
-
-
+Don't worry if you miss one. The default tests will fail if any `proto.Message`
+classes are missing a `Validate()` method.
 
 [Protobuf Style Guide]: https://developers.google.com/protocol-buffers/docs/style
 [Protocol Buffers]: https://developers.google.com/protocol-buffers/
 [schema]: ../schema/
+[schema/asset]: ../schema/asset
+[schema/host]: ../schema/host
 
 
 <!-- INSERT-INDEX -->
@@ -374,7 +458,7 @@ tags. Whenever the list changes, run the following command:
 
    ./update-index.sh
 
-This will replace any line containing the string '-- INSERT-INDEX --' with the
+This will replace any line containing the string 'INSERT-INDEX' with the
 contents of this file. It'll also remove everything  between the BEGIN-INDEX,
 END-INDEX block. So each time the script is run it'll replace the index with the
 latest version.
