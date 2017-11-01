@@ -17,7 +17,7 @@ message ActiveDirectoryDomain {
 
   // Parent domain name. Only specify this if this domain is going to be a
   // child domain.
-  string parent_name = 2 [(common.v)={type:ASSET, key:"ad_domain"}];
+  string parent_name = 2 [(common.v)={ref:"asset.ad_domain", optional:true}];
 
   // Active Directory functional level. A.k.a. Domain Mode. See
   // https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/active-directory-functional-levels
@@ -58,10 +58,10 @@ message ActiveDirectoryDomain {
 message ActiveDirectoryDomainController {
   // Name of the domain. Must match the `name` field of an
   // ActiveDirectoryDomain entry.
-  string ad_domain = 1 [(common.v).type=ASSET];
+  string ad_domain = 1 [(common.v).ref="asset.ad_domain"];
 
   // Machine hosting the ADDS. Must match the `name` of a WindowsMachine entry.
-  string windows_machine = 2 [(common.v).type=ASSET];
+  string windows_machine = 2 [(common.v).ref="asset.windows_machine"];
 
   // Whether or not to install a DNS server on this machine. The default is
   // almost always |true| unless the domain already exists and the existing
@@ -118,13 +118,13 @@ message ActiveDirectoryOrganizationalUnit {
   // The AD DS server which should service the request for creating the OU if
   // necessary. If left unspecified, any of the candidate AD DS instances
   // associated with 'container' will be used.
-  string server = 4 [(common.v)={type:ASSET, key:"windows_machine"}];
+  string server = 4 [(common.v).ref="asset.windows_machine"];
 
   // Use the referred AD OU as the template. Any properties specified in this
   // message will override corresponding properties from the template OU. Any
   // properties specified in the template, but not in this message will be
   // copied over.
-  string based_on = 5 [(common.v)={type:ASSET, key:"ad_organizational_unit"}];
+  string based_on = 5 [(common.v).ref="asset.ad_organizational_unit"];
 
   // The 'displayName' property of the AD object.
   string display_name = 6;
@@ -204,14 +204,14 @@ message ActiveDirectoryGroupPolicy {
   string full_name = 2;
 
   // The domain in which this GPO is created.
-  string ad_domain = 3 [(common.v).type=ASSET];
+  string ad_domain = 3 [(common.v).ref="asset.ad_domain"];
 
   // A comment for the GPO. This can contain up to 2047 characters.
   string comment = 4;
 
   // If a template GPO is specified, that will be used as the starter GPO.
   // Creates a starter GPO is no value is specified here.
-  string based_on = 5 [(common.v)={type:ASSET, key:"ad_group_policy"}];
+  string based_on = 5 [(common.v).ref="asset.ad_group_policy"];
 }
 
 // Describes one or more GPO links.
@@ -220,7 +220,7 @@ message ActiveDirectoryGroupPolicyLink {
   string name = 1;
 
   // The policy that will be linked.
-  string ad_group_policy = 2 [(common.v).type=ASSET];
+  string ad_group_policy = 2 [(common.v).ref="asset.ad_group_policy"];
 
   // The list of containers for which the GPO referred to in |ad_group_policy|
   // will be linked. Only the |ad_domain| and |ad_organizational_unit| fields
@@ -240,7 +240,7 @@ message ActiveDirectoryRegistryPolicy {
   string name = 1;
 
   // The GPO that will be affected by this registry policy.
-  string ad_group_policy = 2 [(common.v)={type:ASSET, key:"ad_group_policy"}];
+  string ad_group_policy = 2 [(common.v).ref="asset.ad_group_policy"];
 
   // If true, the registry values defined in this message will be added to the
   // respective registry keys. The default behavior -- also the behavior when
@@ -258,7 +258,7 @@ message ActiveDirectoryRegistryPrefPolicy {
   string name = 1;
 
   // The GPO that will be affected by this registry policy.
-  string ad_group_policy = 2 [(common.v).type=ASSET];
+  string ad_group_policy = 2 [(common.v).ref="asset.ad_group_policy"];
 
   // The action to take when processing the GPO.
   enum Action {
@@ -336,13 +336,13 @@ message RegistryValue {
 message WindowsContainer {
   oneof container {
     // Domain name.
-    string ad_domain = 1 [(common.v).type=ASSET];
+    string ad_domain = 1 [(common.v).ref="asset.ad_domain"];
 
     // Machine name.
-    string windows_machine = 2 [(common.v).type=ASSET];
+    string windows_machine = 2 [(common.v).ref="asset.windows_machine"];
 
     // Organizational unit.
-    string ad_organizational_unit = 3 [(common.v).type=ASSET];
+    string ad_organizational_unit = 3 [(common.v).ref="asset.ad_organizational_unit"];
   }
 }
 
@@ -376,7 +376,7 @@ message WindowsGroup {
 // one of the WindowsGroup entries.
 message GroupReference {
   // The name of the group.
-  string windows_group = 1 [(common.v).type=ASSET];
+  string windows_group = 1 [(common.v).ref="asset.windows_group"];
 
   // Location. Since GroupReference messages are typically specified as a field
   // of an object that already has a container, omiting this field results in
@@ -400,7 +400,7 @@ message GroupReference {
 // one of the WindowsUser entries.
 message UserReference {
   // The name of the user.
-  string windows_user = 1 [(common.v).type=ASSET];
+  string windows_user = 1 [(common.v).ref="asset.windows_user"];
 
   // Location. See GroupReference for how the container parameters are
   // determined by default.
@@ -446,7 +446,7 @@ message WindowsUser {
 message NetworkInterface {
   // Name of Network entry describing the network that this interface is
   // attached to.
-  string network = 1 [(common.v).type=ASSET];
+  string network = 1 [(common.v).ref="asset.network"];
 
   // Fixed address, if this interface is to have one. Leave undefined if the
   // interface should obatain an address automatically.
@@ -477,7 +477,7 @@ message WindowsMachine {
   WindowsContainer container = 3;
 
   // The name of a host.MachineType entry that describes the host machine.
-  string machine_type = 4 [(common.v).type=HOST];
+  string machine_type = 4 [(common.v).ref="host.machine_type"];
 
   // System locale. If left unspecified, the default is left unchanged. Use the
   // following PowerShell command to determine the list of available locales on
@@ -522,6 +522,9 @@ message WindowsMachine {
   // install the necessary web server roles. The |windows_feature| field should
   // be used for features that otherwise won't be installed as part of any such
   // role assignment.
+  //
+  // Note: Any 'package' values specified in the
+  // host.machine_type.<machine-type> will be prepended to this list.
   repeated string windows_feature = 8;
 
   // Registry keys to set on the machine. These will be applied prior to the

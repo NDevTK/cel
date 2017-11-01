@@ -28,7 +28,7 @@ message CertificatePool {
 
   // Named certificates. Should match one of the |Certificate| entries
   // specified in this manifest.
-  repeated string include_named = 2 [(common.v)={type:ASSET, key:"certificate"}];
+  repeated string include_named = 2 [(common.v).ref="asset.certificate"];
 
   // PEM encoded file containing one or more certificates. Note that private
   // keys cannot be specified this way.

@@ -10,10 +10,13 @@ import "google/protobuf/descriptor.proto";
 
 message Validation {
   enum FieldType {
+    // No validation is to be performed.
+    UNKNOWN = 0;
+
     // When applied to a 'string' field, implies that the field value cannot be
-    // empty. This is the default for any field that has an external reference
-    // restriction (i.e. one of 'host_env_ref', 'host_env', 'asset_ref',
-    // 'asset').
+    // empty. This is implied for any field that has a non-empty external
+    // reference (i.e. ref != ""), or the validation type is LABEL, FQDN or
+    // ORGLABEL.
     //
     // When applied to a 'repeated' field, implies that there must be at least
     // one instance of the field.
@@ -21,84 +24,52 @@ message Validation {
     // When applied to 'oneof' implies that at least one of the alternatives must
     // be specified.
     //
-    // Note that by default all fields with an annotation are required unless
-    // they set the 'optional' property to true (see below). This FieldType
-    // exists to make this clear when the only expected side-effect of adding
-    // an annotation is to mark it as required.
+    // When applied to a 'map' implies that there should be at least one mapping.
     //
     // E.g.: Declare the 'h' field of Foo message to be required:
     //
     //     message Foo {
     //       string h = 1 [(v).type=REQUIRED]
     //     }
-    REQUIRED = 0;
+    REQUIRED = 1;
 
     // This is an output field and is not expected to be populated in a asset
     // manifest literal. The field will be populated during the asset
     // resolution process and made available to downstream consumers of the
     // manifest.
-    OUTPUT = 1;
-
-    // A ASSET field type indicates that the field refers to a resource defined
-    // in the AssetManifest message. The value of the option should be an
-    // exact match for the 'name' property of an object matching the 'key'
-    // type.
-    //
-    // E.g.: Declare field 'h' of Foo message to be a reference to a Network
-    // object.
-    //
-    //     message Foo {
-    //       string h = 1 [(v)={type:ASSET, key:"network"}]
-    //     }
-    //
-    // Alternatively, if the name of the field matches a field in
-    // AssetManifest, then the key argument can be elided:
-    //
-    //     message Foo {
-    //       string machine_type = 1 [(v).type:ASSET]
-    //     }
-    ASSET = 2;
-
-    // A HOST field type indicates that the field refers to a resource defined in
-    // the HostEnvironment message. The value of the option should be an exact
-    // match for the 'name' property of an object matching the 'key' type.
-    //
-    // E.g.: Declare field 'h' of Foo message to be a reference to a MachineType
-    // object. The value of the 'h' field should match the 'name' property of a
-    // MachineType object.
-    //
-    //     message Foo {
-    //       string h = 1 [(v)={type:HOST, key:"machine_type"}]
-    //     }
-    //
-    // Alternatively, if the name of the field matches a field in
-    // HostEnvironment, then the key argument can be elided:
-    //
-    //     message Foo {
-    //       string machine_type = 1 [(v).type:HOST]
-    //     }
-    HOST = 3;
+    OUTPUT = 2;
 
     // The field value cannot be empty and must match the <label> production in
-    // RFC 1035. This is the default for any field named 'name'.
-    LABEL = 4;
+    // RFC 1035. This validation type is applied by default for for any field
+    // named 'name'.
+    LABEL = 3;
 
     // The field value cannot be empty, and must match the <subdomains>
     // production in RFC 1035. Can only be applied to 'string' fields.
-    FQDN = 5;
+    FQDN = 4;
 
-    // A label with an optional org component. These look like: example.com:foo
-    ORGLABEL = 6;
+    // A label with an optional org component. These look like:
+    // example.com:foo. Cannot be empty.
+    ORGLABEL = 5;
   }
   FieldType type = 1;
 
-  // The foreign key, if the key name is different from the field name. See the
-  // FieldType documentation for examples of use.
-  string key = 2;
+  // The foreign key. If non-empty, designates that this string field is a
+  // reference to a collection designated by |ref|.
+  //
+  // E.g.: Declare 'network' to be a field that refers to an 'asset.network' by
+  // name.
+  //
+  //     message Foo {
+  //       string network = 1 [(v).ref="asset.network"]
+  //     }
+  //
+  // The annotated field must be a string.
+  string ref = 2;
 
-  // Indicates that the value is optional. By default adding an annotaiton to a
-  // field marks it as a required field.
-  bool optional = 3;
+  // Indicates that the value is optional. By default adding an annotation to a
+  // field marks it as a required field. Setting 'optional' to true negates that.
+  oneof optional_flag { bool optional = 3; }
 }
 
 // Field options. These are used to annotate fields in asset and host messages
@@ -116,7 +87,7 @@ extend google.protobuf.FieldOptions {
   //
   // Or:
   //     message Foo {
-  //       string my_field = 1 [(common.v)={type:<type>, key:"<key>"}];
+  //       string my_field = 1 [(common.v)={type:<type>, ref:"<key>"}];
   //     }
   Validation v = 50000;
 }

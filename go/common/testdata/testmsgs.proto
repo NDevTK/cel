@@ -6,6 +6,7 @@ syntax="proto3";
 package common;
 option go_package="chromium.googlesource.com/enterprise/cel/go/common";
 
+import "google/protobuf/descriptor.proto";
 import "schema/common/fileref.proto";
 import "schema/common/options.proto";
 
@@ -63,11 +64,13 @@ message TestGoodProto {
 
 message TestMessageWithOptions {
   string name = 1;
-  string key = 2 [(common.v)={type:ASSET, key:"foreign-key"}];
+  string key = 2 [(common.v).ref="with_types.repeated_field"];
   string label = 3 [(common.v).type=LABEL];
-  string optional_key = 4 [(common.v)={type:ASSET, optional:true}];
+  string optional_key = 4 [(common.v)={ref:"with_types.repeated_field", optional:true}];
   string fqdn = 5 [(common.v).type=FQDN];
   string reqd = 6 [(common.v).type=REQUIRED];
+  string output = 7 [(common.v).type=OUTPUT];
+  string optional_string = 8 [(x)=true];
 }
 
 message TestBadMessageWithOptions {
@@ -76,4 +79,23 @@ message TestBadMessageWithOptions {
 
 message TestFileRefProto {
   FileReference ref = 1;
+}
+
+message TestMessageWithTypes {
+  string name = 1;
+  bool bool_value = 2;
+  int32 int_value = 3;
+  TestGoodProto field = 4;
+  repeated TestGoodProto repeated_field = 5;
+  oneof optional {
+    TestGoodProto optional_field = 6;
+  }
+  map<string, TestGoodProto> map_field = 7;
+  map<string, string> map_string = 8;
+}
+
+extend google.protobuf.FieldOptions {
+  // Some random field extension that we can use in addition to those defined
+  // in options.proto.
+  bool x = 51000;
 }

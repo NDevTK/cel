@@ -47,13 +47,22 @@ message Image {
     string family = 2 [(common.v).type=LABEL];
   }
 
-  oneof source {
-    Family latest = 2;
+  // If specified, indicates that the latest image matching project/family
+  // should be used as the base.
+  Family latest = 2;
 
-    // The full or partial URL to the disk image. If this is specified, then the
-    // |project| and |family| values are ignored.
-    string url = 4;
-  }
+  // The full or partial URL to the disk image. If this is specified, then the
+  // |project| and |family| values are ignored.
+  string fixed = 3;
+
+  // Additional packages that should be applied to this image. The
+  // interpretation of this field is dependent on the type of machine being
+  // built. For example when building a WindowsMachine, these entries are
+  // prepended to the list of 'windows_feature' values for the machine.
+  repeated string package = 4;
+
+  // Output. Will contain the resolved base image URL on success.
+  string url = 5 [(common.v).type=OUTPUT];
 }
 
 // Describes a type of machine (virtual or otherwise).
