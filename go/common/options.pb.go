@@ -26,6 +26,7 @@ It has these top-level messages:
 	TestMessageWithOptions
 	TestBadMessageWithOptions
 	TestFileRefProto
+	TestMessageWithTypes
 */
 package common
 
@@ -48,10 +49,12 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type Validation_FieldType int32
 
 const (
+	// No validation is to be performed.
+	Validation_UNKNOWN Validation_FieldType = 0
 	// When applied to a 'string' field, implies that the field value cannot be
-	// empty. This is the default for any field that has an external reference
-	// restriction (i.e. one of 'host_env_ref', 'host_env', 'asset_ref',
-	// 'asset').
+	// empty. This is implied for any field that has a non-empty external
+	// reference (i.e. ref != ""), or the validation type is LABEL, FQDN or
+	// ORGLABEL.
 	//
 	// When applied to a 'repeated' field, implies that there must be at least
 	// one instance of the field.
@@ -59,87 +62,46 @@ const (
 	// When applied to 'oneof' implies that at least one of the alternatives must
 	// be specified.
 	//
-	// Note that by default all fields with an annotation are required unless
-	// they set the 'optional' property to true (see below). This FieldType
-	// exists to make this clear when the only expected side-effect of adding
-	// an annotation is to mark it as required.
+	// When applied to a 'map' implies that there should be at least one mapping.
 	//
 	// E.g.: Declare the 'h' field of Foo message to be required:
 	//
 	//     message Foo {
 	//       string h = 1 [(v).type=REQUIRED]
 	//     }
-	Validation_REQUIRED Validation_FieldType = 0
+	Validation_REQUIRED Validation_FieldType = 1
 	// This is an output field and is not expected to be populated in a asset
 	// manifest literal. The field will be populated during the asset
 	// resolution process and made available to downstream consumers of the
 	// manifest.
-	Validation_OUTPUT Validation_FieldType = 1
-	// A ASSET field type indicates that the field refers to a resource defined
-	// in the AssetManifest message. The value of the option should be an
-	// exact match for the 'name' property of an object matching the 'key'
-	// type.
-	//
-	// E.g.: Declare field 'h' of Foo message to be a reference to a Network
-	// object.
-	//
-	//     message Foo {
-	//       string h = 1 [(v)={type:ASSET, key:"network"}]
-	//     }
-	//
-	// Alternatively, if the name of the field matches a field in
-	// AssetManifest, then the key argument can be elided:
-	//
-	//     message Foo {
-	//       string machine_type = 1 [(v).type:ASSET]
-	//     }
-	Validation_ASSET Validation_FieldType = 2
-	// A HOST field type indicates that the field refers to a resource defined in
-	// the HostEnvironment message. The value of the option should be an exact
-	// match for the 'name' property of an object matching the 'key' type.
-	//
-	// E.g.: Declare field 'h' of Foo message to be a reference to a MachineType
-	// object. The value of the 'h' field should match the 'name' property of a
-	// MachineType object.
-	//
-	//     message Foo {
-	//       string h = 1 [(v)={type:HOST, key:"machine_type"}]
-	//     }
-	//
-	// Alternatively, if the name of the field matches a field in
-	// HostEnvironment, then the key argument can be elided:
-	//
-	//     message Foo {
-	//       string machine_type = 1 [(v).type:HOST]
-	//     }
-	Validation_HOST Validation_FieldType = 3
+	Validation_OUTPUT Validation_FieldType = 2
 	// The field value cannot be empty and must match the <label> production in
-	// RFC 1035. This is the default for any field named 'name'.
-	Validation_LABEL Validation_FieldType = 4
+	// RFC 1035. This validation type is applied by default for for any field
+	// named 'name'.
+	Validation_LABEL Validation_FieldType = 3
 	// The field value cannot be empty, and must match the <subdomains>
 	// production in RFC 1035. Can only be applied to 'string' fields.
-	Validation_FQDN Validation_FieldType = 5
-	// A label with an optional org component. These look like: example.com:foo
-	Validation_ORGLABEL Validation_FieldType = 6
+	Validation_FQDN Validation_FieldType = 4
+	// A label with an optional org component. These look like:
+	// example.com:foo. Cannot be empty.
+	Validation_ORGLABEL Validation_FieldType = 5
 )
 
 var Validation_FieldType_name = map[int32]string{
-	0: "REQUIRED",
-	1: "OUTPUT",
-	2: "ASSET",
-	3: "HOST",
-	4: "LABEL",
-	5: "FQDN",
-	6: "ORGLABEL",
+	0: "UNKNOWN",
+	1: "REQUIRED",
+	2: "OUTPUT",
+	3: "LABEL",
+	4: "FQDN",
+	5: "ORGLABEL",
 }
 var Validation_FieldType_value = map[string]int32{
-	"REQUIRED": 0,
-	"OUTPUT":   1,
-	"ASSET":    2,
-	"HOST":     3,
-	"LABEL":    4,
-	"FQDN":     5,
-	"ORGLABEL": 6,
+	"UNKNOWN":  0,
+	"REQUIRED": 1,
+	"OUTPUT":   2,
+	"LABEL":    3,
+	"FQDN":     4,
+	"ORGLABEL": 5,
 }
 
 func (x Validation_FieldType) String() string {
@@ -149,12 +111,24 @@ func (Validation_FieldType) EnumDescriptor() ([]byte, []int) { return fileDescri
 
 type Validation struct {
 	Type Validation_FieldType `protobuf:"varint,1,opt,name=type,enum=common.Validation_FieldType" json:"type,omitempty"`
-	// The foreign key, if the key name is different from the field name. See the
-	// FieldType documentation for examples of use.
-	Key string `protobuf:"bytes,2,opt,name=key" json:"key,omitempty"`
-	// Indicates that the value is optional. By default adding an annotaiton to a
-	// field marks it as a required field.
-	Optional bool `protobuf:"varint,3,opt,name=optional" json:"optional,omitempty"`
+	// The foreign key. If non-empty, designates that this string field is a
+	// reference to a collection designated by |ref|.
+	//
+	// E.g.: Declare 'network' to be a field that refers to an 'asset.network' by
+	// name.
+	//
+	//     message Foo {
+	//       string network = 1 [(v).ref="asset.network"]
+	//     }
+	//
+	// The annotated field must be a string.
+	Ref string `protobuf:"bytes,2,opt,name=ref" json:"ref,omitempty"`
+	// Indicates that the value is optional. By default adding an annotation to a
+	// field marks it as a required field. Setting 'optional' to true negates that.
+	//
+	// Types that are valid to be assigned to OptionalFlag:
+	//	*Validation_Optional
+	OptionalFlag isValidation_OptionalFlag `protobuf_oneof:"optional_flag"`
 }
 
 func (m *Validation) Reset()                    { *m = Validation{} }
@@ -162,25 +136,96 @@ func (m *Validation) String() string            { return proto.CompactTextString
 func (*Validation) ProtoMessage()               {}
 func (*Validation) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+type isValidation_OptionalFlag interface {
+	isValidation_OptionalFlag()
+}
+
+type Validation_Optional struct {
+	Optional bool `protobuf:"varint,3,opt,name=optional,oneof"`
+}
+
+func (*Validation_Optional) isValidation_OptionalFlag() {}
+
+func (m *Validation) GetOptionalFlag() isValidation_OptionalFlag {
+	if m != nil {
+		return m.OptionalFlag
+	}
+	return nil
+}
+
 func (m *Validation) GetType() Validation_FieldType {
 	if m != nil {
 		return m.Type
 	}
-	return Validation_REQUIRED
+	return Validation_UNKNOWN
 }
 
-func (m *Validation) GetKey() string {
+func (m *Validation) GetRef() string {
 	if m != nil {
-		return m.Key
+		return m.Ref
 	}
 	return ""
 }
 
 func (m *Validation) GetOptional() bool {
-	if m != nil {
-		return m.Optional
+	if x, ok := m.GetOptionalFlag().(*Validation_Optional); ok {
+		return x.Optional
 	}
 	return false
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*Validation) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Validation_OneofMarshaler, _Validation_OneofUnmarshaler, _Validation_OneofSizer, []interface{}{
+		(*Validation_Optional)(nil),
+	}
+}
+
+func _Validation_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*Validation)
+	// optional_flag
+	switch x := m.OptionalFlag.(type) {
+	case *Validation_Optional:
+		t := uint64(0)
+		if x.Optional {
+			t = 1
+		}
+		b.EncodeVarint(3<<3 | proto.WireVarint)
+		b.EncodeVarint(t)
+	case nil:
+	default:
+		return fmt.Errorf("Validation.OptionalFlag has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _Validation_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*Validation)
+	switch tag {
+	case 3: // optional_flag.optional
+		if wire != proto.WireVarint {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeVarint()
+		m.OptionalFlag = &Validation_Optional{x != 0}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _Validation_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Validation)
+	// optional_flag
+	switch x := m.OptionalFlag.(type) {
+	case *Validation_Optional:
+		n += proto.SizeVarint(3<<3 | proto.WireVarint)
+		n += 1
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 var E_V = &proto.ExtensionDesc{
@@ -201,25 +246,26 @@ func init() {
 func init() { proto.RegisterFile("schema/common/options.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 312 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x90, 0xcf, 0x4f, 0xc2, 0x30,
-	0x1c, 0xc5, 0x2d, 0x3f, 0x96, 0xf1, 0xd5, 0x98, 0xa6, 0xa7, 0x05, 0x35, 0x59, 0x38, 0x71, 0x5a,
-	0x0d, 0x7a, 0xf2, 0x06, 0x61, 0xa8, 0x09, 0x71, 0x52, 0x86, 0x07, 0x13, 0x0f, 0x63, 0x54, 0x58,
-	0xdc, 0xf8, 0x36, 0xdd, 0x20, 0xe1, 0x1f, 0xf0, 0x9f, 0xf3, 0xe2, 0x9f, 0x64, 0x4a, 0x11, 0x0f,
-	0xde, 0xda, 0x4f, 0x5e, 0x5f, 0xdf, 0x7b, 0x70, 0x51, 0xa6, 0x2b, 0x59, 0x24, 0x3c, 0xc5, 0xa2,
-	0xc0, 0x35, 0x47, 0x55, 0x65, 0xb8, 0x2e, 0x03, 0xa5, 0xb1, 0x42, 0xe6, 0x58, 0xda, 0xf6, 0x97,
-	0x88, 0xcb, 0x5c, 0xf2, 0x3d, 0x9d, 0x6f, 0xde, 0xf9, 0x42, 0x96, 0xa9, 0xce, 0x54, 0x85, 0xda,
-	0x2a, 0x3b, 0x5f, 0x04, 0xe0, 0x25, 0xc9, 0xb3, 0x45, 0x62, 0xde, 0xb3, 0x6b, 0x68, 0x54, 0x3b,
-	0x25, 0x3d, 0xe2, 0x93, 0xee, 0x79, 0xef, 0x32, 0xb0, 0x3e, 0xc1, 0x9f, 0x22, 0x18, 0x65, 0x32,
-	0x5f, 0xc4, 0x3b, 0x25, 0xc5, 0x5e, 0xc9, 0x28, 0xd4, 0x3f, 0xe4, 0xce, 0xab, 0xf9, 0xa4, 0xdb,
-	0x12, 0xe6, 0xc8, 0xda, 0xe0, 0xda, 0x34, 0x49, 0xee, 0xd5, 0x7d, 0xd2, 0x75, 0xc5, 0xf1, 0xde,
-	0x79, 0x83, 0xd6, 0xd1, 0x80, 0x9d, 0x81, 0x2b, 0xc2, 0xc9, 0xec, 0x51, 0x84, 0x43, 0x7a, 0xc2,
-	0x00, 0x9c, 0x68, 0x16, 0x3f, 0xcf, 0x62, 0x4a, 0x58, 0x0b, 0x9a, 0xfd, 0xe9, 0x34, 0x8c, 0x69,
-	0x8d, 0xb9, 0xd0, 0x78, 0x88, 0xa6, 0x31, 0xad, 0x1b, 0x38, 0xee, 0x0f, 0xc2, 0x31, 0x6d, 0x18,
-	0x38, 0x9a, 0x0c, 0x9f, 0x68, 0xd3, 0x78, 0x44, 0xe2, 0xde, 0x72, 0xe7, 0xae, 0x0f, 0x64, 0xcb,
-	0xae, 0x02, 0xdb, 0x3a, 0xf8, 0x6d, 0x6d, 0x33, 0x47, 0x76, 0x21, 0xef, 0xfb, 0xd3, 0x84, 0x3a,
-	0xed, 0xb1, 0xff, 0xe5, 0x04, 0xd9, 0x0e, 0x6e, 0x5f, 0x7b, 0xe9, 0x4a, 0x63, 0x91, 0x6d, 0x8a,
-	0x83, 0x4f, 0x89, 0x1b, 0x9d, 0x4a, 0xa3, 0xe6, 0x72, 0x5d, 0x49, 0xad, 0x74, 0x56, 0x4a, 0x9e,
-	0xca, 0x9c, 0x2f, 0xf1, 0x30, 0xff, 0xdc, 0xd9, 0xff, 0x75, 0xf3, 0x13, 0x00, 0x00, 0xff, 0xff,
-	0x30, 0xa0, 0x69, 0x75, 0x96, 0x01, 0x00, 0x00,
+	// 322 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x91, 0x4f, 0x4f, 0xf2, 0x40,
+	0x18, 0xc4, 0x59, 0xfe, 0xbd, 0xe5, 0xe1, 0x55, 0x9b, 0x3d, 0x35, 0x8a, 0x49, 0xc3, 0x89, 0x53,
+	0xd7, 0xa0, 0x27, 0x6f, 0x10, 0x40, 0x8d, 0xa4, 0x95, 0x0d, 0xd5, 0xc4, 0x8b, 0x29, 0x65, 0x29,
+	0x4d, 0x5a, 0x9e, 0xcd, 0xb6, 0x90, 0xf0, 0x05, 0xfc, 0x7c, 0x9e, 0xfc, 0x3c, 0xa6, 0x5d, 0xc0,
+	0x83, 0xb7, 0xcd, 0xe4, 0xb7, 0x33, 0xb3, 0xb3, 0x70, 0x95, 0x85, 0x6b, 0x91, 0x06, 0x2c, 0xc4,
+	0x34, 0xc5, 0x0d, 0x43, 0x99, 0xc7, 0xb8, 0xc9, 0x1c, 0xa9, 0x30, 0x47, 0xda, 0xd4, 0xea, 0xa5,
+	0x1d, 0x21, 0x46, 0x89, 0x60, 0xa5, 0xba, 0xd8, 0xae, 0xd8, 0x52, 0x64, 0xa1, 0x8a, 0x65, 0x8e,
+	0x4a, 0x93, 0xdd, 0x6f, 0x02, 0xf0, 0x1a, 0x24, 0xf1, 0x32, 0x28, 0xee, 0xd3, 0x1b, 0xa8, 0xe7,
+	0x7b, 0x29, 0x2c, 0x62, 0x93, 0xde, 0x79, 0xbf, 0xe3, 0x68, 0x1f, 0xe7, 0x97, 0x70, 0x26, 0xb1,
+	0x48, 0x96, 0xf3, 0xbd, 0x14, 0xbc, 0x24, 0xa9, 0x09, 0x35, 0x25, 0x56, 0x56, 0xd5, 0x26, 0xbd,
+	0x16, 0x2f, 0x8e, 0xb4, 0x03, 0x86, 0x6e, 0x13, 0x24, 0x56, 0xcd, 0x26, 0x3d, 0xe3, 0xb1, 0xc2,
+	0x4f, 0x4a, 0xd7, 0x87, 0xd6, 0xc9, 0x82, 0xb6, 0xe1, 0x9f, 0xef, 0x3e, 0xbb, 0xde, 0x9b, 0x6b,
+	0x56, 0xe8, 0x7f, 0x30, 0xf8, 0x78, 0xe6, 0x3f, 0xf1, 0xf1, 0xc8, 0x24, 0x14, 0xa0, 0xe9, 0xf9,
+	0xf3, 0x17, 0x7f, 0x6e, 0x56, 0x69, 0x0b, 0x1a, 0xd3, 0xc1, 0x70, 0x3c, 0x35, 0x6b, 0xd4, 0x80,
+	0xfa, 0x64, 0x36, 0x72, 0xcd, 0x7a, 0x81, 0x7b, 0xfc, 0x41, 0xeb, 0x8d, 0xe1, 0x05, 0x9c, 0x1d,
+	0x23, 0x3e, 0x56, 0x49, 0x10, 0xdd, 0x0f, 0x80, 0xec, 0xe8, 0xb5, 0xa3, 0x07, 0x70, 0x8e, 0x03,
+	0xe8, 0xfa, 0x9e, 0x1e, 0xcb, 0xfa, 0xfa, 0x2c, 0xfa, 0xb5, 0xfb, 0xf4, 0xef, 0x3b, 0x39, 0xd9,
+	0x0d, 0xef, 0xde, 0xfb, 0xe1, 0x5a, 0x61, 0x1a, 0x6f, 0xd3, 0x83, 0x4f, 0x86, 0x5b, 0x15, 0x8a,
+	0x82, 0x66, 0x62, 0x93, 0x0b, 0x25, 0x55, 0x9c, 0x09, 0x16, 0x8a, 0x84, 0x45, 0x78, 0xf8, 0x89,
+	0x45, 0xb3, 0xcc, 0xba, 0xfd, 0x09, 0x00, 0x00, 0xff, 0xff, 0x55, 0xc8, 0x48, 0xdc, 0xa1, 0x01,
+	0x00, 0x00,
 }
