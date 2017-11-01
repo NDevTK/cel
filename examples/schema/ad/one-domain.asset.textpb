@@ -18,27 +18,27 @@ ad_domain {
 # AD Domain Controller. This is regarded as a service that runs on a specific
 # machine. This definition just anchors the AD DS to the machine named 'dc'.
 ad_domain_controller {
-  domain: 'foo.example'
-  machine: 'dc'
+  ad_domain: 'foo.example'
+  windows_machine: 'dc'
 }
 
 # A Windows machine.
 windows_machine {
   name: 'dc'
-  host_machine_type: 'win2012r2'
+  machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 }
 
 # Another Windows machine.
 windows_machine {
   name: 'client'
-  host_machine_type: 'win2012r2'
+  machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 
   # This one explicitly lists 'foo.example' as the domain to which this machine
   # belongs. This will result in this machine being automatically joined to
   # 'foo.example' using the default domain administrator credentials.
-  container: { domain: 'foo.example' }
+  container: { ad_domain: 'foo.example' }
 }
 
 # A Windows user.
@@ -48,6 +48,6 @@ windows_user {
 
   # This is a domain user. The user will not be made a member of any additional
   # groups since there are no member_of entries.
-  container: { domain: 'foo.example' }
+  container: { ad_domain: 'foo.example' }
   password: '123456'
 }

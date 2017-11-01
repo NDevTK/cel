@@ -18,27 +18,27 @@ ad_domain {
 # AD Domain Controller. This is regarded as a service that runs on a specific
 # machine. This definition just anchors the AD DS to the machine named 'dc'.
 ad_domain_controller {
-  domain: 'bar.example'
-  machine: 'bar-dc'
+  ad_domain: 'bar.example'
+  windows_machine: 'bar-dc'
 }
 
 # A Windows machine.
 windows_machine {
   name: 'bar-dc'
-  host_machine_type: 'win2012r2'
+  machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 }
 
 # Another Windows machine.
 windows_machine {
   name: 'bar-client'
-  host_machine_type: 'win2012r2'
+  machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 
   # This one explicitly lists 'foo.example' as the domain to which this machine
   # belongs. This will result in this machine being automatically joined to
   # 'foo.example' using the default domain administrator credentials.
-  container: { domain: 'bar.example' }
+  container: { ad_domain: 'bar.example' }
 }
 
 # A Windows user.
@@ -48,7 +48,7 @@ windows_user {
 
   # This is a domain user. The user will not be made a member of any additional
   # groups since there are no member_of entries.
-  container: { domain: 'bar.example' }
+  container: { ad_domain: 'bar.example' }
   password: '123456'
 }
 
@@ -60,26 +60,26 @@ ad_domain {
 }
 
 ad_domain_controller {
-  domain: 'baz.example'
-  machine: 'baz-dc'
+  ad_domain: 'baz.example'
+  windows_machine: 'baz-dc'
 }
 
 windows_machine {
   name: 'baz-dc'
-  host_machine_type: 'win2012r2'
+  machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 }
 
 windows_machine {
   name: 'baz-client'
-  host_machine_type: 'win2012r2'
+  machine_type: 'win2012r2'
   network_interface { network: 'primary' }
-  container: { domain: 'baz.example' }
+  container: { ad_domain: 'baz.example' }
 }
 
 windows_user {
   name: 'joe'
   description: 'Joe The User'
-  container: { domain: 'baz.example' }
+  container: { ad_domain: 'baz.example' }
   password: '123456'
 }

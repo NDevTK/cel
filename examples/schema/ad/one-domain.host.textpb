@@ -38,7 +38,7 @@ machine_type {
 
       # This is a special form for referencing the URL property of the image
       # object named win2012r2.
-      source: '${image.win2012r2.url}'
+      source: '${host.image.win2012r2.url}'
     }
 
     # Note that we are leaving a bunch of fields out because their defaults are
@@ -60,8 +60,10 @@ image {
   # source disk image. See
   # https://cloud.google.com/compute/docs/images#os-compute-support for
   # details.
-  project: 'windows-cloud'
-  family: 'windows-2012-r2'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2012-r2'
+  }
 }
 
 
