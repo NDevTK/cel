@@ -58,9 +58,10 @@ type Property struct {
 }
 
 type Arguments struct {
-	DiscoveryJsonFile string
-	OutputProtoFile   string
-	GoPackage         string
+	DiscoveryJsonFile   string
+	OutputProtoFile     string
+	OutputValidatorFile string
+	GoPackage           string
 }
 
 const kIndent = 2
@@ -239,25 +240,7 @@ func EmitProtoForProperty(level int, name string, p *Property, w io.Writer) (str
 	return name, nil
 }
 
-func DoIt(args *Arguments) error {
-	if args.DiscoveryJsonFile == "" {
-		return fmt.Errorf("no input filename specified")
-	}
-	if args.OutputProtoFile == "" {
-		return fmt.Errorf("no output filename specified")
-	}
-
-	contents, err := ioutil.ReadFile(args.DiscoveryJsonFile)
-	if err != nil {
-		return err
-	}
-
-	var desc RestDescription
-	err = json.Unmarshal(contents, &desc)
-	if err != nil {
-		return err
-	}
-
+func GenerateProtoFile(desc *RestDescription, args *Arguments) error {
 	desc.GoPackage = args.GoPackage + "/" + desc.Name
 
 	f, err := os.Create(args.OutputProtoFile)
@@ -306,6 +289,86 @@ option go_package="{{.GoPackage}}";
 	return nil
 }
 
+func GenerateValidatorFile(desc *RestDescription, args *Arguments) error {
+	// No need to generate a validator file.
+	if args.OutputValidatorFile == "" {
+		return nil
+	}
+
+	f, err := os.Create(args.OutputValidatorFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var messages []string
+	for _, s := range desc.Schemas {
+		messages = append(messages, s.Id)
+		for k, p := range s.Properties {
+			if (p.Type == "object" && len(p.Properties) > 0) ||
+				(p.Type == "array" && p.Items.Type == "object" && len(p.Items.Properties) > 0) {
+				messages = append(messages, s.Id+"_"+strings.Title(k))
+			}
+		}
+	}
+
+	sort.Strings(messages)
+
+	const kHeading = `// This is a generated file. Do not modify directly.
+
+// This ProtoBuf source file is based on the REST protocol defintion for the
+// service at {{.BaseUrl}}.
+//
+// {{.Title}}:{{.Description}}
+// 
+// API Name      : {{.Name}} ({{.Id}})
+// Version       : {{.Version}}
+// Revision      : {{.Revision}}
+// Documentation : {{.DocumentationLink}}
+
+package {{.Name}}
+
+// All trivial validators.
+
+`
+	err = template.Must(template.New("").Parse(kHeading)).Execute(f, desc)
+	if err != nil {
+		return err
+	}
+
+	const kValidators = `{{range . -}}
+func (*{{.}}) Validate() error { return nil }
+{{end}}`
+	return template.Must(template.New("").Parse(kValidators)).Execute(f, messages)
+}
+
+func DoIt(args *Arguments) error {
+	if args.DiscoveryJsonFile == "" {
+		return fmt.Errorf("no input filename specified")
+	}
+	if args.OutputProtoFile == "" {
+		return fmt.Errorf("no output filename specified")
+	}
+
+	contents, err := ioutil.ReadFile(args.DiscoveryJsonFile)
+	if err != nil {
+		return err
+	}
+
+	var desc RestDescription
+	err = json.Unmarshal(contents, &desc)
+	if err != nil {
+		return err
+	}
+
+	err = GenerateProtoFile(&desc, args)
+	if err != nil {
+		return err
+	}
+
+	return GenerateValidatorFile(&desc, args)
+}
+
 func PrintUsage() {
 	const kUsage = `Usage of gen_api_proto:
 
@@ -330,7 +393,7 @@ GCCL fully supports Google Compute Engine, this tool can be retired.
 [2]: https://developers.google.com/api-client-library/
 [3]: https://cloud.google.com/apis/docs/cloud-client-libraries
 
-Synopsis: gen_api_proto -i <name of API Discovery Document> -o <output filename>
+Synopsis: gen_api_proto -i <name of API Discovery Document> -o <output filename> -g <go validator filename>
 `
 
 	os.Stderr.WriteString(kUsage)
@@ -343,7 +406,8 @@ func main() {
 
 	flagset.StringVar(&args.DiscoveryJsonFile, "i", "", "discovery JSON filename")
 	flagset.StringVar(&args.OutputProtoFile, "o", "", "output .proto filename")
-	flagset.StringVar(&args.GoPackage, "g", "chromium.googlesource.com/enterprise/cel/go/gcp",
+	flagset.StringVar(&args.OutputValidatorFile, "g", "", "ouput .go validator filename")
+	flagset.StringVar(&args.GoPackage, "p", "chromium.googlesource.com/enterprise/cel/go/gcp",
 		"root of go_package option to emit")
 	flagset.Usage = func() {
 		PrintUsage()

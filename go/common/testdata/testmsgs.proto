@@ -1,0 +1,79 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax="proto3";
+package common;
+option go_package="chromium.googlesource.com/enterprise/cel/go/common";
+
+import "schema/common/fileref.proto";
+import "schema/common/options.proto";
+
+// This file contains a set of test proto messages that are used for tests.
+
+message TestHasBadField {
+  string name = 1;
+  TestBadProto field = 2;
+}
+
+message TestHasGoodField {
+  string name = 1;
+  TestGoodProto field = 2;
+}
+
+message TestHasBadSlice {
+  string name = 1;
+  repeated TestBadProto field = 2;
+}
+
+message TestHasGoodSlice {
+  string name = 1;
+  repeated TestGoodProto field = 2;
+}
+
+message TestGoodOneOf {
+  string name = 1;
+  oneof opt {
+    TestGoodProto field = 2;
+  }
+}
+
+message TestBadOneOf {
+  string name = 1;
+  oneof opt {
+    TestBadProto field = 2;
+  }
+}
+
+message TestBadValidateArgs {
+  string name = 1;
+}
+
+message TestBadReturnType {
+  string name = 2;
+}
+
+message TestBadProto {
+  string name = 1;
+}
+
+message TestGoodProto {
+  string name = 1;
+}
+
+message TestMessageWithOptions {
+  string name = 1;
+  string key = 2 [(common.v)={type:ASSET, key:"foreign-key"}];
+  string label = 3 [(common.v).type=LABEL];
+  string optional_key = 4 [(common.v)={type:ASSET, optional:true}];
+  string fqdn = 5 [(common.v).type=FQDN];
+  string reqd = 6 [(common.v).type=REQUIRED];
+}
+
+message TestBadMessageWithOptions {
+  int32 name = 1 [(common.v).type=LABEL];
+}
+
+message TestFileRefProto {
+  FileReference ref = 1;
+}

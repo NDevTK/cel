@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/maruel/subcommands"
+	"github.com/google/subcommands"
 	"net/http"
 	"strings"
 )

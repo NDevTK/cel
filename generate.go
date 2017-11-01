@@ -10,7 +10,7 @@
 // Client is checked out at vendor/google.golang.org/api/. This should be the
 // case after running `deps ensure`. See the CONTRIBUTING.md file for details.
 //
-//go:generate go run go/cmd/gen_api_proto/main.go -i vendor/google.golang.org/api/compute/v0.beta/compute-api.json -o schema/gcp/compute/compute-api.proto -g chromium.googlesource.com/enterprise/cel/go/gcp
+//go:generate go run go/cmd/gen_api_proto/main.go -i vendor/google.golang.org/api/compute/v0.beta/compute-api.json -o schema/gcp/compute/compute-api.proto -p chromium.googlesource.com/enterprise/cel/go/gcp -g go/gcp/compute/validate.go
 
 // Note that all the .proto files that go into a single package should be
 // specified on the same protoc invocation.

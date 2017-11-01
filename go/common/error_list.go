@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package common
 
 // Wraps a list of errors in a single error. Useful for aggregating a list of
 // errors.
@@ -35,4 +35,26 @@ func (w *wrappedErrors) Error() string {
 		s += e.Error() + "\n"
 	}
 	return s
+}
+
+// AppendErrorList appends one or more errors to a list of errors.
+//
+// As a special case, if any of the new errors happen to be a wrapped error
+// returned from a prior call to WrapErrorList, that list is unpacked and used
+// to extend the list of errors. Thus AppendErrorList can be used to keep a
+// large collection of errors flattened rather than becoming tree shaped.
+func AppendErrorList(list []error, values ...error) []error {
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		switch vt := v.(type) {
+		case *wrappedErrors:
+			list = append(list, vt.innerErrors...)
+
+		default:
+			list = append(list, vt)
+		}
+	}
+	return list
 }

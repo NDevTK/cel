@@ -1,4 +1,4 @@
-# Informationa Python Scripts
+# Informational Python Scripts
 
 *** note
 **Note:** The scripts in this directory are meant to be informational. The logic

@@ -10,8 +10,14 @@
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["proto","protoc-gen-go/descriptor","ptypes","ptypes/any","ptypes/duration","ptypes/empty","ptypes/struct","ptypes/timestamp"]
+  packages = ["descriptor","proto","protoc-gen-go/descriptor","ptypes","ptypes/any","ptypes/duration","ptypes/empty","ptypes/struct","ptypes/timestamp"]
   revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/google/subcommands"
+  packages = ["."]
+  revision = "ce3d4cfc062faac7115d44e5befec8b5a08c3faa"
 
 [[projects]]
   name = "github.com/googleapis/gax-go"
@@ -20,22 +26,10 @@
   version = "v2.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/maruel/subcommands"
-  packages = ["."]
-  revision = "8c2c452e1460e1c2d42a8e3a3a527fb09bb68ee2"
-
-[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/texttheater/golang-levenshtein"
-  packages = ["levenshtein"]
-  revision = "1a14278c506abae7c17b3cb0b84ae863c7300454"
 
 [[projects]]
   branch = "master"
@@ -88,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8872d665331822195b6e371ee89d6a1964ba06480dffca08efe7eee3a1579054"
+  inputs-digest = "82afbefebc2995bbd60f2c94139e5dd73a664dd839e7ebba6f17e21cc66a2f3a"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -4,6 +4,10 @@
 
 package cel
 
+import (
+	"chromium.googlesource.com/enterprise/cel/go/common"
+)
+
 // WaitFor waits for |n| number of |error| objects from |c|. If any of them are
 // non-nil, then it returns a non-nil error which has an aggregate error string
 // which includes all the things that went wrong.
@@ -36,5 +40,5 @@ func WaitFor(ch chan error, n int) (err error) {
 		}
 	}
 
-	return WrapErrorList(l)
+	return common.WrapErrorList(l)
 }

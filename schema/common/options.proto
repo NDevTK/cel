@@ -86,6 +86,9 @@ message Validation {
     // The field value cannot be empty, and must match the <subdomains>
     // production in RFC 1035. Can only be applied to 'string' fields.
     FQDN = 5;
+
+    // A label with an optional org component. These look like: example.com:foo
+    ORGLABEL = 6;
   }
   FieldType type = 1;
 

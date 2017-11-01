@@ -5,6 +5,7 @@
 package cel
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"github.com/pkg/errors"
 	"sync"
 )
@@ -257,7 +258,7 @@ func ResolveAssets(A *Assets) error {
 				"asset %s failed to resolve", d.Asset.FullName()))
 		}
 	}
-	return WrapErrorList(error_list)
+	return common.WrapErrorList(error_list)
 }
 
 // resolveNodesFromChannel fetches DependencyNodes from |resolvable|, resolves

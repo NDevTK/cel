@@ -13,16 +13,11 @@ import "schema/gcp/compute/compute-api.proto";
 // GCP project hosting.
 message Project {
   // The project name.
-  string name = 1;
-
-  // The full GCP project name if the name cannot be represented as a label.
-  // E.g. this would be the case for project names of the form
-  // "foo.example.com:project".
-  string full_name = 2;
+  string name = 1 [(common.v).type=ORGLABEL];
 
   // The default zone to use when constructing resources. The |zone| also
   // implicitly defines the region.
-  string zone = 3 [(common.v).type=REQUIRED];
+  string zone = 2 [(common.v).type=LABEL];
 }
 
 // Dependencies are things that aren't referred to directly by an asset
@@ -40,19 +35,25 @@ message Image {
   // this image.
   string name = 1;
 
-  // The GCP project providing the image. Not a foreign key into Project though
-  // since it is legal to refer to images provided by external projects.
-  string project = 2;
+  message Family {
+    // The GCP project providing the image. Not a foreign key into Project though
+    // since it is legal to refer to images provided by external projects.
+    string project = 1 [(common.v).type=ORGLABEL];
 
-  // The GCP Image family name. Combined with the |project| field, the |family|
-  // is used to locate the GCP image family. If the |url| is not specified,
-  // then the resolver will pick the latest available image from this family
-  // and populate the URL with it.
-  string family = 3;
+    // The GCP Image family name. Combined with the |project| field, the |family|
+    // is used to locate the GCP image family. If the |url| is not specified,
+    // then the resolver will pick the latest available image from this family
+    // and populate the URL with it.
+    string family = 2 [(common.v).type=LABEL];
+  }
 
-  // The full or partial URL to the disk image. If this is specified, then the
-  // |project| and |family| values are ignored.
-  string url = 4;
+  oneof source {
+    Family latest = 2;
+
+    // The full or partial URL to the disk image. If this is specified, then the
+    // |project| and |family| values are ignored.
+    string url = 4;
+  }
 }
 
 // Describes a type of machine (virtual or otherwise).
@@ -65,14 +66,14 @@ message MachineType {
     // InstanceProperties are used for constructing a new GCE instance.
     //
     // The instance_properties.AttachedDisk.Source is special and can refer to
-    // an image name using the syntax "${image.<imagename>.url}" where
+    // an image name using the syntax "${host.image.<imagename>.url}" where
     // <imagename> is the name of an Image object in the enclosing
     // HostEnvironment.
     compute.InstanceProperties instance_properties = 5;
 
     // An instance template to use for constructing a new GCE instance. Should
     // be a full or a partial URL.
-    string instance_template = 6;
+    string instance_template = 6 [(common.v).type=REQUIRED];
   }
 }
 

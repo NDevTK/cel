@@ -1,0 +1,85 @@
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The network. There should be at least one. Hosts in the same network can talk
+# to each other without any restrictions.
+network {
+  name: 'primary'
+}
+
+# An ActiveDirectory domain.
+ad_domain {
+  name: 'bar.example'
+  netbios_name: 'bar'
+  domain_mode: Win2012R2
+}
+
+# AD Domain Controller. This is regarded as a service that runs on a specific
+# machine. This definition just anchors the AD DS to the machine named 'dc'.
+ad_domain_controller {
+  domain: 'bar.example'
+  machine: 'bar-dc'
+}
+
+# A Windows machine.
+windows_machine {
+  name: 'bar-dc'
+  host_machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+# Another Windows machine.
+windows_machine {
+  name: 'bar-client'
+  host_machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+
+  # This one explicitly lists 'foo.example' as the domain to which this machine
+  # belongs. This will result in this machine being automatically joined to
+  # 'foo.example' using the default domain administrator credentials.
+  container: { domain: 'bar.example' }
+}
+
+# A Windows user.
+windows_user {
+  name: 'joe'
+  description: 'Joe The User'
+
+  # This is a domain user. The user will not be made a member of any additional
+  # groups since there are no member_of entries.
+  container: { domain: 'bar.example' }
+  password: '123456'
+}
+
+# The second domain.
+ad_domain {
+  name: 'baz.example'
+  netbios_name: 'baz'
+  domain_mode: Win2012R2
+}
+
+ad_domain_controller {
+  domain: 'baz.example'
+  machine: 'baz-dc'
+}
+
+windows_machine {
+  name: 'baz-dc'
+  host_machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'baz-client'
+  host_machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+  container: { domain: 'baz.example' }
+}
+
+windows_user {
+  name: 'joe'
+  description: 'Joe The User'
+  container: { domain: 'baz.example' }
+  password: '123456'
+}
