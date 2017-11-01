@@ -58,3 +58,12 @@ func AppendErrorList(list []error, values ...error) []error {
 	}
 	return list
 }
+
+// UnpackErrorList takes as input a possibly wrapped error and returns the
+// underlying error list.
+func UnpackErrorList(err error) []error {
+	if el, ok := err.(*wrappedErrors); ok {
+		return el.innerErrors
+	}
+	return []error{err}
+}

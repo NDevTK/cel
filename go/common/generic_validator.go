@@ -49,14 +49,14 @@ Actual:
 //
 // See //docs/schema-guidelines.md for more details on why we are doing things
 // this way.
-func InvokeValidate(a interface{}) error {
-	return WalkProto(reflect.ValueOf(a), invokeValidateOnValue)
+func InvokeValidate(a interface{}, r RefPath) error {
+	return WalkProto(reflect.ValueOf(a), r, invokeValidateOnValue)
 }
 
 // invokeValidateOnValue is a WalkProtoFunc that invokes the Validate() method
 // if one is found for a proto.Message object. It returns an error if the class
 // is missing a Validate() method as specified in the Validator interface.
-func invokeValidateOnValue(av reflect.Value, d *descriptor.FieldDescriptorProto) error {
+func invokeValidateOnValue(av reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) error {
 	// A field
 	if d != nil {
 		return validateAnnotatedField(av, d)
@@ -105,21 +105,29 @@ func invokeValidateOnValue(av reflect.Value, d *descriptor.FieldDescriptorProto)
 // this field, returns an object representing the default set of validation
 // rules that should be applied to |fd|.
 func getValidationForField(fd *descriptor.FieldDescriptorProto) Validation {
-	v := Validation{}
-	v.Optional = true
+	var v *Validation
 
 	if fd.Options != nil {
-		ex, _ := proto.GetExtension(fd.Options, E_V)
-		if e, ok := ex.(*Validation); ok {
-			v = *e
+		ex, err := proto.GetExtension(fd.Options, E_V)
+		if err == nil {
+			v = ex.(*Validation)
 		}
 	}
 
-	if fd.GetName() == "name" && v.Type == Validation_REQUIRED {
-		v.Type = Validation_LABEL
-		v.Optional = false
+	if v == nil {
+		v = &Validation{}
 	}
-	return v
+
+	if v.Type == Validation_UNKNOWN {
+		if fd.GetName() == "name" {
+			v.Type = Validation_LABEL
+		}
+
+		if v.GetRef() != "" {
+			v.Type = Validation_REQUIRED
+		}
+	}
+	return *v
 }
 
 // validateAnnotatedField performs validator for a field which has one or more
@@ -128,7 +136,7 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 	v := getValidationForField(fd)
 
 	// Skip over optional fields if empty.
-	if v.Optional {
+	if v.GetOptional() {
 		switch {
 		case af.Kind() == reflect.String && af.Len() == 0:
 			fallthrough
@@ -158,14 +166,6 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 		}
 		if af.Len() != 0 {
 			return fmt.Errorf("field \"%s\" is marked as output, but is not empty", fd.GetName())
-		}
-
-	case Validation_ASSET, Validation_HOST:
-		if af.Kind() != reflect.String {
-			return fmt.Errorf("field \"%s\" is a foreign key, but is not a string", fd.GetName())
-		}
-		if af.Len() == 0 {
-			return fmt.Errorf("field \"%s\" is a reference and cannot be empty", fd.GetName())
 		}
 
 	case Validation_LABEL:
@@ -232,7 +232,7 @@ func VerifyValidatableType(at reflect.Type) error {
 // verifyOneOfTypes attempts to verify related subtypes that are used for
 // implementing 'oneof' support in ProtoBufs.
 //
-// Here's where things get tricky. The only connection we have from |at| to the
+// Here's where things get tricky. The only connection we have from |pt| to the
 // candidates oneof field subtypes is via the XXX_OneofFuncs() internal proto
 // method. It is likely that this will break in the future. There are panics
 // scattered around to catch minor deviations, but won't catch major

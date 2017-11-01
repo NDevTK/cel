@@ -15,8 +15,8 @@ func (*Project) Validate() error         { return nil }
 func (*Image_Family) Validate() error    { return nil }
 
 func (i *Image) Validate() error {
-	if i.GetSource() == nil {
-		return errors.New("either 'latest' or 'url' must be specified")
+	if i.GetFixed() == "" && i.GetLatest() == nil {
+		return errors.Errorf("either 'url' or 'latest' must be specified for an Image")
 	}
 	return nil
 }

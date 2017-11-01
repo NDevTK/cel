@@ -37,7 +37,7 @@ func (c *FileReference) ResolveRelativePath(base_path string) error {
 }
 
 func GetPathResolver(base_path string) WalkProtoFunc {
-	return func(av reflect.Value, p *pd.FieldDescriptorProto) error {
+	return func(av reflect.Value, p RefPath, fd *pd.FieldDescriptorProto) error {
 		if av.Kind() != reflect.Ptr || av.IsNil() || av.Elem().Kind() != reflect.Struct {
 			return nil
 		}

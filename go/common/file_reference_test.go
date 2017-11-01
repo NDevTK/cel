@@ -5,64 +5,64 @@
 package common
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestFileReference_Basic(t *testing.T) {
+	p := RefPath{}
 	t.Run("Empty", func(t *testing.T) {
 		v := &FileReference{}
-		if err := InvokeValidate(v); err == nil {
+		if err := InvokeValidate(v, p); err == nil {
 			t.Fail()
 		}
 	})
 
 	t.Run("Absolute", func(t *testing.T) {
 		v := &FileReference{Path: "/foo/bar"}
-		if err := InvokeValidate(v); err == nil || !strings.Contains(err.Error(), "cannot be absolute") {
+		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "cannot be absolute") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("Backslash", func(t *testing.T) {
 		v := &FileReference{Path: "foo\\bar"}
-		if err := InvokeValidate(v); err == nil || !strings.Contains(err.Error(), "backslash") {
+		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "backslash") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefPrefix", func(t *testing.T) {
 		v := &FileReference{Path: "../bar"}
-		if err := InvokeValidate(v); err == nil || !strings.Contains(err.Error(), "parent path reference") {
+		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefSuffix", func(t *testing.T) {
 		v := &FileReference{Path: "foo/bar/.."}
-		if err := InvokeValidate(v); err == nil || !strings.Contains(err.Error(), "parent path reference") {
+		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefInfix", func(t *testing.T) {
 		v := &FileReference{Path: "foo/../bar"}
-		if err := InvokeValidate(v); err == nil || !strings.Contains(err.Error(), "parent path reference") {
+		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("OutputParam", func(t *testing.T) {
 		v := &FileReference{ResolvedPath: "foo/bar"}
-		if err := InvokeValidate(v); err == nil || !strings.Contains(err.Error(), "marked as output") {
+		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "marked as output") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("Valid", func(t *testing.T) {
 		v := &FileReference{Path: "foo/bar"}
-		if err := InvokeValidate(v); err != nil {
+		if err := InvokeValidate(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
@@ -134,7 +134,7 @@ func TestFileReference_Resolver(t *testing.T) {
 	t.Run("Basic", func(t *testing.T) {
 		v := &TestFileRefProto{}
 		v.Ref = &FileReference{Path: "foo/bar"}
-		err := WalkProto(reflect.ValueOf(&v), GetPathResolver("/a/b/c"))
+		err := WalkProtoMessage(v, RefPath{}, GetPathResolver("/a/b/c"))
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -146,7 +146,7 @@ func TestFileReference_Resolver(t *testing.T) {
 
 	t.Run("Empty", func(t *testing.T) {
 		v := &TestFileRefProto{}
-		err := WalkProto(reflect.ValueOf(&v), GetPathResolver("/a/b/c"))
+		err := WalkProtoMessage(v, RefPath{}, GetPathResolver("/a/b/c"))
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -154,7 +154,7 @@ func TestFileReference_Resolver(t *testing.T) {
 
 	t.Run("EmptyPath", func(t *testing.T) {
 		v := &TestFileRefProto{Ref: &FileReference{Path: ""}}
-		err := WalkProto(reflect.ValueOf(&v), GetPathResolver("/a/b/c"))
+		err := WalkProtoMessage(v, RefPath{}, GetPathResolver("/a/b/c"))
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}

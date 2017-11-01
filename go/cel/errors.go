@@ -120,6 +120,14 @@ type ConfigurationError struct {
 	UnderlyingError error
 }
 
+// Cause implements the Causer interface.
+func (c *ConfigurationError) Cause() error {
+	if c.UnderlyingError != nil {
+		return c.UnderlyingError
+	}
+	return c
+}
+
 func (c *ConfigurationError) Error() string {
 	if c.WasAlreadyLoaded {
 		return fmt.Sprintf("the configuartion file %s was already loaded once", c.Filename)
