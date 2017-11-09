@@ -1,4 +1,8 @@
-# Vendored dependencies. Use `dep` to manage.
-vendor/
 .DS_Store
 .idea/*
+
+# Build artifacts.
+build/
+
+# Vendored dependencies. Use `dep` to manage.
+vendor/

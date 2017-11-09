@@ -25,57 +25,89 @@ import subprocess
 import sys
 
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
-GOPATH = SOURCE_PATH
-GOOS = {
-  "linux2": "linux",
-  "linux": "linux",
-  "win32": "windows",
-  "cygwin": "windows",
-  "darwin": "darwin"
+NATIVE_GOOS = {
+    "linux2": "linux",
+    "linux": "linux",
+    "win32": "windows",
+    "cygwin": "windows",
+    "darwin": "darwin"
 }.get(sys.platform, "windows")
 
-GO_LAB_PACKAGE = 'go/lab'
 
-GO_TOOLS = ['go/cmd/cel_admin']
+def _MergeEnv(args):
+  go_env = {}
 
-GO_DEPENDENCIES = [
-  'cloud.google.com/go/logging', 'github.com/maruel/subcommands',
-  'golang.org/x/net/context', 'golang.org/x/oauth2/google',
-  'google.golang.org/api/cloudkms/v1', 'google.golang.org/api/compute/v1',
-  'google.golang.org/api/iam/v1',
-  'google.golang.org/api/cloudresourcemanager/v1'
-]
-
-
-def MergeEnv(args):
-  if 'GOPATH' in os.environ:
-    if sys.platform == 'win32':
-      gopath = '{};{}'.format(GOPATH, os.environ['GOPATH'])
-    else:
-      gopath = '{}:{}'.format(GOPATH, os.environ['GOPATH'])
-  else:
-    gopath = GOPATH
-
-  go_env = {'GOPATH': gopath}
-
+  effective_goos = NATIVE_GOOS
   if args is not None and args.goos:
-    go_env['GOOS'] = args.goos
-
+    effective_goos = args.goos
+  go_env['GOOS'] = effective_goos
   environ_copy = os.environ.copy()
   environ_copy.update(go_env)
   return environ_copy
 
 
-def GenerateProtobufCode():
+def _RunCommand(args, **kwargs):
+  logging.info("%s [CWD: %s, GOOS: %s]", ' '.join([(x if ' ' not in x
+                                                    else '"' + x + '"')
+                                                   for x in args]),
+               kwargs.get('cwd', os.getcwd()),
+               kwargs.get('env', os.environ).get('GOOS', NATIVE_GOOS))
+
+  subprocess.check_call(args, **kwargs)
+
+
+def _Deps(args):
+  verbose_flag = []
+  if hasattr(args, 'verbose') and args.verbose:
+    verbose_flag += ["-v"]
+
+  while True:
+    try:
+      _RunCommand(
+          ['dep', 'ensure'] + verbose_flag,
+          env=_MergeEnv(args),
+          cwd=SOURCE_PATH)
+    except OSError as e:
+      if e.errno == 2 and hasattr(args, 'install') and args.install:
+        _RunCommand(['go', 'get', '-u'] + verbose_flag +
+                    ['github.com/golang/dep/cmd/dep'])
+        continue
+
+      if e.errno == 2:
+        sys.stderr.write('''"dep" command not found.
+
+The CEL project uses "deps" to manage dependencies. You can get it by following
+the instructions at :
+
+    https://github.com/golang/dep#setup
+
+A quick and portable way to get it is to run the following:
+
+    go get -u github.com/golang/dep/cmd/dep
+
+Rerun as 'build.py deps --install' to install dependencies automatically. If
+you've already done so, it may be that the GOBIN path is not in the system
+PATH.
+''')
+      else:
+        sys.stderr.write('''Failed to run "dep"''')
+      raise e
+    return
+
+
+def _Generate(args):
   '''Invokes 'go generate' which generates the protobuf code.
 
   For convenience of building, the generated code is checked into the source
   tree. This is also the norm for 'go generate' where we want to avoid creating
   a dependency on protoc being available on the build machine.'''
-  subprocess.check_call(
-      ['go', 'generate', '.'],
-      env=MergeEnv(None),
-      cwd=os.path.abspath(os.path.join(SOURCE_PATH, 'src', 'go', 'lab')))
+  verbose_flag = []
+  if hasattr(args, 'verbose') and args.verbose:
+    verbose_flag += ['-v', '-x']
+  _RunCommand(
+      ['go', 'generate'] + verbose_flag + ['.'],
+      env=_MergeEnv(None),
+      cwd=SOURCE_PATH)
 
 
 def BuildCommand(args):
@@ -86,38 +118,19 @@ binaries are placed under GOPATH/bin. This is the default location binaries are
 placed in when invoking 'go install'.
 
 It is possible to invoke a cross compilation by specifying --goos. In that
-case, the resulting build artifacts are placed under $GOPATH/bin/$GOOS/.'''
+case, the resulting build artifacts are placed under build/$GOOS/bin.'''
 
-  GenerateProtobufCode()
+  if not args.fast:
+    _Deps(args)
+    _Generate(args)
 
-  verb = 'install'
-  bin_dir = os.path.join(SOURCE_PATH, 'bin')
-  cross_compile = False
+  flags = []
+  if args.verbose:
+    flags += ['-v', '-x']
 
-  # Cross compiling
-  if args.goos and args.goos != GOOS:
-    verb = 'build'
-    bin_dir = os.path.abspath(os.path.join(SOURCE_PATH, 'bin', args.goos))
-    cross_compile = True
-
-  if not os.path.exists(bin_dir):
-    os.mkdir(bin_dir)
-
-  if not cross_compile:
-    subprocess.check_call(
-        ['go', verb, GO_LAB_PACKAGE], env=MergeEnv(args), cwd=bin_dir)
-
-  for tool in GO_TOOLS:
-    subprocess.check_call(['go', verb, tool], env=MergeEnv(args), cwd=bin_dir)
-
-
-def _RunCommand(args, **kwargs):
-  logging.info("Run command '%s' in directory %s", ' '.join(args),
-               kwargs.get('cwd', None))
-
-  subprocess.check_call(
-      args,
-      **kwargs)
+  build_env = _MergeEnv(args)
+  _RunCommand(
+      ['go', 'install'] + flags + ['./go/...'], env=build_env, cwd=SOURCE_PATH)
 
 
 def TestCommand(args):
@@ -167,7 +180,7 @@ Note: Running tests in 'reset and record' mode requires access to the
 chrome-auth-lab-dev Google Cloud project.
 '''
 
-  test_env = MergeEnv(None)
+  test_env = _MergeEnv(None)
 
   if args.reset:
     if len(args.gotest_args) != 0:
@@ -196,11 +209,7 @@ chrome-auth-lab-dev Google Cloud project.
 
     test_env['LAB_RECORD'] = 'yes'
 
-  for target in [GO_LAB_PACKAGE] + GO_TOOLS:
-    _RunCommand(['go', 'test', target] + args.gotest_args,
-                env=test_env,
-                cwd=os.path.abspath(
-                    os.path.join(SOURCE_PATH, 'src', 'go', 'lab')))
+  _RunCommand(['go', 'test', './go/...'], env=test_env, cwd=SOURCE_PATH)
 
 
 def GenCommand(args):
@@ -209,7 +218,8 @@ def GenCommand(args):
 Should be run after changing any of the *.proto files. This re-generates the Go
 protobuf code based on the .proto files.
 '''
-  GenerateProtobufCode()
+  _Deps(args)
+  _Generate(args)
 
 
 def DepsCommand(args):
@@ -221,21 +231,7 @@ building.
   flags = []
   if args.v:
     flags += ['-v']
-  subprocess.check_call(
-      ['go', 'get', '-u'] + flags + GO_DEPENDENCIES, env=MergeEnv(None))
-  print """Successfully updated Go dependencies.
-
-Git submodule dependencies were not updated.
-
-Fetch Git submodules that are required by this repository with:
-
-    git submodule update --init --recursive
-
-To roll upstream changes to all submodule dependencies, use:
-
-    git submodule update --remote
-
-Note: You need to manually verify all new changes to submodules."""
+  _RunCommand(['dep', 'ensure'] + flags)
 
 
 def ShowEnvCommand(args):
@@ -243,7 +239,7 @@ def ShowEnvCommand(args):
 
 Use the --goos option to see the Go environment used for cross compiling.
 '''
-  subprocess.check_call(['go', 'env'], env=MergeEnv(args))
+  _RunCommand(['go', 'env'], env=_MergeEnv(args))
 
 
 def RunCommand(args):
@@ -254,13 +250,15 @@ for 'go build'. If the command requires passing commandline arguments, preface
 the entire command with '--' to prevent the arguments from being interpreted as
 arguments for this script.
 '''
-  subprocess.check_call(args.prog, env=MergeEnv(args))
+  _RunCommand(args.prog, env=_MergeEnv(args))
 
 
 def main():
   common_options = argparse.ArgumentParser(add_help=False)
   common_options.add_argument(
       '--goos', '-O', help='Set GOOS', choices=['windows', 'darwin', 'linux'])
+  common_options.add_argument(
+      '--verbose', '-v', help='Verbose output', action='store_true')
 
   parser = argparse.ArgumentParser(
       description='build and manage Chrome Enterprise Lab tools',
@@ -276,6 +274,11 @@ def main():
       description=BuildCommand.__doc__,
       parents=[common_options],
       formatter_class=argparse.RawDescriptionHelpFormatter)
+  build_command.add_argument(
+      '--fast',
+      '-F',
+      action='store_true',
+      help='''Fast build. Skips dependency and generator steps''')
   build_command.set_defaults(closure=BuildCommand)
 
   # ----------------------------------------------------------------------------
@@ -285,6 +288,7 @@ def main():
       'test',
       help=TestCommand.__doc__.splitlines()[0],
       description=TestCommand.__doc__,
+      parents=[common_options],
       formatter_class=argparse.RawDescriptionHelpFormatter)
   test_command.add_argument(
       '--reset',
@@ -309,6 +313,7 @@ def main():
       'gen',
       help=GenCommand.__doc__.splitlines()[0],
       description=GenCommand.__doc__,
+      parents=[common_options],
       formatter_class=argparse.RawDescriptionHelpFormatter)
   gen_command.set_defaults(closure=GenCommand)
 
@@ -319,7 +324,13 @@ def main():
       'deps',
       help=DepsCommand.__doc__.splitlines()[0],
       description=DepsCommand.__doc__,
+      parents=[common_options],
       formatter_class=argparse.RawDescriptionHelpFormatter)
+  deps_command.add_argument(
+      '--install',
+      '-I',
+      action='store_true',
+      help='Install additional dependencies')
   deps_command.set_defaults(closure=DepsCommand)
 
   # ----------------------------------------------------------------------------
@@ -346,12 +357,12 @@ def main():
       'prog', metavar='ARG', type=str, help='Program and arguments', nargs='+')
   run_command.set_defaults(closure=RunCommand)
 
-  parser.add_argument('-v', action='store_true', help='verbose output')
   args = parser.parse_args()
-  if args.v:
-    logging.basicConfig(level=logging.INFO,
-                        format=('%(asctime)s %(levelname)s %(filename)s:'
-                                '%(lineno)s] %(message)s '))
+  if hasattr(args, 'verbose') and args.verbose:
+    logging.basicConfig(
+        level=logging.INFO,
+        format=('%(asctime)s %(levelname)s %(filename)s:'
+                '%(lineno)s] %(message)s '))
 
   try:
     args.closure(args)
