@@ -180,6 +180,12 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 			return fmt.Errorf("unexpected kind for validatable field: %#v", af)
 		}
 		return errors.Wrapf(IsRFC1035Domain(af.String()), "validating field \"%s\"", fd.GetName())
+
+	case Validation_ORGLABEL:
+		if af.Kind() != reflect.String {
+			return fmt.Errorf("unexpected kind for validatable field: %#v", af)
+		}
+		return errors.Wrapf(IsRFC1035DomainLabel(af.String()), "validating field \"%s\"", fd.GetName())
 	}
 	return nil
 }

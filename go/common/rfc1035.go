@@ -106,3 +106,20 @@ func IsRFC1035Domain(s string) error {
 	}
 	return nil
 }
+
+// IsRFC1035DomainLabel returns nil if |s| is matches the production "[
+// <subdomain> ':' ] <label>".
+//
+// See IsRFC1035Label() and IsRFC1035Domain() for details on the <subdomain>
+// and <label> productions.
+func IsRFC1035DomainLabel(s string) error {
+	if strings.ContainsRune(s, ':') {
+		sp := strings.SplitN(s, ":", 2)
+		err := IsRFC1035Domain(sp[0])
+		if err != nil {
+			return err
+		}
+		return IsRFC1035Label(sp[1])
+	}
+	return IsRFC1035Label(s)
+}
