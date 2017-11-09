@@ -5,11 +5,13 @@
 package common
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/descriptor"
 	"github.com/golang/protobuf/proto"
 	pd "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -101,6 +103,8 @@ func WalkProto(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 			np := p
 			if name, ok := nameOfNamedProto(av.Index(i)); ok {
 				np = np.Append(name)
+			} else {
+				np = np.Append(fmt.Sprintf("@%d", i))
 			}
 			err_list = AppendErrorList(err_list, WalkProto(av.Index(i), np, f))
 		}
@@ -366,6 +370,19 @@ func resolvePathInValue(av reflect.Value, path RefPath, mode ResolutionMode) (re
 		// The name refers to a named object
 		name, np := path.Shift()
 		path = np
+		if strings.HasPrefix(name, "@") {
+			// An indexed reference
+			index, err := strconv.Atoi(name[1:])
+			if err != nil {
+				return av, errors.Wrapf(err, "parsing index \"%s\"", name)
+			}
+			if index < 0 || index >= av.Len() {
+				return av, errors.Errorf("index \"%s\" in collection is out of bounds", name)
+			}
+			return resolvePathInValue(av.Index(index), path, mode)
+		}
+
+		// A named reference
 		for i := 0; i < av.Len(); i++ {
 			if n, ok := nameOfNamedProto(av.Index(i)); ok && n == name {
 				return resolvePathInValue(av.Index(i), path, mode)
