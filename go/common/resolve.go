@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package common
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/common"
 	"github.com/pkg/errors"
 	"sync"
 )
@@ -131,7 +130,7 @@ func checkForCycles(A *Assets) []*DependencyNode {
 //   * A Permanent asset must only depend on another permanent asset.
 //   * A Resolvable asset must only depend on a permanent or resolvable asset.
 //   * A Script asset can depend on any other type of asset.
-func AllowedToDependOn(child Asset, parent Asset) error {
+func AllowedToDependOn(child, parent Asset) error {
 	if _, child_is_dsc := child.(ScriptAsset); child_is_dsc {
 		return nil
 	}
@@ -258,7 +257,7 @@ func ResolveAssets(A *Assets) error {
 				"asset %s failed to resolve", d.Asset.FullName()))
 		}
 	}
-	return common.WrapErrorList(error_list)
+	return WrapErrorList(error_list)
 }
 
 // resolveNodesFromChannel fetches DependencyNodes from |resolvable|, resolves

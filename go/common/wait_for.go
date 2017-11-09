@@ -2,11 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package common
 
-import (
-	"chromium.googlesource.com/enterprise/cel/go/common"
-)
+import ()
 
 // WaitFor waits for |n| number of |error| objects from |c|. If any of them are
 // non-nil, then it returns a non-nil error which has an aggregate error string
@@ -17,17 +15,17 @@ import (
 //
 // Expected usage is as follows:
 //
-//    v := make(chan error)
-//    for _, x := range things {
-//      go func(xx *XType) {
-//         v <- HandleXThing(xx)
-//      }(x)
-//    }
-//    return WaitFor(v, len(things))
+//     v := make(chan error)
+//     for _, x := range things {
+//       go func(xx *XType) {
+//          v <- HandleXThing(xx)
+//       }(x)
+//     }
+//     return WaitFor(v, len(things))
 //
 // Basically, this makes it more convenience to gather the results of a number
 // of operations that are sequenced in parallel via goroutines.
-func WaitFor(ch chan error, n int) (err error) {
+func WaitFor(ch <-chan error, n int) (err error) {
 	var l []error
 	for i := 0; i < n; i += 1 {
 		e, ok := <-ch
@@ -40,5 +38,27 @@ func WaitFor(ch chan error, n int) (err error) {
 		}
 	}
 
-	return common.WrapErrorList(l)
+	return WrapErrorList(l)
+}
+
+type JobWaiter struct {
+	errc  chan error
+	count int
+}
+
+func NewJobWaiter() *JobWaiter {
+	return &JobWaiter{errc: make(chan error), count: 0}
+}
+
+func (j *JobWaiter) Collect() chan<- error {
+	j.count += 1
+	return j.errc
+}
+
+func (j *JobWaiter) Join() error {
+	defer func() {
+		j.count = 0
+	}()
+
+	return WaitFor(j.errc, j.count)
 }

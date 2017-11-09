@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package common
 
 // Logger is an abstract logging facility. The log entries should be considered
 // relatively heavyweight, and can carry large payloads.

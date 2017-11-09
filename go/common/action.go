@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package common
 
 import (
 	"fmt"
@@ -70,4 +70,11 @@ func Action(err *error, action string, v ...interface{}) {
 	if *err != nil {
 		*err = errors.WithMessage(*err, fmt.Sprintf(action, v...))
 	}
+}
+
+func AsyncAction(err *error, result chan<- error, action string, v ...interface{}) {
+	if *err != nil {
+		*err = errors.WithMessage(*err, fmt.Sprintf(action, v...))
+	}
+	result <- *err
 }

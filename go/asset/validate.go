@@ -7,6 +7,7 @@ package asset
 import (
 	"github.com/pkg/errors"
 	"net"
+	"strings"
 )
 
 // Fields which are properly annotated and have no additional validation
@@ -27,16 +28,15 @@ func (*AssetManifest) Validate() error                     { return nil }
 func (*Certificate) Validate() error                       { return nil }
 func (*GroupReference) Validate() error                    { return nil }
 func (*IISApplication) Validate() error                    { return nil }
+func (*IISBindings) Validate() error                       { return nil }
 func (*IISServer) Validate() error                         { return nil }
 func (*IISSite) Validate() error                           { return nil }
+func (*Machine) Validate() error                           { return nil }
 func (*Network) Validate() error                           { return nil }
-func (*RegistryKey) Validate() error                       { return nil }
-func (*RegistryValue) Validate() error                     { return nil }
+func (*NetworkInterface) Validate() error                  { return nil }
 func (*UserReference) Validate() error                     { return nil }
 func (*WindowsGroup) Validate() error                      { return nil }
 func (*WindowsUser) Validate() error                       { return nil }
-func (*NetworkInterface) Validate() error                  { return nil }
-func (*IISBindings) Validate() error                       { return nil }
 
 func (u *UserOrGroupReference) Validate() error {
 	if u.Entity == nil {
@@ -122,5 +122,41 @@ func (c *CertificatePool) Validate() error {
 		}
 	}
 
+	return nil
+}
+
+var kValidRegistryHives = [...]string{
+	"HKEY_CLASSES_ROOT", "HKCR",
+	"HKEY_CURRENT_USER", "HKCU",
+	"HKEY_LOCAL_MACHINE", "HKLM",
+	"HKEY_USERS", "HKU",
+	"HKEY_CURRENT_CONFIG", "HKCC"}
+
+const kRegistryKeyPathSeparator = "/"
+
+func (r *RegistryKey) Validate() error {
+	if !strings.Contains(r.Path, kRegistryKeyPathSeparator) {
+		return errors.Errorf("registry key path is invalid: \"%s\"", r.Path)
+	}
+	hive := r.Path[:strings.Index(r.Path, kRegistryKeyPathSeparator)]
+	found := false
+	for _, h := range kValidRegistryHives {
+		if h == hive {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return errors.Errorf("registry hive is \"%s\" which doesn't match allowed list: %v", hive, kValidRegistryHives)
+	}
+
+	if strings.ContainsRune(r.Path, '/') {
+		return errors.Errorf("found forward slashes in registry path \"%s\". These are not allowed due to the possibility of inconsistent behavior", r.Path)
+	}
+
+	return nil
+}
+
+func (v *RegistryValue) Validate() error {
 	return nil
 }

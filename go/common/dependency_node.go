@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package common
 
 import (
+	"github.com/pkg/errors"
 	"sync/atomic"
 )
 
@@ -47,13 +48,13 @@ func (d *DependencyNode) Ready() bool {
 // be resolved.
 func (d *DependencyNode) Resolve() (ready []*DependencyNode, err error) {
 	if !d.Ready() {
-		return nil, NewError("asset %s has %d unmet dependencies, but Resolve() was called to resolve it.",
+		return nil, errors.Errorf("asset %s has %d unmet dependencies, but Resolve() was called to resolve it.",
 			d.Asset.FullName(),
 			d.UnresolvedDependencies)
 	}
 
 	if d.Processed {
-		return nil, NewError("asset %s was already resolved.", d.Asset.FullName())
+		return nil, errors.Errorf("asset %s was already resolved.", d.Asset.FullName())
 	}
 	d.Processed = true
 
@@ -68,7 +69,7 @@ func (d *DependencyNode) Resolve() (ready []*DependencyNode, err error) {
 		d.Result = a.GenerateScript()
 
 	default:
-		d.Result = NewError("unknown asset type for %s", d.Asset.FullName())
+		d.Result = errors.Errorf("unknown asset type for %s", d.Asset.FullName())
 	}
 
 	if d.Result != nil {
