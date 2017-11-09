@@ -5,10 +5,12 @@
 package main
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"context"
 	"flag"
 	"fmt"
 	"github.com/google/subcommands"
+	"os"
 )
 
 type DeployCommand struct {
@@ -34,9 +36,9 @@ func (d *DeployCommand) SetFlags(f *flag.FlagSet) {
 }
 
 func (d *DeployCommand) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	client, err := lab.GetDefaultClient(ctx)
+	client, err := common.GetDefaultClient(ctx)
 	if err != nil {
-		fmt.Fprintln(a.GetErr(), "failed to initialize http client: ", err)
+		fmt.Fprintln(os.Stderr, "failed to initialize http client: ", err)
 		return subcommands.ExitFailure
 	}
 
