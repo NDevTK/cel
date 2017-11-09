@@ -16,8 +16,9 @@
 // specified on the same protoc invocation.
 //
 //go:generate protoc --go_out=../../../ schema/common/options.proto schema/common/fileref.proto go/common/testdata/testmsgs.proto
-//go:generate protoc --go_out=../../../ schema/asset/active_directory.proto schema/asset/cert.proto schema/asset/dns.proto schema/asset/iis.proto schema/asset/network.proto schema/asset/asset_manifest.proto
+//go:generate protoc --go_out=../../../ schema/asset/active_directory.proto schema/asset/cert.proto schema/asset/dns.proto schema/asset/iis.proto schema/asset/network.proto schema/asset/asset_manifest.proto schema/asset/machine.proto
 //go:generate protoc --go_out=../../../ schema/host/host_environment.proto
+//go:generate protoc --go_out=../../../ schema/meta/meta.proto
 //go:generate protoc --go_out=../../../ schema/gcp/compute/compute-api.proto
 
 // And documentation
