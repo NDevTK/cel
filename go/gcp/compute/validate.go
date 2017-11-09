@@ -7,7 +7,7 @@
 // 
 // API Name      : compute (compute:beta)
 // Version       : beta
-// Revision      : 20170908
+// Revision      : 20171010
 // Documentation : https://developers.google.com/compute/docs/reference/latest/
 
 package compute

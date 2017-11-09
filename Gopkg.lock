@@ -35,13 +35,13 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
-  revision = "01c190206fbdffa42f334f4b2bf2220f50e64920"
+  revision = "a337091b0525af65de94df2eb7e98bd9962dcbe2"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
   packages = [".","google","internal","jws","jwt"]
-  revision = "bb50c06baba3d0c76f9d125c0719093e315b5b44"
+  revision = "9ff8ebcc8e241d46f52ecc5bff0e5a2f2dbef402"
 
 [[projects]]
   branch = "master"
@@ -59,7 +59,7 @@
   branch = "master"
   name = "google.golang.org/api"
   packages = ["cloudkms/v1","cloudresourcemanager/v1","compute/v1","gensupport","googleapi","googleapi/internal/uritemplates","googleapi/transport","iam/v1","internal","iterator","option","support/bundler","transport","transport/grpc","transport/http"]
-  revision = "8c7cbce8616dff98a4442737eaa00096f04d7905"
+  revision = "34bc9e3ce3692fb01d22f685df28518773cbdae9"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -71,13 +71,13 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/api/annotations","googleapis/api/distribution","googleapis/api/label","googleapis/api/metric","googleapis/api/monitoredres","googleapis/logging/type","googleapis/logging/v2","googleapis/rpc/status","protobuf/field_mask"]
-  revision = "03951f3b52582ecab79e5a37a86b5a20c5f64df7"
+  revision = "11c7f9e547da6db876260ce49ea7536985904c9b"
 
 [[projects]]
   name = "google.golang.org/grpc"
   packages = [".","balancer","codes","connectivity","credentials","credentials/oauth","grpclb/grpc_lb_v1/messages","grpclog","internal","keepalive","metadata","naming","peer","resolver","stats","status","tap","transport"]
-  revision = "61d37c5d657a47e4404fd6823bd598341a2595de"
-  version = "v1.7.1"
+  revision = "5ffe3083946d5603a0578721101dc8165b1d5b5f"
+  version = "v1.7.2"
 
 [solve-meta]
   analyzer-name = "dep"

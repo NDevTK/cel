@@ -7,7 +7,7 @@
 // 
 // API Name      : compute (compute:beta)
 // Version       : beta
-// Revision      : 20170908
+// Revision      : 20171010
 // Documentation : https://developers.google.com/compute/docs/reference/latest/
 
 syntax="proto3";
@@ -92,9 +92,13 @@ message AcceleratorTypeAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -105,7 +109,9 @@ message AcceleratorTypeAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -166,9 +172,13 @@ message AcceleratorTypeList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -179,7 +189,9 @@ message AcceleratorTypeList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -223,9 +235,13 @@ message AcceleratorTypesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -236,7 +252,9 @@ message AcceleratorTypesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -366,10 +384,11 @@ message Address {
   // [Output Only] Server-defined URL for the resource.
   string selfLink = 12;
 
-  // [Output Only] The status of the address, which can be either IN_USE
-  // or RESERVED. An address that is RESERVED is currently reserved and
-  // available to use. An IN_USE address is currently being used by
-  // another resource and is not available.
+  // [Output Only] The status of the address, which can be one of
+  // RESERVING, RESERVED, or IN_USE. An address that is RESERVING is
+  // currently in the process of being reserved. A RESERVED address is
+  // currently reserved and available to use. An IN_USE address is
+  // currently being used by another resource and is not available.
   // Valid values:
   //     IN_USE
   //     RESERVED
@@ -416,9 +435,13 @@ message AddressAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -429,7 +452,9 @@ message AddressAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -490,9 +515,13 @@ message AddressList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -503,7 +532,9 @@ message AddressList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -547,9 +578,13 @@ message AddressesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -560,7 +595,9 @@ message AddressesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -689,7 +726,8 @@ message AttachedDisk {
 
   // Specifies a valid partial or full URL to an existing Persistent Disk
   // resource. When creating a new instance, one of
-  // initializeParams.sourceImage or disks.source is required.
+  // initializeParams.sourceImage or disks.source is required except for
+  // local SSD.
   // 
   // If desired, you can also attach existing non-root persistent disks
   // using this property. This field is only applicable for persistent
@@ -744,7 +782,8 @@ message AttachedDiskInitializeParams {
   string diskType = 4;
 
   // The source image to create this disk. When creating a new instance,
-  // one of initializeParams.sourceImage or disks.source is required.
+  // one of initializeParams.sourceImage or disks.source is required
+  // except for local SSD.
   // 
   // To create a disk with one of the public operating system images,
   // specify the image by its family name. For example, specify
@@ -946,9 +985,13 @@ message AutoscalerAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -959,7 +1002,9 @@ message AutoscalerAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -1020,9 +1065,13 @@ message AutoscalerList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -1033,7 +1082,9 @@ message AutoscalerList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -1101,9 +1152,13 @@ message AutoscalersScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -1114,7 +1169,9 @@ message AutoscalersScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -1203,7 +1260,7 @@ message AutoscalingPolicyCustomMetricUtilization {
   // A filter string, compatible with a Stackdriver Monitoring filter
   // string for TimeSeries.list API call. This filter is used to select a
   // specific TimeSeries for the purpose of autoscaling and to determine
-  // whether the metric is exporting per-instance or global data.
+  // whether the metric is exporting per-instance or per-group data.
   // 
   // For the filter to be valid for autoscaling purposes, the following
   // rules apply:
@@ -1220,8 +1277,8 @@ message AutoscalingPolicyCustomMetricUtilization {
   // If the resource type is any other value, the autoscaler expects this
   // metric to contain values that apply to the entire autoscaled instance
   // group and resource label filtering can be performed to point
-  // autoscaler at the correct TimeSeries to scale upon. This is / called
-  // a global metric for the purpose of autoscaling.
+  // autoscaler at the correct TimeSeries to scale upon. This is called a
+  // per-group metric for the purpose of autoscaling.
   // 
   // If not specified, the type defaults to gce_instance.
   // 
@@ -1233,14 +1290,12 @@ message AutoscalingPolicyCustomMetricUtilization {
   string filter = 1;
 
   // The identifier (type) of the Stackdriver Monitoring metric. The
-  // metric cannot have negative values and should be a utilization
-  // metric, which means that the number of virtual machines handling
-  // requests should increase or decrease proportionally to the metric.
+  // metric cannot have negative values.
   // 
   // The metric must have a value type of INT64 or DOUBLE.
   string metric = 2;
 
-  // If scaling is based on a global metric value that represents the
+  // If scaling is based on a per-group metric value that represents the
   // total amount of work to be done or resource usage, set this value to
   // an amount assigned for a single instance of the scaled group.
   // Autoscaler will keep the number of instances proportional to the
@@ -1259,7 +1314,9 @@ message AutoscalingPolicyCustomMetricUtilization {
   double singleInstanceAssignment = 3;
 
   // The target value of the metric that autoscaler should maintain. This
-  // must be a positive value.
+  // must be a positive value. A utilization metric scales number of
+  // virtual machines handling requests to increase or decrease
+  // proportionally to the metric.
   // 
   // For example, a good metric to use as a utilization_target is
   // compute.googleapis.com/instance/network/received_bytes_count. The
@@ -1433,9 +1490,13 @@ message BackendBucketList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -1446,7 +1507,9 @@ message BackendBucketList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -1642,9 +1705,13 @@ message BackendServiceAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -1655,7 +1722,9 @@ message BackendServiceAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -1743,9 +1812,13 @@ message BackendServiceList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -1756,7 +1829,9 @@ message BackendServiceList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -1800,9 +1875,13 @@ message BackendServicesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -1813,7 +1892,9 @@ message BackendServicesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2024,9 +2105,13 @@ message CommitmentAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2037,7 +2122,9 @@ message CommitmentAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2098,9 +2185,13 @@ message CommitmentList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2111,7 +2202,9 @@ message CommitmentList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2155,9 +2248,13 @@ message CommitmentsScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2168,7 +2265,9 @@ message CommitmentsScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2516,9 +2615,13 @@ message DiskAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2529,7 +2632,9 @@ message DiskAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2590,9 +2695,13 @@ message DiskList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2603,7 +2712,9 @@ message DiskList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2717,9 +2828,13 @@ message DiskTypeAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2730,7 +2845,9 @@ message DiskTypeAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2791,9 +2908,13 @@ message DiskTypeList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2804,7 +2925,9 @@ message DiskTypeList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2848,9 +2971,13 @@ message DiskTypesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2861,7 +2988,9 @@ message DiskTypesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -2910,9 +3039,13 @@ message DisksScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -2923,7 +3056,9 @@ message DisksScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -3137,10 +3272,11 @@ message Firewall {
   // on the specified network.
   repeated string targetServiceAccounts = 16;
 
-  // A list of instance tags indicating sets of instances located in the
-  // network that may make network connections as specified in allowed[].
-  // If no targetTags are specified, the firewall rule applies to all
-  // instances on the specified network.
+  // A list of tags that controls which instances the firewall rule
+  // applies to. If targetTags are specified, then the firewall rule
+  // applies only to instances in the VPC network that have one of those
+  // tags. If no targetTags are specified, the firewall rule applies to
+  // all instances on the specified network.
   repeated string targetTags = 17;
 }
 
@@ -3176,9 +3312,13 @@ message FirewallList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -3189,7 +3329,9 @@ message FirewallList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -3220,15 +3362,24 @@ message FirewallList {
 
 // Encapsulates numeric value that can be either absolute or relative.
 message FixedOrPercent {
-  // [Output Only] Absolute value calculated based on mode: mode = fixed
-  // -> calculated = fixed = percent -> calculated = ceiling(percent/100 *
-  // base_value)
+  // [Output Only] Absolute value of VM instances calculated based on the
+  // specific mode.
+  // 
+  // 
+  // - If the value is fixed, then the caculated value is equal to the
+  // fixed value.
+  // - If the value is a percent, then the calculated value is percent/100
+  // * targetSize. For example, the calculated value of a 80% of a managed
+  // instance group with 150 instances would be (80/100 * 150) = 120 VM
+  // instances. If there is a remainder, the number is rounded up.
   int32 calculated = 1;
 
-  // fixed must be non-negative.
+  // Specifies a fixed number of VM instances. This must be a positive
+  // integer.
   int32 fixed = 2;
 
-  // percent must belong to [0, 100].
+  // Specifies a percentage of instances between 0 to 100%, inclusive. For
+  // example, specify 80 for 80%.
   int32 percent = 3;
 }
 
@@ -3238,19 +3389,34 @@ message FixedOrPercent {
 message ForwardingRule {
   // The IP address that this forwarding rule is serving on behalf of.
   // 
-  // For global forwarding rules, the address must be a global IP. For
-  // regional forwarding rules, the address must live in the same region
-  // as the forwarding rule. By default, this field is empty and an
-  // ephemeral IPv4 address from the same scope (global or regional) will
-  // be assigned. A regional forwarding rule supports IPv4 only. A global
-  // forwarding rule supports either IPv4 or IPv6.
+  // Addresses are restricted based on the forwarding rule's load
+  // balancing scheme (EXTERNAL or INTERNAL) and scope (global or
+  // regional).
+  // 
+  // When the load balancing scheme is EXTERNAL, for global forwarding
+  // rules, the address must be a global IP, and for regional forwarding
+  // rules, the address must live in the same region as the forwarding
+  // rule. If this field is empty, an ephemeral IPv4 address from the same
+  // scope (global or regional) will be assigned. A regional forwarding
+  // rule supports IPv4 only. A global forwarding rule supports either
+  // IPv4 or IPv6.
   // 
   // When the load balancing scheme is INTERNAL, this can only be an RFC
-  // 1918 IP address belonging to the network/subnetwork configured for
-  // the forwarding rule. A reserved address cannot be used. If the field
-  // is empty, the IP address will be automatically allocated from the
-  // internal IP range of the subnetwork or network configured for this
-  // forwarding rule.
+  // 1918 IP address belonging to the network/subnet configured for the
+  // forwarding rule. By default, if this field is empty, an ephemeral
+  // internal IP address will be automatically allocated from the IP range
+  // of the subnet or network configured for this forwarding rule.
+  // 
+  // An address can be specified either by a literal IP address or a URL
+  // reference to an existing Address resource. The following examples are
+  // all valid:
+  // - 100.1.2.3
+  // -
+  // https://www.googleapis.com/compute/v1/projects/project/regions/region/addresses/address
+  // - projects/project/regions/region/addresses/address
+  // - regions/region/addresses/address
+  // - global/addresses/address
+  // - address
   string IPAddress = 1;
 
   // The IP protocol to which this rule applies. Valid options are TCP,
@@ -3450,9 +3616,13 @@ message ForwardingRuleAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -3463,7 +3633,9 @@ message ForwardingRuleAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -3523,9 +3695,13 @@ message ForwardingRuleList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -3536,7 +3712,9 @@ message ForwardingRuleList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -3580,9 +3758,13 @@ message ForwardingRulesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -3593,7 +3775,9 @@ message ForwardingRulesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -3651,6 +3835,8 @@ message GuestOsFeature {
   // Valid values:
   //     FEATURE_TYPE_UNSPECIFIED
   //     MULTI_IP_SUBNET
+  //     SECURE_BOOT
+  //     UEFI_COMPATIBLE
   //     VIRTIO_SCSI_MULTIQUEUE
   //     WINDOWS
   string type = 1;
@@ -3680,6 +3866,11 @@ message HTTPHealthCheck {
   // The request path of the HTTP health check request. The default value
   // is /.
   string requestPath = 5;
+
+  // The string to match anywhere in the first 1024 bytes of the response
+  // body. If left empty (the default value), the status code determines
+  // health. The response data can only be ASCII.
+  string response = 6;
 }
 
 message HTTPSHealthCheck {
@@ -3706,6 +3897,11 @@ message HTTPSHealthCheck {
   // The request path of the HTTPS health check request. The default value
   // is /.
   string requestPath = 5;
+
+  // The string to match anywhere in the first 1024 bytes of the response
+  // body. If left empty (the default value), the status code determines
+  // health. The response data can only be ASCII.
+  string response = 6;
 }
 
 // An HealthCheck resource. This resource defines a template for how
@@ -3810,9 +4006,13 @@ message HealthCheckList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -3823,7 +4023,9 @@ message HealthCheckList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -3989,9 +4191,13 @@ message HttpHealthCheckList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -4002,7 +4208,9 @@ message HttpHealthCheckList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -4122,9 +4330,13 @@ message HttpsHealthCheckList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -4135,7 +4347,9 @@ message HttpsHealthCheckList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -4358,9 +4572,13 @@ message ImageList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -4371,7 +4589,9 @@ message ImageList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -4414,25 +4634,28 @@ message Instance {
   // [Output Only] Creation timestamp in RFC3339 text format.
   string creationTimestamp = 3;
 
+  // Whether the resource should be protected against deletion.
+  bool deletionProtection = 4;
+
   // An optional description of this resource. Provide this property when
   // you create the resource.
-  string description = 4;
+  string description = 5;
 
   // Array of disks associated with this instance. Persistent disks must
   // be created before you can assign them.
-  repeated AttachedDisk disks = 5;
+  repeated AttachedDisk disks = 6;
 
   // List of the type and count of accelerator cards attached to the
   // instance.
-  repeated AcceleratorConfig guestAccelerators = 6;
+  repeated AcceleratorConfig guestAccelerators = 7;
 
   // [Output Only] The unique identifier for the resource. This identifier
   // is defined by the server.
-  string id = 7;
+  string id = 8;
 
   // [Output Only] Type of the resource. Always compute#instance for
   // instances.
-  string kind = 8;
+  string kind = 9;
 
   // A fingerprint for this request, which is essentially a hash of the
   // metadata's contents and used for optimistic locking. The fingerprint
@@ -4441,11 +4664,11 @@ message Instance {
   // up-to-date fingerprint hash in order to update or change metadata.
   // 
   // To see the latest fingerprint, make get() request to the instance.
-  string labelFingerprint = 9;
+  string labelFingerprint = 10;
 
   // Labels to apply to this instance. These can be later modified by the
   // setLabels method.
-  map<string, string> labels = 10;
+  map<string, string> labels = 11;
 
   // Full or partial URL of the machine type resource to use for this
   // instance, in the format: zones/zone/machineTypes/machine-type. This
@@ -4466,17 +4689,17 @@ message Instance {
   // 
   // For a full list of restrictions, read the Specifications for custom
   // machine types.
-  string machineType = 11;
+  string machineType = 12;
 
   // The metadata key/value pairs assigned to this instance. This includes
   // custom metadata and predefined keys.
-  Metadata metadata = 12;
+  Metadata metadata = 13;
 
   // Specifies a minimum CPU platform for the VM instance. Applicable
   // values are the friendly names of CPU platforms, such as
   // minCpuPlatform: "Intel Haswell" or minCpuPlatform: "Intel Sandy
   // Bridge".
-  string minCpuPlatform = 13;
+  string minCpuPlatform = 14;
 
   // The name of the resource, provided by the client when initially
   // creating the resource. The resource name must be 1-63 characters
@@ -4486,19 +4709,19 @@ message Instance {
   // lowercase letter, and all following characters must be a dash,
   // lowercase letter, or digit, except the last character, which cannot
   // be a dash.
-  string name = 14;
+  string name = 15;
 
   // An array of network configurations for this instance. These specify
   // how interfaces are configured to interact with other network
   // services, such as connecting to the internet. Multiple interfaces are
   // supported per instance.
-  repeated NetworkInterface networkInterfaces = 15;
+  repeated NetworkInterface networkInterfaces = 16;
 
   // Sets the scheduling options for this instance.
-  Scheduling scheduling = 16;
+  Scheduling scheduling = 17;
 
   // [Output Only] Server-defined URL for this resource.
-  string selfLink = 17;
+  string selfLink = 18;
 
   // A list of service accounts, with their specified scopes, authorized
   // for this instance. Only one service account per VM instance is
@@ -4507,11 +4730,11 @@ message Instance {
   // Service accounts generate access tokens that can be accessed through
   // the metadata server and used to authenticate applications on the
   // instance. See Service Accounts for more information.
-  repeated ServiceAccount serviceAccounts = 18;
+  repeated ServiceAccount serviceAccounts = 19;
 
   // [Output Only] Whether a VM has been restricted for start because
   // Compute Engine has detected suspicious activity.
-  bool startRestricted = 19;
+  bool startRestricted = 20;
 
   // [Output Only] The status of the instance. One of the following
   // values: PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED,
@@ -4525,20 +4748,20 @@ message Instance {
   //     SUSPENDED
   //     SUSPENDING
   //     TERMINATED
-  string status = 20;
+  string status = 21;
 
   // [Output Only] An optional, human-readable explanation of the status.
-  string statusMessage = 21;
+  string statusMessage = 22;
 
   // A list of tags to apply to this instance. Tags are used to identify
   // valid sources or targets for network firewalls and are specified by
   // the client during instance creation. The tags can be later modified
   // by the setTags method. Each tag within the list must comply with
   // RFC1035.
-  Tags tags = 22;
+  Tags tags = 23;
 
   // [Output Only] URL of the zone where the instance resides.
-  string zone = 23;
+  string zone = 24;
 }
 
 message InstanceAggregatedList {
@@ -4572,9 +4795,13 @@ message InstanceAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -4585,7 +4812,9 @@ message InstanceAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -4707,9 +4936,13 @@ message InstanceGroupAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -4720,7 +4953,9 @@ message InstanceGroupAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -4781,9 +5016,13 @@ message InstanceGroupList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -4794,7 +5033,9 @@ message InstanceGroupList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -4919,15 +5160,15 @@ message InstanceGroupManager {
   // The update policy for this managed instance group.
   InstanceGroupManagerUpdatePolicy updatePolicy = 21;
 
-  // Versions supported by this IGM. User should set this field if they
-  // need fine-grained control over how many instances in each version are
-  // run by this IGM. Versions are keyed by instanceTemplate. Every
-  // instanceTemplate can appear at most once. This field overrides
-  // instanceTemplate field. If both instanceTemplate and versions are
-  // set, the user receives a warning. "instanceTemplate: X" is
-  // semantically equivalent to "versions [ { instanceTemplate: X } ]".
-  // Exactly one version must have targetSize field left unset. Size of
-  // such a version will be calculated automatically.
+  // Specifies the instance templates used by this managed instance group
+  // to create instances.
+  // 
+  // Each version is defined by an instanceTemplate. Every template can
+  // appear at most once per instance group. This field overrides the
+  // top-level instanceTemplate field. Read more about the relationships
+  // between these fields. Exactly one version must leave the targetSize
+  // field unset. That version will be applied to all remaining instances.
+  // For more information, read about canary updates.
   repeated InstanceGroupManagerVersion versions = 22;
 
   // [Output Only] The URL of the zone where the managed instance group is
@@ -5021,9 +5262,13 @@ message InstanceGroupManagerAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5034,7 +5279,9 @@ message InstanceGroupManagerAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5110,9 +5357,13 @@ message InstanceGroupManagerList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5123,7 +5374,9 @@ message InstanceGroupManagerList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5171,27 +5424,47 @@ message InstanceGroupManagerPendingActionsSummary {
 }
 
 message InstanceGroupManagerUpdatePolicy {
-  // Maximum number of instances that can be created above the
-  // InstanceGroupManager.targetSize during the update process. By
-  // default, a fixed value of 1 is used. Using maxSurge > 0 will cause
-  // instance names to change during the update process. At least one of {
-  // maxSurge, maxUnavailable } must be greater than 0.
+  // The maximum number of instances that can be created above the
+  // specified targetSize during the update process. By default, a fixed
+  // value of 1 is used. This value can be either a fixed number or a
+  // percentage if the instance group has 10 or more instances. If you set
+  // a percentage, the number of instances will be rounded up if
+  // necessary.
+  // 
+  // At least one of either maxSurge or maxUnavailable must be greater
+  // than 0. Learn more about maxSurge.
   FixedOrPercent maxSurge = 1;
 
-  // Maximum number of instances that can be unavailable during the update
-  // process. The instance is considered available if all of the following
-  // conditions are satisfied: 1. Instance's status is RUNNING. 2.
-  // Instance's liveness health check result was observed to be HEALTHY at
-  // least once. By default, a fixed value of 1 is used. At least one of {
-  // maxSurge, maxUnavailable } must be greater than 0.
+  // The maximum number of instances that can be unavailable during the
+  // update process. An instance is considered available if all of the
+  // following conditions are satisfied:
+  // 
+  // 
+  // - The instance's status is RUNNING.
+  // - If there is a health check on the instance grourp, the instance's
+  // liveness health check result must be HEALTHY at least once. If there
+  // is no health check on the group, then the instance only needs to have
+  // a status of RUNNING to be considered available.  By default, a fixed
+  // value of 1 is used. This value can be either a fixed number or a
+  // percentage if the instance group has 10 or more instances. If you set
+  // a percentage, the number of instances will be rounded up if
+  // necessary.
+  // 
+  // At least one of either maxSurge or maxUnavailable must be greater
+  // than 0. Learn more about maxUnavailable.
   FixedOrPercent maxUnavailable = 2;
 
   // Minimum number of seconds to wait for after a newly created instance
   // becomes available. This value must be from range [0, 3600].
   int32 minReadySec = 3;
 
-  // Minimal action to be taken on an instance. The order of action types
-  // is: RESTART < REPLACE.
+  // Minimal action to be taken on an instance. You can specify either
+  // RESTART to restart existing instances or REPLACE to delete and create
+  // new instances from the target template. If you specify a
+  // code>RESTART, the Updater will attempt to perform that action only.
+  // However, if the Updater determines that the minimal action you
+  // specify is not enough to perform the update, it might perform a more
+  // disruptive action.
   // Valid values:
   //     REPLACE
   //     RESTART
@@ -5210,12 +5483,16 @@ message InstanceGroupManagerVersion {
   // managed instance group.
   string name = 2;
 
-  // Intended number of instances that are created from instanceTemplate.
-  // The final number of instances created from instanceTemplate will be
-  // equal to: * if expressed as fixed number: min(targetSize.fixed,
-  // instanceGroupManager.targetSize), * if expressed as percent:
-  // ceiling(targetSize.percent * InstanceGroupManager.targetSize). If
-  // unset, this version will handle all the remaining instances.
+  // Specifies the intended number of instances to be created from the
+  // instanceTemplate. The final number of instances created from the
+  // template will be equal to:
+  // - If expressed as a fixed number, the minimum of either
+  // targetSize.fixed or instanceGroupManager.targetSize is used.
+  // - if expressed as a percent, the targetSize would be
+  // (targetSize.percent/100 * InstanceGroupManager.targetSize) If there
+  // is a remainder, the number is rounded up.  If unset, this version
+  // will update any remaining instances not updated by another version.
+  // Read Starting a canary update for more information.
   FixedOrPercent targetSize = 3;
 }
 
@@ -5295,9 +5572,13 @@ message InstanceGroupManagersScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5308,7 +5589,9 @@ message InstanceGroupManagersScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5401,9 +5684,13 @@ message InstanceGroupsListInstances {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5414,7 +5701,9 @@ message InstanceGroupsListInstances {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5474,9 +5763,13 @@ message InstanceGroupsScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5487,7 +5780,9 @@ message InstanceGroupsScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5561,9 +5856,13 @@ message InstanceList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5574,7 +5873,9 @@ message InstanceList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5635,9 +5936,13 @@ message InstanceListReferrers {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5648,7 +5953,9 @@ message InstanceListReferrers {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5828,9 +6135,13 @@ message InstanceTemplateList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5841,7 +6152,9 @@ message InstanceTemplateList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5905,9 +6218,13 @@ message InstancesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -5918,7 +6235,9 @@ message InstancesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -5995,7 +6314,7 @@ message InstancesStartWithEncryptionKeyRequest {
 }
 
 // Protocol definitions for Mixer API to support Interconnect. Next
-// available tag: 23
+// available tag: 25
 message Interconnect {
   // Administrative status of the interconnect. When this is set to
   // ?true?, the Interconnect is functional and may carry traffic
@@ -6009,58 +6328,53 @@ message Interconnect {
   // individual circuits in this LAG.
   repeated InterconnectCircuitInfo circuitInfos = 2;
 
-  // [Output Only] URL to retrieve the Letter Of Authority and Customer
-  // Facility Assignment (LOA-CFA) documentation relating to this
-  // Interconnect. This documentation authorizes the facility provider to
-  // connect to the specified crossconnect ports.
-  string connectionAuthorization = 3;
-
   // [Output Only] Creation timestamp in RFC3339 text format.
-  string creationTimestamp = 4;
+  string creationTimestamp = 3;
 
   // Customer name, to put in the Letter of Authorization as the party
   // authorized to request a crossconnect.
-  string customerName = 5;
+  string customerName = 4;
 
   // An optional description of this resource. Provide this property when
   // you create the resource.
-  string description = 6;
+  string description = 5;
 
   // [Output Only] List of outages expected for this Interconnect.
-  repeated InterconnectOutageNotification expectedOutages = 7;
+  repeated InterconnectOutageNotification expectedOutages = 6;
 
   // [Output Only] IP address configured on the Google side of the
   // Interconnect link. This can be used only for ping tests.
-  string googleIpAddress = 8;
+  string googleIpAddress = 7;
 
   // [Output Only] Google reference ID; to be used when raising support
   // tickets with Google or otherwise to debug backend connectivity
   // issues.
-  string googleReferenceId = 9;
+  string googleReferenceId = 8;
 
   // [Output Only] The unique identifier for the resource. This identifier
   // is defined by the server.
-  string id = 10;
+  string id = 9;
 
   // [Output Only] A list of the URLs of all InterconnectAttachments
   // configured to use this Interconnect.
-  repeated string interconnectAttachments = 11;
+  repeated string interconnectAttachments = 10;
 
   // Valid values:
+  //     DEDICATED
   //     IT_PRIVATE
-  string interconnectType = 12;
+  string interconnectType = 11;
 
   // [Output Only] Type of the resource. Always compute#interconnect for
   // interconnects.
-  string kind = 13;
+  string kind = 12;
 
   // Valid values:
   //     LINK_TYPE_ETHERNET_10G_LR
-  string linkType = 14;
+  string linkType = 13;
 
   // URL of the InterconnectLocation object that represents where this
   // connection is to be provisioned.
-  string location = 15;
+  string location = 14;
 
   // Name of the resource. Provided by the client when the resource is
   // created. The name must be 1-63 characters long, and comply with
@@ -6069,41 +6383,43 @@ message Interconnect {
   // the first character must be a lowercase letter, and all following
   // characters must be a dash, lowercase letter, or digit, except the
   // last character, which cannot be a dash.
-  string name = 16;
+  string name = 15;
 
   // Email address to contact the customer NOC for operations and
   // maintenance notifications regarding this Interconnect. If specified,
   // this will be used for notifications in addition to all other forms
   // described, such as Stackdriver logs alerting and Cloud Notifications.
-  string nocContactEmail = 17;
+  string nocContactEmail = 16;
 
   // [Output Only] The current status of whether or not this Interconnect
   // is functional.
   // Valid values:
+  //     ACTIVE
   //     OS_ACTIVE
   //     OS_UNPROVISIONED
-  string operationalStatus = 18;
+  //     UNPROVISIONED
+  string operationalStatus = 17;
 
   // [Output Only] IP address configured on the customer side of the
   // Interconnect link. The customer should configure this IP address
   // during turnup when prompted by Google NOC. This can be used only for
   // ping tests.
-  string peerIpAddress = 19;
+  string peerIpAddress = 18;
 
   // [Output Only] Number of links actually provisioned in this
   // interconnect.
-  int32 provisionedLinkCount = 20;
+  int32 provisionedLinkCount = 19;
 
   // Target number of physical links in the link bundle, as requested by
   // the customer.
-  int32 requestedLinkCount = 21;
+  int32 requestedLinkCount = 20;
 
   // [Output Only] Server-defined URL for the resource.
-  string selfLink = 22;
+  string selfLink = 21;
 }
 
 // Protocol definitions for Mixer API to support InterconnectAttachment.
-// Next available tag: 18
+// Next available tag: 23
 message InterconnectAttachment {
   // [Output Only] IPv4 address + prefix length to be configured on Cloud
   // Router Interface for this interconnect attachment.
@@ -6149,8 +6465,10 @@ message InterconnectAttachment {
   // [Output Only] The current status of whether or not this interconnect
   // attachment is functional.
   // Valid values:
+  //     ACTIVE
   //     OS_ACTIVE
   //     OS_UNPROVISIONED
+  //     UNPROVISIONED
   string operationalStatus = 10;
 
   // [Output Only] Information specific to a Private
@@ -6204,9 +6522,13 @@ message InterconnectAttachmentAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6217,7 +6539,9 @@ message InterconnectAttachmentAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -6280,9 +6604,13 @@ message InterconnectAttachmentList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6293,7 +6621,9 @@ message InterconnectAttachmentList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -6345,9 +6675,13 @@ message InterconnectAttachmentsScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6358,7 +6692,9 @@ message InterconnectAttachmentsScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -6436,9 +6772,13 @@ message InterconnectList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6449,7 +6789,9 @@ message InterconnectList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -6497,11 +6839,16 @@ message InterconnectLocation {
   // Continent for this location. Used by the location picker in the
   // Interconnect UI.
   // Valid values:
+  //     AFRICA
+  //     ASIA_PAC
   //     C_AFRICA
   //     C_ASIA_PAC
   //     C_EUROPE
   //     C_NORTH_AMERICA
   //     C_SOUTH_AMERICA
+  //     EUROPE
+  //     NORTH_AMERICA
+  //     SOUTH_AMERICA
   string continent = 4;
 
   // [Output Only] Creation timestamp in RFC3339 text format.
@@ -6575,9 +6922,13 @@ message InterconnectLocationList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6588,7 +6939,9 @@ message InterconnectLocationList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -6627,15 +6980,14 @@ message InterconnectLocationRegionInfo {
 
   // Identifies the network presence of this location.
   // Valid values:
+  //     GLOBAL
+  //     LOCAL_REGION
   //     LP_GLOBAL
   //     LP_LOCAL_REGION
   string locationPresence = 2;
 
   // URL for the region of this location.
   string region = 3;
-
-  // Scope key for the region of this location.
-  string regionKey = 4;
 }
 
 // Description of a planned outage on this Interconnect. Next id: 9
@@ -6652,12 +7004,15 @@ message InterconnectOutageNotification {
   // Valid values:
   //     IT_OUTAGE
   //     IT_PARTIAL_OUTAGE
+  //     OUTAGE
+  //     PARTIAL_OUTAGE
   string issueType = 4;
 
   // Unique identifier for this outage notification.
   string name = 5;
 
   // Valid values:
+  //     GOOGLE
   //     NSRC_GOOGLE
   string source = 6;
 
@@ -6666,6 +7021,8 @@ message InterconnectOutageNotification {
   string startTime = 7;
 
   // Valid values:
+  //     ACTIVE
+  //     CANCELLED
   //     NS_ACTIVE
   //     NS_CANCELED
   string state = 8;
@@ -6835,9 +7192,13 @@ message MachineTypeAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6848,7 +7209,9 @@ message MachineTypeAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -6909,9 +7272,13 @@ message MachineTypeList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6922,7 +7289,9 @@ message MachineTypeList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -6966,9 +7335,13 @@ message MachineTypesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -6979,7 +7352,9 @@ message MachineTypesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -7303,9 +7678,13 @@ message NetworkList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -7316,7 +7695,9 @@ message NetworkList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -7534,9 +7915,13 @@ message Operation {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -7547,7 +7932,9 @@ message Operation {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -7611,9 +7998,13 @@ message OperationAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -7624,7 +8015,9 @@ message OperationAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -7685,9 +8078,13 @@ message OperationList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -7698,7 +8095,9 @@ message OperationList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -7742,9 +8141,13 @@ message OperationsScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -7755,7 +8158,9 @@ message OperationsScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8110,9 +8515,13 @@ message RegionAutoscalerList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8123,7 +8532,9 @@ message RegionAutoscalerList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8183,9 +8594,13 @@ message RegionInstanceGroupList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8196,7 +8611,9 @@ message RegionInstanceGroupList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8258,9 +8675,13 @@ message RegionInstanceGroupManagerList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8271,7 +8692,9 @@ message RegionInstanceGroupManagerList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8382,9 +8805,13 @@ message RegionInstanceGroupsListInstances {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8395,7 +8822,9 @@ message RegionInstanceGroupsListInstances {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8483,9 +8912,13 @@ message RegionList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8496,7 +8929,9 @@ message RegionList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8658,9 +9093,13 @@ message Route {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8671,7 +9110,9 @@ message Route {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8731,9 +9172,13 @@ message RouteList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8744,7 +9189,9 @@ message RouteList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8852,9 +9299,13 @@ message RouterAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8865,7 +9316,9 @@ message RouterAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -8982,9 +9435,13 @@ message RouterList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -8995,7 +9452,9 @@ message RouterList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -9101,9 +9560,13 @@ message RoutersScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -9114,7 +9577,9 @@ message RoutersScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -9155,7 +9620,8 @@ message Rule {
   //     NO_ACTION
   string action = 1;
 
-  // Additional restrictions that must be met
+  // Additional restrictions that must be met. All conditions must pass
+  // for the rule to match.
   repeated Condition conditions = 2;
 
   // Human-readable description of the rule.
@@ -9309,9 +9775,13 @@ message SecurityPolicyList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -9322,7 +9792,9 @@ message SecurityPolicyList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -9561,9 +10033,13 @@ message SnapshotList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -9574,7 +10050,9 @@ message SnapshotList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -9675,9 +10153,13 @@ message SslCertificateList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -9688,7 +10170,9 @@ message SslCertificateList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -9835,9 +10319,13 @@ message SubnetworkAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -9848,7 +10336,9 @@ message SubnetworkAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -9909,9 +10399,13 @@ message SubnetworkList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -9922,7 +10416,9 @@ message SubnetworkList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -9989,9 +10485,13 @@ message SubnetworksScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10002,7 +10502,9 @@ message SubnetworksScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10146,9 +10648,13 @@ message TargetHttpProxyList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10159,7 +10665,9 @@ message TargetHttpProxyList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10271,9 +10779,13 @@ message TargetHttpsProxyList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10284,7 +10796,9 @@ message TargetHttpsProxyList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10393,9 +10907,13 @@ message TargetInstanceAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10406,7 +10924,9 @@ message TargetInstanceAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10466,9 +10986,13 @@ message TargetInstanceList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10479,7 +11003,9 @@ message TargetInstanceList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10523,9 +11049,13 @@ message TargetInstancesScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10536,7 +11066,9 @@ message TargetInstancesScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10693,9 +11225,13 @@ message TargetPoolAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10706,7 +11242,9 @@ message TargetPoolAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10776,9 +11314,13 @@ message TargetPoolList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10789,7 +11331,9 @@ message TargetPoolList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -10864,9 +11408,13 @@ message TargetPoolsScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -10877,7 +11425,9 @@ message TargetPoolsScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11007,9 +11557,13 @@ message TargetSslProxyList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11020,7 +11574,9 @@ message TargetSslProxyList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11134,9 +11690,13 @@ message TargetTcpProxyList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11147,7 +11707,9 @@ message TargetTcpProxyList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11262,9 +11824,13 @@ message TargetVpnGatewayAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11275,7 +11841,9 @@ message TargetVpnGatewayAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11336,9 +11904,13 @@ message TargetVpnGatewayList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11349,7 +11921,9 @@ message TargetVpnGatewayList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11393,9 +11967,13 @@ message TargetVpnGatewaysScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11406,7 +11984,9 @@ message TargetVpnGatewaysScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11558,9 +12138,13 @@ message UrlMapList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11571,7 +12155,9 @@ message UrlMapList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11779,9 +12365,13 @@ message VpnTunnelAggregatedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11792,7 +12382,9 @@ message VpnTunnelAggregatedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11853,9 +12445,13 @@ message VpnTunnelList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11866,7 +12462,9 @@ message VpnTunnelList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11910,9 +12508,13 @@ message VpnTunnelsScopedList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11923,7 +12525,9 @@ message VpnTunnelsScopedList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -11983,9 +12587,13 @@ message XpnHostList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -11996,7 +12604,9 @@ message XpnHostList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
@@ -12107,9 +12717,13 @@ message ZoneList {
     // Valid values:
     //     CLEANUP_FAILED
     //     DEPRECATED_RESOURCE_USED
+    //     DEPRECATED_TYPE_USED
     //     DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    //     EXPERIMENTAL_TYPE_USED
+    //     EXTERNAL_API_WARNING
     //     FIELD_VALUE_OVERRIDEN
     //     INJECTED_KERNELS_DEPRECATED
+    //     MISSING_TYPE_DEPENDENCY
     //     NEXT_HOP_ADDRESS_NOT_ASSIGNED
     //     NEXT_HOP_CANNOT_IP_FORWARD
     //     NEXT_HOP_INSTANCE_NOT_FOUND
@@ -12120,7 +12734,9 @@ message ZoneList {
     //     REQUIRED_TOS_AGREEMENT
     //     RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
     //     RESOURCE_NOT_DELETED
+    //     SCHEMA_VALIDATION_IGNORED
     //     SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    //     UNDECLARED_PROPERTIES
     //     UNREACHABLE
     string code = 1;
 
