@@ -45,13 +45,3 @@ import (
 type LogEntrySource interface {
 	Entry(s logging.Severity) logging.Entry
 }
-
-// Logger is an object that's responsible for posting log messages to a some
-// log provider.
-type Logger interface {
-	// LogInfo logs an entry |e| with a severity of Info.
-	LogInfo(e LogEntrySource)
-
-	// LogError logs an entry |e| with a severity of Error.
-	LogError(e LogEntrySource)
-}
