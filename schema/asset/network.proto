@@ -57,6 +57,10 @@ message FixedAddress {
     // used.
     string address_pool = 2 [(common.v).ref="host.address_pool"];
   }
+
+  // Upon resolution, this field will contain the actual IP address that's
+  // assigned to this network interface.
+  Address resolved_address = 3 [(common.v).type=OUTPUT];
 }
 
 // List of web protocols. Not necessarily exhaustive. We just need a convenient

@@ -12,7 +12,6 @@ import "schema/common/options.proto";
 // a directory that's specified as part of the configuraion. All such paths are
 // resolved *relative to the source file* in which the reference appears.
 message FileReference {
-
   // Path relative to the location of the .textpb file in which the reference
   // appears. Absolute paths are not allowed.
   //
@@ -25,9 +24,12 @@ message FileReference {
   // live higher up in the directory tree or live beside the relevant files.
   string path = 1;
 
-  // After the reference is resolved, this field will contain the full path to
-  // the resource and will use path separators consistent with the underlying
-  // platform.
-  string resolved_path = 2 [(v).type=OUTPUT];
+  // After the reference is resolved, this field will contain an opaque
+  // reference to an accessible location where the contents of the file or
+  // folder could be found. For GCE, this would be a cloud storage location.
+  string resolved_object = 2 [(v).type=OUTPUT];
+
+  // Contains an absolute local path in the resolver host.
+  string resolved_local_path = 3 [(v).type=OUTPUT];
 }
 

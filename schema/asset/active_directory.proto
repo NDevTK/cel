@@ -6,8 +6,8 @@ syntax = "proto3";
 package asset;
 option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
+import "schema/asset/machine.proto";
 import "schema/common/fileref.proto";
-import "schema/asset/network.proto";
 import "schema/common/options.proto";
 
 // Describes an Active Directory domain or forest.
@@ -301,31 +301,42 @@ message RegistryKey {
   repeated RegistryValue value = 2;
 }
 
-// Type of registry values. The default is STRING.
-enum RegistryValueType {
-  STRING = 0;
-  EXPAND_STRING = 1;
-  BINARY = 2;
-  DWORD = 3;
-  MULTI_STRING = 4;
-  QWORD = 5;
-}
-
 // A single registry value. The registry key is implied based on the containing
 // message.
 message RegistryValue {
   // Value name. Leave empty to set the default value.
-  string name = 1;
+  string name = 1 [(common.v)={type:LABEL,optional:true}];
 
-  // One of RegistryValueType.
-  RegistryValueType type = 2;
+  // These values correspond to registry value types. Obviously only one of these can be specified.
+  oneof value_type {
+    // REG_SZ value in UTF-8. Will be re-encoded into UTF-16 when writing to the registry.
+    string      string_value        = 10;
 
-  // The value. THe format is as follows:
-  //
-  // STRING, EXPAND_STRING : A single 'value' with contents.
-  // MULTI_STRING : Multiple 'value' entries each specifying a single string.
-  // DWORD, QWORD : A number as a string. E.g.: '3', '0x
-  repeated string value = 3;
+    // REG_EXPAND_SZ value in UTF-8.
+    string      expand_string_value = 11;
+
+    // REG_BINARY
+    bytes       binary_value        = 12;
+
+    // REG_QWORD
+    int32       dword_value         = 13;
+
+    // REG_DWORD
+    int64       qword_value         = 14;
+
+    // REG_MULTI_SZ
+    MultiString multi_string_value  = 15;
+  }
+
+  // MultiString represents a single REG_MULTI_SZ registry value. Each |value|
+  // represents a single \0 delimited string. All values are concatenated in
+  // order to construct the REG_MULTI_SZ value. No additional \0 values are
+  // required and the final registry value will be correctly \0\0 terminated.
+  message MultiString {
+    // A single string value in UTF-8. It will be re-encoded to UTF-16 before
+    // being written to the registry. Do not include any \0 characters here.
+    repeated string value = 1;
+  }
 }
 
 // Describes a container that a Windows asset can reside in.
@@ -442,17 +453,6 @@ message WindowsUser {
   repeated GroupReference member_of = 6;
 }
 
-// NetworkInterface describes a single network interface on a machine.
-message NetworkInterface {
-  // Name of Network entry describing the network that this interface is
-  // attached to.
-  string network = 1 [(common.v).ref="asset.network"];
-
-  // Fixed address, if this interface is to have one. Leave undefined if the
-  // interface should obatain an address automatically.
-  FixedAddress fixed_address = 2;
-}
-
 // A Windows machine.
 message WindowsMachine {
   // Name of the machine. This name will become the hostname for the machine,
@@ -464,6 +464,13 @@ message WindowsMachine {
   // NetBios name as well as a DNS hostname.
   string name = 1;
 
+  // The name of a host.MachineType entry that describes the host machine.
+  string machine_type = 2 [(common.v).ref="host.machine_type"];
+
+  // Network interfaces. There can be more than one for multihomed machines.
+  // There MUST be at least one of these.
+  repeated NetworkInterface network_interface = 3 [(common.v).type=REQUIRED];
+
   // Container. Only |domain| and |ou| values are acceptable. Currently
   // |machine| is not a valid option. If no container is specified, the machine
   // will be brought up as a standalone workstation or server depending on the
@@ -474,10 +481,7 @@ message WindowsMachine {
   //
   // Specifying this field results in the machine being joined to the specified
   // domain and, if necessary, placed in the specified container.
-  WindowsContainer container = 3;
-
-  // The name of a host.MachineType entry that describes the host machine.
-  string machine_type = 4 [(common.v).ref="host.machine_type"];
+  WindowsContainer container = 10;
 
   // System locale. If left unspecified, the default is left unchanged. Use the
   // following PowerShell command to determine the list of available locales on
@@ -489,7 +493,7 @@ message WindowsMachine {
   //
   // PS DSC Reference:
   // * https://github.com/PowerShell/SystemLocaleDsc
-  string locale = 5;
+  string locale = 11;
 
   // Set the system timezone. If left unspecified, the default is left
   // unchanged. Use the following PowerShell command to determine the lsit of
@@ -501,11 +505,7 @@ message WindowsMachine {
   //
   // PS DSC Reference:
   // * https://github.com/PowerShell/xTimeZone
-  string timezone = 6;
-
-  // Network interfaces. There can be more than one for multihomed machines.
-  // There MUST be at least one of these.
-  repeated NetworkInterface network_interface = 7 [(common.v).type=REQUIRED];
+  string timezone = 12;
 
   // List of additional Windows features or roles to install. The values here
   // should be valid for the selected host machine type. You can use the
@@ -525,14 +525,14 @@ message WindowsMachine {
   //
   // Note: Any 'package' values specified in the
   // host.machine_type.<machine-type> will be prepended to this list.
-  repeated string windows_feature = 8;
+  repeated string windows_feature = 13;
 
   // Registry keys to set on the machine. These will be applied prior to the
   // user login.
-  repeated RegistryKey registry_key = 9;
+  repeated RegistryKey registry_key = 14;
 
   // A configuration file. Specify this if you've run Windows Server Manager
   // and produced a configration file already.
-  common.FileReference configuration_file = 10;
+  common.FileReference configuration_file = 15;
 }
 

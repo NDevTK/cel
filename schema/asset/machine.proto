@@ -1,0 +1,35 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package asset;
+option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+
+import "schema/asset/network.proto";
+import "schema/common/options.proto";
+
+// NetworkInterface describes a single network interface on a machine.
+message NetworkInterface {
+  // Name of Network entry describing the network that this interface is
+  // attached to.
+  string network = 1 [(common.v).ref="asset.network"];
+
+  // Fixed address, if this interface is to have one. Leave undefined if the
+  // interface should obatain an address automatically.
+  FixedAddress fixed_address = 2;
+}
+
+// Machine describes a generic machine.
+message Machine {
+  // Name of the machine. Also becomes the hostname of the machine.
+  string name = 1;
+
+  // The name of a host.MachineType entry that describes the host machine.
+  string machine_type = 2 [(common.v).ref="host.machine_type"];
+
+  // Network interfaces. There can be more than one for multihomed machines.
+  // There MUST be at least one of these.
+  repeated NetworkInterface network_interface = 3 [(common.v).type=REQUIRED];
+}
+
