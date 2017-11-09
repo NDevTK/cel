@@ -5,7 +5,7 @@
 package gcp
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/cel"
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 	"golang.org/x/net/context"
 	compute "google.golang.org/api/compute/v1"
@@ -82,7 +82,7 @@ type CloudState struct {
 }
 
 func (g *CloudState) FetchServiceAccounts(ctx context.Context, client *http.Client) (err error) {
-	defer cel.Action(&err, "querying service accounts")
+	defer common.Action(&err, "querying service accounts")
 
 	service, err := iam.New(client)
 	if err != nil {
@@ -375,8 +375,7 @@ func (g *CloudState) FetchStale(ctx context.Context, client *http.Client) (err e
 func QueryCloudState(ctx context.Context, client *http.Client, project string, dependencies *host.Dependencies) (*CloudState, error) {
 
 	g := CloudState{
-		Project: project,
-
+		Project:         project,
 		MonitoredImages: images}
 
 	err := g.FetchStale(ctx, client)
