@@ -39,6 +39,7 @@ mentions the managed dependency workflow.
    mkdir -p ${GOPATH}/src/chromium.googlesource.com/enterprise 
    cd ${GOPATH}/src/chromium.googlesource.com/enterprise
    git clone https://chromium.googlesource.com/enterprise/cel
+   cd cel
    ```
 
 2. Get the dependencies.

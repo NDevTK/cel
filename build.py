@@ -18,6 +18,7 @@
 # Currently, full builds are only supported on Windows.
 
 import argparse
+import logging
 import os
 import re
 import subprocess
@@ -26,11 +27,11 @@ import sys
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
 GOPATH = SOURCE_PATH
 GOOS = {
-    "linux2": "linux",
-    "linux": "linux",
-    "win32": "windows",
-    "cygwin": "windows",
-    "darwin": "darwin"
+  "linux2": "linux",
+  "linux": "linux",
+  "win32": "windows",
+  "cygwin": "windows",
+  "darwin": "darwin"
 }.get(sys.platform, "windows")
 
 GO_LAB_PACKAGE = 'go/lab'
@@ -38,11 +39,11 @@ GO_LAB_PACKAGE = 'go/lab'
 GO_TOOLS = ['go/cmd/cel_admin']
 
 GO_DEPENDENCIES = [
-    'cloud.google.com/go/logging', 'github.com/maruel/subcommands',
-    'golang.org/x/net/context', 'golang.org/x/oauth2/google',
-    'google.golang.org/api/cloudkms/v1', 'google.golang.org/api/compute/v1',
-    'google.golang.org/api/iam/v1',
-    'google.golang.org/api/cloudresourcemanager/v1'
+  'cloud.google.com/go/logging', 'github.com/maruel/subcommands',
+  'golang.org/x/net/context', 'golang.org/x/oauth2/google',
+  'google.golang.org/api/cloudkms/v1', 'google.golang.org/api/compute/v1',
+  'google.golang.org/api/iam/v1',
+  'google.golang.org/api/cloudresourcemanager/v1'
 ]
 
 
@@ -108,6 +109,15 @@ case, the resulting build artifacts are placed under $GOPATH/bin/$GOOS/.'''
 
   for tool in GO_TOOLS:
     subprocess.check_call(['go', verb, tool], env=MergeEnv(args), cwd=bin_dir)
+
+
+def _RunCommand(args, **kwargs):
+  logging.info("Run command '%s' in directory %s", ' '.join(args),
+               kwargs.get('cwd', None))
+
+  subprocess.check_call(
+      args,
+      **kwargs)
 
 
 def TestCommand(args):
@@ -187,10 +197,10 @@ chrome-auth-lab-dev Google Cloud project.
     test_env['LAB_RECORD'] = 'yes'
 
   for target in [GO_LAB_PACKAGE] + GO_TOOLS:
-    subprocess.check_call(
-        ['go', 'test', target] + args.gotest_args,
-        env=test_env,
-        cwd=os.path.abspath(os.path.join(SOURCE_PATH, 'src', 'go', 'lab')))
+    _RunCommand(['go', 'test', target] + args.gotest_args,
+                env=test_env,
+                cwd=os.path.abspath(
+                    os.path.join(SOURCE_PATH, 'src', 'go', 'lab')))
 
 
 def GenCommand(args):
@@ -310,7 +320,6 @@ def main():
       help=DepsCommand.__doc__.splitlines()[0],
       description=DepsCommand.__doc__,
       formatter_class=argparse.RawDescriptionHelpFormatter)
-  deps_command.add_argument('-v', action='store_true', help='verbose output')
   deps_command.set_defaults(closure=DepsCommand)
 
   # ----------------------------------------------------------------------------
@@ -337,7 +346,13 @@ def main():
       'prog', metavar='ARG', type=str, help='Program and arguments', nargs='+')
   run_command.set_defaults(closure=RunCommand)
 
+  parser.add_argument('-v', action='store_true', help='verbose output')
   args = parser.parse_args()
+  if args.v:
+    logging.basicConfig(level=logging.INFO,
+                        format=('%(asctime)s %(levelname)s %(filename)s:'
+                                '%(lineno)s] %(message)s '))
+
   try:
     args.closure(args)
   except subprocess.CalledProcessError:

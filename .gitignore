@@ -1,3 +1,4 @@
 # Vendored dependencies. Use `dep` to manage.
 vendor/
 .DS_Store
+.idea/*
