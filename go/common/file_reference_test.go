@@ -54,7 +54,7 @@ func TestFileReference_Basic(t *testing.T) {
 	})
 
 	t.Run("OutputParam", func(t *testing.T) {
-		v := &FileReference{ResolvedPath: "foo/bar"}
+		v := &FileReference{ResolvedLocalPath: "foo/bar"}
 		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "marked as output") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -76,8 +76,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedPath != "foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedPath)
+		if v.ResolvedLocalPath != "foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.ResolvedLocalPath)
 		}
 	})
 
@@ -88,8 +88,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedPath != "a/b/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedPath)
+		if v.ResolvedLocalPath != "a/b/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.ResolvedLocalPath)
 		}
 	})
 
@@ -100,8 +100,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedPath != "a/b/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedPath)
+		if v.ResolvedLocalPath != "a/b/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.ResolvedLocalPath)
 		}
 	})
 
@@ -112,8 +112,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedPath != "/a/b/c/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedPath)
+		if v.ResolvedLocalPath != "/a/b/c/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.ResolvedLocalPath)
 		}
 	})
 
@@ -124,8 +124,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedPath != "/a/b/c/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedPath)
+		if v.ResolvedLocalPath != "/a/b/c/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.ResolvedLocalPath)
 		}
 	})
 }
@@ -139,8 +139,8 @@ func TestFileReference_Resolver(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.Ref.ResolvedPath != "/a/b/c/foo/bar" {
-			t.Fatalf("bad resolved path : %s", v.Ref.ResolvedPath)
+		if v.Ref.ResolvedLocalPath != "/a/b/c/foo/bar" {
+			t.Fatalf("bad resolved path : %s", v.Ref.ResolvedLocalPath)
 		}
 	})
 
