@@ -5,20 +5,25 @@
 package common
 
 import (
+	"github.com/pkg/errors"
 	"strings"
 	"testing"
 )
 
-func TestReferences_Collect(t *testing.T) {
-	m := TestMessageWithOptions{Name: "from.here", Key: "foo", OptionalKey: "bar", Fqdn: "${with_types.xyz} ${with_types.abc}"}
+func TestReferences_CollectFrom(t *testing.T) {
+	m := TestMessageWithOptions{
+		Name:        "from.here",
+		Key:         "foo",
+		OptionalKey: "bar",
+		Fqdn:        "${with_types.xyz} ${with_types.abc}"}
 	var r References
 
-	err := r.Collect(&m, RefPathFromString("with_options"))
+	err := r.CollectFrom(&m, RefPathFromString("with_options"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if u, ok := r.Unresolved["with_types.repeated_field.foo"]; ok {
+	if u := r.Unresolved.Get(RefPathFromString("with_types.repeated_field.foo")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.key" {
 			t.Fatal(u.From)
 		}
@@ -30,7 +35,7 @@ func TestReferences_Collect(t *testing.T) {
 		t.Fatal(r)
 	}
 
-	if u, ok := r.Unresolved["with_types.repeated_field.bar"]; ok {
+	if u := r.Unresolved.Get(RefPathFromString("with_types.repeated_field.bar")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.optional_key" {
 			t.Fatal(u.From)
 		}
@@ -38,7 +43,7 @@ func TestReferences_Collect(t *testing.T) {
 		t.Fatal(r)
 	}
 
-	if u, ok := r.Unresolved["with_types.xyz"]; ok {
+	if u := r.Unresolved.Get(RefPathFromString("with_types.xyz")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.fqdn" {
 			t.Fatal(u.From)
 		}
@@ -46,7 +51,7 @@ func TestReferences_Collect(t *testing.T) {
 		t.Fatal(r)
 	}
 
-	if u, ok := r.Unresolved["with_types.abc"]; ok {
+	if u := r.Unresolved.Get(RefPathFromString("with_types.abc")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.fqdn" {
 			t.Fatal(u.From)
 		}
@@ -56,39 +61,46 @@ func TestReferences_Collect(t *testing.T) {
 }
 
 func TestReferences_ResolveWith(t *testing.T) {
-	m := TestMessageWithOptions{Name: "from.here", Key: "foo", OptionalKey: "bar",
-		Fqdn: "${with_types.repeated_field.foo.name}${with_types.repeated_field.bar.name}"}
+	m := TestMessageWithOptions{
+		Name:        "from.here",
+		Key:         "foo",
+		OptionalKey: "bar",
+		Fqdn:        "${with_types.repeated_field.foo.name}${with_types.repeated_field.bar.name}"}
+	w := TestMessageWithTypes{
+		Name: "to",
+		RepeatedField: []*TestGoodProto{
+			&TestGoodProto{"foo"}}}
+
 	var r References
+	r.AddSource(&m, RefPathFromString("with_options"))
+	r.AddSource(&w, RefPathFromString("with_types"))
 
-	err := r.Collect(&m, RefPathFromString("with_options"))
-	if err != nil {
+	err := r.Resolve(ResolutionSkipOutputs)
+	e, ok := errors.Cause(err).(*UnresolvedReferenceError)
+	if !ok {
 		t.Fatal(err)
 	}
-
-	w := TestMessageWithTypes{Name: "to", RepeatedField: []*TestGoodProto{
-		&TestGoodProto{"foo"}}}
-	err = r.ResolveWith(&w, RefPathFromString("with_types"), ResolutionIncludeOutputs)
-	if err != nil {
-		t.Fatal(err)
+	if e.From.String() != "with_options.fqdn" || e.To.String() != "with_types.repeated_field.bar.name" {
+		t.Fatal(e)
 	}
 
-	if len(r.Resolved) != 2 {
+	if r.Resolved.Size() != 2 {
 		t.Fatal(r)
 	}
 
-	if v, ok := r.Resolved["with_types.repeated_field.foo"]; !ok || v.(*TestGoodProto).Name != "foo" {
+	if v := r.Resolved.Get(RefPathFromString("with_types.repeated_field.foo")); v == nil || v.(*TestGoodProto).Name != "foo" {
 		t.Fatal()
 	}
 
-	if v, ok := r.Resolved["with_types.repeated_field.foo.name"]; !ok || v.(string) != "foo" {
+	if v := r.Resolved.Get(RefPathFromString("with_types.repeated_field.foo.name")); v == nil || v.(string) != "foo" {
 		t.Fatal()
 	}
 
-	if len(r.Unresolved) != 2 {
+	if r.Unresolved.Size() != 2 {
 		t.Fatal()
 	}
 
-	if _, ok := r.Unresolved["with_types.repeated_field.bar"]; !ok {
+	if v := r.Unresolved.Get(RefPathFromString("with_types.repeated_field.bar")); v == nil {
 		t.Fatal()
 	}
 }
@@ -97,18 +109,9 @@ func TestReferences_ResolveWith_Output(t *testing.T) {
 	path := RefPathFromString("with_options")
 	m := TestMessageWithOptions{Output: "x", Fqdn: "${with_options.output}"}
 	var r References
+	r.AddSource(&m, path)
 
-	err := r.Collect(&m, path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = r.ResolveWith(&m, path, ResolutionSkipOutputs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = r.ResolveInlineRefs(&m, path)
+	err := r.Resolve(ResolutionSkipOutputs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,12 +120,7 @@ func TestReferences_ResolveWith_Output(t *testing.T) {
 		t.Fatal(m)
 	}
 
-	err = r.ResolveWith(&m, path, ResolutionIncludeOutputs)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = r.ResolveInlineRefs(&m, path)
+	err = r.Resolve(ResolutionIncludeOutputs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,27 +132,32 @@ func TestReferences_ResolveWith_Output(t *testing.T) {
 
 func TestReferences_ExpandString(t *testing.T) {
 	m := TestMessageWithOptions{Fqdn: "${repeated_field.a.name}${repeated_field.b.name}${repeated_field.c}${repeated_field.c.name}"}
+	w := TestMessageWithTypes{
+		Name: "to",
+		RepeatedField: []*TestGoodProto{
+			&TestGoodProto{"a"},
+			&TestGoodProto{"b"},
+			&TestGoodProto{"c"},
+		}}
+
 	var r References
+	r.AddSource(&m, EmptyPath.Append("foo"))
+	r.AddSource(&w, EmptyPath)
 
-	err := r.Collect(&m, EmptyPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(r.Unresolved) != 4 {
+	err := r.Resolve(ResolutionIncludeOutputs)
+	if err == nil {
 		t.Fatal()
 	}
-
-	w := TestMessageWithTypes{Name: "to", RepeatedField: []*TestGoodProto{
-		&TestGoodProto{"a"},
-		&TestGoodProto{"b"},
-		&TestGoodProto{"c"},
-	}}
-	err = r.ResolveWith(&w, EmptyPath, ResolutionIncludeOutputs)
-	if err != nil {
+	ure, ok := errors.Cause(err).(*UnresolvedReferenceError)
+	if !ok {
 		t.Fatal(err)
 	}
-	if len(r.Unresolved) != 0 {
+
+	if ure.To.String() != "repeated_field.c" || ure.Reason != "target object is not a string" {
+		t.Fatal(ure)
+	}
+
+	if !r.Unresolved.Empty() {
 		t.Fatal(r)
 	}
 
@@ -197,31 +200,24 @@ func TestReferences_ExpandString(t *testing.T) {
 
 func TestReferences_ResolveInlineRefs(t *testing.T) {
 	m := TestMessageWithOptions{Fqdn: "${repeated_field.a.name}${repeated_field.b.name}${repeated_field.c}${repeated_field.c.name}"}
+	w := TestMessageWithTypes{
+		Name: "to",
+		RepeatedField: []*TestGoodProto{
+			&TestGoodProto{"a"},
+			&TestGoodProto{"b"},
+			&TestGoodProto{"c"},
+		}}
 	var r References
+	r.AddSource(&m, EmptyPath.Append("foo"))
+	r.AddSource(&w, EmptyPath)
 
-	err := r.Collect(&m, EmptyPath)
-	if err != nil || len(r.Unresolved) != 4 {
-		t.Fatal()
-	}
-
-	w := TestMessageWithTypes{Name: "to", RepeatedField: []*TestGoodProto{
-		&TestGoodProto{"a"},
-		&TestGoodProto{"b"},
-		&TestGoodProto{"c"},
-	}}
-	if err := r.ResolveWith(&w, EmptyPath, ResolutionIncludeOutputs); err != nil {
-		t.Fatal(err)
-	}
-
-	err = r.ResolveInlineRefs(&m, EmptyPath)
-	if err == nil {
-		t.Fatal()
-	}
+	err := r.Resolve(ResolutionIncludeOutputs)
 	if !strings.Contains(err.Error(), "is not a string") || !strings.Contains(err.Error(), "fqdn") {
 		t.Fatalf("unexpected error %#v", err)
 	}
 	m.Fqdn = "${repeated_field.a.name}${repeated_field.b.name}${repeated_field.c.name}"
-	err = r.ResolveInlineRefs(&m, EmptyPath)
+
+	err = r.Resolve(ResolutionIncludeOutputs)
 	if err != nil {
 		t.Fatal(err)
 	}
