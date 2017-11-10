@@ -108,19 +108,19 @@ what's described above.
 *   [Create a new builder](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipe_modules/chromium_tests/chromium_recipe.md): Document on how to add a new builder to the waterfall.
 
 
-<!-- INSERT-INDEX -->
 <!-- BEGIN-INDEX -->
 <!--
 Index of tags used throughout the documentation. This list lives in
-//docs/index.md and should be included in all documents that depend on these
-tags. Whenever the list changes, run the following command:
+/docs/index.md and is included in all documents that depend on these tags.
 
-   ./update-index.sh
+In order to update the tags:
 
-This will replace any line containing the string 'INSERT-INDEX' with the
-contents of this file. It'll also remove everything  between the BEGIN-INDEX,
-END-INDEX block. So each time the script is run it'll replace the index with the
-latest version.
+   1. Update `/docs/index.md`
+   2. Run the following command from the root of the source tree:
+
+         ./build.py format
+
+Keep the tags below sorted.
 -->
 
 [ASSET MANIFEST]: design-summary.md#asset-manifest

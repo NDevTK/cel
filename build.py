@@ -18,6 +18,7 @@
 # Currently, full builds are only supported on Windows.
 
 import argparse
+import errno
 import logging
 import os
 import re
@@ -25,6 +26,8 @@ import subprocess
 import sys
 
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
+BUILD_PATH = os.path.join(SOURCE_PATH, 'build')
+
 NATIVE_GOOS = {
     "linux2": "linux",
     "linux": "linux",
@@ -46,6 +49,19 @@ def _MergeEnv(args):
   return environ_copy
 
 
+def _EnsureBuildDir(args):
+  if not os.path.exists(BUILD_PATH):
+    os.makedirs(BUILD_PATH)
+  readme = os.path.join(BUILD_PATH, 'README')
+  if not os.path.exists(readme):
+    with open(readme, 'w') as f:
+      f.write('''Build artifacts
+
+Feel free to remove this directory if you no longer need these build artifacts.
+The build script will re-generate the contents of thsi directory if needed.
+''')
+
+
 def _RunCommand(args, **kwargs):
   logging.info("%s [CWD: %s, GOOS: %s]", ' '.join([(x if ' ' not in x
                                                     else '"' + x + '"')
@@ -56,25 +72,9 @@ def _RunCommand(args, **kwargs):
   subprocess.check_call(args, **kwargs)
 
 
-def _Deps(args):
-  verbose_flag = []
-  if hasattr(args, 'verbose') and args.verbose:
-    verbose_flag += ["-v"]
-
-  while True:
-    try:
-      _RunCommand(
-          ['dep', 'ensure'] + verbose_flag,
-          env=_MergeEnv(args),
-          cwd=SOURCE_PATH)
-    except OSError as e:
-      if e.errno == 2 and hasattr(args, 'install') and args.install:
-        _RunCommand(['go', 'get', '-u'] + verbose_flag +
-                    ['github.com/golang/dep/cmd/dep'])
-        continue
-
-      if e.errno == 2:
-        sys.stderr.write('''"dep" command not found.
+def _InstallDep(args):
+  if (not hasattr(args, 'install')) or not args.install:
+    raise Exception('''"dep" command not found.
 
 The CEL project uses "deps" to manage dependencies. You can get it by following
 the instructions at :
@@ -89,24 +89,166 @@ Rerun as 'build.py deps --install' to install dependencies automatically. If
 you've already done so, it may be that the GOBIN path is not in the system
 PATH.
 ''')
-      else:
-        sys.stderr.write('''Failed to run "dep"''')
-      raise e
+
+  verbose_flag = []
+  if hasattr(args, 'verbose') and args.verbose:
+    verbose_flag += ["-v"]
+
+  _RunCommand(['go', 'get', '-u'] + verbose_flag +
+              ['github.com/golang/dep/cmd/dep'])
+
+
+def _InstallGoProtoc(args):
+  if (not hasattr(args, 'install')) or not args.install:
+    raise Exception('''"protoc-gen-go" not found.
+
+The CEL project relies on generating Go code for Google ProtoBuf files. In
+addition to the Protocol Buffers Compiler (protoc), Go support requires
+protoc-gen-go which generates Go code. More information can be found including
+installation instructions at https://github.com/golang/protobuf.
+
+A quick and portable way to get it is to run the following:
+
+    go get -u github.com/golang/protobuf/protoc-gen-go
+
+Rerun this script as 'build.py deps --install' to install "protoc-gen-go"
+automatically. You you've already done so, it may be that the GOBIN path is not
+in the system.
+''')
+
+  verbose_flag = []
+  if hasattr(args, 'verbose') and args.verbose:
+    verbose_flag += ["-v"]
+
+  _RunCommand(['go', 'get', '-u'] + verbose_flag +
+              ['github.com/golang/protobuf/protoc-gen-go'])
+
+
+def _InstallProtoc(args):
+  raise Exception('''"protoc" not found.
+
+The CEL project relies on generating Go code for Google ProtoBuf files. This
+requires having the ProtoBuf compiler in the PATH.
+
+Instructions for installing "protoc" can be found at
+https://developers.google.com/protocol-buffers/docs/downloads
+
+Unfortunately, protoc can't be installed automatically. So you'll need to
+install it manually. If you've arleady installed it, it's possible that the
+installed location is not in the system PATH.
+''')
+
+
+def _IsSentinelNewer(sentinel_path, *sources):
+  if not os.path.exists(sentinel_path):
+    return False
+  basetime = os.path.getmtime(sentinel_path)
+  for source in sources:
+    if os.path.getmtime(source) > basetime:
+      return False
+  return True
+
+
+def _Deps(args):
+  '''Ensures dependencies are present.'''
+
+  # Max number of times we are going to retry if a component installation fails.
+  MAX_RETRY_COUNT = 3
+
+  def _CheckAndInstall(command, installer, **kwargs):
+    for x in range(MAX_RETRY_COUNT):
+      try:
+        _RunCommand(command, **kwargs)
+      except OSError as e:
+        if e.errno == errno.ENOENT:
+          installer(args)
+          continue
+        raise e
+      except subprocess.CalledProcessError:
+        break
+      break
+
+  verbose_flag = []
+  if hasattr(args, 'verbose') and args.verbose:
+    verbose_flag += ["-v"]
+
+  with open(os.devnull, 'r+') as f:
+    _CheckAndInstall(
+        ['protoc-gen-go'],
+        _InstallGoProtoc,
+        env=_MergeEnv(args),
+        cwd=SOURCE_PATH,
+        stdin=f,
+        stdout=f,
+        stderr=f)
+    _CheckAndInstall(
+        ['protoc', '-h'],
+        _InstallProtoc,
+        env=_MergeEnv(args),
+        cwd=SOURCE_PATH,
+        stdin=f,
+        stdout=f,
+        stderr=f)
+
+  # Using a sentinel file to make sure we only run 'dep' if either the last run
+  # was unsuccessful or if there has been a change to Gopkg.* files.
+  _EnsureBuildDir(args)
+  sentinel = os.path.join(BUILD_PATH, 'deps.stamp')
+  if _IsSentinelNewer(sentinel,
+                      os.path.join(SOURCE_PATH, 'Gopkg.toml'),
+                      os.path.join(SOURCE_PATH, 'Gopkg.lock')):
     return
+
+  _CheckAndInstall(
+      ['dep', 'ensure'] + verbose_flag,
+      _InstallDep,
+      env=_MergeEnv(args),
+      cwd=SOURCE_PATH)
+
+  with open(sentinel, 'w') as f:
+    pass
 
 
 def _Generate(args):
-  '''Invokes 'go generate' which generates the protobuf code.
+  '''Generates Go code based on .proto files.'''
 
-  For convenience of building, the generated code is checked into the source
-  tree. This is also the norm for 'go generate' where we want to avoid creating
-  a dependency on protoc being available on the build machine.'''
-  verbose_flag = []
-  if hasattr(args, 'verbose') and args.verbose:
-    verbose_flag += ['-v', '-x']
   _RunCommand(
-      ['go', 'generate'] + verbose_flag + ['.'],
-      env=_MergeEnv(None),
+      [
+          'go', 'run', 'go/cmd/gen_api_proto/main.go', '-i',
+          'vendor/google.golang.org/api/compute/v0.beta/compute-api.json', '-o',
+          'schema/gcp/compute/compute-api.proto', '-p',
+          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
+          'go/gcp/compute/validate.go'
+      ],
+      env=_MergeEnv(args),
+      cwd=SOURCE_PATH)
+  _RunCommand(
+      [
+          'protoc', '--go_out=../../../', 'schema/common/options.proto',
+          'schema/common/fileref.proto', 'go/common/testdata/testmsgs.proto'
+      ],
+      env=_MergeEnv(args),
+      cwd=SOURCE_PATH)
+  _RunCommand(
+      [
+          'protoc', '--go_out=../../../', 'schema/asset/active_directory.proto',
+          'schema/asset/cert.proto', 'schema/asset/dns.proto',
+          'schema/asset/iis.proto', 'schema/asset/network.proto',
+          'schema/asset/asset_manifest.proto', 'schema/asset/machine.proto'
+      ],
+      env=_MergeEnv(args),
+      cwd=SOURCE_PATH)
+  _RunCommand(
+      ['protoc', '--go_out=../../../', 'schema/host/host_environment.proto'],
+      env=_MergeEnv(args),
+      cwd=SOURCE_PATH)
+  _RunCommand(
+      ['protoc', '--go_out=../../../', 'schema/meta/meta.proto'],
+      env=_MergeEnv(args),
+      cwd=SOURCE_PATH)
+  _RunCommand(
+      ['protoc', '--go_out=../../../', 'schema/gcp/compute/compute-api.proto'],
+      env=_MergeEnv(args),
       cwd=SOURCE_PATH)
 
 
@@ -161,7 +303,7 @@ TL;DR: After changing a test that makes network requests, you may see errors lik
         foo_test.go|...| Get https://www.googleapis.com/... : not implemented
 
     That means that the test is attempting to make a new network request.
-    Assuming this is correct, do the following: 
+    Assuming this is correct, do the following:
 
         ./build.py test --reset
 
@@ -223,15 +365,12 @@ protobuf code based on the .proto files.
 
 
 def DepsCommand(args):
-  '''Update Go dependencies.
+  '''Check for and ensure build dependencies.
 
-Fetches and installs the latest versions of the Go dependencies required for
-building.
+Ensures that required build tools and Go packages are installed and ready to
+use. Use the '--install' option to attempt to install missing build tools.
 '''
-  flags = []
-  if args.v:
-    flags += ['-v']
-  _RunCommand(['dep', 'ensure'] + flags)
+  _Deps(args)
 
 
 def ShowEnvCommand(args):
@@ -251,6 +390,48 @@ the entire command with '--' to prevent the arguments from being interpreted as
 arguments for this script.
 '''
   _RunCommand(args.prog, env=_MergeEnv(args))
+
+
+def _UpdateIndex(fname, index):
+  lines = []
+  with open(fname, 'r') as f:
+    lines = f.readlines()
+  for i, l in enumerate(lines):
+    if '<!-- BEGIN-INDEX -->' in l:
+      lines[i:] = index
+      break
+
+  with open(fname, 'w') as f:
+    f.writelines(lines)
+
+
+def _UpdateIndexInAllDocs():
+  INDEX_FILE = 'index.md'
+  index = []
+  docpath = os.path.join(SOURCE_PATH, 'docs')
+  with open(os.path.join(docpath, INDEX_FILE), 'r') as f:
+    index = f.readlines()
+
+  files_to_touch = os.listdir(docpath)
+  files_to_touch = [fn for fn in files_to_touch if fn.endswith('.md')]
+  for f in files_to_touch:
+    if f == INDEX_FILE:
+      continue
+    _UpdateIndex(os.path.join(docpath, f), index)
+
+
+def FormatCommand(args):
+  '''Reformat code and prepare for a code commit.
+
+This command performs the following:
+
+    1. Update all Markdown documentation with the latest set of tags from
+       `docs/index.md`.
+
+    2. Format Go code in the tree using Gofmt.
+'''
+  _UpdateIndexInAllDocs()
+  _RunCommand(['go', 'fmt', './go/...'], env=_MergeEnv(args), cwd=SOURCE_PATH)
 
 
 def main():
@@ -343,6 +524,17 @@ def main():
       formatter_class=argparse.RawDescriptionHelpFormatter,
       parents=[common_options])
   env_command.set_defaults(closure=ShowEnvCommand)
+
+  # ----------------------------------------------------------------------------
+  # format
+  # ----------------------------------------------------------------------------
+  env_command = subparsers.add_parser(
+      'format',
+      help=FormatCommand.__doc__.splitlines()[0],
+      description=FormatCommand.__doc__,
+      formatter_class=argparse.RawDescriptionHelpFormatter,
+      parents=[common_options])
+  env_command.set_defaults(closure=FormatCommand)
 
   # ----------------------------------------------------------------------------
   # run
