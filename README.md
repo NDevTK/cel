@@ -20,9 +20,14 @@ Most of the code is in Go. See the [README](/src/go/README.md/) file.
 
 * [Depot Tools](https://dev.chromium.org/developers/how-tos/install-depot-tools)
 
-* [Dep](https://github.com/golang/dep)
+* [Protocol Buffers Compiler](https://developers.google.com/protocol-buffers/)
 
-If you are a Chromium developer, you only need to worry about `Go` and `Dep`.
+* [Dep](https://github.com/golang/dep) : This can be installed automatically by
+    running `./build.py deps --install` from the root of the source tree.
+
+* [Go support for Protocol Buffers](https://github.com/golang/protobuf) : This
+    can be installed automatically by running `./build.py deps --install` from
+    the root of the source tree.
 
 ### Get The Source
 
@@ -31,7 +36,7 @@ is to use plain `go get`. The latter workflow doesn't quite work yet due to this
 repository not being integrated with `go.chromium.org`. So this page only
 mentions the managed dependency workflow.
 
-1. Clone this repository.
+1. Clone this repository:
 
    Assumes that `$GOPATH` is a single path and not a `:` delimited list.
 
@@ -42,18 +47,18 @@ mentions the managed dependency workflow.
    cd cel
    ```
 
-2. Get the dependencies.
+2. Get the dependencies:
 
    ``` sh
-   dep ensure
+   python build.py deps --install
    ```
 
 ### Build It
 
-1. Just use `go build`.
+1. Use the build script:
 
    ``` sh
-   go build .
+   python build.py build
    ```
 
 2. Also make sure the tests pass.
