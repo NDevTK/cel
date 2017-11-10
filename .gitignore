@@ -4,5 +4,10 @@
 # Build artifacts.
 build/
 
+# Generated files
+*.pb.go
+go/gcp/compute/validate.go
+schema/gcp/compute/compute-api.proto
+
 # Vendored dependencies. Use `dep` to manage.
 vendor/
