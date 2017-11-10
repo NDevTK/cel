@@ -49,9 +49,12 @@ def _MergeEnv(args):
   return environ_copy
 
 
+def _EnsureDir(path_to_dir):
+    if not os.path.exists(path_to_dir):
+        os.makedirs(path_to_dir)
+
 def _EnsureBuildDir(args):
-  if not os.path.exists(BUILD_PATH):
-    os.makedirs(BUILD_PATH)
+  _EnsureDir(BUILD_PATH)
   readme = os.path.join(BUILD_PATH, 'README')
   if not os.path.exists(readme):
     with open(readme, 'w') as f:
@@ -211,6 +214,9 @@ def _Deps(args):
 
 def _Generate(args):
   '''Generates Go code based on .proto files.'''
+
+  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
+  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
 
   _RunCommand(
       [
