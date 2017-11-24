@@ -20,14 +20,23 @@
 import argparse
 import errno
 import logging
+import shutil
 import os
 import re
 import subprocess
 import sys
+import textwrap
 
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
 BUILD_PATH = os.path.join(SOURCE_PATH, 'build')
+STAMP_PATH = os.path.join(BUILD_PATH, 'stamps')
 
+sys.path.append(BUILD_PATH)
+from markdown_utils import FormatMarkdown
+
+# NATIVE_GOOS is the GOOS that corresponds to the native platform. Any tool
+# that needs to run on the host machine must be built for this OS regardless of
+# the target GOOS.
 NATIVE_GOOS = {
     "linux2": "linux",
     "linux": "linux",
@@ -37,11 +46,11 @@ NATIVE_GOOS = {
 }.get(sys.platform, "windows")
 
 
-def _MergeEnv(args):
+def _MergeEnv(args, target_host=False):
   go_env = {}
 
   effective_goos = NATIVE_GOOS
-  if args is not None and args.goos:
+  if args is not None and args.goos and not target_host:
     effective_goos = args.goos
   go_env['GOOS'] = effective_goos
   environ_copy = os.environ.copy()
@@ -50,25 +59,13 @@ def _MergeEnv(args):
 
 
 def _EnsureDir(path_to_dir):
-    if not os.path.exists(path_to_dir):
-        os.makedirs(path_to_dir)
-
-def _EnsureBuildDir(args):
-  _EnsureDir(BUILD_PATH)
-  readme = os.path.join(BUILD_PATH, 'README')
-  if not os.path.exists(readme):
-    with open(readme, 'w') as f:
-      f.write('''Build artifacts
-
-Feel free to remove this directory if you no longer need these build artifacts.
-The build script will re-generate the contents of thsi directory if needed.
-''')
+  if not os.path.exists(path_to_dir):
+    os.makedirs(path_to_dir)
 
 
 def _RunCommand(args, **kwargs):
-  logging.info("%s [CWD: %s, GOOS: %s]", ' '.join([(x if ' ' not in x
-                                                    else '"' + x + '"')
-                                                   for x in args]),
+  logging.info("%s [CWD: %s, GOOS: %s]",
+               ' '.join([(x if ' ' not in x else '"' + x + '"') for x in args]),
                kwargs.get('cwd', os.getcwd()),
                kwargs.get('env', os.environ).get('GOOS', NATIVE_GOOS))
 
@@ -77,69 +74,80 @@ def _RunCommand(args, **kwargs):
 
 def _InstallDep(args):
   if (not hasattr(args, 'install')) or not args.install:
-    raise Exception('''"dep" command not found.
+    raise Exception(
+        textwrap.dedent('''\
+            "dep" command not found.
 
-The CEL project uses "deps" to manage dependencies. You can get it by following
-the instructions at :
+            The CEL project uses "deps" to manage dependencies. You can get it by following
+            the instructions at :
 
-    https://github.com/golang/dep#setup
+                https://github.com/golang/dep#setup
 
-A quick and portable way to get it is to run the following:
+            A quick and portable way to get it is to run the following:
 
-    go get -u github.com/golang/dep/cmd/dep
+                go get -u github.com/golang/dep/cmd/dep
 
-Rerun as 'build.py deps --install' to install dependencies automatically. If
-you've already done so, it may be that the GOBIN path is not in the system
-PATH.
-''')
+            Rerun as 'build.py deps --install' to install dependencies automatically. If
+            you've already done so, it may be that the GOBIN path is not in the system
+            PATH.
+            '''))
 
   verbose_flag = []
   if hasattr(args, 'verbose') and args.verbose:
     verbose_flag += ["-v"]
 
-  _RunCommand(['go', 'get', '-u'] + verbose_flag +
-              ['github.com/golang/dep/cmd/dep'])
+  _RunCommand(
+      ['go', 'get', '-u'] + verbose_flag + ['github.com/golang/dep/cmd/dep'],
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
 
 
 def _InstallGoProtoc(args):
   if (not hasattr(args, 'install')) or not args.install:
-    raise Exception('''"protoc-gen-go" not found.
+    raise Exception(
+        textwrap.dedent('''\
+            "protoc-gen-go" not found.
 
-The CEL project relies on generating Go code for Google ProtoBuf files. In
-addition to the Protocol Buffers Compiler (protoc), Go support requires
-protoc-gen-go which generates Go code. More information can be found including
-installation instructions at https://github.com/golang/protobuf.
+            The CEL project relies on generating Go code for Google ProtoBuf files. In
+            addition to the Protocol Buffers Compiler (protoc), Go support requires
+            protoc-gen-go which generates Go code. More information can be found including
+            installation instructions at https://github.com/golang/protobuf.
 
-A quick and portable way to get it is to run the following:
+            A quick and portable way to get it is to run the following:
 
-    go get -u github.com/golang/protobuf/protoc-gen-go
+                go get -u github.com/golang/protobuf/protoc-gen-go
 
-Rerun this script as 'build.py deps --install' to install "protoc-gen-go"
-automatically. You you've already done so, it may be that the GOBIN path is not
-in the system.
-''')
+            Rerun this script as 'build.py deps --install' to install "protoc-gen-go"
+            automatically. You you've already done so, it may be that the GOBIN path is not
+            in the system.
+            '''))
 
   verbose_flag = []
   if hasattr(args, 'verbose') and args.verbose:
     verbose_flag += ["-v"]
 
-  _RunCommand(['go', 'get', '-u'] + verbose_flag +
-              ['github.com/golang/protobuf/protoc-gen-go'])
+  _RunCommand(
+      ['go', 'get', '-u'] + verbose_flag +
+      ['github.com/golang/protobuf/protoc-gen-go'],
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
 
 
 def _InstallProtoc(args):
-  raise Exception('''"protoc" not found.
+  raise Exception(
+      textwrap.dedent('''\
+          "protoc" not found.
 
-The CEL project relies on generating Go code for Google ProtoBuf files. This
-requires having the ProtoBuf compiler in the PATH.
+          The CEL project relies on generating Go code for Google ProtoBuf files. This
+          requires having the ProtoBuf compiler in the PATH.
 
-Instructions for installing "protoc" can be found at
-https://developers.google.com/protocol-buffers/docs/downloads
+          Instructions for installing "protoc" can be found at
+          https://developers.google.com/protocol-buffers/docs/downloads
 
-Unfortunately, protoc can't be installed automatically. So you'll need to
-install it manually. If you've arleady installed it, it's possible that the
-installed location is not in the system PATH.
-''')
+          Unfortunately, protoc can't be installed automatically. So you'll need to
+          install it manually. If you've arleady installed it, it's possible that the
+          installed location is not in the system PATH.
+          '''))
 
 
 def _IsSentinelNewer(sentinel_path, *sources):
@@ -179,7 +187,7 @@ def _Deps(args):
     _CheckAndInstall(
         ['protoc-gen-go'],
         _InstallGoProtoc,
-        env=_MergeEnv(args),
+        env=_MergeEnv(args, target_host=True),
         cwd=SOURCE_PATH,
         stdin=f,
         stdout=f,
@@ -187,7 +195,7 @@ def _Deps(args):
     _CheckAndInstall(
         ['protoc', '-h'],
         _InstallProtoc,
-        env=_MergeEnv(args),
+        env=_MergeEnv(args, target_host=True),
         cwd=SOURCE_PATH,
         stdin=f,
         stdout=f,
@@ -195,10 +203,18 @@ def _Deps(args):
 
   # Using a sentinel file to make sure we only run 'dep' if either the last run
   # was unsuccessful or if there has been a change to Gopkg.* files.
-  _EnsureBuildDir(args)
-  sentinel = os.path.join(BUILD_PATH, 'deps.stamp')
-  if _IsSentinelNewer(sentinel,
-                      os.path.join(SOURCE_PATH, 'Gopkg.toml'),
+  _EnsureDir(STAMP_PATH)
+  if not os.path.exists(os.path.join(STAMP_PATH, 'README')):
+    with open(os.path.join(STAMP_PATH, 'README'), 'w') as f:
+      f.write(
+          textwrap.dedent('''\
+                  This directory contains timestamp files.
+
+                  Feel free to delete these. The only visible effect would be
+                  that the build might take a bit longer to run.'''))
+
+  sentinel = os.path.join(STAMP_PATH, 'deps.stamp')
+  if _IsSentinelNewer(sentinel, os.path.join(SOURCE_PATH, 'Gopkg.toml'),
                       os.path.join(SOURCE_PATH, 'Gopkg.lock')):
     return
 
@@ -226,15 +242,17 @@ def _Generate(args):
           'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
           'go/gcp/compute/validate.go'
       ],
-      env=_MergeEnv(args),
+      env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
+
   _RunCommand(
       [
           'protoc', '--go_out=../../../', 'schema/common/options.proto',
           'schema/common/fileref.proto', 'go/common/testdata/testmsgs.proto'
       ],
-      env=_MergeEnv(args),
+      env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
+
   _RunCommand(
       [
           'protoc', '--go_out=../../../', 'schema/asset/active_directory.proto',
@@ -242,19 +260,26 @@ def _Generate(args):
           'schema/asset/iis.proto', 'schema/asset/network.proto',
           'schema/asset/asset_manifest.proto', 'schema/asset/machine.proto'
       ],
-      env=_MergeEnv(args),
+      env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
+
   _RunCommand(
       ['protoc', '--go_out=../../../', 'schema/host/host_environment.proto'],
-      env=_MergeEnv(args),
+      env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
+
   _RunCommand(
-      ['protoc', '--go_out=../../../', 'schema/meta/meta.proto'],
+      [
+          'protoc', '--go_out=../../../', 'schema/meta/files.proto',
+          'schema/meta/command.proto', 'schema/meta/reference.proto',
+          'schema/meta/status.proto'
+      ],
       env=_MergeEnv(args),
       cwd=SOURCE_PATH)
+
   _RunCommand(
       ['protoc', '--go_out=../../../', 'schema/gcp/compute/compute-api.proto'],
-      env=_MergeEnv(args),
+      env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
 
@@ -328,7 +353,7 @@ Note: Running tests in 'reset and record' mode requires access to the
 chrome-auth-lab-dev Google Cloud project.
 '''
 
-  test_env = _MergeEnv(None)
+  test_env = _MergeEnv(args, target_host=True)
 
   if args.reset:
     if len(args.gotest_args) != 0:
@@ -398,32 +423,59 @@ arguments for this script.
   _RunCommand(args.prog, env=_MergeEnv(args))
 
 
-def _UpdateIndex(fname, index):
-  lines = []
-  with open(fname, 'r') as f:
-    lines = f.readlines()
-  for i, l in enumerate(lines):
-    if '<!-- BEGIN-INDEX -->' in l:
-      lines[i:] = index
-      break
+def _FormatMarkdownFiles(args):
 
-  with open(fname, 'w') as f:
-    f.writelines(lines)
+  o = subprocess.check_output(
+      ['git', 'ls-files', '--exclude-standard', '--', '*.md'], cwd=SOURCE_PATH)
+  md_files = o.splitlines()
+
+  for f in md_files:
+    FormatMarkdown(os.path.join(SOURCE_PATH, f))
 
 
-def _UpdateIndexInAllDocs():
-  INDEX_FILE = 'index.md'
-  index = []
-  docpath = os.path.join(SOURCE_PATH, 'docs')
-  with open(os.path.join(docpath, INDEX_FILE), 'r') as f:
-    index = f.readlines()
+def _FormatGoFiles(args):
+  _RunCommand(['go', 'fmt', './go/...'], env=_MergeEnv(args), cwd=SOURCE_PATH)
 
-  files_to_touch = os.listdir(docpath)
-  files_to_touch = [fn for fn in files_to_touch if fn.endswith('.md')]
-  for f in files_to_touch:
-    if f == INDEX_FILE:
-      continue
-    _UpdateIndex(os.path.join(docpath, f), index)
+
+def _FormatProtoFiles(args):
+  o = subprocess.check_output(
+      ['git', 'ls-files', '--exclude-standard', '--', '*.proto'],
+      cwd=SOURCE_PATH)
+  proto_files = o.splitlines()
+
+  try:
+    _RunCommand(['clang-format', '-i', '-style=Chromium'] + proto_files)
+  except OSError as e:
+    if e.errno == errno.ENOENT:
+      sys.stderr.write(
+          textwrap.dedent('''\
+                    clang-format not found.
+
+                    clang-format is used for formatting ProtoBuf files. Without
+                    it, this script can't correctly format ProtoBuf files.'''))
+    else:
+      raise e
+
+
+def _FormatPythonFiles(args):
+  try:
+    _RunCommand(['yapf', '-i', '-r', '.'], env=_MergeEnv(args), cwd=SOURCE_PATH)
+  except OSError as e:
+    if e.errno == errno.ENOENT:
+      sys.stderr.write(
+          textwrap.dedent('''\
+              YAPF not found.
+
+              YAPF is used for formatting Python files. See https://github.com/google/yapf
+              for more information on how to install YAPF. Without it, this script can't
+              correctly format Python source files.
+
+              You can still land code if your change doesn't touch any Python files. If you
+              do modify Python files, it's likely that someone will have to reformat the
+              files later.
+              '''))
+    else:
+      raise e
 
 
 def FormatCommand(args):
@@ -435,9 +487,35 @@ This command performs the following:
        `docs/index.md`.
 
     2. Format Go code in the tree using Gofmt.
+
+    3. Format Python files using YAPF. This project uses the Chromium Python
+       coding style [1]. See https://github.com/google/yapf for information on
+       installing YAPF.
+
+[1]: https://chromium.googlesource.com/chromium/src/+/master/styleguide/styleguide.md
 '''
-  _UpdateIndexInAllDocs()
-  _RunCommand(['go', 'fmt', './go/...'], env=_MergeEnv(args), cwd=SOURCE_PATH)
+  _FormatMarkdownFiles(args)
+  _FormatGoFiles(args)
+  _FormatProtoFiles(args)
+  _FormatPythonFiles(args)
+
+
+def CleanCommand(args):
+  '''Remove build artifacts.
+'''
+  force_option = ['-f' if args.force else '-n']
+  _RunCommand(
+      ['git', 'clean', '-X'] + force_option,
+      env=_MergeEnv(args),
+      cwd=SOURCE_PATH)
+  build_dir = os.path.join(SOURCE_PATH, 'build')
+  if not args.force:
+    print('Would remove {}'.format(build_dir))
+    return
+
+  if os.path.exists(build_dir):
+    print('Removing {}'.format(build_dir))
+    shutil.rmtree(build_dir)
 
 
 def main():
@@ -505,6 +583,21 @@ def main():
   gen_command.set_defaults(closure=GenCommand)
 
   # ----------------------------------------------------------------------------
+  # clean
+  # ----------------------------------------------------------------------------
+  clean_command = subparsers.add_parser(
+      'clean',
+      help=CleanCommand.__doc__,
+      parents=[common_options],
+      formatter_class=argparse.RawDescriptionHelpFormatter)
+  clean_command.add_argument(
+      '--force',
+      '-f',
+      action='store_true',
+      help='Force. Without this option this command doesn\'t do anything.')
+  clean_command.set_defaults(closure=CleanCommand)
+
+  # ----------------------------------------------------------------------------
   # deps
   # ----------------------------------------------------------------------------
   deps_command = subparsers.add_parser(
@@ -534,13 +627,13 @@ def main():
   # ----------------------------------------------------------------------------
   # format
   # ----------------------------------------------------------------------------
-  env_command = subparsers.add_parser(
+  format_command = subparsers.add_parser(
       'format',
       help=FormatCommand.__doc__.splitlines()[0],
       description=FormatCommand.__doc__,
       formatter_class=argparse.RawDescriptionHelpFormatter,
       parents=[common_options])
-  env_command.set_defaults(closure=FormatCommand)
+  format_command.set_defaults(closure=FormatCommand)
 
   # ----------------------------------------------------------------------------
   # run
