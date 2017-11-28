@@ -26,8 +26,6 @@
 
 Set-Location -Path C:\
 
-$BootstrapPath = "gs://chrome-auth-lab-staging/bootstrap"
-
 $ToolsPath = "C:\cel"
 $KeysPath = "C:\keys"
 
@@ -110,11 +108,11 @@ function Assert-DirectoryIsInPath {
 Get-InstanceAttribute returns either the instance or project metdata with the
 specified name.
 
-.PARAMETER name
+.PARAMETER Name
 
 Name of attribute to query.
 
-.PARAMETER projectScoped
+.PARAMETER ProjectScoped
 
 If specified, the metadata attribute named by $name is queried in the project
 metadata *if* it is not defined in the instance metadata.
@@ -136,52 +134,50 @@ The objects resulting from querying the metadata.
 function Get-InstanceAttribute {
   [CmdletBinding()]
   param(
-    [Parameter(Mandatory=$true,ValueFromPipeline=$true)] [string] $name,
-    [Parameter()] [switch]$projectScoped
+    [Parameter(Mandatory=$true,ValueFromPipeline=$true)] [string] $Name,
+    [Parameter()] [switch]$ProjectScoped
   )
 
   process {
     $url = ""
-    if ( $projectScoped ) {
+    if ( $ProjectScoped ) {
       $url = @(
           "http://metadata.google.internal/computeMetadata/v1/project/attributes",
-          $name
+          $Name
           ) -join "/"
     } else {
       $url = @(
           "http://metadata.google.internal/computeMetadata/v1/instance/attributes",
-          $name ) -join "/"
+          $Name ) -join "/"
     }
     $url += "?alt=json"
 
     try {
       Invoke-RestMethod -Uri $url -Headers $GceApiHeaders
     } catch [System.Net.WebException] {
-      throw "Failed to lookup instance and project metadata for $name"
+      throw "Failed to lookup instance and project metadata for $Name"
     }
   }
 }
 
 function EnsureCelTools {
-  Write-Host -ForegroundColor Cyan "==================== Updating Lab Tools"
   Assert-Directory -Path $LabToolsPath
   Assert-DirectoryIsInPath -Path $LabToolsPath
+
+  $BootstrapPath = Get-InstanceAttribute -Name "cel-bootstrap" -ProjectScoped
   & gsutil rsync -d -r $BootstrapPath $LabToolsPath
 }
 
 function EnsureWinRM {
-  Write-Host -ForegroundColor Cyan "==================== Configuring WinRM"
   & winrm quickconfig
   Enable-PSRemoting -force
 }
 
-# EnsureAndDumpMachineCertificate creates a machine certificate if one doesn't
-# exist. It then dumps the contents of the certificate to COM4.
-function EnsureAndDumpMachineCertificate {
+function EnsureCelAgentService {
+  # This is where we register (if not registered already) the CelAgent service
+  # and start it if it isn't already running.
 }
 
 EnsureCelTools
 EnsureWinRM
-EnsureAndDumpMachineCertificate
-
-
+EnsureCelAgentService
