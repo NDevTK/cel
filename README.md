@@ -14,9 +14,8 @@ Most of the code is in Go. See the [README](/src/go/README.md/) file.
 
 ### Prerequisites
 
-* [Go](https://golang.org/)
-
-* [Git](https://git-scm.com/)
+* [Go](https://golang.org/): Download Go from the [Go download
+    page](https://golang.org/dl/).
 
 * [Depot Tools](https://dev.chromium.org/developers/how-tos/install-depot-tools)
 

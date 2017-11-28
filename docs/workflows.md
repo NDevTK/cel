@@ -56,7 +56,7 @@ This may also be used by a developer who hasn't written a system level test yet 
 1.  On VM: Run and debug binary manually.
 
 
-<!-- BEGIN-INDEX -->
+<!-- INCLUDE index.md (51 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -74,18 +74,21 @@ Keep the tags below sorted.
 [ASSET MANIFEST]: design-summary.md#asset-manifest
 [Additional Considerations]: background.md#additional-considerations
 [Asset Description Schema]: schema-guidelines.md
+[Asset Example]: /examples/schema/ad/one-domain.asset.textpb
 [Background]: background.md
 [Bootstrapping]: bootstrapping.md
 [Concepts]: design-summary.md#concepts
 [DEPLOYER]: design-summary.md#deployer
-[Deployment Details]: deployment.md
 [Deploying Scripted Assets]: deployment.md#deploying-scripted-assets
+[Deployment Details]: deployment.md
+[Deployment Overview]: deployment.md#overview
 [Design]: design-summary.md
 [Frameworks/Tools Used]: background.md#tools-used
 [GREETER]: design-summary.md#greeter
 [Google Services]: google-services.md
 [HOST ENVIRONMENT]: design-summary.md#host-environment
 [HOST TEST RUNNER]: design-summary.md#host-test-runner
+[Host Example]: /examples/schema/ad/one-domain.host.textpb
 [ISOLATE]: design-summary.md#isolate
 [Integration With Chromium Waterfall]: chrome-ci-integration.md
 [Objective]: design-summary.md#objective
@@ -93,6 +96,9 @@ Keep the tags below sorted.
 [Private Google Compute Images]: private-images.md
 [SYSTEM TEST RUNNER]: design-summary.md#system-test-runner
 [Scalability]: scalability.md
+[Schema References]: schema-guidelines.md#references
+[Schema Validation]: schema-guidelines.md#validation
+[Inline References]: schema-guidelines.md#inline-references
 [Source Locations]: source-locations.md
 [TEST HOST]: design-summary.md#test-host
 [TEST]: design-summary.md#test
@@ -102,4 +108,3 @@ Keep the tags below sorted.
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
 
-<!-- END-INDEX -->

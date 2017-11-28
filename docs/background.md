@@ -84,7 +84,6 @@ that went into the design are discussed below.
 
 ## Additional Considerations
 
-
 *   **Focus on Windows**. Deploying and configuring Active Directory services in
     its many permutations remains a very expensive part of supporting Microsoft
     Windows based technology stacks. The design should focus on simplifying the
@@ -135,22 +134,22 @@ the rest of the document.
     going to use for building the lab. Google Cloud Platform is abbreviated as
     **GCP**. Google Compute Engine is abbreviated as **GCE**.
 
-*   ![Luci Isolate](images/Chrome-Enterprise1.png) **[Luci] Isolate**
+*   ![Luci Isolate](images/Chrome-Enterprise1.png) **Luci Isolate**
     ([docs](https://github.com/luci/luci-py/blob/master/appengine/isolate/doc/Design.md)):
     A service for efficiently storing and distributing a directory tree
     containing a large number of files. Used as the primary means of getting
     files from builder and developer machines into the lab.
 
-*   ![Luci Swarming](images/Chrome-Enterprise2.png) **[Luci] Swarming**
+*   ![Luci Swarming](images/Chrome-Enterprise2.png) **Luci Swarming**
     ([docs](https://github.com/luci/luci-py/blob/master/appengine/swarming/doc/Design.md)):
     A service used for scheduling tests in the lab. This is how tests in the lab
     are triggered from a builder.
 
-*   ![Luci CIPD](images/Chrome-Enterprise3.png) **[Luci] CIPD**
+*   ![Luci CIPD](images/Chrome-Enterprise3.png) **Luci CIPD**
     ([docs](https://github.com/luci/luci-go/blob/master/cipd/README.md)): "CIPD
     is package deployment infrastructure". Used for deploying software into VMs.
 
-*   ![PowerShell](images/Chrome-Enterprise4.png) **[Microsoft] Powershell
+*   ![PowerShell](images/Chrome-Enterprise4.png) **Microsoft Powershell
     Desired State Configuration**
     ([docs](https://msdn.microsoft.com/en-us/powershell/dsc/overview)): "A
     declarative platform used for configuration, deployment, and management of
@@ -170,7 +169,7 @@ the rest of the document.
 *   ![Go](images/Chrome-Enterprise6.png) **Go**
     ([website](https://golang.org/)): A popular scripting language.
 
-<!-- BEGIN-INDEX -->
+<!-- INCLUDE index.md (51 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -188,18 +187,21 @@ Keep the tags below sorted.
 [ASSET MANIFEST]: design-summary.md#asset-manifest
 [Additional Considerations]: background.md#additional-considerations
 [Asset Description Schema]: schema-guidelines.md
+[Asset Example]: /examples/schema/ad/one-domain.asset.textpb
 [Background]: background.md
 [Bootstrapping]: bootstrapping.md
 [Concepts]: design-summary.md#concepts
 [DEPLOYER]: design-summary.md#deployer
-[Deployment Details]: deployment.md
 [Deploying Scripted Assets]: deployment.md#deploying-scripted-assets
+[Deployment Details]: deployment.md
+[Deployment Overview]: deployment.md#overview
 [Design]: design-summary.md
 [Frameworks/Tools Used]: background.md#tools-used
 [GREETER]: design-summary.md#greeter
 [Google Services]: google-services.md
 [HOST ENVIRONMENT]: design-summary.md#host-environment
 [HOST TEST RUNNER]: design-summary.md#host-test-runner
+[Host Example]: /examples/schema/ad/one-domain.host.textpb
 [ISOLATE]: design-summary.md#isolate
 [Integration With Chromium Waterfall]: chrome-ci-integration.md
 [Objective]: design-summary.md#objective
@@ -207,6 +209,9 @@ Keep the tags below sorted.
 [Private Google Compute Images]: private-images.md
 [SYSTEM TEST RUNNER]: design-summary.md#system-test-runner
 [Scalability]: scalability.md
+[Schema References]: schema-guidelines.md#references
+[Schema Validation]: schema-guidelines.md#validation
+[Inline References]: schema-guidelines.md#inline-references
 [Source Locations]: source-locations.md
 [TEST HOST]: design-summary.md#test-host
 [TEST]: design-summary.md#test
@@ -216,4 +221,3 @@ Keep the tags below sorted.
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
 
-<!-- END-INDEX -->

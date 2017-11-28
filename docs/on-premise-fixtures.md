@@ -40,7 +40,7 @@ three actors: the User Agent (UA), SSL Proxy, and google.com.
 1.  During the handshake with the UA, the SSL Proxy attempts a TLS connection
     with google.com. The latter presents google.com's real certificate which the
     SSL proxy MUST verify before establishing the tunnel between the UA and the
-    SSL proxy. 
+    SSL proxy.
 
     This step is usually performed prior to minting the fake google.com
     certificate since the fake certificate typically uses the same subject name
@@ -62,7 +62,7 @@ hence is able to terminate the SSL connection and examine the requests and
 responses between the UA and google.com. The fake certificate is signed with a
 Certificate Authority (CA) whose certificate is added to the list of trust roots
 for the UA. The CA in this case is not a public trust root, but one that's
-created by the SSL proxy. The private key corresponding to the CA is [hopefully]
+created by the SSL proxy. The private key corresponding to the CA is (hopefully)
 specific to the device.
 
 The addition of the CA certificate to the UA's list of trust roots is sufficient
@@ -261,26 +261,26 @@ the physical and virtual appliances -- is to allow for flexible deployment of
 test environments. In the case of the topology for physical appliances:
 
 *   The cloud VPC networks, VPN endpoints, client GCE instances, server GCE
-    instances and routes inside the VPCs are described in the [ASSET MANIFEST]
-    and constructed as needed by the [DEPLOYER].
+    instances and routes inside the VPCs are described in the [ASSET MANIFEST][]
+    and constructed as needed by the [DEPLOYER][].
 
 *   Any subset of physical appliances can be selected for testing via the [ASSET
     MANIFEST].
 
 *   The physical lab and the appliances that are currently available for testing
-    are described in the [HOST ENVIRONMENT].
+    are described in the [HOST ENVIRONMENT][].
 
-References to physical networks and physical appliances in the [ASSET MANIFEST]
-must be resolved against the resources described in the [HOST ENVIRONMENT] at
+References to physical networks and physical appliances in the [ASSET MANIFEST][]
+must be resolved against the resources described in the [HOST ENVIRONMENT][] at
 the time the cloud assets are deployed. In order to facilitate fault tolerance
-and allow for maintenance, the references in the [ASSET MANIFEST] only refer to
-a class of resources, and the [HOST ENVIRONMENT] can specify a pool of matching
-physical resources which the [DEPLOYER] can resolve against.
+and allow for maintenance, the references in the [ASSET MANIFEST][] only refer to
+a class of resources, and the [HOST ENVIRONMENT][] can specify a pool of matching
+physical resources which the [DEPLOYER][] can resolve against.
 
 In the case of virtual appliances, the deployment details are TBD since some of
 the components may need to be deployed manually due to licensing restrictions.
 
-<!-- BEGIN-INDEX -->
+<!-- INCLUDE index.md (51 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -298,18 +298,21 @@ Keep the tags below sorted.
 [ASSET MANIFEST]: design-summary.md#asset-manifest
 [Additional Considerations]: background.md#additional-considerations
 [Asset Description Schema]: schema-guidelines.md
+[Asset Example]: /examples/schema/ad/one-domain.asset.textpb
 [Background]: background.md
 [Bootstrapping]: bootstrapping.md
 [Concepts]: design-summary.md#concepts
 [DEPLOYER]: design-summary.md#deployer
-[Deployment Details]: deployment.md
 [Deploying Scripted Assets]: deployment.md#deploying-scripted-assets
+[Deployment Details]: deployment.md
+[Deployment Overview]: deployment.md#overview
 [Design]: design-summary.md
 [Frameworks/Tools Used]: background.md#tools-used
 [GREETER]: design-summary.md#greeter
 [Google Services]: google-services.md
 [HOST ENVIRONMENT]: design-summary.md#host-environment
 [HOST TEST RUNNER]: design-summary.md#host-test-runner
+[Host Example]: /examples/schema/ad/one-domain.host.textpb
 [ISOLATE]: design-summary.md#isolate
 [Integration With Chromium Waterfall]: chrome-ci-integration.md
 [Objective]: design-summary.md#objective
@@ -317,6 +320,9 @@ Keep the tags below sorted.
 [Private Google Compute Images]: private-images.md
 [SYSTEM TEST RUNNER]: design-summary.md#system-test-runner
 [Scalability]: scalability.md
+[Schema References]: schema-guidelines.md#references
+[Schema Validation]: schema-guidelines.md#validation
+[Inline References]: schema-guidelines.md#inline-references
 [Source Locations]: source-locations.md
 [TEST HOST]: design-summary.md#test-host
 [TEST]: design-summary.md#test
@@ -326,4 +332,3 @@ Keep the tags below sorted.
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
 
-<!-- END-INDEX -->

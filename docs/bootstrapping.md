@@ -30,7 +30,7 @@ Google Cloud project follows:
 
 
 1.  Start by building the Chrome Enterprise Lab infrastructure tools. See
-    [Source Locations] for `cel` repository location. The build process
+    [Source Locations][] for `cel` repository location. The build process
     generates all the scripts and binaries that are needed for the remainder of
     this process.  The files are copied out to a `staging` directory. This
     directory will be needed by the `cel_admin bootstrap` command later.
@@ -44,12 +44,12 @@ Google Cloud project follows:
     visible IP addresses, etc.. The list of such assets obviously depend
     entirely on the list of tests to be run.
 
-1.  Build a [HOST ENVIRONMENT] configuration file.
+1.  Build a [HOST ENVIRONMENT][] configuration file.
 
-1.  Verify the [HOST ENVIRONMENT] optionally against a real [ASSET MANIFEST]
+1.  Verify the [HOST ENVIRONMENT][] optionally against a real [ASSET MANIFEST][]
     using the `cel_admin validate` command. This command will explain any
     missing pieces or report any errors it finds in the configuration. If an
-    [ASSET MANIFEST] is available, the `cel_admin validate` command should 
+    [ASSET MANIFEST][] is available, the `cel_admin validate` command should
 
 1.  Invoke `cel_admin start` to construct the enterprise lab infrastructure.
     This command:
@@ -108,7 +108,7 @@ what's described above.
 *   [Create a new builder](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipe_modules/chromium_tests/chromium_recipe.md): Document on how to add a new builder to the waterfall.
 
 
-<!-- BEGIN-INDEX -->
+<!-- INCLUDE index.md (51 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -126,18 +126,21 @@ Keep the tags below sorted.
 [ASSET MANIFEST]: design-summary.md#asset-manifest
 [Additional Considerations]: background.md#additional-considerations
 [Asset Description Schema]: schema-guidelines.md
+[Asset Example]: /examples/schema/ad/one-domain.asset.textpb
 [Background]: background.md
 [Bootstrapping]: bootstrapping.md
 [Concepts]: design-summary.md#concepts
 [DEPLOYER]: design-summary.md#deployer
-[Deployment Details]: deployment.md
 [Deploying Scripted Assets]: deployment.md#deploying-scripted-assets
+[Deployment Details]: deployment.md
+[Deployment Overview]: deployment.md#overview
 [Design]: design-summary.md
 [Frameworks/Tools Used]: background.md#tools-used
 [GREETER]: design-summary.md#greeter
 [Google Services]: google-services.md
 [HOST ENVIRONMENT]: design-summary.md#host-environment
 [HOST TEST RUNNER]: design-summary.md#host-test-runner
+[Host Example]: /examples/schema/ad/one-domain.host.textpb
 [ISOLATE]: design-summary.md#isolate
 [Integration With Chromium Waterfall]: chrome-ci-integration.md
 [Objective]: design-summary.md#objective
@@ -145,6 +148,9 @@ Keep the tags below sorted.
 [Private Google Compute Images]: private-images.md
 [SYSTEM TEST RUNNER]: design-summary.md#system-test-runner
 [Scalability]: scalability.md
+[Schema References]: schema-guidelines.md#references
+[Schema Validation]: schema-guidelines.md#validation
+[Inline References]: schema-guidelines.md#inline-references
 [Source Locations]: source-locations.md
 [TEST HOST]: design-summary.md#test-host
 [TEST]: design-summary.md#test
@@ -154,4 +160,3 @@ Keep the tags below sorted.
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
 
-<!-- END-INDEX -->

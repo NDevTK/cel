@@ -15,7 +15,7 @@ more APIs are made available in [google-cloud-go][].
 
 ## Building
 
-Use the [build.py][../../build.py] script at the root of the source tree to
+Use the [build.py](../../build.py) script at the root of the source tree to
 build the Go code.
 
 ``` sh
