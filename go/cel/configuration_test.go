@@ -158,7 +158,15 @@ func TestLabConfiguration_Validate(t *testing.T) {
 func TestLabConfiguration_ValidateBuiltins(t *testing.T) {
 	var l Configuration
 
-	err := l.Merge("../../schema/host/builtins.textpb")
+	err := l.Merge("../../schema/gcp/builtins.textpb")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// This shouldn't be necessary, but by merging these two, we get a well
+	// formed set of project settings. Otherwise validation will fail since
+	// project and log parameters are required.
+	err = l.Merge("../../examples/schema/ad/one-domain.host.textpb")
 	if err != nil {
 		t.Fatal(err)
 	}

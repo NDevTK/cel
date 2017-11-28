@@ -12,6 +12,9 @@ project {
   zone: 'us-east1-b'
 }
 
+# Where the logs go.
+log_settings { admin_log: "admin" }
+
 # We only use one machine type in our examples
 machine_type {
   # Name must match the host_machine_type field in the windows_machine asset

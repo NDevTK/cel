@@ -12,6 +12,8 @@ import (
 
 func TestAssetManifest_validateFields(t *testing.T) {
 	var h HostEnvironment
+	h.Project = &Project{Name: "T", Zone: "Z"}
+	h.LogSettings = &LogSettings{AdminLog: "A"}
 	err := common.InvokeValidate(&h, common.EmptyPath)
 	if err != nil {
 		t.Fatal("unexpected error ", err)

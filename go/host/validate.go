@@ -13,6 +13,7 @@ func (*AddressPool) Validate() error     { return nil }
 func (*MachineType) Validate() error     { return nil }
 func (*Project) Validate() error         { return nil }
 func (*Image_Family) Validate() error    { return nil }
+func (*LogSettings) Validate() error     { return nil }
 
 func (i *Image) Validate() error {
 	if i.GetFixed() == "" && i.GetLatest() == nil {
