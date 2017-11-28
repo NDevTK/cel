@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 package common;
-option go_package="chromium.googlesource.com/enterprise/cel/go/common";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/common";
 
 import "google/protobuf/descriptor.proto";
 
@@ -21,10 +21,11 @@ message Validation {
     // When applied to a 'repeated' field, implies that there must be at least
     // one instance of the field.
     //
-    // When applied to 'oneof' implies that at least one of the alternatives must
-    // be specified.
+    // When applied to 'oneof' implies that at least one of the alternatives
+    // must be specified.
     //
-    // When applied to a 'map' implies that there should be at least one mapping.
+    // When applied to a 'map' implies that there should be at least one
+    // mapping.
     //
     // E.g.: Declare the 'h' field of Foo message to be required:
     //
@@ -68,7 +69,8 @@ message Validation {
   string ref = 2;
 
   // Indicates that the value is optional. By default adding an annotation to a
-  // field marks it as a required field. Setting 'optional' to true negates that.
+  // field marks it as a required field. Setting 'optional' to true negates
+  // that.
   oneof optional_flag { bool optional = 3; }
 }
 
@@ -91,4 +93,3 @@ extend google.protobuf.FieldOptions {
   //     }
   Validation v = 50000;
 }
-

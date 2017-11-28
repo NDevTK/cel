@@ -3,13 +3,13 @@ package config;
 
 // Labels that are defined here must conform to RFC 1035 <label> production.
 // Reproduced below for your convenience.
-// 
+//
 //     <label> ::= <letter> [ [ <ldh-str> ] <let-dig> ]
-//     
+//
 //     <ldh-str> ::= <let-dig-hyp> | <let-dig-hyp> <ldh-str>
-//     
+//
 //     <let-dig-hyp> ::= <let-dig> | "-"
-//     
+//
 //     <let-dig> ::= <letter> | <digit>
 //
 //     <letter> ::= any one of the 52 alphabetic characters A through Z in
@@ -30,7 +30,8 @@ message Network {
   // the instances.
   repeated FirewallRule firewall_rule = 4;
 
-  // Peer network names. Specify just the network name. The full URL is not necessary.
+  // Peer network names. Specify just the network name. The full URL is not
+  // necessary.
   //
   // See https://cloud.google.com/compute/docs/vpc/vpc-peering for more
   // information about network peering. The builtin networks will automatically
@@ -76,15 +77,15 @@ message FirewallRule {
 
   // Describes the type of traffic that's allowed by this firewall exception.
   message Filter {
-	// One of "tcp", "udp", "icmp", "sctp" etc.. The special protocol "*"
-	// causes TCP, UDP, and ICMP protocols to be added to the allow list.
-	// Both TCP and UDP will allow traffic from the ports specified under
-	// |ports|.
-	string protocol = 1;
+    // One of "tcp", "udp", "icmp", "sctp" etc.. The special protocol "*"
+    // causes TCP, UDP, and ICMP protocols to be added to the allow list.
+    // Both TCP and UDP will allow traffic from the ports specified under
+    // |ports|.
+    string protocol = 1;
 
-	// Individual ports in string form or '-' separated ranges. E.g.: "22",
-	// "80","443","12345-12349", or my favorite "1-65535"
-	repeated string ports = 2;
+    // Individual ports in string form or '-' separated ranges. E.g.: "22",
+    // "80","443","12345-12349", or my favorite "1-65535"
+    repeated string ports = 2;
   }
   repeated Filter allowed = 3;
   repeated Filter denied = 4;
@@ -95,10 +96,7 @@ message FirewallRule {
   // Tags that should be on the VM receiving the traffic.
   repeated string target_tag = 5;
 
-  enum Direction {
-    INGRESS,
-    EGRESS
-  }
+  enum Direction { INGRESS, EGRESS }
   // Direction of the traffic. Defaults to INGRESS which applies the |allowed|
   // adn |denied| filters on inbound traffic. Setting direction to EGRESS
   // filters outgoing traffic.
@@ -107,7 +105,6 @@ message FirewallRule {
 
 // A source disk image.
 message SourceImage {
-
   // The name is used to refer to a source image from InstanceCreateOptions (or
   // other places as applicable) and has no significance outside of the
   // configuration file.
@@ -121,32 +118,30 @@ message SourceImage {
   // instance to use a specific version of an image (not recommended), then use
   // the full URL of that image with the |fixed| field set below.
   message Latest {
+    // Image family. See
+    // https://cloud.google.com/compute/docs/images#image_families
+    // This field should be set to the family label, *not* the full URL.
+    string family = 1;
 
-	// Image family. See
-	// https://cloud.google.com/compute/docs/images#image_families
-	// This field should be set to the family label, *not* the full URL.
-	string family = 1;
-
-	// Image project. I.e. the project providing the image.
-	string project = 2;
+    // Image project. I.e. the project providing the image.
+    string project = 2;
   }
 
   // Describes a specific version of an image using a partial URL.
   message Fixed {
-
-	// Partial image URL. Looks like projects/*/global/images/*. E.g.:
-	// projects/windows-sql-cloud/global/images/sql-2016-web-windows-2016-dc-v20170615
-	// Note that project deployment may fail if the specified image has been
-	// deprecated.
-	string image_url = 1;
+    // Partial image URL. Looks like projects/*/global/images/*. E.g.:
+    // projects/windows-sql-cloud/global/images/sql-2016-web-windows-2016-dc-v20170615
+    // Note that project deployment may fail if the specified image has been
+    // deprecated.
+    string image_url = 1;
   }
 
   // TODO(asanka): Support instance templates as source images.
 
   // Obviously only one of these types can be specified per image.
   oneof source_type {
-	Latest latest = 2;
-	Fixed fixed = 3;
+    Latest latest = 2;
+    Fixed fixed = 3;
   }
 }
 
@@ -197,7 +192,6 @@ message Key {
 // Options for creating a VM. The name of the instance is inherited from the
 // parent Instance. Hence there is no separate field for it.
 message InstanceCreateOptions {
-  
   // GCE Zone. If empty, will inherit LabConfig.default_zone. E.g.:
   // "us-east1-b"
   string zone = 1;
@@ -218,7 +212,7 @@ message InstanceCreateOptions {
   //   SourceImageEncryptionKey = undefined
   //
   // The base image for the instance. Should match the .name field of one of the
-  // SourceImages described in the containing LabConfig. 
+  // SourceImages described in the containing LabConfig.
   string image = 3;
 
   // Short machine type. E.g.: "n1-standard-1". Should be available under the
@@ -241,12 +235,12 @@ message InstanceCreateOptions {
 
   // See on_host_maintenance.
   enum MaintenanceOption {
-	// Attempt to migrate the VM during on-host maintenance. (Default)
-	MIGRATE = 0;
+    // Attempt to migrate the VM during on-host maintenance. (Default)
+    MIGRATE = 0;
 
-	// Terminate the VM. If |automatic_restart| is true, then the VM will be
-	// restarted automatically when safe to do so.
-	TERMINATE = 1;
+    // Terminate the VM. If |automatic_restart| is true, then the VM will be
+    // restarted automatically when safe to do so.
+    TERMINATE = 1;
   }
 
   // Action to be taken during on-host maintenance. This value is not
@@ -348,19 +342,19 @@ message WindowsDomainAccount {
 
   // The user's role:
   enum Role {
-	// A minion account is what's used for running tests. There can be many
-	// differnet types of minion accounts for dealing with things like per-user
-	// policies etc. (Default)
-	MINION = 0;
+    // A minion account is what's used for running tests. There can be many
+    // differnet types of minion accounts for dealing with things like per-user
+    // policies etc. (Default)
+    MINION = 0;
 
-	// There should be at least one account that fulfils the ADMIN role. Such an
-	// account is used for setting up domain joins and other administrative
-	// tasks internally.
-	ADMIN = 1;
+    // There should be at least one account that fulfils the ADMIN role. Such an
+    // account is used for setting up domain joins and other administrative
+    // tasks internally.
+    ADMIN = 1;
 
-	// The Windows safe mode administrator account for the domain. There should
-	// be at least one of these.
-	SAFE_MODE_ADMIN = 2;
+    // The Windows safe mode administrator account for the domain. There should
+    // be at least one of these.
+    SAFE_MODE_ADMIN = 2;
   }
   Role role = 2;
 
@@ -409,8 +403,8 @@ message ExternalIP {
   // correspond to the protocol names expected by GCE's
   // compute.addresses.insert API.
   enum Version {
-	IPV4 = 0;
-	IPV6 = 1;
+    IPV4 = 0;
+    IPV6 = 1;
   }
   Version version = 4;
 

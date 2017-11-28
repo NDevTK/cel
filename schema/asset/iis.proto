@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 package asset;
-option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
 import "schema/common/fileref.proto";
 import "schema/asset/network.proto";
@@ -15,7 +15,8 @@ import "schema/common/options.proto";
 
 // An IIS server.
 //
-// The following Windows features will be automatically installed for all IIS servers.
+// The following Windows features will be automatically installed for all IIS
+// servers.
 //   *  Web-Common-HTTP
 //   *  Web-Security
 message IISServer {
@@ -25,7 +26,7 @@ message IISServer {
   // Name of host machine. Should refer to a |WindowsMachine| entry.
   // Container information for the IIS instance will be inherited from the
   // WindowsMachine entry.
-  string windows_machine = 2 [(common.v).ref="asset.windows_machine"];
+  string windows_machine = 2 [(common.v).ref = "asset.windows_machine"];
 }
 
 // Bindings for a website onto a webserver.
@@ -42,7 +43,8 @@ message IISBindings {
 
   // Name of a Certificate. This certificate should include a private key. See
   // the definition in cert.proto.
-  string certificate = 4 [(common.v)={ref:"asset.certificate", optional:true}];
+  string certificate = 4
+      [(common.v) = {ref: "asset.certificate", optional: true}];
 
   // Whether or not to use SNI. Only applicable when |protocol| is HTTPS. If
   // this value is false, then only one HTTPS site can be bound to a single
@@ -57,7 +59,7 @@ message IISSite {
 
   // Name of server. Should refer to a |Server| entry. A single server can host
   // multiple sites as long as those sites use distinct binding information.
-  string iis_server = 2 [(common.v).ref="asset.iis_server"];
+  string iis_server = 2 [(common.v).ref = "asset.iis_server"];
 
   // Bindings. These are bindings. Specify bindings here. If left unset, will
   // use default bindings (HTTP, port 80, all hostnames).
@@ -76,7 +78,7 @@ message IISApplication {
   string name = 1;
 
   // Name of the iis.Site that's hosting this application.
-  string iis_site = 2 [(common.v).ref="asset.iis_site"];
+  string iis_site = 2 [(common.v).ref = "asset.iis_site"];
 
   // Relative path to directory containing the files that will be hosted on
   // this application. The entire subtree will be copied over to the target

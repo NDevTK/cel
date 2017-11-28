@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-syntax="proto3";
+syntax = "proto3";
 package asset;
-option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
 // Keep list sorted.
 import "schema/asset/active_directory.proto";
@@ -42,28 +42,27 @@ import "schema/asset/network.proto";
 // fields.
 message AssetManifest {
   // Core networking. Use field numbers 1-99
-  repeated Network network      = 1;
-  repeated DNSZone dns_zone     = 2;
+  repeated Network network = 1;
+  repeated DNSZone dns_zone = 2;
 
   // Windows and ActiveDirectory. Use field numbers 100-199
-  repeated ActiveDirectoryDomain ad_domain                           = 100;
-  repeated ActiveDirectoryDomainController ad_domain_controller      = 101;
-  repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit  = 102;
-  repeated ActiveDirectoryGroupPolicy ad_group_policy                = 103;
-  repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link       = 104;
-  repeated ActiveDirectoryRegistryPolicy ad_registry_policy          = 105;
+  repeated ActiveDirectoryDomain ad_domain = 100;
+  repeated ActiveDirectoryDomainController ad_domain_controller = 101;
+  repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit = 102;
+  repeated ActiveDirectoryGroupPolicy ad_group_policy = 103;
+  repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link = 104;
+  repeated ActiveDirectoryRegistryPolicy ad_registry_policy = 105;
   repeated ActiveDirectoryRegistryPrefPolicy ad_registry_pref_policy = 106;
-  repeated WindowsGroup windows_group                                = 107;
-  repeated WindowsMachine windows_machine                            = 108;
-  repeated WindowsUser windows_user                                  = 109;
+  repeated WindowsGroup windows_group = 107;
+  repeated WindowsMachine windows_machine = 108;
+  repeated WindowsUser windows_user = 109;
 
   // PKI. Use field numbers 200-299
-  repeated Certificate certificate          = 200;
+  repeated Certificate certificate = 200;
   repeated CertificatePool certificate_pool = 201;
 
   // IIS. Use field numbers 300-399
   repeated IISApplication iis_application = 300;
-  repeated IISServer iis_server           = 301;
-  repeated IISSite iis_site               = 302;
+  repeated IISServer iis_server = 301;
+  repeated IISSite iis_site = 302;
 }
-

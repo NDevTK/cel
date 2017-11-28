@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-syntax="proto3";
+syntax = "proto3";
 package common;
-option go_package="chromium.googlesource.com/enterprise/cel/go/common";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/common";
 
 import "google/protobuf/descriptor.proto";
 import "schema/common/fileref.proto";
@@ -34,16 +34,12 @@ message TestHasGoodSlice {
 
 message TestGoodOneOf {
   string name = 1;
-  oneof opt {
-    TestGoodProto field = 2;
-  }
+  oneof opt { TestGoodProto field = 2; }
 }
 
 message TestBadOneOf {
   string name = 1;
-  oneof opt {
-    TestBadProto field = 2;
-  }
+  oneof opt { TestBadProto field = 2; }
 }
 
 message TestBadValidateArgs {
@@ -64,17 +60,18 @@ message TestGoodProto {
 
 message TestMessageWithOptions {
   string name = 1;
-  string key = 2 [(common.v).ref="with_types.repeated_field"];
-  string label = 3 [(common.v).type=LABEL];
-  string optional_key = 4 [(common.v)={ref:"with_types.repeated_field", optional:true}];
-  string fqdn = 5 [(common.v).type=FQDN];
-  string reqd = 6 [(common.v).type=REQUIRED];
-  string output = 7 [(common.v).type=OUTPUT];
-  string optional_string = 8 [(x)=true];
+  string key = 2 [(common.v).ref = "with_types.repeated_field"];
+  string label = 3 [(common.v).type = LABEL];
+  string optional_key = 4
+      [(common.v) = {ref: "with_types.repeated_field", optional: true}];
+  string fqdn = 5 [(common.v).type = FQDN];
+  string reqd = 6 [(common.v).type = REQUIRED];
+  string output = 7 [(common.v).type = OUTPUT];
+  string optional_string = 8 [(x) = true];
 }
 
 message TestBadMessageWithOptions {
-  int32 name = 1 [(common.v).type=LABEL];
+  int32 name = 1 [(common.v).type = LABEL];
 }
 
 message TestFileRefProto {
@@ -87,9 +84,7 @@ message TestMessageWithTypes {
   int32 int_value = 3;
   TestGoodProto field = 4;
   repeated TestGoodProto repeated_field = 5;
-  oneof optional {
-    TestGoodProto optional_field = 6;
-  }
+  oneof optional { TestGoodProto optional_field = 6; }
   map<string, TestGoodProto> map_field = 7;
   map<string, string> map_string = 8;
 }

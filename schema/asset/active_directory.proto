@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 package asset;
-option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
 import "schema/asset/machine.proto";
 import "schema/common/fileref.proto";
@@ -13,11 +13,12 @@ import "schema/common/options.proto";
 // Describes an Active Directory domain or forest.
 message ActiveDirectoryDomain {
   // FQDN of the domain in lower case.
-  string name = 1 [(common.v).type=FQDN];
+  string name = 1 [(common.v).type = FQDN];
 
   // Parent domain name. Only specify this if this domain is going to be a
   // child domain.
-  string parent_name = 2 [(common.v)={ref:"asset.ad_domain", optional:true}];
+  string parent_name = 2
+      [(common.v) = {ref: "asset.ad_domain", optional: true}];
 
   // Active Directory functional level. A.k.a. Domain Mode. See
   // https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/active-directory-functional-levels
@@ -58,10 +59,10 @@ message ActiveDirectoryDomain {
 message ActiveDirectoryDomainController {
   // Name of the domain. Must match the `name` field of an
   // ActiveDirectoryDomain entry.
-  string ad_domain = 1 [(common.v).ref="asset.ad_domain"];
+  string ad_domain = 1 [(common.v).ref = "asset.ad_domain"];
 
   // Machine hosting the ADDS. Must match the `name` of a WindowsMachine entry.
-  string windows_machine = 2 [(common.v).ref="asset.windows_machine"];
+  string windows_machine = 2 [(common.v).ref = "asset.windows_machine"];
 
   // Whether or not to install a DNS server on this machine. The default is
   // almost always |true| unless the domain already exists and the existing
@@ -113,18 +114,18 @@ message ActiveDirectoryOrganizationalUnit {
 
   // The container in which this OU is created. Only the 'ad_domain' and
   // 'ad_organizational_unit' values are valid.
-  WindowsContainer container = 3 [(common.v).type=REQUIRED];
+  WindowsContainer container = 3 [(common.v).type = REQUIRED];
 
   // The AD DS server which should service the request for creating the OU if
   // necessary. If left unspecified, any of the candidate AD DS instances
   // associated with 'container' will be used.
-  string server = 4 [(common.v).ref="asset.windows_machine"];
+  string server = 4 [(common.v).ref = "asset.windows_machine"];
 
   // Use the referred AD OU as the template. Any properties specified in this
   // message will override corresponding properties from the template OU. Any
   // properties specified in the template, but not in this message will be
   // copied over.
-  string based_on = 5 [(common.v).ref="asset.ad_organizational_unit"];
+  string based_on = 5 [(common.v).ref = "asset.ad_organizational_unit"];
 
   // The 'displayName' property of the AD object.
   string display_name = 6;
@@ -150,7 +151,7 @@ message ActiveDirectoryOrganizationalUnit {
   //       key: 'favColors'
   //       value: 'purple'
   //     }
-  map<string,string> property = 9;
+  map<string, string> property = 9;
 }
 
 // Describes an Active Directory GPO. The GPO itself may not contain anything
@@ -200,18 +201,19 @@ message ActiveDirectoryGroupPolicy {
   // The name of the GPO.
   string name = 1;
 
-  // The full name. Only use this if the full name cannot be specified in |name|.
+  // The full name. Only use this if the full name cannot be specified in
+  // |name|.
   string full_name = 2;
 
   // The domain in which this GPO is created.
-  string ad_domain = 3 [(common.v).ref="asset.ad_domain"];
+  string ad_domain = 3 [(common.v).ref = "asset.ad_domain"];
 
   // A comment for the GPO. This can contain up to 2047 characters.
   string comment = 4;
 
   // If a template GPO is specified, that will be used as the starter GPO.
   // Creates a starter GPO is no value is specified here.
-  string based_on = 5 [(common.v).ref="asset.ad_group_policy"];
+  string based_on = 5 [(common.v).ref = "asset.ad_group_policy"];
 }
 
 // Describes one or more GPO links.
@@ -220,7 +222,7 @@ message ActiveDirectoryGroupPolicyLink {
   string name = 1;
 
   // The policy that will be linked.
-  string ad_group_policy = 2 [(common.v).ref="asset.ad_group_policy"];
+  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
 
   // The list of containers for which the GPO referred to in |ad_group_policy|
   // will be linked. Only the |ad_domain| and |ad_organizational_unit| fields
@@ -240,7 +242,7 @@ message ActiveDirectoryRegistryPolicy {
   string name = 1;
 
   // The GPO that will be affected by this registry policy.
-  string ad_group_policy = 2 [(common.v).ref="asset.ad_group_policy"];
+  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
 
   // If true, the registry values defined in this message will be added to the
   // respective registry keys. The default behavior -- also the behavior when
@@ -258,7 +260,7 @@ message ActiveDirectoryRegistryPrefPolicy {
   string name = 1;
 
   // The GPO that will be affected by this registry policy.
-  string ad_group_policy = 2 [(common.v).ref="asset.ad_group_policy"];
+  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
 
   // The action to take when processing the GPO.
   enum Action {
@@ -295,7 +297,7 @@ message RegistryKey {
   //         value: 'y'
   //       }
   //     }
-  string path = 1 [(common.v).type=REQUIRED];
+  string path = 1 [(common.v).type = REQUIRED];
 
   // The list of values under the key.
   repeated RegistryValue value = 2;
@@ -305,27 +307,29 @@ message RegistryKey {
 // message.
 message RegistryValue {
   // Value name. Leave empty to set the default value.
-  string name = 1 [(common.v)={type:LABEL,optional:true}];
+  string name = 1 [(common.v) = {type: LABEL, optional: true}];
 
-  // These values correspond to registry value types. Obviously only one of these can be specified.
+  // These values correspond to registry value types. Obviously only one of
+  // these can be specified.
   oneof value_type {
-    // REG_SZ value in UTF-8. Will be re-encoded into UTF-16 when writing to the registry.
-    string      string_value        = 10;
+    // REG_SZ value in UTF-8. Will be re-encoded into UTF-16 when writing to the
+    // registry.
+    string string_value = 10;
 
     // REG_EXPAND_SZ value in UTF-8.
-    string      expand_string_value = 11;
+    string expand_string_value = 11;
 
     // REG_BINARY
-    bytes       binary_value        = 12;
+    bytes binary_value = 12;
 
     // REG_QWORD
-    int32       dword_value         = 13;
+    int32 dword_value = 13;
 
     // REG_DWORD
-    int64       qword_value         = 14;
+    int64 qword_value = 14;
 
     // REG_MULTI_SZ
-    MultiString multi_string_value  = 15;
+    MultiString multi_string_value = 15;
   }
 
   // MultiString represents a single REG_MULTI_SZ registry value. Each |value|
@@ -335,6 +339,7 @@ message RegistryValue {
   message MultiString {
     // A single string value in UTF-8. It will be re-encoded to UTF-16 before
     // being written to the registry. Do not include any \0 characters here.
+    // |value| also cannot be the empty string.
     repeated string value = 1;
   }
 }
@@ -347,13 +352,14 @@ message RegistryValue {
 message WindowsContainer {
   oneof container {
     // Domain name.
-    string ad_domain = 1 [(common.v).ref="asset.ad_domain"];
+    string ad_domain = 1 [(common.v).ref = "asset.ad_domain"];
 
     // Machine name.
-    string windows_machine = 2 [(common.v).ref="asset.windows_machine"];
+    string windows_machine = 2 [(common.v).ref = "asset.windows_machine"];
 
     // Organizational unit.
-    string ad_organizational_unit = 3 [(common.v).ref="asset.ad_organizational_unit"];
+    string ad_organizational_unit = 3
+        [(common.v).ref = "asset.ad_organizational_unit"];
   }
 }
 
@@ -373,7 +379,7 @@ message WindowsGroup {
   string description = 3;
 
   // Container for the group. A container must be specified for a WindowsGroup.
-  WindowsContainer container = 4 [(common.v).type=REQUIRED];
+  WindowsContainer container = 4 [(common.v).type = REQUIRED];
 
   // Well-known security identifier. The string should be of the form S-* and
   // should correspond to a known SID as described in
@@ -387,7 +393,7 @@ message WindowsGroup {
 // one of the WindowsGroup entries.
 message GroupReference {
   // The name of the group.
-  string windows_group = 1 [(common.v).ref="asset.windows_group"];
+  string windows_group = 1 [(common.v).ref = "asset.windows_group"];
 
   // Location. Since GroupReference messages are typically specified as a field
   // of an object that already has a container, omiting this field results in
@@ -411,7 +417,7 @@ message GroupReference {
 // one of the WindowsUser entries.
 message UserReference {
   // The name of the user.
-  string windows_user = 1 [(common.v).ref="asset.windows_user"];
+  string windows_user = 1 [(common.v).ref = "asset.windows_user"];
 
   // Location. See GroupReference for how the container parameters are
   // determined by default.
@@ -443,7 +449,7 @@ message WindowsUser {
   string description = 3;
 
   // Container for the user. A container must be specified for a WindowsUser.
-  WindowsContainer container = 4 [(common.v).type=REQUIRED];
+  WindowsContainer container = 4 [(common.v).type = REQUIRED];
 
   // Password. Can be left blank in which case each instantiation of the lab
   // will cause a new password to be generated.
@@ -465,11 +471,11 @@ message WindowsMachine {
   string name = 1;
 
   // The name of a host.MachineType entry that describes the host machine.
-  string machine_type = 2 [(common.v).ref="host.machine_type"];
+  string machine_type = 2 [(common.v).ref = "host.machine_type"];
 
   // Network interfaces. There can be more than one for multihomed machines.
   // There MUST be at least one of these.
-  repeated NetworkInterface network_interface = 3 [(common.v).type=REQUIRED];
+  repeated NetworkInterface network_interface = 3 [(common.v).type = REQUIRED];
 
   // Container. Only |domain| and |ou| values are acceptable. Currently
   // |machine| is not a valid option. If no container is specified, the machine
@@ -514,7 +520,7 @@ message WindowsMachine {
   //
   // E.g.: windows_feature: "Web-Server"
   //
-  // Note: This method cannot be used to specify all sub-features. All 
+  // Note: This method cannot be used to specify all sub-features. All
   // features that needs to be installed should be listed explicitly.
   //
   // Note: Addition of roles can cause features to be installed implicitly.
@@ -535,4 +541,3 @@ message WindowsMachine {
   // and produced a configration file already.
   common.FileReference configuration_file = 15;
 }
-

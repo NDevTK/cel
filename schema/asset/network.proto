@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-syntax="proto3";
+syntax = "proto3";
 package asset;
-option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
 import "schema/common/options.proto";
 
@@ -33,17 +33,17 @@ message NetworkPeer {
   // A single nework can participate in multiple disjoint peering groups,
   // however peering is not transitive. I.e. If {A,B} is a peering group, and
   // {B,C} is a peering group, traffic from A still can't route to C.
-  repeated string network = 1 [(common.v).ref="asset.network"];
+  repeated string network = 1 [(common.v).ref = "asset.network"];
 }
 
 // Address is an IPv4 or IPv6 address.
 message Address {
-  string ip = 1 [(common.v).type=REQUIRED];
+  string ip = 1 [(common.v).type = REQUIRED];
 }
 
 // AddressRange is an IPv4 or IPv6 CIDR range.
 message AddressRange {
-  string cidr = 1 [(common.v).type=REQUIRED];
+  string cidr = 1 [(common.v).type = REQUIRED];
 }
 
 // FixedAddress described an address that is determined either by the host
@@ -55,12 +55,12 @@ message FixedAddress {
 
     // One of the available addresses from the named |host.AddressPool| will be
     // used.
-    string address_pool = 2 [(common.v).ref="host.address_pool"];
+    string address_pool = 2 [(common.v).ref = "host.address_pool"];
   }
 
   // Upon resolution, this field will contain the actual IP address that's
   // assigned to this network interface.
-  Address resolved_address = 3 [(common.v).type=OUTPUT];
+  Address resolved_address = 3 [(common.v).type = OUTPUT];
 }
 
 // List of web protocols. Not necessarily exhaustive. We just need a convenient
