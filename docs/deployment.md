@@ -2,58 +2,306 @@
 
 [TOC]
 
-The [DEPLOYER] section has a summary of what the deployment service does.  In
-this section we dive into the fun details.
+The [DEPLOYER][] section has a summary of what the deployment service does.  In
+this section we dive into the fun details. This document assumes familiarity
+with the overall [Design][].
 
 
-## The Assets
+## Deployment Overview                                               {#overview}
 
-The deployment process takes as input, the [ASSET MANIFEST] that was passed in
-as a part of the ISOLATE, and another configuration file -- [HOST ENVIRONMENT]
--- that is provided at the time the lab is instantiated or updated. The latter
-also conforms to the [Asset Description Schema] and declares assets and
-properties that are specific to the environment hosting the lab.
+The deployment stages are as follows:
 
-The separation between ASSET MANIFEST and HOST ENVIRONMENT allows the enterprise
-lab to be hosted on multiple locations and easily cloned or relocated. The tests
-in the Chromium repository are agnostic of the hosting details.
+1.  [**Parsing**](#parsing): The [DEPLOYER][] parses the configuration files
+    which as specified in the form of `textproto`s.
 
-The deployment process combines the configuration from these two files to
-compile the complete set of assets needed for the test suite.
+1.  [**Pre-Validation**](#prevalidation): The parsed configuration is validated according to
+    [Schema Validation][] but excluding any [Inline References][] to `OUTPUT`
+    fields.
+
+1.  [**Pruning**](#pruning):  In cases where only part of the configuration needs to be
+    deployed, the [DEPLOYER][] will prune assets and host resources that are not
+    referenced by any assets that are required to be deployed. This phase allows
+    deployment of a subset of assets.
+
+1.  [**Plan Construction**](#planning): The [DEPLOYER][] constructs a plan to
+    deploy all the assets remaining after the *Pruning* stage. The plan consists
+    of a set of operations and their dependencies. Each operation has a set of
+    outputs that are considered valid after the operation completes
+    successfully. Operations that directly or indirectly depend on one operation
+    can also depend on the latter's outputs.
+
+1.  [**Plan Execution**](#execution): During this phase each of the operations
+    are executed with parallelization. The [DEPLOYER][] is responsible for
+    invoking and gathering the results of the operations as they occur either
+    within the `DEPLOYER` process or triggered remotely.
+
+    Execution itself may consist of a number of phases where operations
+    belonging to one phase can be parallelized with respect to each other.
+
+## Parsing                                                            {#parsing}
+
+The deployment process takes as input, the [ASSET MANIFEST][] that was passed in
+as a part of the [ISOLATE][], and another set of configuration files -- [HOST
+ENVIRONMENT][] -- that is provided at the time the lab is instantiated or updated.
+The latter also conforms to the [Asset Description Schema][] and declares assets
+and properties that are specific to the environment hosting the lab.
+
+The separation between [ASSET MANIFEST][] and [HOST ENVIRONMENT][] allows the
+enterprise lab to be hosted on multiple locations and easily cloned or
+relocated. The tests in the Chromium repository are agnostic of the hosting
+details.
+
+The deployment process combines the configuration from these two sets of files
+to compile the complete set of assets needed for the test suite.
+
+An asset manifest file looks like this ([Asset Example][]):
+
+<!-- INCLUDE ../examples/schema/ad/one-domain.asset.textpb (55 lines) fenced as conf -->
+``` conf
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The network. There should be at least one. Hosts in the same network can talk
+# to each other without any restrictions.
+network {
+  name: 'primary'
+}
+
+# An ActiveDirectory domain.
+ad_domain {
+  name: 'foo.example'
+  netbios_name: 'foo'
+  domain_mode: Win2012R2
+}
+
+# AD Domain Controller. This is regarded as a service that runs on a specific
+# machine. This definition just anchors the AD DS to the machine named 'dc'.
+ad_domain_controller {
+  ad_domain: 'foo.example'
+  windows_machine: 'dc'
+}
+
+# A Windows machine.
+windows_machine {
+  name: 'dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+# Another Windows machine.
+windows_machine {
+  name: 'client'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+
+  # This one explicitly lists 'foo.example' as the domain to which this machine
+  # belongs. This will result in this machine being automatically joined to
+  # 'foo.example' using the default domain administrator credentials.
+  container: { ad_domain: 'foo.example' }
+}
+
+# A Windows user.
+windows_user {
+  name: 'joe'
+  description: 'Joe The User'
+
+  # This is a domain user. The user will not be made a member of any additional
+  # groups since there are no member_of entries.
+  container: { ad_domain: 'foo.example' }
+  password: '123456'
+}
+```
+
+The corresponding host environment could look like this ([Host Example][]):
+
+<!-- INCLUDE ../examples/schema/ad/one-domain.host.textpb (74 lines) fenced as conf -->
+``` conf
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
 
 
-## Asset Dependency Graph
+# Google Cloud Platform Project information
+project {
+  # Name of project
+  name: 'my-test-gcp-project'
+
+  # All assets will be created in this zone. The region is implicit.
+  zone: 'us-east1-b'
+}
+
+# Where the logs go.
+log_settings { admin_log: "admin" }
+
+# We only use one machine type in our examples
+machine_type {
+  # Name must match the host_machine_type field in the windows_machine asset
+  # entries.
+  name: 'win2012r2'
+
+  # Going to specify instance properties for a new GCE instance. Alternatively,
+  # we could specify a GCE instance template name.
+  instance_properties {
+    # Go with 2 CPUs and 7.5GB of RAM. This is the GCE machine type, not to be
+    # confused with the CEL machine_type.
+    machineType: 'n1-standard-2'
+
+    # Scheduling options. By default instances are not pre-emptible.
+    scheduling {
+      automaticRestart: true
+    }
+
+    # Disks. We only need one disk
+    disks {
+      # ... which is a boot disk. This can be left out since the first disk
+      # will become the boot disk by default.
+      boot: true
+
+      # This is a special form for referencing the URL property of the image
+      # object named win2012r2.
+      source: '${host.image.win2012r2.url}'
+    }
+
+    # Note that we are leaving a bunch of fields out because their defaults are
+    # reasonable. See the GCE documentation, and in particular the REST API
+    # documentation for what these fields do. For our convenience, we generate
+    # a .proto file containing the Compute API schema which has the same
+    # information. This generated .proto file can be found at
+    # //schema/gcp/compute/compute-api.proto.
+  }
+}
+
+# Source disk images
+image {
+  # Must match the name specified in the source disk entry for the machine_type
+  # above.
+  name: 'win2012r2'
+
+  # The project/family correspond to the project and image family for the
+  # source disk image. See
+  # https://cloud.google.com/compute/docs/images#os-compute-support for
+  # details.
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2012-r2'
+  }
+}
 
 
-### Asset Types
+```
+
+In addition, to ease development, a set of built-in assets are also provided
+with the CEL toolchain. These can be found in
+[`builtins.textpb`](/schema/gcp/builtins.textpb).
+These built-in assets describe things like GCE public images so that developers
+don't need to manually write out the image project and family information.
+
+## Pre-Validation                                               {#prevalidation}
+
+See [Schema Validation][].
+
+## Pruning                                                            {#pruning}
+
+Every deployment can specify which subset of assets need to be deployed. The
+[DEPLOYER][] can keep those assets along with their dependents and remove
+everything else from the asset manifest prior to deployment.
+
+By default all assets explicitly listed in the asset manifest are included in a
+deployment plan. Resources defined in the [HOST ENVIRONMENT][] are only included
+in a deployment if an asset relies on it. Hence the `HOST ENVIRONMENT` does not
+need pruning.
+
+An asset `A` depends on another asset `B` if one of the following is true:
+*   Asset `A` has a field that refers to asset `B`. See [Schema References][].
+*   Asset `A` has a string field that has an inline reference to a string field
+    of asset `B`. See [Inline References][].
+
+In both cases, the [DEPLOYER][] has to assume that asset `B` must be
+successfully deployed *prior* to asset `A`. It is an error for there to be
+cycles in this dependency graph since it would be impossible to deploy any
+asset that forms a cycle. Such inconsistencies are detected during the
+pre-validation stage.
+
+## Planning                                                          {#planning}
+
+During the planning phase, the [DEPLOYER][] goes through the assets that need to
+be deployed and constructs a graph of operations.
+
+The planning process depends on the target environment. Currently the target is
+limited to Google Cloud Platform.
+
+### Assets
 
 There are three types of assets:
 
 1.  **Permanent** : Assets that are expected to exist before the lab is deployed
     and is expected to outlast the lab. Manually deployed instances or physical
-    lab infrastructure falls into this category. The [DEPLOYER] can verify the
+    lab infrastructure falls into this category. The [DEPLOYER][] can verify the
     existence of such assets, but cannot do anything about any asset that is
     found not to exist.
 
 1.  **On Demand** : These are assets that the enterprise lab creates as needed.
-    All Google Compute Engine and Google Cloud resources that the [DEPLOYER]
+    All Google Compute Engine and Google Cloud resources that the [DEPLOYER][]
     creates falls into this category.
 
-1.  **Script** : Assets that need to be constructed via PowerShell Desired State
-    Configuration (DSC). These can't be created directly by the [DEPLOYER].
-    Instead it needs to construct a DSC script that is later pushed out to the
-    lab in order to deploy these assets.
+1.  **Script** : Assets that need to be constructed or configured via scripts
+    running inside VM instances in the lab. The scripts are most likely going to
+    be based on PowerShell Desired State Configuration (DSC).
 
+Assets have a state, which could be one of the following:
+
+* **`UNKNOWN`**: New and unknown.
+
+* **`ABSENT`**: The asset was purged successfully or otherwise verified to not
+    exist.
+
+* **`READY`**: The asset was successfully deployed or verified to exist. It is
+    now ready for use. All `OUTPUT` properties of the asset should now be
+    resolved and ready for use by all dependent assets.
+
+* **`ERROR`**: The asset is in an error state. There could be potentially
+    details diagnostic information available for this asset. All dependent
+    assets are considered `ORPHANED`.
+
+* **`ORPHANED`**: An ancestor asset entered an `ERROR` state. I.e. this asset
+    cannot be processed.
+
+* **`PURGING`**, **`DEPLOYING`**, or **`VERIFYING`**: In-progress states that an
+    asset can be placed in temporarily while an operation is in processing.
+
+### Operations                                                     {#operations}
+
+An operation:
+*   Has zero or more dependencies which consist solely of other operations, or
+    solely of a single asset and a set of states. I.e. the operation can be
+    perfomed only when one of the following is true:
+    1.  All ancestor operations have processed successfully.
+    1.  The dependent asset enters one of the listed stats.
+*   Has a `Perform` action that causes the relevant operation to be performed.
+
+During processing, an operation:
+*   Can mark an asset as being `PURGING`, `DEPLOYING`, or `VERIFYING`.
+
+As a result of performing an operation, it can:
+*   Publish the values of one or more previously unresolved `OUTPUT` fields of
+    one or more assets. Note that pubslishing a single field is insufficient to
+    consider the asset
+    as resolved.
+*   Publish a state transition for an asset. An asset is only considered
+    resolved if it transitions to the `READY` state. It is an error for an
+    asset to be marked as resolved if the asset has any unresolved `OUTPUT`
+    fields.
 
 ### Building The Dependency Graph
 
-As a first step, the [DEPLOYER] analyzes the assets and builds a dependency graph.
-A simplified dependency graph was presented in the [DEPLOYER] section above. In
-reality, each asset is further broken down into granular assets based on how
-each resource should be created and configured.
+As a first step, the [DEPLOYER][] analyzes the assets and builds a dependency
+graph.  A simplified dependency graph was presented in the [DEPLOYER][] section
+above. In reality, each asset is further broken down into granular assets based
+on how each resource should be created and configured.
 
 For example, when dealing with a [Google Cloud VPC
-Network](https://cloud.google.com/vpc/) asset, the [DEPLOYER] identifies the
+Network](https://cloud.google.com/vpc/) asset, the [DEPLOYER][] identifies the
 firewall rules that must also be deployed in order to ensure the network is
 configured properly. Any resource that depends on the network must also depend
 on the firewall rules as well. The subgraph generated for a VPC Network is thus:
@@ -64,7 +312,7 @@ on the firewall rules as well. The subgraph generated for a VPC Network is thus:
 
 In this graph, the `vpc-network-create` node is responsible for creating (or
 checking for the existence of) the VPC network named `lab`. Once the network
-exists, the [DEPLOYER] can create the firewall rules. Finally, it's safe to
+exists, the [DEPLOYER][] can create the firewall rules. Finally, it's safe to
 proceed with any other asset that depends on the VPC network.
 
 For convenience, a dummy `vpc-network/lab` node exists which depend on all the
@@ -90,16 +338,16 @@ type of its associated asset: `Check`, `Make-It-So`, `Purge`, and
 `Generate-Script`.
 
 
-1.   **Check**: *[applies to Permanent, and On-Demand assets]* This is a
+1.   **Check**: *(applies to Permanent, and On-Demand assets)* This is a
      relatively fast step that verifies that the related Google Cloud asset
      exists and has the desired properties. A check for a Google Cloud resource
      can be achieved relatively quickly using a single Google Cloud API request.
-     To make things even faster, the [DEPLOYER] issues a series of aggregate List
+     To make things even faster, the [DEPLOYER][] issues a series of aggregate List
      requests for the classes of Google Cloud objects that it is interested in.
      Thus the the `Check` step can simply perform a lookup of the relevant
      resource in the cached results.
 
-1.   **Make-It-So**: *[applies only to On-Demand assets]* This step is only
+1.   **Make-It-So**: *(applies only to On-Demand assets)* This step is only
     performed if the Check step above fails. I.e. the resource either doesn't
     exist or its configuration doesn't match what was expected. The `Make-It-So`
     step:
@@ -112,21 +360,21 @@ type of its associated asset: `Check`, `Make-It-So`, `Purge`, and
 	 asset can use the cached metadata instead of issuing another Google
 	 Cloud API request.
 
-1.   **Purge** : *[applies only to On-Demand assets]* Removes the asset from the
+1.   **Purge** : *(applies only to On-Demand assets)* Removes the asset from the
      lab. For a Google Compute asset, this involves removing the asset via the
      relevant Google Cloud API request. When a purge is scheduled for a subgraph
-     of the dependency graph, the [DEPLOYER] invokes the `Purge` operation such
+     of the dependency graph, the [DEPLOYER][] invokes the `Purge` operation such
      that all assets that depend on a resource are purge before the asset itself
      is purged.  This also means that assets that are wholly contained within
      another asset can skip the purge operation if the containing asset is also
      scheduled to be purged.
 
-1.   **Generate-Script**: *[applies only to Script assets]* Appends snippets to
+1.   **Generate-Script**: *(applies only to Script assets)* Appends snippets to
      the script. See the Deploying Script Assets (PowerShell DSC) section for
-     more details on how this happens. 
+     more details on how this happens.
 
 
-## Asset Resolution
+## Plan Execution                                                   {#execution}
 
 Resolution refers to the process of making sure all required assets pass the
 `Check` operation.
@@ -155,7 +403,7 @@ its properties.
 
 ### Resolving On Demand Assets
 
-The [DEPLOYER] invokes the `Check` operation for each visited On-Demand asset, and
+The [DEPLOYER][] invokes the `Check` operation for each visited On-Demand asset, and
 if `Check` fails, invokes the `Make-It-So` operation.
 
 *   Asset resolution is idempotent. If the assets already exist and are in their
@@ -171,13 +419,13 @@ if `Check` fails, invokes the `Make-It-So` operation.
 
 ### Resolving Script Assets
 
-DSC Assets cannot be created by the [DEPLOYER] directly, nor can they be checked.
-This subgraph is "resolved" according to the [Deploying Scripted Assets] section
+DSC Assets cannot be created by the [DEPLOYER][] directly, nor can they be checked.
+This subgraph is "resolved" according to the [Deploying Scripted Assets][] section
 below by traversing the Script Asset subgraph and using it to generate a
 PowerShell DSC script which is then deployed out to the lab.
 
 
-## Purging
+## Purging                                                            {#purging}
 
 Purging of a sub-graph follows the same pattern, except the dependency graph is
 traversed in "reverse topological order" I.e. in topological order over a graph
@@ -186,11 +434,11 @@ directions reversed. Purging of an asset necessarily involves the purging of all
 assets dependent on it.
 
 
-## When Things Go Wrong
+## When Things Go Wrong                                             {#debugging}
 
 It possible that resolution will fail for some asset, even with reasonable retry
-and backoff. In this case, the [DEPLOYER] fails. The cause of the failure should
-be evident in the extensive logs produced by the [DEPLOYER] which include requests
+and backoff. In this case, the [DEPLOYER][] fails. The cause of the failure should
+be evident in the extensive logs produced by the [DEPLOYER][] which include requests
 and responses corresponding to the Google Cloud API calls.
 
 
@@ -202,7 +450,7 @@ to deploy Google Cloud assets. The enterprise lab uses Powershell Desired State
 Configuration (commonly referred to as DSC) for this purpose.
 
 Once all the required Google Compute Engine instances have been deployed, the
-[DEPLOYER] constructs a DSC script that will handle subgraphs of the dependency
+[DEPLOYER][] constructs a DSC script that will handle subgraphs of the dependency
 graph that needs to be handled via DSC.
 
 *** note
@@ -227,17 +475,17 @@ remember are:
 
 Astute observers will note that these properties are congruent with the asset
 dependencies and deployment properties described above for the rest of the
-[DEPLOYER] architecture. The congruence allows us to model a subgraph of our
+[DEPLOYER][] architecture. The congruence allows us to model a subgraph of our
 dependency graph using DSC and deploy it after all the dependencies of that
 subgraph are satisfied.
 
 
 ### Gearing up for the deployment
 
-In order for the host running the [DEPLOYER] service to push DSC configuration out
+In order for the host running the [DEPLOYER][] service to push DSC configuration out
 to the target hosts, it needs credentials for a *local* administrator account on
 all target instances. In addition, the deployment of an Active Directory domain
-necessitates that the [DEPLOYER] has credentials for an Active Directory domain
+necessitates that the [DEPLOYER][] has credentials for an Active Directory domain
 administrator account, an Active Directory recovery account and all domain user
 accounts.
 
@@ -299,7 +547,7 @@ The startup script assigned to the VM instance:
 
 5. Installs additional software that's needed for the operation of the
    instance. For TEST HOSTs, this will include the software prerequisites
-   mentioned in the [TEST HOST] section.
+   mentioned in the [TEST HOST][] section.
 
 The serial port #4 output of an instance will thus indicate that the instance
 correctly initialized the local administrator account and has a self-signed
@@ -322,7 +570,7 @@ such an event were to occur.
 
 Construction of the DSC starts after all the Google Cloud assets have been
 resolved in the dependency graph. At this point metadata like IP addresses of
-the hosts and which services run where are available, and hence the [DEPLOYER] can
+the hosts and which services run where are available, and hence the [DEPLOYER][] can
 begin writing out the DSC script.
 
 For convenience, let's call the subgraph is the dependency graph that needs to
@@ -341,7 +589,7 @@ In order to generate the DSC script, the [DEPLOYER]:
    $creds_WIN_CHROME_joeuser = `
      (New-Object -TypeName "System.Management.Automation.PSCredential" `
        -ArgumentList "WIN.CHROME\joeuser", `
-          (ConvertTo-SecureString -String "password" -AsPlainText -Force)) 
+          (ConvertTo-SecureString -String "password" -AsPlainText -Force))
    ```
 
 3. Visits each asset in the DSC subgraph and invoking the `Generate-Script`
@@ -360,7 +608,7 @@ In order to generate the DSC script, the [DEPLOYER]:
 5. Emit the code necessary for compiling and securing the MOF files that
    result from the compilation step.
 
-The resulting Powershell script, when executed on the [DEPLOYER] host produces a
+The resulting Powershell script, when executed on the [DEPLOYER][] host produces a
 set of secured MOF files, one for each target host, containing the configuration
 that must be deployed to the target hosts.
 
@@ -379,10 +627,10 @@ option. E.g.:
 Start-DscConfiguration -Wait -Verbose -ComputerName $target … -Path …
 ```
 
-[DEPLOYER] captures the output and reports back to the GREETER on the progress of the deployment operation for each target host.
+[DEPLOYER][] captures the output and reports back to the GREETER on the progress of the deployment operation for each target host.
 
 
-<!-- BEGIN-INDEX -->
+<!-- INCLUDE index.md (51 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -400,18 +648,21 @@ Keep the tags below sorted.
 [ASSET MANIFEST]: design-summary.md#asset-manifest
 [Additional Considerations]: background.md#additional-considerations
 [Asset Description Schema]: schema-guidelines.md
+[Asset Example]: /examples/schema/ad/one-domain.asset.textpb
 [Background]: background.md
 [Bootstrapping]: bootstrapping.md
 [Concepts]: design-summary.md#concepts
 [DEPLOYER]: design-summary.md#deployer
-[Deployment Details]: deployment.md
 [Deploying Scripted Assets]: deployment.md#deploying-scripted-assets
+[Deployment Details]: deployment.md
+[Deployment Overview]: deployment.md#overview
 [Design]: design-summary.md
 [Frameworks/Tools Used]: background.md#tools-used
 [GREETER]: design-summary.md#greeter
 [Google Services]: google-services.md
 [HOST ENVIRONMENT]: design-summary.md#host-environment
 [HOST TEST RUNNER]: design-summary.md#host-test-runner
+[Host Example]: /examples/schema/ad/one-domain.host.textpb
 [ISOLATE]: design-summary.md#isolate
 [Integration With Chromium Waterfall]: chrome-ci-integration.md
 [Objective]: design-summary.md#objective
@@ -419,6 +670,9 @@ Keep the tags below sorted.
 [Private Google Compute Images]: private-images.md
 [SYSTEM TEST RUNNER]: design-summary.md#system-test-runner
 [Scalability]: scalability.md
+[Schema References]: schema-guidelines.md#references
+[Schema Validation]: schema-guidelines.md#validation
+[Inline References]: schema-guidelines.md#inline-references
 [Source Locations]: source-locations.md
 [TEST HOST]: design-summary.md#test-host
 [TEST]: design-summary.md#test
@@ -428,4 +682,3 @@ Keep the tags below sorted.
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
 
-<!-- END-INDEX -->

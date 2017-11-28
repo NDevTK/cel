@@ -25,7 +25,7 @@ complete and must be designed in such a way that new asset types can be added
 without too much churn.
 ***
 
-## Nomenclature
+## Concepts
 
 ### Asset Manifest
 
@@ -62,7 +62,6 @@ what a partial asset inventory looks like. Multiple assets of the same kind can
 co-exist as long as they have unique identifiers and can be realized without
 conflict.
 
-
 ### Host Environment
 
 The **Host Environment** is the set of parameters that are required to define
@@ -73,16 +72,148 @@ environment is currently specific GCP.
 All host environment parameters are rooted at the `HostEnvironment` message
 defined in [`host_environment.proto`](../schema/host/host_environment.proto).
 
+### Naming And References                                          {#references}
+
+For the ease of identifying different objects, every object is given a name in
+the conveniently named `name` field. You can see the names in the [asset][Asset
+Example] and [host][Host Example] configuration examples.
+
+The object being named can be referenced using familiar dot separated paths from
+elsewhere in the configuration. The references are constructed as follows:
+
+*   Field components are separated using `.`.
+
+*   All references for assets start with the label `asset`. Host environment
+    references start with the label `host`.
+
+*   A field in a ProtoBuf message is referred-to using its field name. E.g. the
+    collection of Windows machine objects in the asset manifest is
+    `asset.windows_machine`.
+
+*   An item in a collection is identified by the item's `name` value.
+
+    E.g. The `machine_type` field of the following message in the asset manifest
+    is `asset.windows_machine.dc.machine_type`.
+
+    ``` conf
+    # A Windows machine.
+    windows_machine {
+      name: 'dc'
+      machine_type: 'win2012r2'
+      network_interface { network: 'primary' }
+    }
+    ```
+
+    This implies that an object in a collection must have a `name` field to be
+    addressable.
+
+### Validation                                                     {#validation}
+
+The validation is performed based on the annotations that are specified in the
+ProtoBuf schema. The validation rules are defined and explained in
+[options.proto][]. When defining schema, the
+validation options can be specified as in the examples below:
+
+From [active_directory.proto](/schema/asset/active_directory.proto):
+
+``` proto
+message WindowsContainer {
+  oneof container {
+    // Domain name.
+    string ad_domain = 1 [(common.v).ref="asset.ad_domain"];
+
+    // Machine name.
+    string windows_machine = 2 [(common.v).ref="asset.windows_machine"];
+
+    // Organizational unit.
+    string ad_organizational_unit = 3 [(common.v).ref="asset.ad_organizational_unit"];
+  }
+}
+```
+
+In the above example, each field is annotated as being a reference to another
+object in a collection. The value of the `ad_domain` field of a
+`WindowsContainer` object must match the `name` value of a
+`ActiveDirectoryDomain` object in `asset.ad_domain` colleciton.
+
+There are additional parameters that you can use to restrict how a field is
+validated. Refer to the [options.proto][] file for complete list. The validator
+recognizes several field types and attributes:
+
+*   **`REQUIRED`**: The field must not be empty. Additionally, if this field type
+    is applied to a `repeated`, `oneof`, or `map`, requires that at least one
+    instance be specified.
+
+*   **`LABEL`**: The field must be a `string` that matches the `<label>`
+    production in [RFC 1035][].
+
+*   **`FQDN`**: The field must be a `string` that matches `<subdomains>`
+    production in [RFC 1035][].
+
+*   **`ORGLABEL`**: THe field must be a `string` that matches the production
+    `〈<subdomains> ':'〉<label>`. E.g.: `foo.example.com:my-project`.
+
+In addition, any `name` field is assumed by default to be of type `LABEL`,
+though they can be explicitly qualified to be of a different type like `FQDN` or
+`ORGLABEL`.
+
+[options.proto]: /schema/common/options.proto
+[RFC 1035]: https://www.ietf.org/rfc/rfc1035.txt
+
+### Inline References                                       {#inline-references}
+
+String values in configuration files may contain inline references to other
+string fields in the configuration. E.g.: A name of a source disk image may
+refer to the project name of the host environment as follows:
+
+``` conf
+image {
+  name: 'win2012r2'
+  latest {
+    project: '${host.project.name}'
+    family: 'my-custom-family'
+  }
+}
+```
+
+In this case the special form `${host.project.name}` expands to the value of the
+string field at `host.project.name`. The contents inside the `${...}` is treated
+the same as what's described in [Schema References][] with the additional
+constraint that the field being referenced *must* be a `string` field.
+
+An additional constraint with inline references is that they can refer to output
+fields. The latter are only available after the corresponding asset has been
+resolved. For example, the `Image` host resource contains a `url` field that's
+annotated as `OUTPUT`:
+
+``` proto
+message Image {
+  ...
+  // Output. Will contain the resolved base image URL on success.
+  string url = 5 [(common.v).type=OUTPUT];
+}
+```
+
+Once the `Image` object has been resolved, then the `url` field will contain the
+partial GCP resource name of the base image to use. If the `url` field is
+referenced from elsewhere in the configuration, say in a `MachineType`
+definition, then The [DEPLOYER][] creates an implicit dependency from the
+`MachineType` object to the `Image` object. This dependency prevents the
+`MachineType` from being resolved prior to the `Image` being resolved.
+
+See [Deployment Overview][] for details on *when* inline string references are
+resolved.
+
 
 ## Guidelines For Authoring Schema
 
 ### A Few DOs and DON'Ts                                          {#do-and-dont}
 
-*   **DO** take future growth into consideration. Some of the guidelines below
+*   **Take future growth into consideration.** Some of the guidelines below
     are the result of such considerations. Growth in the asset catalog or any
     asset inventory shouldn't require inordinate refactoring.
 
-*   **DO** keep the asset schema independent of the hosting environment. I.e. it
+*   **Keep the asset schema independent of the hosting environment.** I.e. it
     should be possible for the same asset schema to be used if the hosting
     environment is changed from GCP to AWS or Azure. Hosting environment
     specific details should go in the host environment schema.
@@ -127,23 +258,23 @@ Base image URLs are specific to hosting environment, and may even be
 specific to a GCP project.
 |||---|||
 
-*   **DO** be consistent with developer nomenclature. The asset schema should
+*   **Be consistent with developer nomenclature**. The asset schema should
     map comfortably to how testers and developers think of networks.
 
-*   **DO** be minimalistic.  The Asset Schema *should only include* properties
+*   **Be minimalistic.**  The Asset Schema *should only include* properties
     that are **material** to the tests being considered, and *should exclude
     anything else*. Any additional required properties that are not material to
     the test can be specified via the Host Environment Schema. Avoid over
     specifying assets. Don't add knobs we don't plan on turning. I.e.  don't add
     asset attributes that don't have a known use case.
 
-*   **DONT** expose implementation details of the deployment process or the
-    toolchain. Avoid introducing asset definitions for intermediate objects that
+*   **Don't expose implementation details of the deployment process or the
+    toolchain.** Avoid introducing asset definitions for intermediate objects that
     are only used during deployment. In other words, once again, the schema
     should allow the test developer to describe their requirements in a minimal
     fashion.
 
-*   **DO** keep dependencies flowing in one direction only. In a parent-child
+*   **Keep dependencies flowing in one direction only.** In a parent-child
     relationship, the child is responsible for indicating its relationship to
     the parent, but not vice-versa. This allows new child assets to be defined
     without changing the parent asset.
@@ -176,74 +307,29 @@ message Machine {
 ```
 |||---|||
 
-*   **DO** stick to [Protobuf Style Guide] for style with the following
+*   **Stick to [Protobuf Style Guide][] for style** with the following
     exceptions:
 
     *   Naming convention for repeated elements is to use the **singular** form
 	instead of the *plural* form encouraged in the style guide. Using the
 	singular form results in more readable `textpb` files which is how the
 	assets will be specified in Chromium and other labs.
-
     *   Ignore the stuff about Google3 and `BUILD` files. These are not
 	applicable to the CEL project.
 
-*   **DO** keep proto files manageable. Group asset schemas sensibly and move
+*   **Keep proto files manageable.** Group asset schemas sensibly and move
     them into separate files. E.g. Keep Active Directory specific asset schemas
     in a single file and import that file from other protos.
 
-*   **DON'T** nest messages. Nested message make the protos less readable and
+*   **Avoid nesting messages.** Nested message make the protos less readable and
     produces unreasonably large identifiers when generating stub code in Go.
 
-*   **DO** anchor all imports at the root of the source tree. See existing files
-    as an example.
+*   **Anchor all imports at the root of the source tree.** See existing files
+    for more examples:
 
-
-### Boilerplate                                                   {#boilerplate}
-
-All schemas use Protocol Buffers Version 3, with a suitable package name.  I.e.
-Every `.proto` file should start with:
-
-``` proto
-// Copyright $YEAR The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-syntax = "proto3";
-
-package $ASSET_OR_HOST;
-option go_package="chromium.googlesource.com/enterprise/cel/go/$ASSET_OR_HOST";
-```
-
-Where `$YEAR` should be the year you introduce the proto file.  `$ASSET_OR_HOST`
-is either `asset` or `host` depending on whether you are authoring a proto for
-the asset manifest or the host manifest. Don't forget to import any dependencies
-and properly document your messages.
-
-For ease of copy&paste, use the following for asset protos:
-
-``` proto
-// Copyright 2017 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-syntax = "proto3";
-package asset;
-option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
-```
-
-... and the following for host environment protos:
-
-``` proto
-// Copyright 2017 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
-syntax = "proto3";
-package host;
-option go_package="chromium.googlesource.com/enterprise/cel/go/host";
-```
-
-### Naming Conventions
+    ``` proto
+    import "schema/common/fileref.proto";
+    ```
 
 *   **Top level messages must have a `name` field**: Every top level asset
     must have a name so that they can be referred to from other assets or tests.
@@ -327,6 +413,50 @@ option go_package="chromium.googlesource.com/enterprise/cel/go/host";
 Overall, be internally consistent.
 ***
 
+
+### Boilerplate                                                   {#boilerplate}
+
+All schemas use Protocol Buffers Version 3, with a suitable package name.  I.e.
+Every `.proto` file should start with:
+
+``` proto
+// Copyright $YEAR The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package $ASSET_OR_HOST;
+option go_package="chromium.googlesource.com/enterprise/cel/go/$ASSET_OR_HOST";
+```
+
+Where `$YEAR` should be the year you introduce the proto file.  `$ASSET_OR_HOST`
+is either `asset` or `host` depending on whether you are authoring a proto for
+the asset manifest or the host manifest. Don't forget to import any dependencies
+and properly document your messages.
+
+For ease of copy&paste, use the following for asset protos:
+
+``` proto
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package asset;
+option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
+```
+
+... and the following for host environment protos:
+
+``` proto
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package host;
+option go_package="chromium.googlesource.com/enterprise/cel/go/host";
+```
 
 ## Asset Types
 
@@ -449,7 +579,7 @@ classes are missing a `Validate()` method.
 [schema/host]: ../schema/host
 
 
-<!-- BEGIN-INDEX -->
+<!-- INCLUDE index.md (51 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -467,18 +597,21 @@ Keep the tags below sorted.
 [ASSET MANIFEST]: design-summary.md#asset-manifest
 [Additional Considerations]: background.md#additional-considerations
 [Asset Description Schema]: schema-guidelines.md
+[Asset Example]: /examples/schema/ad/one-domain.asset.textpb
 [Background]: background.md
 [Bootstrapping]: bootstrapping.md
 [Concepts]: design-summary.md#concepts
 [DEPLOYER]: design-summary.md#deployer
-[Deployment Details]: deployment.md
 [Deploying Scripted Assets]: deployment.md#deploying-scripted-assets
+[Deployment Details]: deployment.md
+[Deployment Overview]: deployment.md#overview
 [Design]: design-summary.md
 [Frameworks/Tools Used]: background.md#tools-used
 [GREETER]: design-summary.md#greeter
 [Google Services]: google-services.md
 [HOST ENVIRONMENT]: design-summary.md#host-environment
 [HOST TEST RUNNER]: design-summary.md#host-test-runner
+[Host Example]: /examples/schema/ad/one-domain.host.textpb
 [ISOLATE]: design-summary.md#isolate
 [Integration With Chromium Waterfall]: chrome-ci-integration.md
 [Objective]: design-summary.md#objective
@@ -486,6 +619,9 @@ Keep the tags below sorted.
 [Private Google Compute Images]: private-images.md
 [SYSTEM TEST RUNNER]: design-summary.md#system-test-runner
 [Scalability]: scalability.md
+[Schema References]: schema-guidelines.md#references
+[Schema Validation]: schema-guidelines.md#validation
+[Inline References]: schema-guidelines.md#inline-references
 [Source Locations]: source-locations.md
 [TEST HOST]: design-summary.md#test-host
 [TEST]: design-summary.md#test
@@ -495,4 +631,3 @@ Keep the tags below sorted.
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
 
-<!-- END-INDEX -->
