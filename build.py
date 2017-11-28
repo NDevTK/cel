@@ -17,6 +17,7 @@
 #
 # Currently, full builds are only supported on Windows.
 
+import ast
 import argparse
 import errno
 import logging
@@ -45,6 +46,33 @@ NATIVE_GOOS = {
     "darwin": "darwin"
 }.get(sys.platform, "windows")
 
+CACHED_BUILD_ENV = None
+
+
+def _GetCustomBuildEnv():
+  global CACHED_BUILD_ENV
+
+  if CACHED_BUILD_ENV is not None:
+    return CACHED_BUILD_ENV
+
+  custom_env_file = os.path.join(SOURCE_PATH, '.build.environment')
+  if not os.path.exists(custom_env_file):
+    CACHED_BUILD_ENV = {}
+    return CACHED_BUILD_ENV
+
+  with open(custom_env_file, 'r') as f:
+    contents = f.read()
+    CACHED_BUILD_ENV = ast.literal_eval(contents)
+    if not isinstance(CACHED_BUILD_ENV, dict):
+      raise Exception(
+          textwrap.dedent('''\
+                    .build.environment must be a Python literal that evaluates
+                    to a dictionary. See //docs/custom_build_environment.md for
+                    details.
+                    '''))
+
+  return CACHED_BUILD_ENV
+
 
 def _MergeEnv(args, target_host=False):
   go_env = {}
@@ -55,6 +83,7 @@ def _MergeEnv(args, target_host=False):
   go_env['GOOS'] = effective_goos
   environ_copy = os.environ.copy()
   environ_copy.update(go_env)
+  environ_copy.update(_GetCustomBuildEnv())
   return environ_copy
 
 
@@ -274,7 +303,7 @@ def _Generate(args):
           'schema/meta/command.proto', 'schema/meta/reference.proto',
           'schema/meta/status.proto'
       ],
-      env=_MergeEnv(args),
+      env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
   _RunCommand(
@@ -420,13 +449,15 @@ for 'go build'. If the command requires passing commandline arguments, preface
 the entire command with '--' to prevent the arguments from being interpreted as
 arguments for this script.
 '''
-  _RunCommand(args.prog, env=_MergeEnv(args))
+  _RunCommand(args.prog, env=_MergeEnv(args, target_host=True))
 
 
 def _FormatMarkdownFiles(args):
 
   o = subprocess.check_output(
-      ['git', 'ls-files', '--exclude-standard', '--', '*.md'], cwd=SOURCE_PATH)
+      ['git', 'ls-files', '--exclude-standard', '--', '*.md'],
+      cwd=SOURCE_PATH,
+      env=_MergeEnv(args, target_host=True))
   md_files = o.splitlines()
 
   for f in md_files:
@@ -434,17 +465,23 @@ def _FormatMarkdownFiles(args):
 
 
 def _FormatGoFiles(args):
-  _RunCommand(['go', 'fmt', './go/...'], env=_MergeEnv(args), cwd=SOURCE_PATH)
+  _RunCommand(
+      ['go', 'fmt', './go/...'],
+      cwd=SOURCE_PATH,
+      env=_MergeEnv(args, target_host=True))
 
 
 def _FormatProtoFiles(args):
   o = subprocess.check_output(
       ['git', 'ls-files', '--exclude-standard', '--', '*.proto'],
-      cwd=SOURCE_PATH)
+      cwd=SOURCE_PATH,
+      env=_MergeEnv(args))
   proto_files = o.splitlines()
 
   try:
-    _RunCommand(['clang-format', '-i', '-style=Chromium'] + proto_files)
+    _RunCommand(
+        ['clang-format', '-i', '-style=Chromium'] + proto_files,
+        env=_MergeEnv(args, target_host=True))
   except OSError as e:
     if e.errno == errno.ENOENT:
       sys.stderr.write(
@@ -453,13 +490,26 @@ def _FormatProtoFiles(args):
 
                     clang-format is used for formatting ProtoBuf files. Without
                     it, this script can't correctly format ProtoBuf files.'''))
-    else:
-      raise e
+    raise e
+
+  except subprocess.CalledProcessError as e:
+    if e.returncode == 1:
+      sys.stderr.write(
+              textwrap.dedent('''\
+
+                      See 'build.py format --help' for more details on how to
+                      configure a depot_tools provided clang_format tool to
+                      work with a CEL build tree.
+                      '''))
+    raise e
 
 
 def _FormatPythonFiles(args):
   try:
-    _RunCommand(['yapf', '-i', '-r', '.'], env=_MergeEnv(args), cwd=SOURCE_PATH)
+    _RunCommand(
+        ['yapf', '-i', '-r', '.'],
+        env=_MergeEnv(args, target_host=True),
+        cwd=SOURCE_PATH)
   except OSError as e:
     if e.errno == errno.ENOENT:
       sys.stderr.write(
@@ -483,8 +533,7 @@ def FormatCommand(args):
 
 This command performs the following:
 
-    1. Update all Markdown documentation with the latest set of tags from
-       `docs/index.md`.
+    1. Resolve imports and verify links in Markdown documents.
 
     2. Format Go code in the tree using Gofmt.
 
@@ -492,11 +541,53 @@ This command performs the following:
        coding style [1]. See https://github.com/google/yapf for information on
        installing YAPF.
 
+    4. Format ProtoBuf files and textpb files using clang-format.
+
+Problems with 'clang-format'?
+
+  You may encounter an error which looks like the following when invoking
+  'build.py format':
+
+        Problem while looking for clang-format in Chromium source tree:
+        Could not find checkout in any parent of the current path.
+        Set CHROMIUM_BUILDTOOLS_PATH to use outside of a chromium checkout.
+
+  This is due to the 'depot_tools' provided 'clang-format' script being in your
+  path. It attempts to locate the 'buildtools' folder from a Chromium checkout,
+  which doesn't work when you are working inside the CEL codebase.
+
+  If this happens, you can resolve the issue using one of the following methods:
+
+     1. Adjust your PATH variable so that a non-depot_tools clang-format binary
+        is found first. -- or --
+
+     2. If you have a Chromium checkout handy, set the CHROMIUM_BUILDTOOLS_PATH
+        environment variable to point to the 'buildtools' directory. E.g. if
+        your Chromium checkout is in /src/chromium, then:
+
+           CHROMIUM_BUILDTOOLS_PATH=/src/chromium/src/buildtools ./build.py format
+
+     3. Create a .build.environment file at the root of the CEL checkout to set
+        the CHROMIUM_BUILDTOOLS_PATH environment variable. The environment
+        variables defined in .build.environment are applied to all binaries
+        invoked by build.py.
+
+        The .build.environment file consists of a Python literal in text form
+        defining a dictionary whose keys are environment variable names to be
+        set. The values are, of course, the value of the environment variable.
+        
+        E.g.: Using the same paths as the previous option:
+
+            echo '{ "CHROMIUM_BUILDTOOLS_PATH": "/src/chromium/src/buildtools" }' > .build.environment
+
+        Now you should be able to invoke 'build.py' directly without having to
+        set the environment variable each time.
+
 [1]: https://chromium.googlesource.com/chromium/src/+/master/styleguide/styleguide.md
 '''
+  _FormatProtoFiles(args)
   _FormatMarkdownFiles(args)
   _FormatGoFiles(args)
-  _FormatProtoFiles(args)
   _FormatPythonFiles(args)
 
 
@@ -506,7 +597,7 @@ def CleanCommand(args):
   force_option = ['-f' if args.force else '-n']
   _RunCommand(
       ['git', 'clean', '-X'] + force_option,
-      env=_MergeEnv(args),
+      env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
   build_dir = os.path.join(SOURCE_PATH, 'build')
   if not args.force:

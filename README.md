@@ -41,7 +41,7 @@ mentions the managed dependency workflow.
    Assumes that `$GOPATH` is a single path and not a `:` delimited list.
 
    ``` sh
-   mkdir -p ${GOPATH}/src/chromium.googlesource.com/enterprise 
+   mkdir -p ${GOPATH}/src/chromium.googlesource.com/enterprise
    cd ${GOPATH}/src/chromium.googlesource.com/enterprise
    git clone https://chromium.googlesource.com/enterprise/cel
    cd cel

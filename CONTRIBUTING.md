@@ -10,14 +10,26 @@ contributor, then please sign the [CLA](https://cla.developers.google.com/).
    ``` sh
    git new-branch your-awesome-feature
    ```
-   
+
    This will create a new branch called `your-awesome-feature` configured to
    track the `master` branch off the CEL repository.
+
+   **Note**: `git new-branch`, and `git cl` are tools included in `depot_tools`.
 
 2. Make your changes. Commit as often as you need. All the commits gets squashed
    in the next step.
 
-3. Upload your changes:
+3. Check formatting:
+
+   ``` sh
+   python build.py format
+   ```
+
+   This will ensure that the code you are about to upload is correctly
+   formatted. In addition, it runs a set of checks on Markdown source to ensure
+   that links are correct. For more information, see `bulid.py format --help`.
+
+4. Upload your changes:
 
    ``` sh
    git cl upload
@@ -27,14 +39,14 @@ contributor, then please sign the [CLA](https://cla.developers.google.com/).
    review. Move `cel-reviews@chromium.org` from the CC line to the reviewers
    line if you don't know of a specific reviewer.
 
-4. The review may result in changes being requested. Address review comments and
+5. The review may result in changes being requested. Address review comments and
    make additional comments are necessary. The codereview you created in step 3 is
    associated with a Git branch. So you can run `git cl upload` to upload new
    patchsets as necessary.
 
-5. Once the change is approved, someone will submit the change.
+6. Once the change is approved, someone will submit the change.
 
-6. Good job!
+7. Good job!
 
    Optionally, you can clean up your local repository following a successful
    submission by running the following:
@@ -47,7 +59,7 @@ contributor, then please sign the [CLA](https://cla.developers.google.com/).
    [here](https://chromium.googlesource.com/chromium/tools/depot_tools.git) for
    more details).
 
-## Updating Dependencies
+## Updating Go Dependencies
 
 If you add a new import, then it's likely that `Dep` will complain. In that
 case, just run the following:

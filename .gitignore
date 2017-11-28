@@ -1,8 +1,15 @@
 .DS_Store
 .idea/*
+*.pyc
 
-# Build artifacts.
-build/
+# Local build environment file. This file is evaluated as a Python literal and
+# must evaluate to a dict whose keys are environment variables and whose values
+# are strings that will be assigned to those environment variables during
+# builds.
+.build.environment
+
+# DEPS timestamp
+build/stamps
 
 # Generated files
 *.pb.go
