@@ -1,0 +1,216 @@
+{
+ "kind": "compute#subnetworkAggregatedList",
+ "id": "projects/test-project/aggregated/subnetworks",
+ "items": {
+  "regions/us-central1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "4478027892584362348",
+     "creationTimestamp": "2017-07-11T19:54:59.982-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.128.0.0/20",
+     "gatewayAddress": "10.128.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-central1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-central1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/europe-west1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "4664413474477584747",
+     "creationTimestamp": "2017-07-11T19:55:00.061-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.132.0.0/20",
+     "gatewayAddress": "10.132.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/us-west1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "4855656861951078763",
+     "creationTimestamp": "2017-07-11T19:55:00.103-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.138.0.0/20",
+     "gatewayAddress": "10.138.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-west1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-west1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/asia-east1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "1660985669503693163",
+     "creationTimestamp": "2017-07-11T19:55:00.145-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.140.0.0/20",
+     "gatewayAddress": "10.140.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-east1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-east1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/us-east1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "7416385542864515435",
+     "creationTimestamp": "2017-07-11T19:55:00.216-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.142.0.0/20",
+     "gatewayAddress": "10.142.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-east1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-east1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/asia-northeast1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "7981748666610757995",
+     "creationTimestamp": "2017-07-11T19:55:00.279-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.146.0.0/20",
+     "gatewayAddress": "10.146.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-northeast1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-northeast1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/asia-southeast1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "4395098207311901035",
+     "creationTimestamp": "2017-07-11T19:55:00.349-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.148.0.0/20",
+     "gatewayAddress": "10.148.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-southeast1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-southeast1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/us-east4": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "8000681805869494635",
+     "creationTimestamp": "2017-07-11T19:55:00.390-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.150.0.0/20",
+     "gatewayAddress": "10.150.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-east4",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-east4/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/australia-southeast1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "815880236163412331",
+     "creationTimestamp": "2017-07-11T19:55:00.431-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.152.0.0/20",
+     "gatewayAddress": "10.152.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/australia-southeast1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/australia-southeast1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/europe-west2": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "5385531109017137515",
+     "creationTimestamp": "2017-07-11T19:55:00.471-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.154.0.0/20",
+     "gatewayAddress": "10.154.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west2",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west2/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/europe-west3": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "6105050989942779750",
+     "creationTimestamp": "2017-08-02T10:53:13.128-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.156.0.0/20",
+     "gatewayAddress": "10.156.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west3",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west3/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/southamerica-east1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "2989280227917319952",
+     "creationTimestamp": "2017-09-07T18:27:27.866-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.158.0.0/20",
+     "gatewayAddress": "10.158.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/southamerica-east1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/southamerica-east1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  },
+  "regions/asia-south1": {
+   "subnetworks": [
+    {
+     "kind": "compute#subnetwork",
+     "id": "3237039565329386973",
+     "creationTimestamp": "2017-11-01T18:21:54.788-07:00",
+     "name": "test-lab",
+     "network": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+     "ipCidrRange": "10.160.0.0/20",
+     "gatewayAddress": "10.160.0.1",
+     "region": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-south1",
+     "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-south1/subnetworks/test-lab",
+     "privateIpGoogleAccess": false
+    }
+   ]
+  }
+ },
+ "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/aggregated/subnetworks"
+}
+

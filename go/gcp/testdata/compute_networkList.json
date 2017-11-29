@@ -1,0 +1,48 @@
+{
+ "kind": "compute#networkList",
+ "id": "projects/test-project/global/networks",
+ "items": [
+  {
+   "kind": "compute#network",
+   "id": "5827069990612251025",
+   "creationTimestamp": "2017-07-11T19:54:54.974-07:00",
+   "name": "test-lab",
+   "description": "Chrome Auth Lab network",
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/test-lab",
+   "autoCreateSubnetworks": true,
+   "subnetworks": [
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-west1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west3/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/australia-southeast1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-east1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-central1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-east1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-south1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/us-east4/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/southamerica-east1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west2/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/europe-west1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-northeast1/subnetworks/test-lab",
+    "https://www.googleapis.com/compute/v1/projects/test-project/regions/asia-southeast1/subnetworks/test-lab"
+   ],
+   "routingConfig": {
+    "routingMode": "REGIONAL"
+   }
+  },
+  {
+   "kind": "compute#network",
+   "id": "3868588628883376453",
+   "creationTimestamp": "2015-08-19T09:39:58.809-07:00",
+   "name": "default",
+   "description": "Default network for the project",
+   "IPv4Range": "10.240.0.0/16",
+   "gatewayIPv4": "10.240.0.1",
+   "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks/default",
+   "routingConfig": {
+    "routingMode": "REGIONAL"
+   }
+  }
+ ],
+ "selfLink": "https://www.googleapis.com/compute/v1/projects/test-project/global/networks"
+}
+
