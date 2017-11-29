@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// LastPathComponent extracts the zone out of a full URL. Many APIs require the
+// LastPathComponent extracts the label out of a full URL. Many APIs require the
 // short form label rather than the full URL.
 func LastPathComponent(s string) string {
 	i := strings.LastIndex(s, "/")

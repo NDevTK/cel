@@ -5,6 +5,7 @@
 package gcp
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"cloud.google.com/go/logging"
 	compute "google.golang.org/api/compute/v1"
 	"time"
@@ -25,13 +26,15 @@ func (e operationEvent) Entry(s logging.Severity) logging.Entry {
 // WaitForOperation waits for the specific GCE compute operation to complete.
 // These require periodic polling to make sure it's succeeded.
 func WaitForOperation(s *Session, op *compute.Operation) (err error) {
-	defer Action(&err, "fetching status of operation %s", op.Name)
+	defer common.Action(&err, "fetching status of operation %s", op.Name)
 
 	retries_left := 5
 	for op.Status != "DONE" {
 		time.Sleep(kWaitForOperationTimeout)
 		op, err = s.GetComputeService().ZoneOperations.Get(
-			s.Config.Project, LastPathComponent(op.Zone), op.Name).Context(s.Context).Do()
+			s.HostEnvironment.Project.Name,
+			LastPathComponent(op.Zone),
+			op.Name).Context(s.Context).Do()
 		if err != nil {
 			if retries_left == 0 {
 				s.LogError(operationEvent{

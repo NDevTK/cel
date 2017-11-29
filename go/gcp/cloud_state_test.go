@@ -5,14 +5,48 @@
 package gcp
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/host"
+	th "chromium.googlesource.com/enterprise/cel/go/testhelpers"
 	"golang.org/x/net/context"
-	"net/http"
 	"testing"
 )
 
 func TestQueryGceState(t *testing.T) {
-	c := http.Client{Transport: &RequestReplayer{DataPath: "testdata/cloud_state_test"}}
-	_, err := QueryCloudState(context.Background(), &c, "chrome-auth-lab-dev", nil)
+	f := th.NewResponseFaker(t)
+
+	f.Expect(
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/zones"},
+		th.RestResponse{BodyPath: "./testdata/compute_zoneList.json"})
+
+	f.Expect(
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/aggregated/instances"},
+		th.RestResponse{BodyPath: "./testdata/compute_instanceAggregatedList.json"})
+
+	f.Expect(
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/global/firewalls"},
+		th.RestResponse{BodyPath: "./testdata/compute_firewallList.json"})
+
+	f.Expect(
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/global/networks"},
+		th.RestResponse{BodyPath: "./testdata/compute_networkList.json"})
+
+	f.Expect(
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/aggregated/addresses"},
+		th.RestResponse{BodyPath: "./testdata/compute_addressAggregatedList.json"})
+
+	f.Expect(
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/aggregated/subnetworks"},
+		th.RestResponse{BodyPath: "./testdata/compute_subnetworkAggregatedList.json"})
+
+	f.Expect(
+		th.RestRequest{Url: "https://iam.googleapis.com/v1/projects/test-project/serviceAccounts"},
+		th.RestResponse{BodyObject: `{}`})
+
+	env := host.HostEnvironment{
+		Project: &host.Project{Name: "test-project", Zone: "test-zone"},
+	}
+
+	_, err := QueryCloudState(context.Background(), f.NewClient(), &env)
 	if err != nil {
 		t.Fatal(err)
 	}

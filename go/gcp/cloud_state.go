@@ -7,12 +7,12 @@ package gcp
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/host"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	compute "google.golang.org/api/compute/v1"
 	iam "google.golang.org/api/iam/v1"
 	"net/http"
 	"strings"
-	"sync/atomic"
 )
 
 // A reasonably high limit such that a generic list of things isn't expected to
@@ -35,6 +35,16 @@ const kMaxSubnetworkListCount = 128
 // than there are instances.
 const kMaxAddressCount = kMaxGenericListCount
 
+type NetworkAndRegion struct {
+	Network string
+	Region  string
+}
+
+type NetworkAndFirewall struct {
+	Network  string
+	Firewall string
+}
+
 // CloudState contains the last known state of a single project's GCP assets.
 //
 // For each asset type, there's a FooChanged member and a SetFooChanged()
@@ -47,18 +57,14 @@ const kMaxAddressCount = kMaxGenericListCount
 //
 // Annotated for easy serialization.
 type CloudState struct {
-	// Project described by this cached state.
-	Project string `json:"project"`
-
-	// The host environment defines which resources need monitoring. Should not
-	// be modified.
-	HostEnvironment *host.HostEnvironment `json:"host_environment"`
+	// GCP Project metadata.
+	Project *compute.Project
 
 	// All static external IP addresses reserved by the project.
 	Addresses map[string]*compute.Address `json:"addresses"`
 
 	// All service accounts for the project by unique ID.
-	ServiceAccounts map[string]*iam.ServiceAccount `json:"service_accounts"`
+	ServiceAccounts map[string]*iam.ServiceAccount `json:"serviceAccounts"`
 
 	// Instances by instance label
 	Instances map[string]*compute.Instance `json:"instances"`
@@ -67,18 +73,23 @@ type CloudState struct {
 	Networks map[string]*compute.Network `json:"networks"`
 
 	// Subnetwork by network label, and region
-	Subnetworks map[string]map[string]*compute.Subnetwork `json:"subnetworks"`
+	Subnetworks map[NetworkAndRegion]*compute.Subnetwork `json:"subnetworks"`
 
 	// Firewalls by network label and firewall label.
-	Firewalls map[string]map[string]*compute.Firewall `json:"firewall"`
+	Firewalls map[NetworkAndFirewall]*compute.Firewall `json:"firewall"`
 
-	// Images by image name. Only the Images were requested are going to be
-	// synchronized. The name of the image used here is the name used as the
+	// Images by image name. Only the Images that were requested are going to
+	// be synchronized. The name of the image used here is the name used as the
 	// image name used in |HostEnvironment|.
 	Images map[string]*compute.Image `json:"image"`
 
 	// Zones by zone label.
 	Zones map[string]*compute.Zone `json:"zone"`
+
+	// HostEnvironment corresponding to this CloudState instance. The project
+	// and some of the cached metadata are specific to the host environment.
+	// Should not be modified.
+	HostEnvironment *host.HostEnvironment `json:"-"`
 }
 
 func (g *CloudState) FetchServiceAccounts(ctx context.Context, client *http.Client) (err error) {
@@ -93,7 +104,7 @@ func (g *CloudState) FetchServiceAccounts(ctx context.Context, client *http.Clie
 	next_page_token := ""
 
 	for {
-		call := s.rvice.Projects.ServiceAccounts.List(ProjectResource(g.Project))
+		call := service.Projects.ServiceAccounts.List(ProjectResource(g.HostEnvironment.Project.Name))
 		call.PageSize(kMaxServiceAccountCount).Context(ctx)
 		if next_page_token != "" {
 			call.PageToken(next_page_token)
@@ -105,7 +116,7 @@ func (g *CloudState) FetchServiceAccounts(ctx context.Context, client *http.Clie
 		}
 
 		if err != nil {
-			return
+			return err
 		}
 
 		for _, a := range l.Accounts {
@@ -129,12 +140,11 @@ func (g *CloudState) FetchServiceAccounts(ctx context.Context, client *http.Clie
 }
 
 func (g *CloudState) FetchAddresses(ctx context.Context, service *compute.Service) (err error) {
-	defer Action(&err, "querying addresses")
+	defer common.Action(&err, "querying addresses")
 	g.Addresses = make(map[string]*compute.Address)
-	aal, err := service.Addresses.AggregatedList(g.Project).Context(ctx).MaxResults(kMaxAddressCount).Do()
+	aal, err := service.Addresses.AggregatedList(g.HostEnvironment.Project.Name).Context(ctx).MaxResults(kMaxAddressCount).Do()
 
 	if IsNotFoundError(err) {
-		g.addresses_uptodate = 1
 		return nil
 	}
 
@@ -147,18 +157,16 @@ func (g *CloudState) FetchAddresses(ctx context.Context, service *compute.Servic
 			g.Addresses[a.Name] = a
 		}
 	}
-	g.addresses_uptodate = 1
 	return nil
 }
 
 func (g *CloudState) FetchInstances(ctx context.Context, service *compute.Service) (err error) {
-	defer Action(&err, "querying instances")
+	defer common.Action(&err, "querying instances")
 	g.Instances = make(map[string]*compute.Instance)
-	il, err := service.Instances.AggregatedList(g.Project).
+	il, err := service.Instances.AggregatedList(g.HostEnvironment.Project.Name).
 		Context(ctx).MaxResults(kMaxInstanceListCount).Do()
 
 	if IsNotFoundError(err) {
-		g.instances_uptodate = 1
 		return nil
 	}
 
@@ -171,20 +179,18 @@ func (g *CloudState) FetchInstances(ctx context.Context, service *compute.Servic
 			g.Instances[LastPathComponent(i.Name)] = i
 		}
 	}
-	g.instances_uptodate = 1
 	return nil
 }
 
 func (g *CloudState) FetchNetworks(ctx context.Context, service *compute.Service) (err error) {
-	defer Action(&err, "querying networks and subnetworks")
+	defer common.Action(&err, "querying networks and subnetworks")
 
 	g.Networks = make(map[string]*compute.Network)
-	g.Subnetworks = make(map[string]map[string]*compute.Subnetwork)
+	g.Subnetworks = make(map[NetworkAndRegion]*compute.Subnetwork)
 
-	nl, err := service.Networks.List(g.Project).Context(ctx).Do()
+	nl, err := service.Networks.List(g.HostEnvironment.Project.Name).Context(ctx).Do()
 
 	if IsNotFoundError(err) {
-		g.networks_uptodate = 1
 		return nil
 	}
 
@@ -197,11 +203,10 @@ func (g *CloudState) FetchNetworks(ctx context.Context, service *compute.Service
 	}
 
 	// And subnetworks:
-	snl, err := service.Subnetworks.AggregatedList(g.Project).Context(ctx).
+	snl, err := service.Subnetworks.AggregatedList(g.HostEnvironment.Project.Name).Context(ctx).
 		MaxResults(kMaxSubnetworkListCount).Do()
 
 	if IsNotFoundError(err) {
-		g.networks_uptodate = 1
 		return nil
 	}
 
@@ -211,29 +216,24 @@ func (g *CloudState) FetchNetworks(ctx context.Context, service *compute.Service
 
 	for _, p := range snl.Items {
 		for _, s := range p.Subnetworks {
-			n := LastPathComponent(s.Network)
-			r := LastPathComponent(s.Region)
+			k := NetworkAndRegion{
+				Network: LastPathComponent(s.Network),
+				Region:  LastPathComponent(s.Region)}
 
-			if _, ok := g.Subnetworks[n]; !ok {
-				g.Subnetworks[n] = make(map[string]*compute.Subnetwork)
-			}
-
-			g.Subnetworks[n][r] = s
+			g.Subnetworks[k] = s
 		}
 	}
-	g.networks_uptodate = 1
 	return nil
 }
 
 func (g *CloudState) FetchFirewalls(ctx context.Context, service *compute.Service) (err error) {
-	defer Action(&err, "querying firewall rules")
+	defer common.Action(&err, "querying firewall rules")
 
-	g.Firewalls = make(map[string]map[string]*compute.Firewall)
+	g.Firewalls = make(map[NetworkAndFirewall]*compute.Firewall)
 
-	fl, err := service.Firewalls.List(g.Project).Context(ctx).Do()
+	fl, err := service.Firewalls.List(g.HostEnvironment.Project.Name).Context(ctx).Do()
 
 	if IsNotFoundError(err) {
-		g.firewalls_uptodate = 1
 		return nil
 	}
 
@@ -242,22 +242,18 @@ func (g *CloudState) FetchFirewalls(ctx context.Context, service *compute.Servic
 	}
 
 	for _, f := range fl.Items {
-		n := LastPathComponent(f.Network)
-
-		if _, ok := g.Firewalls[n]; !ok {
-			g.Firewalls[n] = make(map[string]*compute.Firewall)
-		}
-		fn := LastPathComponent(f.Name)
-		g.Firewalls[n][fn] = f
+		k := NetworkAndFirewall{
+			Network:  LastPathComponent(f.Network),
+			Firewall: LastPathComponent(f.Name)}
+		g.Firewalls[k] = f
 	}
-	g.firewalls_uptodate = 1
 	return nil
 }
 
 func (g *CloudState) FetchImages(ctx context.Context, service *compute.Service) (err error) {
-	defer Action(&err, "querying source images")
+	defer common.Action(&err, "querying source images")
 	g.Images = make(map[string]*compute.Image)
-	for k, i := range g.MonitoredImages {
+	for _, i := range g.HostEnvironment.Image {
 		l := i.GetLatest()
 		if l == nil {
 			continue
@@ -271,19 +267,20 @@ func (g *CloudState) FetchImages(ctx context.Context, service *compute.Service) 
 		}
 
 		if f.Status != "READY" {
-			return NewError("image is not ready for use for project %s, family %s. Status is %s",
+			return errors.Errorf("image is not ready for use for project %s, family %s. Status is %s",
 				l.Project, l.Family, f.Status)
 		}
 
-		g.Images[k] = f
+		i.Url = f.SelfLink
+
+		g.Images[i.Name] = f
 	}
-	g.images_uptodate = 1
 	return nil
 }
 
 func (g *CloudState) FetchZones(ctx context.Context, service *compute.Service) (err error) {
-	defer Action(&err, "querying zones")
-	zl, err := service.Zones.List(g.Project).Context(ctx).Do()
+	defer common.Action(&err, "querying zones")
+	zl, err := service.Zones.List(g.HostEnvironment.Project.Name).Context(ctx).Do()
 	if err != nil {
 		return
 	}
@@ -292,74 +289,50 @@ func (g *CloudState) FetchZones(ctx context.Context, service *compute.Service) (
 	for _, z := range zl.Items {
 		g.Zones[LastPathComponent(z.Name)] = z
 	}
-	g.zones_uptodate = 1
 	return nil
 }
 
-// FetchStale fetches stale metadata from GCE. Staleness is identified by the
-// *_changed flags that were set by called to Set*Changed() methods. Attempts
+// FetchAll fetches metadata from GCE. Attempts
 // to parallelize the work as much as possible.
-func (g *CloudState) FetchStale(ctx context.Context, client *http.Client) (err error) {
-	defer Action(&err, "querying cloud state")
-
-	c := make(chan error)
-	pending := 0
-
-	if g.service_accounts_uptodate == 0 {
-		pending += 1
-		go func() {
-			c <- g.FetchServiceAccounts(ctx, client)
-		}()
-	}
+func (g *CloudState) FetchAll(ctx context.Context, client *http.Client) (err error) {
+	defer common.Action(&err, "querying cloud state")
 
 	service, err := compute.New(client)
 	if err != nil {
 		return
 	}
 
-	if g.addresses_uptodate == 0 {
-		pending += 1
-		go func() {
-			c <- g.FetchAddresses(ctx, service)
-		}()
-	}
+	j := common.NewJobWaiter(nil)
 
-	if g.instances_uptodate == 0 {
-		pending += 1
-		go func() {
-			c <- g.FetchInstances(ctx, service)
-		}()
-	}
+	go func(e chan<- error) {
+		e <- g.FetchServiceAccounts(ctx, client)
+	}(j.New())
 
-	if g.networks_uptodate == 0 {
-		pending += 1
-		go func() {
-			c <- g.FetchNetworks(ctx, service)
-		}()
-	}
+	go func(e chan<- error) {
+		e <- g.FetchAddresses(ctx, service)
+	}(j.New())
 
-	if g.firewalls_uptodate == 0 {
-		pending += 1
-		go func() {
-			c <- g.FetchFirewalls(ctx, service)
-		}()
-	}
+	go func(e chan<- error) {
+		e <- g.FetchInstances(ctx, service)
+	}(j.New())
 
-	if g.images_uptodate == 0 {
-		pending += 1
-		go func() {
-			c <- g.FetchImages(ctx, service)
-		}()
-	}
+	go func(e chan<- error) {
+		e <- g.FetchNetworks(ctx, service)
+	}(j.New())
 
-	if g.zones_uptodate == 0 {
-		pending += 1
-		go func() {
-			c <- g.FetchZones(ctx, service)
-		}()
-	}
+	go func(e chan<- error) {
+		e <- g.FetchFirewalls(ctx, service)
+	}(j.New())
 
-	return WaitFor(c, pending)
+	go func(e chan<- error) {
+		e <- g.FetchImages(ctx, service)
+	}(j.New())
+
+	go func(e chan<- error) {
+		e <- g.FetchZones(ctx, service)
+	}(j.New())
+
+	return j.Join()
 }
 
 // QueryCloudState queries GCE assets and returns a CloudState object containing the cached state.
@@ -372,13 +345,11 @@ func (g *CloudState) FetchStale(ctx context.Context, client *http.Client) (err e
 // The |images| map should be a mapping from an arbitrary string to a
 // config.SourceImage object. The same key will be used as the mapping key to
 // strong the corresopnding compute.Image record.
-func QueryCloudState(ctx context.Context, client *http.Client, project string, dependencies *host.Dependencies) (*CloudState, error) {
+func QueryCloudState(ctx context.Context, client *http.Client, env *host.HostEnvironment) (*CloudState, error) {
 
-	g := CloudState{
-		Project:         project,
-		MonitoredImages: images}
+	g := CloudState{HostEnvironment: env}
 
-	err := g.FetchStale(ctx, client)
+	err := g.FetchAll(ctx, client)
 	if err != nil {
 		return nil, err
 	}

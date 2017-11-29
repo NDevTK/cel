@@ -5,6 +5,7 @@
 package gcp
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/host"
 	"cloud.google.com/go/logging"
 	"golang.org/x/net/context"
 	cloudkms "google.golang.org/api/cloudkms/v1"
@@ -16,9 +17,10 @@ import (
 )
 
 type Session struct {
-	Context context.Context
-	Client  *http.Client
-	Cloud   *CloudState
+	Context         context.Context
+	Client          *http.Client
+	Cloud           *CloudState
+	HostEnvironment *host.HostEnvironment
 
 	compute_service *compute.Service
 	compute_once    sync.Once
@@ -37,21 +39,16 @@ type Session struct {
 	logger     *logging.Logger
 }
 
-func NewSession(ctx context.Context, client *http.Client, host_config string, asset_configs []string) (s *Session, err error) {
-	s = &Session{Context: ctx, Client: client}
+func NewSession(ctx context.Context, client *http.Client, env *host.HostEnvironment) (s *Session, err error) {
+	s = &Session{Context: ctx, Client: client, HostEnvironment: env}
 
-	s.Config, err = LoadConfigFiles(host_config, asset_configs)
+	s.log_client, err = logging.NewClient(s.Context, env.Project.Name)
 	if err != nil {
 		return
 	}
+	s.logger = s.log_client.Logger(env.LogSettings.AdminLog)
 
-	s.log_client, err = logging.NewClient(s.Context, s.Config.Project)
-	if err != nil {
-		return
-	}
-	s.logger = s.log_client.Logger(kLabAdminLogName)
-
-	s.Cloud, err = QueryCloudState(s.Context, s.Client, s.Config.Project, s.Config.images)
+	s.Cloud, err = QueryCloudState(s.Context, s.Client, env)
 	return
 }
 
