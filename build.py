@@ -30,7 +30,8 @@ import textwrap
 
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
 BUILD_PATH = os.path.join(SOURCE_PATH, 'build')
-STAMP_PATH = os.path.join(BUILD_PATH, 'stamps')
+OUT_PATH = os.path.join(SOURCE_PATH, 'out')
+STAMP_PATH = os.path.join(OUT_PATH, 'stamps')
 
 sys.path.append(BUILD_PATH)
 from markdown_utils import FormatMarkdown
@@ -313,14 +314,15 @@ def _Generate(args):
 
 
 def BuildCommand(args):
-  '''Builds native binaries using Go.
+  '''Build all non-test Go source files.
 
-When building for the native platform (i.e. no --goos option is given),
-binaries are placed under GOPATH/bin. This is the default location binaries are
-placed in when invoking 'go install'.
+Build artifacts can be found in the out/$GOOS_$GOARCH/bin directory after a
+successful build.  Does not attempt to isntall any packages by default.
 
-It is possible to invoke a cross compilation by specifying --goos. In that
-case, the resulting build artifacts are placed under build/$GOOS/bin.'''
+The build step also checks if the dependencies are up-to-date. It also
+generates files that are needed by the build. These additional steps happen
+prior to the build, and only if the dependencies have changed.
+'''
 
   if not args.fast:
     _Deps(args)
@@ -331,8 +333,28 @@ case, the resulting build artifacts are placed under build/$GOOS/bin.'''
     flags += ['-v', '-x']
 
   build_env = _MergeEnv(args)
+
+  # Do a (redundant) full build.
   _RunCommand(
       ['go', 'build'] + flags + ['./go/...'], env=build_env, cwd=SOURCE_PATH)
+
+  goos = subprocess.check_output(
+      ['go', 'env', 'GOOS'], env=build_env, cwd=SOURCE_PATH).strip()
+  goarch = subprocess.check_output(
+      ['go', 'env', 'GOARCH'], env=build_env, cwd=SOURCE_PATH).strip()
+  out_dir = os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
+  _EnsureDir(out_dir)
+
+  suffix = '.exe' if goos == 'windows' else ''
+
+  commands = os.listdir(os.path.join(SOURCE_PATH, 'go', 'cmd'))
+
+  for command in commands:
+    out = os.path.join(out_dir, command + suffix)
+    _RunCommand(
+        ['go', 'build'] + flags + ['-o', out, './go/cmd/' + command],
+        env=build_env,
+        cwd=SOURCE_PATH)
 
 
 def TestCommand(args):
