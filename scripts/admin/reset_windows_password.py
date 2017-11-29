@@ -32,166 +32,166 @@ from Crypto.Util.number import long_to_bytes
 from oauth2client.client import GoogleCredentials, ApplicationDefaultCredentialsError
 from googleapiclient.discovery import build
 
+
 def GetCompute():
-    """Get a compute object for communicating with the Compute Engine API."""
-    try:
-        credentials = GoogleCredentials.get_application_default()
-    except ApplicationDefaultCredentialsError:
-        sys.stderr.write('''Application default credentials are not available.
+  """Get a compute object for communicating with the Compute Engine API."""
+  try:
+    credentials = GoogleCredentials.get_application_default()
+  except ApplicationDefaultCredentialsError:
+    sys.stderr.write('''Application default credentials are not available.
 
 Please see README.md file next to this script for more information on how to
 configure application default credentials for use with these scripts.
 ''')
-        raise Exception("Application default credentials not found")
+    raise Exception("Application default credentials not found")
 
-    compute = build('compute', 'v1', credentials=credentials)
-    return compute
+  compute = build('compute', 'v1', credentials=credentials)
+  return compute
 
 
 def GetInstance(compute, instance, zone, project):
-    """Get the data for a Google Compute Engine instance."""
-    cmd = compute.instances().get(instance=instance, project=project,
-                                  zone=zone)
-    return cmd.execute()
+  """Get the data for a Google Compute Engine instance."""
+  cmd = compute.instances().get(instance=instance, project=project, zone=zone)
+  return cmd.execute()
 
 
 def GenerateRSAKey():
-    """Get an RSA key for encryption."""
-    # This uses the PyCrypto library
-    key = RSA.generate(2048)
-    return key
+  """Get an RSA key for encryption."""
+  # This uses the PyCrypto library
+  key = RSA.generate(2048)
+  return key
 
 
 def GetModulusExponentInBase64(key):
-    """Return the public modulus and exponent for the key in bas64 encoding."""
-    mod = long_to_bytes(key.n)
-    exp = long_to_bytes(key.e)
+  """Return the public modulus and exponent for the key in bas64 encoding."""
+  mod = long_to_bytes(key.n)
+  exp = long_to_bytes(key.e)
 
-    modulus = base64.b64encode(mod)
-    exponent = base64.b64encode(exp)
+  modulus = base64.b64encode(mod)
+  exponent = base64.b64encode(exp)
 
-    return modulus, exponent
+  return modulus, exponent
 
 
 def GetExpirationTimeString():
-    """Return an RFC3339 UTC timestamp for 5 minutes from now."""
-    utc_now = datetime.datetime.utcnow()
-    # These metadata entries are one-time-use, so the expiration time does
-    # not need to be very far in the future. In fact, one minute would
-    # generally be sufficient. Five minutes allows for minor variations
-    # between the time on the client and the time on the server.
-    expire_time = utc_now + datetime.timedelta(minutes=5)
-    return expire_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+  """Return an RFC3339 UTC timestamp for 5 minutes from now."""
+  utc_now = datetime.datetime.utcnow()
+  # These metadata entries are one-time-use, so the expiration time does
+  # not need to be very far in the future. In fact, one minute would
+  # generally be sufficient. Five minutes allows for minor variations
+  # between the time on the client and the time on the server.
+  expire_time = utc_now + datetime.timedelta(minutes=5)
+  return expire_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 def GetJsonString(user, modulus, exponent, email):
-    """Return the JSON string object that represents the windows-keys entry."""
-    expire = GetExpirationTimeString()
-    data = {'userName': user,
-            'modulus': modulus,
-            'exponent': exponent,
-            'email': email,
-            'expireOn': expire}
-    return json.dumps(data)
+  """Return the JSON string object that represents the windows-keys entry."""
+  expire = GetExpirationTimeString()
+  data = {
+      'userName': user,
+      'modulus': modulus,
+      'exponent': exponent,
+      'email': email,
+      'expireOn': expire
+  }
+  return json.dumps(data)
 
 
 def UpdateWindowsKeys(old_metadata, metadata_entry):
-    """Return updated metadata contents with the new windows-keys entry."""
-    # Simply overwrites the "windows-keys" metadata entry. Production code may
-    # want to append new lines to the metadata value and remove any expired
-    # entries.
-    new_metadata = copy.deepcopy(old_metadata)
-    for item in new_metadata['items']:
-        if item['key'] == 'windows-keys':
-            item['value'] = metadata_entry
-    return new_metadata
+  """Return updated metadata contents with the new windows-keys entry."""
+  # Simply overwrites the "windows-keys" metadata entry. Production code may
+  # want to append new lines to the metadata value and remove any expired
+  # entries.
+  new_metadata = copy.deepcopy(old_metadata)
+  for item in new_metadata['items']:
+    if item['key'] == 'windows-keys':
+      item['value'] = metadata_entry
+  return new_metadata
 
 
 def UpdateInstanceMetadata(compute, instance, zone, project, new_metadata):
-    """Update the instance metadata."""
-    cmd = compute.instances().setMetadata(instance=instance, project=project,
-                                          zone=zone, body=new_metadata)
-    return cmd.execute()
+  """Update the instance metadata."""
+  cmd = compute.instances().setMetadata(
+      instance=instance, project=project, zone=zone, body=new_metadata)
+  return cmd.execute()
 
 
 def GetSerialPortFourOutput(compute, instance, zone, project):
-    """Get the output from serial port 4 from the instance."""
-    # Encrypted passwords are printed to COM4 on the windows server:
-    port = 4
-    cmd = compute.instances().getSerialPortOutput(instance=instance,
-                                                  project=project,
-                                                  zone=zone, port=port)
-    output = cmd.execute()
-    return output['contents']
+  """Get the output from serial port 4 from the instance."""
+  # Encrypted passwords are printed to COM4 on the windows server:
+  port = 4
+  cmd = compute.instances().getSerialPortOutput(
+      instance=instance, project=project, zone=zone, port=port)
+  output = cmd.execute()
+  return output['contents']
 
 
 def GetEncryptedPasswordFromSerialPort(serial_port_output, modulus):
-    """Find and return the correct encrypted password, based on the modulus."""
-    # In production code, this may need to be run multiple times if the output
-    # does not yet contain the correct entry.
-    output = serial_port_output.split('\n')
-    for line in reversed(output):
-        try:
-            entry = json.loads(line)
-        except:
-            continue
+  """Find and return the correct encrypted password, based on the modulus."""
+  # In production code, this may need to be run multiple times if the output
+  # does not yet contain the correct entry.
+  output = serial_port_output.split('\n')
+  for line in reversed(output):
+    try:
+      entry = json.loads(line)
+    except:
+      continue
 
-        if 'modulus' in entry and modulus == entry['modulus']:
-            return entry['encryptedPassword']
-    raise ValueError('password change entry not found')
+    if 'modulus' in entry and modulus == entry['modulus']:
+      return entry['encryptedPassword']
+  raise ValueError('password change entry not found')
 
 
 def DecryptPassword(encrypted_password, key):
-    """Decrypt a base64 encoded encrypted password using the provided key."""
-    decoded_password = base64.b64decode(encrypted_password)
-    cipher = PKCS1_OAEP.new(key)
-    password = cipher.decrypt(decoded_password)
-    return password
+  """Decrypt a base64 encoded encrypted password using the provided key."""
+  decoded_password = base64.b64decode(encrypted_password)
+  cipher = PKCS1_OAEP.new(key)
+  password = cipher.decrypt(decoded_password)
+  return password
 
 
 def main(instance, zone, project, user, email):
-    # Setup
-    compute = GetCompute()
-    key = GenerateRSAKey()
-    modulus, exponent = GetModulusExponentInBase64(key)
+  # Setup
+  compute = GetCompute()
+  key = GenerateRSAKey()
+  modulus, exponent = GetModulusExponentInBase64(key)
 
-    # Get existing metadata
-    instance_ref = GetInstance(compute, instance, zone, project)
-    old_metadata = instance_ref['metadata']
+  # Get existing metadata
+  instance_ref = GetInstance(compute, instance, zone, project)
+  old_metadata = instance_ref['metadata']
 
-    # Create and set new metadata
-    metadata_entry = GetJsonString(user, modulus,
-                                   exponent, email)
-    new_metadata = UpdateWindowsKeys(old_metadata, metadata_entry)
-    result = UpdateInstanceMetadata(compute, instance, zone, project,
-                                    new_metadata)
+  # Create and set new metadata
+  metadata_entry = GetJsonString(user, modulus, exponent, email)
+  new_metadata = UpdateWindowsKeys(old_metadata, metadata_entry)
+  result = UpdateInstanceMetadata(compute, instance, zone, project,
+                                  new_metadata)
 
-    password = ''
-    while password == '':
-        # Get and decrypt password from serial port output
-        serial_port_output = GetSerialPortFourOutput(compute, instance,
-                                                     zone, project)
-        print "Got output: {}".format(serial_port_output)
-        print "Expecting modulus: {}".format(modulus)
-        try:
-            enc_password = GetEncryptedPasswordFromSerialPort(serial_port_output,
-                                                              modulus)
-            password = DecryptPassword(enc_password, key)
-            print "Password found"
-        except ValueError:
-            time.sleep(1) # Try once a second
+  password = ''
+  while password == '':
+    # Get and decrypt password from serial port output
+    serial_port_output = GetSerialPortFourOutput(compute, instance, zone,
+                                                 project)
+    print "Got output: {}".format(serial_port_output)
+    print "Expecting modulus: {}".format(modulus)
+    try:
+      enc_password = GetEncryptedPasswordFromSerialPort(serial_port_output,
+                                                        modulus)
+      password = DecryptPassword(enc_password, key)
+      print "Password found"
+    except ValueError:
+      time.sleep(1)  # Try once a second
 
-    # Display the username, password and IP address for the instance
-    print 'Username:   {0}'.format(user)
-    print 'Password:   {0}'.format(password)
-    ip = instance_ref['networkInterfaces'][0]['accessConfigs'][0]['natIP']
-    print 'IP Address: {0}'.format(ip)
+  # Display the username, password and IP address for the instance
+  print 'Username:   {0}'.format(user)
+  print 'Password:   {0}'.format(password)
+  ip = instance_ref['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+  print 'IP Address: {0}'.format(ip)
 
 
 if __name__ == '__main__':
-    instance = 'win-client'
-    zone = 'us-east1-b'
-    project = 'google.com:chrome-auth-lab'
-    user = 'baruser'
-    email = 'user@example.com'
-    main(instance, zone, project, user, email)
+  instance = 'win-client'
+  zone = 'us-east1-b'
+  project = 'google.com:chrome-auth-lab'
+  user = 'baruser'
+  email = 'user@example.com'
+  main(instance, zone, project, user, email)
