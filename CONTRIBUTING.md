@@ -5,6 +5,8 @@
 Same requirements apply as for the Chromium project. If you are not a Chromium
 contributor, then please sign the [CLA](https://cla.developers.google.com/).
 
+### Suggested Workflow
+
 1. Create a new branch:
 
    ``` sh
@@ -73,7 +75,7 @@ This will fetch the dependency in to `vendor` and pin the version.
 When updates to dependent packages are available, run:
 
 ``` sh
-dep update
+dep ensure -update
 ```
 
 ... to fetch the updates. Don't forget to run the tests and verify that the new
