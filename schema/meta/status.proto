@@ -1,0 +1,23 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package meta;
+option go_package = "chromium.googlesource.com/enterprise/cel/go/meta";
+
+// Status messages are sent by VMs to indicate one or more status updates.
+message Status {
+  string source = 1;
+
+  oneof status {
+    Waiting waiting = 2;
+    Ready ready = 3;
+  }
+
+  message Waiting { string source = 1; }
+
+  message Ready {}
+
+  message Fail { string source = 1; }
+}

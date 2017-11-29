@@ -4,15 +4,18 @@
 
 syntax = "proto3";
 package meta;
-option go_package="chromium.googlesource.com/enterprise/cel/go/meta";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/meta";
 
-
+// Tree messages are encoded and stored in an object storage service.
 message Tree {
   // To canonicalize the representation, the list of files must be sorted by
   // name in en-US locale.
   repeated FileReference file = 1;
 }
 
+// FileReference messages are intended to be encoded and stored in Tree
+// messages to refer to files that are also stored in the same object storage
+// service.
 message FileReference {
   // Name of file.
   string name = 1;
@@ -31,7 +34,7 @@ message FileReference {
   // Size in bytes of the object.
   int64 size = 3;
 
-  // The reference depends on the backend hosting the content indexed storage.
+  // Reference to contents of file. The format of the reference depends on the
+  // backend hosting the content indexed storage.
   string reference = 4;
 }
-
