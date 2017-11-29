@@ -332,7 +332,7 @@ case, the resulting build artifacts are placed under build/$GOOS/bin.'''
 
   build_env = _MergeEnv(args)
   _RunCommand(
-      ['go', 'install'] + flags + ['./go/...'], env=build_env, cwd=SOURCE_PATH)
+      ['go', 'build'] + flags + ['./go/...'], env=build_env, cwd=SOURCE_PATH)
 
 
 def TestCommand(args):
@@ -345,72 +345,9 @@ test'.
 
 Note: Tests can only be run when GOOS == GOHOSTOS. Hence there's no command
 line option to set GOOS.
-
-About Network Requests During Tests
------------------------------------
-
-The test framework will intercept network requests and attempt to simulate
-Google Cloud API calls. This requires a set of cached responses per each test
-case. As tests evolve, this set of requests may need to be refreshed. Hence
-there is a --reset option to the 'test' command. This option causes all the
-cached response data to be discarded. The tests are then executed in 'record'
-mode where network requests make it out into the network and all network
-traffic is logged. Assuming this causes the tests to pass, you can then 'git
-add' and 'git commit' the new or updated cached network requests.
-
-TL;DR: After changing a test that makes network requests, you may see errors like:
-
-        foo_test.go|...| Get https://www.googleapis.com/... : not implemented
-
-    That means that the test is attempting to make a new network request.
-    Assuming this is correct, do the following:
-
-        ./build.py test --reset
-
-    This will cause the tests to be run in 'record' mode. If the tests pass,
-    then:
-
-        git add src/go/lab/testdata
-        git commit -m <...>
-
-    You should now be able to run the tests normally again.
-
-Note: When using 'reset and record' mode, don't specify any special 'go test'
-options.
-
-Note: Running tests in 'reset and record' mode requires access to the
-chrome-auth-lab-dev Google Cloud project.
 '''
 
   test_env = _MergeEnv(args, target_host=True)
-
-  if args.reset:
-    if len(args.gotest_args) != 0:
-      sys.stderr.write(
-          '--reset option cannot be used with additional \'go test\' arguments\n'
-      )
-      return
-
-    testdata_dir = os.path.join(SOURCE_PATH, 'src', 'go', 'lab', 'testdata')
-    for p in os.listdir(testdata_dir):
-      testcase_dir = os.path.join(testdata_dir, p)
-      if not os.path.isdir(testcase_dir):
-        continue
-
-      for q in ['requests', 'responses']:
-        d = os.path.join(testcase_dir, q)
-        if not os.path.isdir(d):
-          continue
-
-        for f in os.listdir(d):
-          filepath = os.path.join(d, f)
-          if not os.path.isfile(filepath):
-            continue
-
-          os.remove(filepath)
-
-    test_env['LAB_RECORD'] = 'yes'
-
   _RunCommand(['go', 'test', './go/...'], env=test_env, cwd=SOURCE_PATH)
 
 
@@ -646,13 +583,6 @@ def main():
       description=TestCommand.__doc__,
       parents=[common_options],
       formatter_class=argparse.RawDescriptionHelpFormatter)
-  test_command.add_argument(
-      '--reset',
-      '-R',
-      action='store_true',
-      help=
-      'remove all cached network request data and record all new network requests'
-  )
   test_command.add_argument(
       'gotest_args',
       metavar='ARGS',
