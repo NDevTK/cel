@@ -5,8 +5,12 @@
 package main
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
+	"context"
 	"flag"
+	"fmt"
 	"github.com/google/subcommands"
+	"os"
 )
 
 type PasswdCommand struct {
@@ -33,35 +37,29 @@ func (p *PasswdCommand) SetFlags(f *flag.FlagSet) {
 }
 
 func (p *PasswdCommand) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	if p.instance == "" || p.username == "" {
-		fmt.Fprintln(a.GetErr(), "instance and username are required options")
-		return -1
+	if p.Instance == "" || p.Username == "" {
+		fmt.Fprintln(os.Stderr, "instance and username are required options")
+		return subcommands.ExitUsageError
 	}
 
-	ctx := context.Background()
-	client, err := lab.GetDefaultClient(ctx)
+	err := p.Load(ctx, f)
 	if err != nil {
-		fmt.Fprintln(a.GetErr(), "failed to get GCE client: ", err)
-		return -2
+		fmt.Fprintln(os.Stderr, "%s", err.Error())
+		return subcommands.ExitFailure
 	}
 
-	S := s.GetSession(a, ctx, client)
-	if S == nil {
-		return -1
-	}
-
-	instance := S.Cloud.Instances[s.instance]
+	instance := p.Session.Cloud.Instances[p.Instance]
 	if instance == nil {
-		fmt.Fprintln(a.GetErr(), "instance not found: ", s.instance)
-		return -3
+		fmt.Fprintln(os.Stderr, "instance not found: ", p.Instance)
+		return subcommands.ExitFailure
 	}
 
-	password, err := lab.ResetWindowsPassword(ctx, client, S.Config.Project, instance.Zone, instance.Name, s.username, s.email)
+	password, err := gcp.ResetWindowsPassword(ctx, p.Client, p.Configuration.HostEnvironment.Project.Name, instance.Zone, instance.Name, p.Username, p.Email)
 	if err != nil {
-		fmt.Fprintln(a.GetErr(), "failed to reset password: ", err)
-		return -4
+		fmt.Fprintln(os.Stderr, "failed to reset password: ", err)
+		return subcommands.ExitFailure
 	}
 
-	fmt.Fprintln(a.GetOut(), password)
-	return 0
+	fmt.Fprintln(os.Stdout, password)
+	return subcommands.ExitSuccess
 }

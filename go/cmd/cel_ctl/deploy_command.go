@@ -5,12 +5,9 @@
 package main
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/common"
 	"context"
 	"flag"
-	"fmt"
 	"github.com/google/subcommands"
-	"os"
 )
 
 type DeployCommand struct {
@@ -36,29 +33,6 @@ func (d *DeployCommand) SetFlags(f *flag.FlagSet) {
 }
 
 func (d *DeployCommand) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	client, err := common.GetDefaultClient(ctx)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to initialize http client: ", err)
-		return subcommands.ExitFailure
-	}
-
-	s := d.GetSession(a, ctx, client)
-	if s == nil {
-		return subcommands.ExitFailure
-	}
-
-	A := lab.Assets{}
-	err = lab.ConstructAssets(&A, s.Config)
-	if err != nil {
-		fmt.Fprintln(a.GetErr(), "failed to construct assets: ", err)
-		return subcommands.ExitFailure
-	}
-
-	err = lab.ResolveAssets(&A, s)
-	if err != nil {
-		fmt.Fprintln(a.GetErr(), "failed to deploy: ", err)
-		return subcommands.ExitFailure
-	}
-
-	return subcommands.ExitSuccess
+	panic("not implemented")
+	return subcommands.ExitFailure
 }

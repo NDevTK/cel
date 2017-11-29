@@ -33,25 +33,8 @@ func (i *InfoCommand) SetFlags(f *flag.FlagSet) {
 }
 
 func (i InfoCommand) Execute(ctx context.Context, f *flag.FlagSet, args ...interface{}) subcommands.ExitStatus {
-	client, err := lab.GetDefaultClient(ctx)
-	if err != nil {
-		fmt.Fprintln(a.GetErr(), "failed to initialize http client: ", err)
-		return subcommands.ExitFailure
-	}
-
-	s := i.GetSession(a, ctx, client)
-	if s == nil {
-		return subcommands.ExitFailure
-	}
-
-	b, err := json.MarshalIndent(s.Config, "", "  ")
-	if err != nil {
-		fmt.Fprintln(a.GetErr(), "failed to marshall JSON: ", err)
-		return subcommands.ExitFailure
-	}
-
-	fmt.Fprintf(a.GetOut(), "%s", string(b))
-	return subcommands.ExitSuccess
+	panic("not implemented")
+	return subcommands.ExitFailure
 }
 
 func init() {
