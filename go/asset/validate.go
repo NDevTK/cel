@@ -160,3 +160,16 @@ func (r *RegistryKey) Validate() error {
 func (v *RegistryValue) Validate() error {
 	return nil
 }
+
+func (v *RegistryValue_MultiString) Validate() error {
+	for _, s := range v.Value {
+		if len(s) == 0 {
+			return errors.New("registry MultString value cannot be empty")
+		}
+
+		if strings.ContainsRune(s, 0) {
+			return errors.New("registry MultiString value cannot contain \\0")
+		}
+	}
+	return nil
+}

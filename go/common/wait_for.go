@@ -4,7 +4,9 @@
 
 package common
 
-import ()
+import (
+	"github.com/golang/protobuf/proto"
+)
 
 // WaitFor waits for |n| number of |error| objects from |c|. If any of them are
 // non-nil, then it returns a non-nil error which has an aggregate error string
@@ -42,17 +44,22 @@ func WaitFor(ch <-chan error, n int) (err error) {
 }
 
 type JobWaiter struct {
-	errc  chan error
-	count int
+	errc   chan error
+	count  int
+	source proto.Message
 }
 
-func NewJobWaiter() *JobWaiter {
-	return &JobWaiter{errc: make(chan error), count: 0}
+func NewJobWaiter(m proto.Message) *JobWaiter {
+	return &JobWaiter{errc: make(chan error), count: 0, source: m}
 }
 
-func (j *JobWaiter) Collect() chan<- error {
+func (j *JobWaiter) New() chan<- error {
 	j.count += 1
 	return j.errc
+}
+
+func (j *JobWaiter) Source() proto.Message {
+	return j.source
 }
 
 func (j *JobWaiter) Join() error {

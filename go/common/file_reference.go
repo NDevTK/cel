@@ -44,33 +44,28 @@ func (c *FileReference) ResolveRelativePath(base_path string) error {
 	return nil
 }
 
-func (c *FileReference) Resolve(ctx context.Context, p RefPath) (err error) {
-	Action(&err, "resolving FileReference to \"%s\" (local path \"%s\")", c.Path, c.ResolvedLocalPath)
-	o, ok := ObjectStoreServiceFromContext(ctx)
-	if !ok {
-		return &ServiceNotFoundError{Service: "ObjectStore"}
+func (c *FileReference) Resolve(ctx context.Context, resolver ResolverService) (err error) {
+	defer Action(&err, "resolving FileReference to \"%s\" (local path \"%s\")", c.Path, c.ResolvedLocalPath)
+	o, err := ObjectStoreServiceFromContext(ctx)
+	if err != nil {
+		return
 	}
 
 	if c.ResolvedLocalPath == "" {
 		return errors.Errorf("path to \"%s\" is not resolved", c.Path)
 	}
 
-	var (
-		ref  string
-		size int64
-	)
-	j := NewJobWaiter()
-	storePath(ctx, o, c.ResolvedLocalPath, &ref, &size, j.Collect())
-	err = j.Join()
-	if err == nil {
-		c.ResolvedObject = ref
-		// TODO(asanka): Publish this reference.
+	fi, err := os.Stat(c.ResolvedLocalPath)
+	if err != nil {
+		return
+	}
+
+	if fi.IsDir() {
+		c.ResolvedObject, _, err = c.storeDir(ctx, o, c.ResolvedLocalPath)
+	} else {
+		c.ResolvedObject, _, err = c.storeFile(ctx, o, c.ResolvedLocalPath)
 	}
 	return
-}
-
-func (c *FileReference) Purge(ctx context.Context, p RefPath) error {
-	return nil
 }
 
 func GetPathResolver(base_path string) WalkProtoFunc {
@@ -88,41 +83,23 @@ func GetPathResolver(base_path string) WalkProtoFunc {
 	}
 }
 
-func storePath(ctx context.Context, o ObjectStoreService, path string, ref *string, size *int64, result chan<- error) {
-	fi, err := os.Stat(path)
-	if err != nil {
-		result <- err
-		return
-	}
-
-	if fi.IsDir() {
-		storeDir(ctx, o, path, ref, size, result)
-	} else {
-		storeFile(ctx, o, path, ref, size, result)
-	}
-}
-
-func storeFile(ctx context.Context, o ObjectStoreService, path string, ref *string, size *int64, result chan<- error) {
-	var err error
-	defer AsyncAction(&err, result, "storing file at \"%s\"", path)
+func (c *FileReference) storeFile(ctx context.Context, o ObjectStoreService, path string) (ref string, size int64, err error) {
+	defer Action(&err, "storing file at \"%s\"", path)
 
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
 	}
+	size = int64(len(contents))
 
-	j := NewJobWaiter()
-	o.PutObject(ctx, contents, ref, j.Collect())
+	j := NewJobWaiter(c)
+	o.PutObject(ctx, contents, &ref, j.New())
 	err = j.Join()
-	if err != nil {
-		return
-	}
-	*size = int64(len(contents))
+	return
 }
 
-func storeDir(ctx context.Context, o ObjectStoreService, path string, ref *string, size *int64, result chan<- error) {
-	var err error
-	defer AsyncAction(&err, result, "storing directory at \"%s\"", path)
+func (c *FileReference) storeDir(ctx context.Context, o ObjectStoreService, path string) (ref string, size int64, err error) {
+	defer Action(&err, "storing directory at \"%s\"", path)
 
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -132,7 +109,7 @@ func storeDir(ctx context.Context, o ObjectStoreService, path string, ref *strin
 	var tree meta.Tree
 	tree.File = make([]*meta.FileReference, len(files))
 
-	j := NewJobWaiter()
+	j := NewJobWaiter(c)
 	for i, f := range files {
 		fr := &meta.FileReference{
 			Name: f.Name(),
@@ -140,9 +117,17 @@ func storeDir(ctx context.Context, o ObjectStoreService, path string, ref *strin
 		new_path := filepath.Join(path, f.Name())
 		if f.IsDir() {
 			fr.Type = meta.FileReference_DIRECTORY
-			storeDir(ctx, o, new_path, &fr.Reference, &fr.Size, j.Collect())
+			go func(result chan<- error) {
+				var err error
+				fr.Reference, fr.Size, err = c.storeDir(ctx, o, new_path)
+				result <- err
+			}(j.New())
 		} else {
-			storeFile(ctx, o, new_path, &fr.Reference, &fr.Size, j.Collect())
+			go func(result chan<- error) {
+				var err error
+				fr.Reference, fr.Size, err = c.storeFile(ctx, o, new_path)
+				result <- err
+			}(j.New())
 		}
 		tree.File[i] = fr
 	}
@@ -156,9 +141,9 @@ func storeDir(ctx context.Context, o ObjectStoreService, path string, ref *strin
 	if err != nil {
 		return
 	}
+	size = int64(len(encoded))
 
-	*size = int64(len(encoded))
-
-	o.PutObject(ctx, encoded, ref, j.Collect())
+	o.PutObject(ctx, encoded, &ref, j.New())
 	err = j.Join()
+	return
 }

@@ -9,32 +9,25 @@ import (
 	"context"
 )
 
-func (w *WindowsMachine) Resolve(ctx context.Context, p common.RefPath, host HostService) (err error) {
-	common.Action(&err, "Resolving WindowsMachine \"%s\"", w.Name)
-	j := common.NewJobWaiter()
-
-	host.ProvisionMachine(ctx, p, &Machine{
-		Name:             w.Name,
-		MachineType:      w.MachineType,
-		NetworkInterface: w.NetworkInterface}, j.Collect())
-
-	err = j.Join()
-
+func (w *WindowsMachine) Resolve(ctx context.Context, resolver common.ResolverService) (err error) {
+	defer common.Action(&err, "Resolving WindowsMachine \"%s\"", w.Name)
+	m, err := MachineProviderServiceFromContext(ctx)
 	if err != nil {
-		return err
+		return
 	}
 
-	// Ensure network parameters.
-	// Ensure machine type is usable.
-	return nil
-}
+	j := common.NewJobWaiter(w)
 
-func (w *WindowsMachine) Purge(ctx context.Context, p common.RefPath, host HostService) (err error) {
-	common.Action(&err, "Purging WindowsMachine \"%s\"", w.Name)
-	j := common.NewJobWaiter()
-	host.PurgeMachine(ctx, p, &Machine{
-		Name:             w.Name,
-		MachineType:      w.MachineType,
-		NetworkInterface: w.NetworkInterface}, j.Collect())
-	return j.Join()
+	var channel MachineChannel
+	m.Provision(ctx, w, &channel, j)
+	resolver.Resolve(ctx, w.Container, j)
+	resolver.Resolve(ctx, w.ConfigurationFile, j)
+
+	err = j.Join()
+	if err != nil {
+		return
+	}
+
+	// At this point the machine is running. We should be able to send commands to it.
+	return
 }

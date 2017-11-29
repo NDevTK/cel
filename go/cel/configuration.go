@@ -55,7 +55,7 @@ type Configuration struct {
 // Any errors will be propagated via |error| and will be annotated with the
 // name of the configuration file that generated the error.
 //
-// See //schema/asset/asset_manifest.proto
+// See /schema/asset/asset_manifest.proto
 func (l *Configuration) MergeAssets(filename string) error {
 	// If you see this error, it means that an attempt was made to load another
 	// configuration file after it was sealed. Sealing happens when Validate()
@@ -156,14 +156,17 @@ func (l *Configuration) Validate() error {
 		common.InvokeValidate(&l.HostEnvironment, HostRootPath),
 	}
 
-	for _, u := range l.References.Unresolved {
+	l.References.Unresolved.Visit(func(p common.RefPath, i interface{}) bool {
+		u := i.(*common.UnresolvedReference)
 		// Output fields are expected to be unresolved at this point.
 		if u.IsOutput {
-			continue
+			return true
 		}
 		err_list = append(err_list, errors.Errorf("unresolved reference to \"%s\" from \"%s\"",
 			u.To.String(), u.From.String()))
-	}
+		return true
+	})
+
 	return common.WrapErrorList(common.AppendErrorList(nil, err_list...))
 }
 
