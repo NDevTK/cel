@@ -265,7 +265,7 @@ def _Generate(args):
 
   _RunCommand(
       [
-          'go', 'run', 'go/cmd/gen_api_proto/main.go', '-i',
+          'go', 'run', 'go/tools/gen_api_proto/main.go', '-i',
           'vendor/google.golang.org/api/compute/v0.beta/compute-api.json', '-o',
           'schema/gcp/compute/compute-api.proto', '-p',
           'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
@@ -432,7 +432,7 @@ def _FormatProtoFiles(args):
   except subprocess.CalledProcessError as e:
     if e.returncode == 1:
       sys.stderr.write(
-              textwrap.dedent('''\
+          textwrap.dedent('''\
 
                       See 'build.py format --help' for more details on how to
                       configure a depot_tools provided clang_format tool to
