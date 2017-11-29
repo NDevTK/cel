@@ -1,4 +1,0 @@
-GET /compute/v1/projects/chrome-auth-lab-dev/zones?alt=json HTTP/1.1
-Host: www.googleapis.com
-User-Agent: google-api-go-client/0.5
-
