@@ -35,7 +35,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
-  revision = "9dfe39835686865bff950a07b394c12a98ddc811"
+  revision = "894f8ed5849b15b810ae41e9590a0d05395bba27"
 
 [[projects]]
   branch = "master"
@@ -53,13 +53,13 @@
   branch = "master"
   name = "golang.org/x/text"
   packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "88f656faf3f37f690df1a32515b479415e1a6769"
+  revision = "572a2b141f625f4360cf42a41a43622067e0510b"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
   packages = ["cloudkms/v1","cloudresourcemanager/v1","compute/v1","gensupport","googleapi","googleapi/internal/uritemplates","googleapi/transport","iam/v1","internal","iterator","option","support/bundler","transport","transport/grpc","transport/http"]
-  revision = "790790d1b4a7d6b0d03d3725f980eedf80dc2707"
+  revision = "2956fb848dcbe36c78c2a55f421ec8a4187aa94e"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -71,13 +71,13 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/api/annotations","googleapis/api/distribution","googleapis/api/label","googleapis/api/metric","googleapis/api/monitoredres","googleapis/logging/type","googleapis/logging/v2","googleapis/rpc/status","protobuf/field_mask"]
-  revision = "11c7f9e547da6db876260ce49ea7536985904c9b"
+  revision = "7f0da29060c682909f650ad8ed4e515bd74fa12a"
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = [".","balancer","codes","connectivity","credentials","credentials/oauth","grpclb/grpc_lb_v1/messages","grpclog","internal","keepalive","metadata","naming","peer","resolver","stats","status","tap","transport"]
-  revision = "401e0e00e4bb830a10496d64cd95e068c5bf50de"
-  version = "v1.7.3"
+  packages = [".","balancer","balancer/roundrobin","codes","connectivity","credentials","credentials/oauth","encoding","grpclb/grpc_lb_v1/messages","grpclog","internal","keepalive","metadata","naming","peer","resolver","resolver/dns","resolver/passthrough","stats","status","tap","transport"]
+  revision = "5a9f7b402fe85096d2e1d0383435ee1876e863d0"
+  version = "v1.8.0"
 
 [solve-meta]
   analyzer-name = "dep"
