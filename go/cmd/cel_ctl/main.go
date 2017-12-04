@@ -5,14 +5,14 @@
 package main
 
 import (
-	"context"
-	"github.com/google/subcommands"
+	"fmt"
+	"os"
 )
 
 func main() {
-	subcommands.Register(subcommands.CommandsCommand(), "help")
-	subcommands.Register(subcommands.HelpCommand(), "help")
-	subcommands.Register(subcommands.FlagsCommand(), "help")
-
-	subcommands.Execute(context.Background())
+	err := root.Execute()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

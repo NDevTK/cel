@@ -33,18 +33,18 @@ type Configuration struct {
 
 	// Paths of source files that were merged into AssetManifest. The mapping
 	// is from the absolute path to the data that was loaded from it.
-	AssetSourceFiles map[string]*asset.AssetManifest
+	AssetSourceFiles map[string]*asset.AssetManifest `json:"-"`
 
 	// Paths of source files that were merged into HostEnvironment. The mapping
 	// is from the absolute path to the data that was loaded from it.
-	HostSourceFiles map[string]*host.HostEnvironment
+	HostSourceFiles map[string]*host.HostEnvironment `json:"-"`
 
 	// Contains cross references between assets and hosts as well as
 	// constructed assets.
-	References common.References
+	References common.References `json:"-"`
 
 	// Collection of all assets that need to be resolved in this configuration.
-	Assets common.Assets
+	Assets common.Assets `json:"-"`
 
 	// sealed is a weak signal that no more source files should be added to
 	// this configuration. It's set automatically after a Validate() call.
