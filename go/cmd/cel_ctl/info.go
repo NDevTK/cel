@@ -12,14 +12,7 @@ import (
 )
 
 func init() {
-	(&InfoCommand{}).Register(root)
-}
-
-type InfoCommand struct {
-}
-
-func (i *InfoCommand) Register(root *cobra.Command) {
-	c := &cobra.Command{
+	app.AddCommand(&cobra.Command{
 		Use:   "info [configuration files]",
 		Short: "Show information about current enterprise lab configuration",
 		Long: `Shows information about current enterprise lab configuration.
@@ -27,15 +20,14 @@ func (i *InfoCommand) Register(root *cobra.Command) {
 Includes information about the desired state, and also the current state of the target Google Compute Engine project. This will spew a *lot* of information in JSON format.
 `,
 		Args: cobra.MinimumNArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
-			return app.InvokeCommand(i, c, args)
-		},
-	}
-	root.AddCommand(c)
+	}, &InfoCommand{})
 }
 
-func (i *InfoCommand) Execute(ctx context.Context, a *App, cmd *cobra.Command, args []string) error {
-	err := a.Load(ctx, args)
+type InfoCommand struct {
+}
+
+func (i *InfoCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
+	err := a.LoadConfigFiles(ctx, args)
 	if err != nil {
 		return err
 	}

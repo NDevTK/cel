@@ -5,18 +5,23 @@
 package main
 
 import (
+	"context"
 	"github.com/spf13/cobra"
 )
 
+type DeployCommand struct{}
+
 func init() {
-	root.AddCommand(&cobra.Command{
+	app.AddCommand(&cobra.Command{
 		Use:   "deploy",
 		Short: "deploy build artifacts to target lab environment",
 		Long: `Deploys build artifacts to target lab environment.
 
 Use as: deploy [target]
 `,
-		Run: func(c *cobra.Command, args []string) {
-			panic("not implemented")
-		}})
+	}, &DeployCommand{})
+}
+
+func (d *DeployCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
+	panic("not implemented")
 }
