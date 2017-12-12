@@ -57,8 +57,7 @@ func init() {
 		Long: `Resets the password for a local user on a Windows instance.
 `,
 		TraverseChildren: true,
-		Run: func(c *cobra.Command, args []string) {
-		}}
+	}
 
 	f := c.LocalFlags()
 
