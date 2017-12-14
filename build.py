@@ -21,6 +21,7 @@ import ast
 import argparse
 import errno
 import logging
+import itertools
 import shutil
 import os
 import re
@@ -36,15 +37,15 @@ STAMP_PATH = os.path.join(OUT_PATH, 'stamps')
 sys.path.append(BUILD_PATH)
 from markdown_utils import FormatMarkdown
 
-# NATIVE_GOOS is the GOOS that corresponds to the native platform. Any tool
-# that needs to run on the host machine must be built for this OS regardless of
-# the target GOOS.
-NATIVE_GOOS = {
-    "linux2": "linux",
-    "linux": "linux",
-    "win32": "windows",
+# HOST_GOOS is the GOOS that corresponds to the host platform. Any tool that
+# needs to run on the host machine must be built for this OS regardless of the
+# target GOOS.
+HOST_GOOS = {
     "cygwin": "windows",
-    "darwin": "darwin"
+    "darwin": "darwin",
+    "linux": "linux",
+    "linux2": "linux",
+    "win32": "windows",
 }.get(sys.platform, "windows")
 
 CACHED_BUILD_ENV = None
@@ -78,7 +79,7 @@ def _GetCustomBuildEnv():
 def _MergeEnv(args, target_host=False):
   go_env = {}
 
-  effective_goos = NATIVE_GOOS
+  effective_goos = HOST_GOOS
   if args is not None and args.goos and not target_host:
     effective_goos = args.goos
   go_env['GOOS'] = effective_goos
@@ -94,12 +95,115 @@ def _EnsureDir(path_to_dir):
 
 
 def _RunCommand(args, **kwargs):
-  logging.info("%s [CWD: %s, GOOS: %s]",
-               ' '.join([(x if ' ' not in x else '"' + x + '"') for x in args]),
+  logging.info("%s [CWD: %s, GOOS: %s]", ' '.join([(x if ' ' not in x
+                                                    else '"' + x + '"')
+                                                   for x in args]),
                kwargs.get('cwd', os.getcwd()),
-               kwargs.get('env', os.environ).get('GOOS', NATIVE_GOOS))
+               kwargs.get('env', os.environ).get('GOOS', HOST_GOOS))
 
   subprocess.check_call(args, **kwargs)
+
+
+def _GetDependents(fn):
+  '''_GetDependents returns a list of strings representing the full path to
+    the known direct depedents of the file at |fn|.
+
+    Currently only works for .proto files.
+    '''
+
+  if not fn.endswith('.proto'):
+    return []
+
+  import_re = re.compile('\s*import\s+"([^"]*)"\s*;')
+  deps = []
+
+  with open(fn, 'r') as f:
+    for line in f:
+      m = import_re.match(line)
+      if m is None:
+        continue
+      p = _SourcePath(m.group(1))
+      if os.path.exists(p):
+        deps.append(p)
+  return deps
+
+
+def _SourcePath(f):
+  return os.path.join(SOURCE_PATH, f)
+
+
+def _ExpandArg(a, **kwargs):
+  if a == '$^':
+    return kwargs['inp']
+  return [a.format(**kwargs)]
+
+
+def _BuildTask(args, inp=[], **kwargs):
+  '''_BuildTask takes as input a list of input files and runs a build command
+  if the output file or a stamp file is found to be out of date.
+
+In other words, it acts as a mini build step which only runs if the inputs are
+newer than the outputs. As a special case, it attempts to determine the imports
+of a '.proto' file and also takes into account the timestamps of the dependent
+files.
+
+Recognized keyword arguments are:
+    inp: List[string]
+        The list of input files. Can be paths relative to SOURCE_PATH.
+
+    out: string
+        A single output file. If specified, the timestamps of the input files
+        as well as their discovered depents are compared against the modified
+        time of the file at |out|. If |out| is missing, then the behavior is
+        equivalent to |out| being older than the inputs.
+
+    stamp: string
+        A stamp file. The behavior is equivalent to setting |out| except that
+        the timestamp of the file at |stamp| is updated to the current time if
+        the build step was successful.
+
+All remaining keyword arguments are passed into subprocess.check_call().
+
+The build command specified as a List[string] in  the |args| argument can
+contain str.format() style references to keyword arguments. The special
+argument string '$^' expands to |inp|.
+'''
+
+  deps = list(
+      set(
+          itertools.chain.from_iterable(
+              [_GetDependents(_SourcePath(f)) for f in inp])))
+  deps.extend([_SourcePath(f) for f in inp])
+
+  if 'stamp' in kwargs and _IsSentinelNewer(
+      _SourcePath(kwargs['stamp']), *deps):
+    return
+
+  if 'out' in kwargs and _IsSentinelNewer(_SourcePath(kwargs['out']), *deps):
+    return
+
+  kwargs['inp'] = inp
+  args = list(
+      itertools.chain.from_iterable([_ExpandArg(a, **kwargs) for a in args]))
+  stamp = kwargs['stamp'] if 'stamp' in kwargs else None
+
+  del kwargs['inp']
+  if 'out' in kwargs:
+    del kwargs['out']
+  if 'stamp' in kwargs:
+    del kwargs['stamp']
+
+  logging.info("%s [CWD: %s, GOOS: %s]", ' '.join([(x if ' ' not in x
+                                                    else '"' + x + '"')
+                                                   for x in args]),
+               kwargs.get('cwd', os.getcwd()),
+               kwargs.get('env', os.environ).get('GOOS', HOST_GOOS))
+
+  subprocess.check_call(args, **kwargs)
+
+  if stamp is not None:
+    with open(stamp, 'w') as f:
+      pass
 
 
 def _InstallDep(args):
@@ -186,6 +290,7 @@ def _IsSentinelNewer(sentinel_path, *sources):
   basetime = os.path.getmtime(sentinel_path)
   for source in sources:
     if os.path.getmtime(source) > basetime:
+      logging.info('  %s is newer than %s', source, sentinel_path)
       return False
   return True
 
@@ -244,7 +349,8 @@ def _Deps(args):
                   that the build might take a bit longer to run.'''))
 
   sentinel = os.path.join(STAMP_PATH, 'deps.stamp')
-  if _IsSentinelNewer(sentinel, os.path.join(SOURCE_PATH, 'Gopkg.toml'),
+  if _IsSentinelNewer(sentinel,
+                      os.path.join(SOURCE_PATH, 'Gopkg.toml'),
                       os.path.join(SOURCE_PATH, 'Gopkg.lock')):
     return
 
@@ -263,54 +369,76 @@ def _Generate(args):
 
   _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
   _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
+  _EnsureDir(STAMP_PATH)
 
-  _RunCommand(
+  _BuildTask(
       [
-          'go', 'run', 'go/tools/gen_api_proto/main.go', '-i',
-          'vendor/google.golang.org/api/compute/v0.beta/compute-api.json', '-o',
-          'schema/gcp/compute/compute-api.proto', '-p',
-          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
-          'go/gcp/compute/validate.go'
+          'go', 'run', 'go/tools/gen_api_proto/main.go', '-i', '{inp[0]}', '-o',
+          '{out}', '-p', 'chromium.googlesource.com/enterprise/cel/go/gcp',
+          '-g', 'go/gcp/compute/validate.go'
       ],
       env=_MergeEnv(args, target_host=True),
-      cwd=SOURCE_PATH)
+      cwd=SOURCE_PATH,
+      inp=['vendor/google.golang.org/api/compute/v0.beta/compute-api.json'],
+      out='schema/gcp/compute/compute-api.proto')
 
-  _RunCommand(
-      [
-          'protoc', '--go_out=../../../', 'schema/common/options.proto',
-          'schema/common/fileref.proto', 'go/common/testdata/testmsgs.proto'
+  _BuildTask(
+      ['protoc', '--go_out=../../../', '$^'],
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH,
+      inp=[
+          'schema/common/options.proto', 'schema/common/fileref.proto',
+          'go/common/testdata/testmsgs.proto'
       ],
-      env=_MergeEnv(args, target_host=True),
-      cwd=SOURCE_PATH)
+      stamp=os.path.join(STAMP_PATH, 'schema_common.stamp'))
 
-  _RunCommand(
-      [
-          'protoc', '--go_out=../../../', 'schema/asset/active_directory.proto',
-          'schema/asset/cert.proto', 'schema/asset/dns.proto',
-          'schema/asset/iis.proto', 'schema/asset/network.proto',
-          'schema/asset/asset_manifest.proto', 'schema/asset/machine.proto'
+  _BuildTask(
+      ['protoc', '--go_out=../../../', '$^'],
+      inp=[
+          'schema/asset/active_directory.proto', 'schema/asset/cert.proto',
+          'schema/asset/dns.proto', 'schema/asset/iis.proto',
+          'schema/asset/network.proto', 'schema/asset/asset_manifest.proto',
+          'schema/asset/machine.proto'
       ],
+      stamp=os.path.join(STAMP_PATH, 'schema_asset.stamp'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
-  _RunCommand(
-      ['protoc', '--go_out=../../../', 'schema/host/host_environment.proto'],
+  _BuildTask(
+      ['protoc', '--go_out=../../../', '$^'],
+      inp=['schema/host/host_environment.proto'],
+      stamp=os.path.join(STAMP_PATH, 'schema_host.stamp'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
-  _RunCommand(
-      [
-          'protoc', '--go_out=../../../', 'schema/meta/files.proto',
-          'schema/meta/command.proto', 'schema/meta/reference.proto',
-          'schema/meta/status.proto'
+  _BuildTask(
+      ['protoc', '--go_out=../../../', '$^'],
+      inp=[
+          'schema/meta/files.proto', 'schema/meta/command.proto',
+          'schema/meta/reference.proto', 'schema/meta/status.proto'
       ],
+      stamp=os.path.join(STAMP_PATH, 'schema_meta.stamp'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
-  _RunCommand(
-      ['protoc', '--go_out=../../../', 'schema/gcp/compute/compute-api.proto'],
+  _BuildTask(
+      ['protoc', '--go_out=../../../', '$^'],
+      inp=['schema/gcp/compute/compute-api.proto'],
+      stamp=os.path.join(STAMP_PATH, 'schema_gcp.stamp'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
+
+
+def _GetBuildDir(build_env):
+  '''Return the build directory.
+
+This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
+'''
+  goos = subprocess.check_output(
+      ['go', 'env', 'GOOS'], env=build_env, cwd=SOURCE_PATH).strip()
+  goarch = subprocess.check_output(
+      ['go', 'env', 'GOARCH'], env=build_env, cwd=SOURCE_PATH).strip()
+  return os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
 
 
 def BuildCommand(args):
@@ -334,15 +462,12 @@ prior to the build, and only if the dependencies have changed.
 
   build_env = _MergeEnv(args)
 
-  # Do a (redundant) full build.
+  # Do a (redundant) full build. This catches build errors that don't affect
+  # the go/cmd/ build that's done next.
   _RunCommand(
       ['go', 'build'] + flags + ['./go/...'], env=build_env, cwd=SOURCE_PATH)
 
-  goos = subprocess.check_output(
-      ['go', 'env', 'GOOS'], env=build_env, cwd=SOURCE_PATH).strip()
-  goarch = subprocess.check_output(
-      ['go', 'env', 'GOARCH'], env=build_env, cwd=SOURCE_PATH).strip()
-  out_dir = os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
+  out_dir = _GetBuildDir(build_env)
   _EnsureDir(out_dir)
 
   suffix = '.exe' if goos == 'windows' else ''
@@ -408,7 +533,12 @@ for 'go build'. If the command requires passing commandline arguments, preface
 the entire command with '--' to prevent the arguments from being interpreted as
 arguments for this script.
 '''
-  _RunCommand(args.prog, env=_MergeEnv(args, target_host=True))
+
+  build_env = _MergeEnv(args)
+  run_args = {'env': build_env}
+  if args.build_dir:
+    run_args['cwd'] = _GetBuildDir(build_env)
+  _RunCommand(args.prog, **run_args)
 
 
 def _FormatMarkdownFiles(args):
@@ -687,6 +817,11 @@ def main():
       description=RunCommand.__doc__,
       formatter_class=argparse.RawDescriptionHelpFormatter,
       parents=[common_options])
+  run_command.add_argument(
+      '--build_dir',
+      '-b',
+      action='store_true',
+      help='Resolve paths relative to build directory')
   run_command.add_argument(
       'prog', metavar='ARG', type=str, help='Program and arguments', nargs='+')
   run_command.set_defaults(closure=RunCommand)
