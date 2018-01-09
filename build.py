@@ -373,6 +373,9 @@ def _Generate(args):
   _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
   _EnsureDir(STAMP_PATH)
 
+  descriptor_path = os.path.join(OUT_PATH, 'schema')
+  _EnsureDir(descriptor_path)
+
   _BuildTask(
       [
           'go', 'run', 'go/tools/gen_api_proto/main.go', '-i', '{inp[0]}', '-o',
@@ -384,49 +387,55 @@ def _Generate(args):
       inp=['vendor/google.golang.org/api/compute/v0.beta/compute-api.json'],
       out='schema/gcp/compute/compute-api.proto')
 
+  protoc_command = [
+      'protoc', '--go_out=../../../', '--descriptor_set_out={out}',
+      '--include_source_info', '$^'
+  ]
+
   _BuildTask(
-      ['protoc', '--go_out=../../../', '$^'],
+      protoc_command,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH,
       inp=[
-          'schema/common/options.proto', 'schema/common/fileref.proto',
+          'schema/common/validation.proto',
+          'schema/common/file_reference.proto',
           'go/common/testdata/testmsgs.proto'
       ],
-      stamp=os.path.join(STAMP_PATH, 'schema_common.stamp'))
+      out=os.path.join(descriptor_path, 'common.pb'))
 
   _BuildTask(
-      ['protoc', '--go_out=../../../', '$^'],
+      protoc_command,
       inp=[
           'schema/asset/active_directory.proto', 'schema/asset/cert.proto',
           'schema/asset/dns.proto', 'schema/asset/iis.proto',
           'schema/asset/network.proto', 'schema/asset/asset_manifest.proto',
           'schema/asset/machine.proto'
       ],
-      stamp=os.path.join(STAMP_PATH, 'schema_asset.stamp'),
+      out=os.path.join(descriptor_path, 'asset.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
   _BuildTask(
-      ['protoc', '--go_out=../../../', '$^'],
+      protoc_command,
       inp=['schema/host/host_environment.proto'],
-      stamp=os.path.join(STAMP_PATH, 'schema_host.stamp'),
+      out=os.path.join(descriptor_path, 'host.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
   _BuildTask(
-      ['protoc', '--go_out=../../../', '$^'],
+      protoc_command,
       inp=[
           'schema/meta/files.proto', 'schema/meta/command.proto',
           'schema/meta/reference.proto', 'schema/meta/status.proto'
       ],
-      stamp=os.path.join(STAMP_PATH, 'schema_meta.stamp'),
+      out=os.path.join(descriptor_path, 'meta.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
   _BuildTask(
-      ['protoc', '--go_out=../../../', '$^'],
+      protoc_command,
       inp=['schema/gcp/compute/compute-api.proto'],
-      stamp=os.path.join(STAMP_PATH, 'schema_gcp.stamp'),
+      out=os.path.join(descriptor_path, 'gcp_compute.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
