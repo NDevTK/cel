@@ -69,7 +69,7 @@ def _GetCustomBuildEnv():
       raise Exception(
           textwrap.dedent('''\
                     .build.environment must be a Python literal that evaluates
-                    to a dictionary. See //docs/custom_build_environment.md for
+                    to a dictionary. See 'build.py format --help' for more
                     details.
                     '''))
 
