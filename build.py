@@ -715,7 +715,7 @@ def main():
       '--goos', '-O', help='set GOOS', choices=['windows', 'darwin', 'linux'])
   common_options.add_argument('--goarch', '-A', help='set GOARCH')
   common_options.add_argument(
-      '--verbose', '-v', help='Verbose output', action='store_true')
+      '--verbose', '-v', help='verbose output', action='store_true')
 
   parser = argparse.ArgumentParser(
       description='build and manage Chrome Enterprise Lab tools',
@@ -735,7 +735,7 @@ def main():
       '--fast',
       '-F',
       action='store_true',
-      help='''Fast build. Skips dependency and generator steps''')
+      help='''fast build. Skips dependency and generator steps''')
   build_command.set_defaults(closure=BuildCommand)
 
   # ----------------------------------------------------------------------------
@@ -751,7 +751,7 @@ def main():
       'gotest_args',
       metavar='ARGS',
       type=str,
-      help='''Aruments to pass down to "go test".
+      help='''aruments to pass down to "go test".
       Preface with "--" to disambiguate from arguments passed in to this build tool.''',
       nargs='*')
   test_command.set_defaults(closure=TestCommand)
@@ -779,7 +779,7 @@ def main():
       '--force',
       '-f',
       action='store_true',
-      help='Force. Without this option this command doesn\'t do anything.')
+      help='force. Without this option this command doesn\'t do anything.')
   clean_command.set_defaults(closure=CleanCommand)
 
   # ----------------------------------------------------------------------------
@@ -795,7 +795,7 @@ def main():
       '--install',
       '-I',
       action='store_true',
-      help='Install additional dependencies')
+      help='install additional dependencies')
   deps_command.set_defaults(closure=DepsCommand)
 
   # ----------------------------------------------------------------------------
@@ -833,7 +833,7 @@ def main():
       '--build_dir',
       '-b',
       action='store_true',
-      help='Resolve paths relative to build directory')
+      help='resolve paths relative to build directory')
   run_command.add_argument(
       'prog', metavar='ARG', type=str, help='Program and arguments', nargs='+')
   run_command.set_defaults(closure=RunCommand)
