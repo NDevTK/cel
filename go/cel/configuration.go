@@ -26,10 +26,10 @@ type Configuration struct {
 	// The combined asset manifest. Note that unfortunately using the asset
 	// manifest in this manner loses valuable information about which source
 	// files introduced the asset.
-	AssetManifest asset.AssetManifest
+	AssetManifest asset.AssetManifest `json:"asset"`
 
 	// The combined host environment.
-	HostEnvironment host.HostEnvironment
+	HostEnvironment host.HostEnvironment `json:"host"`
 
 	// Paths of source files that were merged into AssetManifest. The mapping
 	// is from the absolute path to the data that was loaded from it.
