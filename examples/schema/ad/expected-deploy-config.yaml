@@ -1,0 +1,52 @@
+resources:
+  - name: my-test-gcp-project
+    type: cloudresourcemanager.v1.project
+
+  - name: instance-service-account
+    type: iam.v1.serviceAccount
+    properties:
+      accountId: instance-service-account
+      serviceAccount:
+        projectId: $(ref.my-test-gcp-project.projectId)
+
+  - name: primary
+    type: compute.v1.network
+    properties:
+      IPv4Range: 10.1.1.0/24
+      routingConfig:
+        routingMode: REGIONAL
+
+  - name: ad
+    type: compute.v1.instance
+    properties:
+      machineType: zones/us-central1-a/machineTypes/n1-standard-2
+      scheduling:
+        automaticRestart: true
+      disks:
+        boot: true
+        source: #resolved URL
+      networkInterfaces:
+        - accessConfigs:
+          - name: External NAT
+            type: ONE_TO_ONE_NAT
+          network: $(ref.primary.selfLink)
+      serviceAccounts:
+        - email: $(ref.instance-service-account.serviceAccount.email)
+
+  - name: client
+    type: compute.v1.instance
+    properties:
+      machineType: zones/us-central1-a/machineTypes/n1-standard-2
+      scheduling:
+        automaticRestart: true
+      disks:
+        boot: true
+        source: #resolved URL
+      networkInterfaces:
+        - accessConfigs:
+          - name: External NAT
+            type: ONE_TO_ONE_NAT
+          network: $(ref.primary.selfLink)
+      serviceAccounts:
+        - email: $(ref.instance-service-account.serviceAccount.email)
+

@@ -56,7 +56,7 @@ to compile the complete set of assets needed for the test suite.
 
 An asset manifest file looks like this ([Asset Example][]):
 
-<!-- INCLUDE ../examples/schema/ad/one-domain.asset.textpb (55 lines) fenced as conf -->
+<!-- INCLUDE ../examples/schema/ad/one-domain.asset.textpb (51 lines) fenced as conf -->
 ``` conf
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -71,15 +71,12 @@ network {
 # An ActiveDirectory domain.
 ad_domain {
   name: 'foo.example'
-  netbios_name: 'foo'
-  domain_mode: Win2012R2
-}
 
-# AD Domain Controller. This is regarded as a service that runs on a specific
-# machine. This definition just anchors the AD DS to the machine named 'dc'.
-ad_domain_controller {
-  ad_domain: 'foo.example'
-  windows_machine: 'dc'
+  # AD Domain Controller. This is regarded as a service that runs on a specific
+  # machine. This definition just anchors the AD DS to the machine named 'dc'.
+  domain_controller {
+    windows_machine: 'dc'
+  }
 }
 
 # A Windows machine.
@@ -98,7 +95,7 @@ windows_machine {
   # This one explicitly lists 'foo.example' as the domain to which this machine
   # belongs. This will result in this machine being automatically joined to
   # 'foo.example' using the default domain administrator credentials.
-  container: { ad_domain: 'foo.example' }
+  container { ad_domain: 'foo.example' }
 }
 
 # A Windows user.
@@ -108,14 +105,13 @@ windows_user {
 
   # This is a domain user. The user will not be made a member of any additional
   # groups since there are no member_of entries.
-  container: { ad_domain: 'foo.example' }
-  password: '123456'
+  container { ad_domain: 'foo.example' }
 }
 ```
 
 The corresponding host environment could look like this ([Host Example][]):
 
-<!-- INCLUDE ../examples/schema/ad/one-domain.host.textpb (74 lines) fenced as conf -->
+<!-- INCLUDE ../examples/schema/ad/one-domain.host.textpb (65 lines) fenced as conf -->
 ``` conf
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -127,12 +123,18 @@ project {
   # Name of project
   name: 'my-test-gcp-project'
 
-  # All assets will be created in this zone. The region is implicit.
+  # All assets will be created in this zone. The region/location is implicit.
   zone: 'us-east1-b'
 }
 
 # Where the logs go.
 log_settings { admin_log: "admin" }
+
+# The GCS storage bucket and prefix to use.
+storage {
+  bucket: "my-test-gcp-bucket",
+  prefix: "/cel/test-lab"
+}
 
 # We only use one machine type in our examples
 machine_type {
@@ -159,8 +161,10 @@ machine_type {
       boot: true
 
       # This is a special form for referencing the URL property of the image
-      # object named win2012r2.
-      source: '${host.image.win2012r2.url}'
+      # object named windows-2012-r2. Furthermore, this image type is not
+      # defined in this file. Instead see the builtins.textpb file for a list
+      # of builtin host assets that can be included for convenience.
+      source: '${host.image.windows-2012-r2.url}'
     }
 
     # Note that we are leaving a bunch of fields out because their defaults are
@@ -168,26 +172,9 @@ machine_type {
     # documentation for what these fields do. For our convenience, we generate
     # a .proto file containing the Compute API schema which has the same
     # information. This generated .proto file can be found at
-    # //schema/gcp/compute/compute-api.proto.
+    # /schema/gcp/compute/compute-api.proto.
   }
 }
-
-# Source disk images
-image {
-  # Must match the name specified in the source disk entry for the machine_type
-  # above.
-  name: 'win2012r2'
-
-  # The project/family correspond to the project and image family for the
-  # source disk image. See
-  # https://cloud.google.com/compute/docs/images#os-compute-support for
-  # details.
-  latest {
-    project: 'windows-cloud'
-    family: 'windows-2012-r2'
-  }
-}
-
 
 ```
 

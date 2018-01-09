@@ -11,15 +11,12 @@ network {
 # An ActiveDirectory domain.
 ad_domain {
   name: 'foo.example'
-  netbios_name: 'foo'
-  domain_mode: Win2012R2
-}
 
-# AD Domain Controller. This is regarded as a service that runs on a specific
-# machine. This definition just anchors the AD DS to the machine named 'dc'.
-ad_domain_controller {
-  ad_domain: 'foo.example'
-  windows_machine: 'dc'
+  # AD Domain Controller. This is regarded as a service that runs on a specific
+  # machine. This definition just anchors the AD DS to the machine named 'dc'.
+  domain_controller {
+    windows_machine: 'dc'
+  }
 }
 
 # A Windows machine.
@@ -38,7 +35,7 @@ windows_machine {
   # This one explicitly lists 'foo.example' as the domain to which this machine
   # belongs. This will result in this machine being automatically joined to
   # 'foo.example' using the default domain administrator credentials.
-  container: { ad_domain: 'foo.example' }
+  container { ad_domain: 'foo.example' }
 }
 
 # A Windows user.
@@ -48,6 +45,5 @@ windows_user {
 
   # This is a domain user. The user will not be made a member of any additional
   # groups since there are no member_of entries.
-  container: { ad_domain: 'foo.example' }
-  password: '123456'
+  container { ad_domain: 'foo.example' }
 }

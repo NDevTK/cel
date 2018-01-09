@@ -13,13 +13,12 @@ ad_domain {
   name: 'bar.example'
   netbios_name: 'bar'
   domain_mode: Win2012R2
-}
 
-# AD Domain Controller. This is regarded as a service that runs on a specific
-# machine. This definition just anchors the AD DS to the machine named 'dc'.
-ad_domain_controller {
-  ad_domain: 'bar.example'
-  windows_machine: 'bar-dc'
+  # AD Domain Controller. This is regarded as a service that runs on a specific
+  # machine. This definition just anchors the AD DS to the machine named 'dc'.
+  domain_controller {
+    windows_machine: 'bar-dc'
+  }
 }
 
 # A Windows machine.
@@ -57,11 +56,10 @@ ad_domain {
   name: 'baz.example'
   netbios_name: 'baz'
   domain_mode: Win2012R2
-}
 
-ad_domain_controller {
-  ad_domain: 'baz.example'
-  windows_machine: 'baz-dc'
+  domain_controller {
+    windows_machine: 'baz-dc'
+  }
 }
 
 windows_machine {

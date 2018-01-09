@@ -144,7 +144,8 @@ func TestLabConfiguration_Validate(t *testing.T) {
 
 	errl := common.AppendErrorList(nil,
 		l.Merge("../../examples/schema/ad/one-domain.host.textpb"),
-		l.Merge("../../examples/schema/ad/one-domain.asset.textpb"))
+		l.Merge("../../examples/schema/ad/one-domain.asset.textpb"),
+		l.Merge("../../schema/gcp/builtins.textpb"))
 	if errl != nil {
 		t.Fatal(errl)
 	}

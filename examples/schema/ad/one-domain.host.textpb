@@ -8,12 +8,18 @@ project {
   # Name of project
   name: 'my-test-gcp-project'
 
-  # All assets will be created in this zone. The region is implicit.
+  # All assets will be created in this zone. The region/location is implicit.
   zone: 'us-east1-b'
 }
 
 # Where the logs go.
 log_settings { admin_log: "admin" }
+
+# The GCS storage bucket and prefix to use.
+storage {
+  bucket: "my-test-gcp-bucket",
+  prefix: "/cel/test-lab"
+}
 
 # We only use one machine type in our examples
 machine_type {
@@ -40,8 +46,10 @@ machine_type {
       boot: true
 
       # This is a special form for referencing the URL property of the image
-      # object named win2012r2.
-      source: '${host.image.win2012r2.url}'
+      # object named windows-2012-r2. Furthermore, this image type is not
+      # defined in this file. Instead see the builtins.textpb file for a list
+      # of builtin host assets that can be included for convenience.
+      source: '${host.image.windows-2012-r2.url}'
     }
 
     # Note that we are leaving a bunch of fields out because their defaults are
@@ -49,24 +57,7 @@ machine_type {
     # documentation for what these fields do. For our convenience, we generate
     # a .proto file containing the Compute API schema which has the same
     # information. This generated .proto file can be found at
-    # //schema/gcp/compute/compute-api.proto.
+    # /schema/gcp/compute/compute-api.proto.
   }
 }
-
-# Source disk images
-image {
-  # Must match the name specified in the source disk entry for the machine_type
-  # above.
-  name: 'win2012r2'
-
-  # The project/family correspond to the project and image family for the
-  # source disk image. See
-  # https://cloud.google.com/compute/docs/images#os-compute-support for
-  # details.
-  latest {
-    project: 'windows-cloud'
-    family: 'windows-2012-r2'
-  }
-}
-
 

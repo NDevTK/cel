@@ -111,7 +111,7 @@ elsewhere in the configuration. The references are constructed as follows:
 
 The validation is performed based on the annotations that are specified in the
 ProtoBuf schema. The validation rules are defined and explained in
-[options.proto][]. When defining schema, the
+[validation.proto][]. When defining schema, the
 validation options can be specified as in the examples below:
 
 From [active_directory.proto](/schema/asset/active_directory.proto):
@@ -137,7 +137,7 @@ object in a collection. The value of the `ad_domain` field of a
 `ActiveDirectoryDomain` object in `asset.ad_domain` colleciton.
 
 There are additional parameters that you can use to restrict how a field is
-validated. Refer to the [options.proto][] file for complete list. The validator
+validated. Refer to the [validation.proto][] file for complete list. The validator
 recognizes several field types and attributes:
 
 *   **`REQUIRED`**: The field must not be empty. Additionally, if this field type
@@ -157,7 +157,7 @@ In addition, any `name` field is assumed by default to be of type `LABEL`,
 though they can be explicitly qualified to be of a different type like `FQDN` or
 `ORGLABEL`.
 
-[options.proto]: /schema/common/options.proto
+[validation.proto]: /schema/common/validation.proto
 [RFC 1035]: https://www.ietf.org/rfc/rfc1035.txt
 
 ### Inline References                                       {#inline-references}
@@ -328,7 +328,7 @@ message Machine {
     for more examples:
 
     ``` proto
-    import "schema/common/fileref.proto";
+    import "schema/common/file_reference.proto";
     ```
 
 *   **Top level messages must have a `name` field**: Every top level asset
