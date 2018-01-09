@@ -4,6 +4,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
+
 import difflib
 import logging
 import os
@@ -190,10 +192,10 @@ def FormatMarkdown(fname, dry_run=False):
     return False
 
   if dry_run:
-    print("Would write %s with the following changes:\n", fname)
-    for l in difflib.unified_diff(unmodified, lines, fname,
-                                  fname + " (modified)"):
-      print(l)
+    print("Would write %s with the following changes:", fname)
+    for l in difflib.unified_diff(unmodified, lines, fname + "  (original)",
+                                  fname + "  (modified)"):
+      print(l, end='')
     print('\n')
   else:
     logging.info("Writing %s", fname)
