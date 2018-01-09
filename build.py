@@ -83,6 +83,8 @@ def _MergeEnv(args, target_host=False):
   if args is not None and args.goos and not target_host:
     effective_goos = args.goos
   go_env['GOOS'] = effective_goos
+  if args is not None and args.goarch:
+    go_env['GOARCH'] = args.goarch
   environ_copy = os.environ.copy()
   environ_copy.update(go_env)
   environ_copy.update(_GetCustomBuildEnv())
@@ -445,7 +447,7 @@ def BuildCommand(args):
   '''Build all non-test Go source files.
 
 Build artifacts can be found in the out/$GOOS_$GOARCH/bin directory after a
-successful build.  Does not attempt to isntall any packages by default.
+successful build.  Does not attempt to install any packages by default.
 
 The build step also checks if the dependencies are up-to-date. It also
 generates files that are needed by the build. These additional steps happen
@@ -470,7 +472,7 @@ prior to the build, and only if the dependencies have changed.
   out_dir = _GetBuildDir(build_env)
   _EnsureDir(out_dir)
 
-  suffix = '.exe' if goos == 'windows' else ''
+  suffix = '.exe' if args.goos == 'windows' else ''
 
   commands = os.listdir(os.path.join(SOURCE_PATH, 'go', 'cmd'))
 
@@ -701,7 +703,8 @@ def CleanCommand(args):
 def main():
   common_options = argparse.ArgumentParser(add_help=False)
   common_options.add_argument(
-      '--goos', '-O', help='Set GOOS', choices=['windows', 'darwin', 'linux'])
+      '--goos', '-O', help='set GOOS', choices=['windows', 'darwin', 'linux'])
+  common_options.add_argument('--goarch', '-A', help='set GOARCH')
   common_options.add_argument(
       '--verbose', '-v', help='Verbose output', action='store_true')
 
