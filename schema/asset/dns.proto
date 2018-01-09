@@ -6,11 +6,16 @@ syntax = "proto3";
 package asset;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
-import "schema/common/options.proto";
+import "schema/common/validation.proto";
 
 // DNSZone describes a DNS zone. Conceptually it encompasses the same
 // information included in a DNS zone file as described in
 // https://en.wikipedia.org/wiki/Zone_file
+//
+// TODO(asanka): Document the behavior when name == ActiveDirectoryDomain.name
+// for some ActiveDirectoryDomain entry. If the AD Domain also deploys a DNS
+// server, then the |record| entries should be added to the Active Directory
+// DNS server. Otherwise we need to deploy a different DNS server.
 message DNSZone {
   // Origin described by zone. E.g. foo.example.com.
   string name = 1 [(common.v).type = FQDN];

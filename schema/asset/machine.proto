@@ -7,7 +7,7 @@ package asset;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
 import "schema/asset/network.proto";
-import "schema/common/options.proto";
+import "schema/common/validation.proto";
 
 // NetworkInterface describes a single network interface on a machine.
 message NetworkInterface {

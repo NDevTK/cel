@@ -3,7 +3,10 @@
 // found in the LICENSE file.
 
 syntax = "proto3";
+
+// Asset manifest.
 package asset;
+
 option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
 // Keep list sorted.
@@ -21,10 +24,11 @@ import "schema/asset/network.proto";
 // which text format protobufs can be deserialized when reading configuration
 // files. I.e., a file could be formatted as follows:
 //
-//     network: { name: 'foo' }
-//     dns_zone: {
+//     network  { name: 'foo' }
+//
+//     dns_zone  {
 //       origin: 'foo.example.'
-//       record: {
+//       record  {
 //         name: 'bar'
 //         ttl: 3600
 //         record_type: 'A'
@@ -47,15 +51,14 @@ message AssetManifest {
 
   // Windows and ActiveDirectory. Use field numbers 100-199
   repeated ActiveDirectoryDomain ad_domain = 100;
-  repeated ActiveDirectoryDomainController ad_domain_controller = 101;
-  repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit = 102;
-  repeated ActiveDirectoryGroupPolicy ad_group_policy = 103;
-  repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link = 104;
-  repeated ActiveDirectoryRegistryPolicy ad_registry_policy = 105;
-  repeated ActiveDirectoryRegistryPrefPolicy ad_registry_pref_policy = 106;
-  repeated WindowsGroup windows_group = 107;
-  repeated WindowsMachine windows_machine = 108;
-  repeated WindowsUser windows_user = 109;
+  repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit = 101;
+  repeated ActiveDirectoryGroupPolicy ad_group_policy = 102;
+  repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link = 103;
+  repeated ActiveDirectoryRegistryPolicy ad_registry_policy = 104;
+  repeated ActiveDirectoryRegistryPrefPolicy ad_registry_pref_policy = 105;
+  repeated WindowsGroup windows_group = 106;
+  repeated WindowsMachine windows_machine = 107;
+  repeated WindowsUser windows_user = 108;
 
   // PKI. Use field numbers 200-299
   repeated Certificate certificate = 200;

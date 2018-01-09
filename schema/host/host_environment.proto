@@ -6,7 +6,7 @@ syntax = "proto3";
 package host;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/host";
 
-import "schema/common/options.proto";
+import "schema/common/validation.proto";
 import "schema/asset/network.proto";
 import "schema/gcp/compute/compute-api.proto";
 
@@ -20,8 +20,29 @@ message Project {
   string zone = 2 [(common.v).type = LABEL];
 }
 
+// Stackdriver log settings.
 message LogSettings {
+  // Name of log used for administrative messages. These are logged during the
+  // deployment process and also when an instance is started / configured /
+  // shutdown.
   string admin_log = 1 [(common.v).type = LABEL];
+}
+
+// Google Cloud Storage bucket to use for deployment and metadata management
+// purposes.
+//
+// The storage configured here must exist throughout the entire lifetime of the
+// lab.
+message Storage {
+  // Name of the GCS bucket.
+  string bucket = 1 [(common.v).type = REQUIRED];
+
+  // A prefix to attach to every named object stored in the GCS bucket. If left
+  // empty, the default prefix of /cel-deploy will be used.
+  //
+  // The prefix, if non-empty, must start with a "/" and must not end with a
+  // slash.
+  string prefix = 2;
 }
 
 // Dependencies are things that aren't referred to directly by an asset
@@ -118,6 +139,7 @@ message AddressPool {
 message HostEnvironment {
   Project project = 1 [(common.v).type = REQUIRED];
   LogSettings log_settings = 2 [(common.v).type = REQUIRED];
+  Storage storage = 3 [(common.v).type = REQUIRED];
 
   repeated MachineType machine_type = 10;
   repeated AddressPool address_pool = 11;

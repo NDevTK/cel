@@ -6,8 +6,8 @@ syntax = "proto3";
 package asset;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
-import "schema/common/fileref.proto";
-import "schema/common/options.proto";
+import "schema/common/file_reference.proto";
+import "schema/common/validation.proto";
 
 // An x509 certificate.
 message Certificate {

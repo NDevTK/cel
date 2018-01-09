@@ -7,8 +7,9 @@ package asset;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
 
 import "schema/asset/machine.proto";
-import "schema/common/fileref.proto";
-import "schema/common/options.proto";
+import "schema/asset/network.proto";
+import "schema/common/file_reference.proto";
+import "schema/common/validation.proto";
 
 // Describes an Active Directory domain or forest.
 message ActiveDirectoryDomain {
@@ -53,16 +54,18 @@ message ActiveDirectoryDomain {
 
   // Forest functional level (only applicable when creating a new forest.
   Mode forest_mode = 6;
+
+  // Domain controllers for this domain. At least one must be specified.
+  repeated ActiveDirectoryDomainController domain_controller = 10
+      [(common.v).type = REQUIRED];
 };
 
-// Describes a single Active Directory Domain Controller.
+// Describes a single Active Directory Domain Controller. This message should
+// be embedded inside an ActiveDirectoryDomain message which implicitly binds
+// the Domain Controller to the containing domain.
 message ActiveDirectoryDomainController {
-  // Name of the domain. Must match the `name` field of an
-  // ActiveDirectoryDomain entry.
-  string ad_domain = 1 [(common.v).ref = "asset.ad_domain"];
-
   // Machine hosting the ADDS. Must match the `name` of a WindowsMachine entry.
-  string windows_machine = 2 [(common.v).ref = "asset.windows_machine"];
+  string windows_machine = 1 [(common.v).ref = "asset.windows_machine"];
 
   // Whether or not to install a DNS server on this machine. The default is
   // almost always |true| unless the domain already exists and the existing
@@ -70,24 +73,24 @@ message ActiveDirectoryDomainController {
   //
   // Don't specify the option if you would like the domain controller to do the
   // default action. Or specify it to force one or the other.
-  oneof optional_dns { bool install_dns = 3; }
+  oneof optional_dns { bool install_dns = 2; }
 
   // Assume DNS service is not available on the network. Only applicable when
   // installing DNS services. If this field is not set, or set to false, then
   // the installation can assume that the TCP/IP client settings of the host OS
   // specifies the DNS server to use.
-  bool no_dns_on_network = 4;
+  bool no_dns_on_network = 3;
 
   // This domain controller should not be a global catalog server. Default is
   // to run with global catalog for Win2012 or later.
-  bool no_global_catalog = 5;
+  bool no_global_catalog = 4;
 
   // If true, attempts to create a DNS delegation for the new DNS server. Only
   // applicable when installing a DNS server. E.g.: If the authoritative DNS
   // server for foo.example.com is using ActiveDirectory, and we are installing
   // the subordinate domain bar, then setting this value to true causes
   // foo.example.com to delegate the bar domain to the new DNS server.
-  bool create_dns_delegation = 6;
+  bool create_dns_delegation = 5;
 }
 
 // Describes an Active Directory Organizational Unit.
@@ -474,7 +477,7 @@ message WindowsMachine {
   string machine_type = 2 [(common.v).ref = "host.machine_type"];
 
   // Network interfaces. There can be more than one for multihomed machines.
-  // There MUST be at least one of these.
+  // There must be at least one of these.
   repeated NetworkInterface network_interface = 3 [(common.v).type = REQUIRED];
 
   // Container. Only |domain| and |ou| values are acceptable. Currently
@@ -540,4 +543,12 @@ message WindowsMachine {
   // A configuration file. Specify this if you've run Windows Server Manager
   // and produced a configration file already.
   common.FileReference configuration_file = 15;
+
+  // List of FQDNs that are known to refer to this machine. There can be
+  // multiple if there are aliases configured for this machine.
+  repeated string fqdn = 100 [(common.v).type = RUNTIME];
+
+  // IPv4 or IPv6 addresses that refer to this instance. These include both
+  // internal and, if applicable, external addresses.
+  repeated Address address = 101 [(common.v).type = RUNTIME];
 }

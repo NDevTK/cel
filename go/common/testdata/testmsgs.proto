@@ -7,8 +7,8 @@ package common;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/common";
 
 import "google/protobuf/descriptor.proto";
-import "schema/common/fileref.proto";
-import "schema/common/options.proto";
+import "schema/common/file_reference.proto";
+import "schema/common/validation.proto";
 
 // This file contains a set of test proto messages that are used for tests.
 
@@ -91,6 +91,6 @@ message TestMessageWithTypes {
 
 extend google.protobuf.FieldOptions {
   // Some random field extension that we can use in addition to those defined
-  // in options.proto.
+  // in validation.proto.
   bool x = 51000;
 }

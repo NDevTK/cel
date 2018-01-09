@@ -34,24 +34,33 @@ message Validation {
     //     }
     REQUIRED = 1;
 
-    // This is an output field and is not expected to be populated in a asset
-    // manifest literal. The field will be populated during the asset
-    // resolution process and made available to downstream consumers of the
-    // manifest.
-    OUTPUT = 2;
-
     // The field value cannot be empty and must match the <label> production in
     // RFC 1035. This validation type is applied by default for for any field
     // named 'name'.
-    LABEL = 3;
+    LABEL = 2;
 
     // The field value cannot be empty, and must match the <subdomains>
     // production in RFC 1035. Can only be applied to 'string' fields.
-    FQDN = 4;
+    FQDN = 3;
 
     // A label with an optional org component. These look like:
     // example.com:foo. Cannot be empty.
-    ORGLABEL = 5;
+    ORGLABEL = 4;
+
+    // This is an output field and is not expected to be populated in a asset
+    // manifest input. The field will be populated during the asset
+    // resolution process and made available to downstream consumers of the
+    // manifest.
+    OUTPUT = 5;
+
+    // This is a runtime field. It's value is only available *after* the
+    // corresponding asset has been deployed and running. Runtime values can be
+    // looked up via RuntimeConfiguration service from within the lab.
+    //
+    // Unlike OUTPUT fields, RUNTIME fields can only be defined on top-level
+    // assets. In other words, they can only appear if the asset in question is
+    // a child of the HostEnvironment or AssetManifest messages.
+    RUNTIME = 6;
   }
   FieldType type = 1;
 
