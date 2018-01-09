@@ -699,14 +699,14 @@ def CleanCommand(args):
       ['git', 'clean', '-X'] + force_option,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
-  build_dir = os.path.join(SOURCE_PATH, 'build')
-  if not args.force:
-    print('Would remove {}'.format(build_dir))
-    return
 
-  if os.path.exists(build_dir):
-    print('Removing {}'.format(build_dir))
-    shutil.rmtree(build_dir)
+  if os.path.exists(OUT_PATH):
+    if not args.force:
+      print('Would remove {}/'.format(OUT_PATH))
+      return
+
+    print('Removing {}/'.format(OUT_PATH))
+    shutil.rmtree(OUT_PATH)
 
 
 def main():
