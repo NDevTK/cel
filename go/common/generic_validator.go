@@ -131,7 +131,7 @@ func getValidationForField(fd *descriptor.FieldDescriptorProto) Validation {
 }
 
 // validateAnnotatedField performs validator for a field which has one or more
-// of the annotations in //schema/common/options.proto.
+// of the annotations in //schema/common/validation.proto.
 func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProto) error {
 	v := getValidationForField(fd)
 
@@ -160,14 +160,6 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 			return fmt.Errorf("at least one of '%s' should be specified", fd.GetName())
 		}
 
-	case Validation_OUTPUT:
-		if af.Kind() != reflect.String {
-			return fmt.Errorf("field \"%s\" is marked as output, but is not a string", fd.GetName())
-		}
-		if af.Len() != 0 {
-			return fmt.Errorf("field \"%s\" is marked as output, but is not empty", fd.GetName())
-		}
-
 	case Validation_LABEL:
 		if af.Kind() != reflect.String {
 			return fmt.Errorf("unexpected type for label field: %#v", af)
@@ -179,12 +171,14 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 		if af.Kind() != reflect.String {
 			return fmt.Errorf("unexpected kind for validatable field: %#v", af)
 		}
+
 		return errors.Wrapf(IsRFC1035Domain(af.String()), "validating field \"%s\"", fd.GetName())
 
 	case Validation_ORGLABEL:
 		if af.Kind() != reflect.String {
 			return fmt.Errorf("unexpected kind for validatable field: %#v", af)
 		}
+
 		return errors.Wrapf(IsRFC1035DomainLabel(af.String()), "validating field \"%s\"", fd.GetName())
 	}
 	return nil

@@ -18,52 +18,53 @@ import (
 )
 
 func (c *FileReference) Validate() error {
-	if len(c.Path) == 0 {
-		return errors.New("'path' is required")
+	if len(c.Source) == 0 {
+		return errors.New("'source' is required")
 	}
-	if filepath.IsAbs(c.Path) {
-		return errors.New("'path' cannot be absolute")
+	if filepath.IsAbs(c.Source) {
+		return errors.New("'source' cannot be absolute")
 	}
-	if strings.Contains(c.Path, "\\") {
-		return errors.New("'path' cannot contain backslashes")
+	if strings.Contains(c.Source, "\\") {
+		return errors.New("'source' cannot contain backslashes")
 	}
-	components := strings.Split(c.Path, "/")
+	components := strings.Split(c.Source, "/")
 	for _, c := range components {
 		if c == ".." {
-			return errors.New("'path' contains parent path references")
+			return errors.New("'source' contains parent path references")
 		}
 	}
 	return nil
 }
 
 func (c *FileReference) ResolveRelativePath(base_path string) error {
-	if c.Path == "" {
-		errors.New("path is empty")
+	if c.Source == "" {
+		errors.New("source is empty")
 	}
-	c.ResolvedLocalPath = filepath.Clean(filepath.Join(base_path, c.Path))
+	c.ResolvedSource = filepath.Clean(filepath.Join(base_path, c.Source))
 	return nil
 }
 
 func (c *FileReference) Resolve(ctx context.Context, resolver ResolverService) (err error) {
-	defer Action(&err, "resolving FileReference to \"%s\" (local path \"%s\")", c.Path, c.ResolvedLocalPath)
-	o, err := ObjectStoreServiceFromContext(ctx)
+	defer Action(&err, "resolving FileReference to \"%s\" (local path \"%s\")", c.Source, c.ResolvedSource)
+
+	o, err := ObjectStoreFromContext(ctx)
 	if err != nil {
 		return
 	}
 
-	if c.ResolvedLocalPath == "" {
-		return errors.Errorf("path to \"%s\" is not resolved", c.Path)
+	if c.ResolvedSource == "" {
+		return errors.Errorf("path to \"%s\" is not resolved", c.Source)
 	}
 
-	fi, err := os.Stat(c.ResolvedLocalPath)
+	fi, err := os.Stat(c.ResolvedSource)
 	if err != nil {
 		return
 	}
 
 	if fi.IsDir() {
-		c.ResolvedObject, _, err = c.storeDir(ctx, o, c.ResolvedLocalPath)
+		c.ObjectReference, _, err = c.storeDir(ctx, o, c.ResolvedSource)
 	} else {
-		c.ResolvedObject, _, err = c.storeFile(ctx, o, c.ResolvedLocalPath)
+		c.ObjectReference, _, err = c.storeFile(ctx, o, c.ResolvedSource)
 	}
 	return
 }
@@ -83,7 +84,7 @@ func GetPathResolver(base_path string) WalkProtoFunc {
 	}
 }
 
-func (c *FileReference) storeFile(ctx context.Context, o ObjectStoreService, path string) (ref string, size int64, err error) {
+func (c *FileReference) storeFile(ctx context.Context, o ObjectStore, path string) (ref string, size int64, err error) {
 	defer Action(&err, "storing file at \"%s\"", path)
 
 	contents, err := ioutil.ReadFile(path)
@@ -98,7 +99,7 @@ func (c *FileReference) storeFile(ctx context.Context, o ObjectStoreService, pat
 	return
 }
 
-func (c *FileReference) storeDir(ctx context.Context, o ObjectStoreService, path string) (ref string, size int64, err error) {
+func (c *FileReference) storeDir(ctx context.Context, o ObjectStore, path string) (ref string, size int64, err error) {
 	defer Action(&err, "storing directory at \"%s\"", path)
 
 	files, err := ioutil.ReadDir(path)
