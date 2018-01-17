@@ -10,7 +10,7 @@ import (
 
 func TestTrie_SetGetUnset(t *testing.T) {
 	var trie Trie
-	p := RefPathFromString("a.b.c")
+	p := RefPathFromStrings("a", "b", "c")
 	if !trie.Set(p, "oh", false) {
 		t.Fatal()
 	}
@@ -44,9 +44,9 @@ func TestTrie_SetGetUnset(t *testing.T) {
 
 func TestTrie_Visit(t *testing.T) {
 	var trie Trie
-	trie.Set(RefPathFromString("a.b.c"), "foo", true)
-	trie.Set(RefPathFromString("a.b.d"), "bar", true)
-	trie.Set(RefPathFromString("x.y.z"), "baz", true)
+	trie.Set(RefPathFromStrings("a", "b", "c"), "foo", true)
+	trie.Set(RefPathFromStrings("a", "b", "d"), "bar", true)
+	trie.Set(RefPathFromStrings("x", "y", "z"), "baz", true)
 
 	if trie.Size() != 3 {
 		t.Fatal()
@@ -75,7 +75,7 @@ func TestTrie_Visit(t *testing.T) {
 	}
 
 	seen = make(map[string]bool)
-	trie.VisitFrom(RefPathFromString("a.b"), func(p RefPath, o interface{}) bool {
+	trie.VisitFrom(RefPathFromStrings("a", "b"), func(p RefPath, o interface{}) bool {
 		seen[p.String()] = true
 		return true
 	})
@@ -92,9 +92,9 @@ func TestTrie_Visit(t *testing.T) {
 
 func TestTrie_SetUnset_Load(t *testing.T) {
 	var trie Trie
-	trie.Set(RefPathFromString("a.b.c"), "foo", true)
-	trie.Set(RefPathFromString("a.b.d"), "bar", true)
-	trie.Set(RefPathFromString("x.y.z"), "baz", true)
+	trie.Set(RefPathFromStrings("a", "b", "c"), "foo", true)
+	trie.Set(RefPathFromStrings("a", "b", "d"), "bar", true)
+	trie.Set(RefPathFromStrings("x", "y", "z"), "baz", true)
 
 	if len(trie.m) != 2 {
 		t.Fatal()
@@ -108,16 +108,16 @@ func TestTrie_SetUnset_Load(t *testing.T) {
 		t.Fatal()
 	}
 
-	trie.Unset(RefPathFromString("a.b"))
+	trie.Unset(RefPathFromStrings("a", "b"))
 	if len(trie.m) != 2 {
 		t.Fatal()
 	}
-	trie.Unset(RefPathFromString("a.b.c"))
+	trie.Unset(RefPathFromStrings("a", "b", "c"))
 	if len(trie.m["a"].m["b"].m) != 1 {
 		t.Fatal()
 	}
 
-	trie.Unset(RefPathFromString("a.b.d"))
+	trie.Unset(RefPathFromStrings("a", "b", "d"))
 	if len(trie.m) != 1 {
 		t.Fatal()
 	}

@@ -18,12 +18,12 @@ func TestReferences_CollectFrom(t *testing.T) {
 		Fqdn:        "${with_types.xyz} ${with_types.abc}"}
 	var r References
 
-	err := r.CollectFrom(&m, RefPathFromString("with_options"))
+	err := r.CollectFrom(&m, RefPathFromStrings("with_options"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if u := r.Unresolved.Get(RefPathFromString("with_types.repeated_field.foo")).(*UnresolvedReference); u != nil {
+	if u := r.Unresolved.Get(RefPathFromStrings("with_types", "repeated_field", "foo")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.key" {
 			t.Fatal(u.From)
 		}
@@ -35,7 +35,7 @@ func TestReferences_CollectFrom(t *testing.T) {
 		t.Fatal(r)
 	}
 
-	if u := r.Unresolved.Get(RefPathFromString("with_types.repeated_field.bar")).(*UnresolvedReference); u != nil {
+	if u := r.Unresolved.Get(RefPathFromStrings("with_types", "repeated_field", "bar")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.optional_key" {
 			t.Fatal(u.From)
 		}
@@ -43,7 +43,7 @@ func TestReferences_CollectFrom(t *testing.T) {
 		t.Fatal(r)
 	}
 
-	if u := r.Unresolved.Get(RefPathFromString("with_types.xyz")).(*UnresolvedReference); u != nil {
+	if u := r.Unresolved.Get(RefPathFromStrings("with_types", "xyz")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.fqdn" {
 			t.Fatal(u.From)
 		}
@@ -51,7 +51,7 @@ func TestReferences_CollectFrom(t *testing.T) {
 		t.Fatal(r)
 	}
 
-	if u := r.Unresolved.Get(RefPathFromString("with_types.abc")).(*UnresolvedReference); u != nil {
+	if u := r.Unresolved.Get(RefPathFromStrings("with_types", "abc")).(*UnresolvedReference); u != nil {
 		if u.From.String() != "with_options.fqdn" {
 			t.Fatal(u.From)
 		}
@@ -72,8 +72,8 @@ func TestReferences_ResolveWith(t *testing.T) {
 			&TestGoodProto{"foo"}}}
 
 	var r References
-	r.AddSource(&m, RefPathFromString("with_options"))
-	r.AddSource(&w, RefPathFromString("with_types"))
+	r.AddSource(&m, RefPathFromStrings("with_options"))
+	r.AddSource(&w, RefPathFromStrings("with_types"))
 
 	err := r.Resolve(ResolutionSkipOutputs)
 	e, ok := errors.Cause(err).(*UnresolvedReferenceError)
@@ -88,11 +88,11 @@ func TestReferences_ResolveWith(t *testing.T) {
 		t.Fatal(r)
 	}
 
-	if v := r.Resolved.Get(RefPathFromString("with_types.repeated_field.foo")); v == nil || v.(*TestGoodProto).Name != "foo" {
+	if v := r.Resolved.Get(RefPathFromStrings("with_types", "repeated_field", "foo")); v == nil || v.(*TestGoodProto).Name != "foo" {
 		t.Fatal()
 	}
 
-	if v := r.Resolved.Get(RefPathFromString("with_types.repeated_field.foo.name")); v == nil || v.(string) != "foo" {
+	if v := r.Resolved.Get(RefPathFromStrings("with_types", "repeated_field", "foo", "name")); v == nil || v.(string) != "foo" {
 		t.Fatal()
 	}
 
@@ -100,13 +100,13 @@ func TestReferences_ResolveWith(t *testing.T) {
 		t.Fatal()
 	}
 
-	if v := r.Unresolved.Get(RefPathFromString("with_types.repeated_field.bar")); v == nil {
+	if v := r.Unresolved.Get(RefPathFromStrings("with_types", "repeated_field", "bar")); v == nil {
 		t.Fatal()
 	}
 }
 
 func TestReferences_ResolveWith_Output(t *testing.T) {
-	path := RefPathFromString("with_options")
+	path := RefPathFromStrings("with_options")
 	m := TestMessageWithOptions{Output: "x", Fqdn: "${with_options.output}"}
 	var r References
 	r.AddSource(&m, path)
@@ -173,7 +173,7 @@ func TestReferences_ExpandString(t *testing.T) {
 		t.Fatal(s, err)
 	}
 
-	if s, err := r.ExpandString("abc${abc"); err != nil || s != "abc${abc" {
+	if s, err := r.ExpandString("abc${abc"); err == nil || !strings.Contains(err.Error(), "mismatched object reference") {
 		t.Fatal(s, err)
 	}
 

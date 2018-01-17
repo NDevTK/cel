@@ -112,9 +112,12 @@ func (r *References) CollectFrom(m proto.Message, root RefPath) error {
 		}
 
 		if av.Kind() == reflect.String {
-			refs := extractStringReferences(av.String())
+			refs, err := extractStringReferences(av.String())
+			if err != nil {
+				return err
+			}
 			for _, ref := range refs {
-				r.AddUnresolved(&UnresolvedReference{To: RefPathFromString(ref.Ref), From: p})
+				r.AddUnresolved(&UnresolvedReference{To: ref.Ref, From: p})
 			}
 		}
 
@@ -126,7 +129,12 @@ func (r *References) CollectFrom(m proto.Message, root RefPath) error {
 			return nil
 		}
 
-		key := RefPathFromString(v.Ref).Append(av.String())
+		refpath, err := RefPathFromString(v.Ref)
+		if err != nil {
+			return errors.Wrapf(err, "invalid reference in validation string %#v", v.Ref)
+		}
+
+		key := refpath.Append(av.String())
 		r.AddUnresolved(&UnresolvedReference{To: key, From: p})
 		return nil
 	})
@@ -183,7 +191,10 @@ func (r *References) ResolveInlineRefs(m proto.Message, p RefPath) error {
 }
 
 func (r *References) ExpandString(s string) (string, error) {
-	refs := extractStringReferences(s)
+	refs, err := extractStringReferences(s)
+	if err != nil {
+		return "", err
+	}
 	if len(refs) == 0 {
 		return s, nil
 	}
@@ -191,21 +202,20 @@ func (r *References) ExpandString(s string) (string, error) {
 	var err_list []error
 
 	sort.SliceStable(refs, func(i, j int) bool {
-		if refs[i].Ref == refs[j].Ref {
+		if refs[i].Ref.Equals(refs[j].Ref) {
 			return refs[i].Offset >= refs[j].Offset
 		}
-		return strings.Compare(refs[i].Ref, refs[j].Ref) >= 0
+		return !refs[i].Ref.Less(refs[j].Ref)
 	})
 	for _, ref := range refs {
-		refpath := RefPathFromString(ref.Ref)
-		subst := r.Resolved.Get(refpath)
+		subst := r.Resolved.Get(ref.Ref)
 		if subst == nil {
-			if iu := r.Unresolved.Get(refpath); iu != nil && iu.(*UnresolvedReference).IsOutput {
+			if iu := r.Unresolved.Get(ref.Ref); iu != nil && iu.(*UnresolvedReference).IsOutput {
 				// Unresolved output field. Leave it as-is.
 				continue
 			}
 			err_list = append(err_list, &UnresolvedReferenceError{
-				To:        refpath,
+				To:        ref.Ref,
 				InlineRef: s,
 				Reason:    "not found"})
 			continue
@@ -214,7 +224,7 @@ func (r *References) ExpandString(s string) (string, error) {
 		subst_s, ok := subst.(string)
 		if !ok {
 			err_list = append(err_list, &UnresolvedReferenceError{
-				To:        refpath,
+				To:        ref.Ref,
 				InlineRef: s,
 				Reason:    "target object is not a string"})
 			continue
@@ -227,12 +237,13 @@ func (r *References) ExpandString(s string) (string, error) {
 }
 
 type stringRange struct {
-	Ref    string
+	Ref    RefPath
 	Offset int
 	Length int
 }
 
-func extractStringReferences(s string) (refs []stringRange) {
+func extractStringReferences(s string) (refs []stringRange, err error) {
+	original := s
 	offset := 0
 	// no delimeters?
 	for idx := strings.Index(s, "${"); idx != -1; idx = strings.Index(s, "${") {
@@ -247,12 +258,17 @@ func extractStringReferences(s string) (refs []stringRange) {
 		s = s[idx:]
 		ends := strings.Index(s, "}")
 		if ends == -1 {
-			// malformed
-			return
+			return nil, errors.Errorf("mismatched object reference in string: %#v", original)
 		}
 		ends += 1 // consume }
 
-		refs = append(refs, stringRange{Ref: s[2 : ends-1], Offset: offset, Length: ends})
+		path, err := RefPathFromString(s[2 : ends-1])
+		if err != nil {
+			// malformed
+			return nil, errors.Wrapf(err, "invalid object reference in string %#v", original)
+		}
+
+		refs = append(refs, stringRange{Ref: path, Offset: offset, Length: ends})
 		offset += ends
 		s = s[ends:]
 	}

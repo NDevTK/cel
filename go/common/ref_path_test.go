@@ -9,80 +9,92 @@ import (
 )
 
 func TestRefPath_Basic(t *testing.T) {
-	r := RefPathFromList("a", "b")
+	r := RefPathFromStrings("a", "b")
 	if len(r) != 2 {
-		t.Fail()
+		t.Errorf("RefPathFromStrings() returned a path with length %d. Want 2.", len(r))
 	}
 
 	r = r.Append("c")
 	if len(r) != 3 {
-		t.Fail()
+		t.Errorf("RefPath.Append() returned a path with length %d. Want 3", len(r))
 	}
 
 	if r.String() != "a.b.c" {
-		t.Fail()
+		t.Errorf("RefPath.String() returned %s. Want \"a.b.c\"", r.String())
+	}
+
+	if !r.Equals(RefPathFromStrings("a", "b", "c")) {
+		t.Error("RefPath.Equals() failed")
+	}
+
+	r2 := RefPathFromStrings("a", "b.c", "d")
+	if r2.String() != "a.(b.c).d" {
+		t.Errorf("RefPath.String() returned %v. Want \"a.(b.c).d\"", r2.String())
 	}
 }
 
-func TestRefPath_Append(t *testing.T) {
-	rr := RefPathFromList("a", "b")
+// It's safe to call Append() multiple times on the same RefPath.
+func TestRefPath_Append_Multiple(t *testing.T) {
+	rr := RefPathFromStrings("a", "b")
 	r1 := rr.Append("c")
 	r2 := rr.Append("d")
 
 	if r1.String() != "a.b.c" {
-		t.Fail()
+		t.Errorf("Append() returned %v. Want \"a.b.c\"", r1.String())
 	}
 	if r2.String() != "a.b.d" {
-		t.Fail()
-	}
-
-	r3 := rr.Append("e", "f", "g")
-	if len(r3) != 5 {
-		t.Fail()
-	}
-	if r3[3] != "f" {
-		t.Fail()
+		t.Errorf("Append() returned %v. Want \"a.b.d\"", r2.String())
 	}
 }
 
 func TestRefPath_FromString(t *testing.T) {
-	r := RefPathFromString("a.b.c.d")
-	if len(r) != 4 || r[2] != "c" {
-		t.Fatal(r)
+	r, err := RefPathFromString("a.b.c.d")
+	if err != nil {
+		t.Error(err)
+	}
+	want := RefPath{"a", "b", "c", "d"}
+	if !want.Equals(r) {
+		t.Errorf("RefPathFromString() returned %#v. Want %#v", r, want)
 	}
 
-	r = RefPathFromString("a.(b.c).d")
-	if len(r) != 3 {
-		t.Fatal(r)
+	r, err = RefPathFromString("a.(b.c).d")
+	if err != nil {
+		t.Error(err)
+	}
+	want = RefPath{"a", "b.c", "d"}
+	if !want.Equals(r) {
+		t.Errorf("RefPathFromString() returned %#v. Want %#v", r, want)
 	}
 
-	if r[1] != "b.c" {
-		t.Fatal()
+	r, err = RefPathFromString("a.(b")
+	if err == nil {
+		t.Error("RefPath string with mismatched parens successfuly parsed")
 	}
 
-	r = RefPathFromString("a.(b")
+	r, err = RefPathFromString("a.b)")
+	if err != nil {
+		t.Error(err)
+	}
+	want = RefPath{"a", "b)"}
+	if !want.Equals(r) {
+		t.Errorf("RefPathFromString() returned %#v. Want %#v", r, want)
+	}
+
+	r, err = RefPathFromString("a.((b.c.d.e).f)")
+	if err != nil {
+		t.Error(err)
+	}
+	want = RefPath{"a", "(b.c.d.e", "f)"}
+	if !want.Equals(r) {
+		t.Errorf("RefPathFromString() returned %#v. Want %#v", r, want)
+	}
+
+	r, err = RefPathFromString("")
+	if err != nil {
+		t.Error(err)
+	}
 	if len(r) != 0 {
-		t.Fatal()
-	}
-
-	r = RefPathFromString("a.b)")
-	if len(r) != 2 {
-		t.Fatal()
-	}
-
-	r = RefPathFromString("a.((b.c.d.e).f)")
-	if len(r) != 3 {
-		t.Fatal(r)
-	}
-
-	r = RefPathFromString("a.(b).c")
-	if len(r) != 3 || r[1] != "b" {
-		t.Fatal()
-	}
-
-	r = RefPathFromString("")
-	if len(r) != 0 {
-		t.Fatal()
+		t.Error("RefPathFromString() returned %#v for empty string.", r)
 	}
 }
 
@@ -90,48 +102,55 @@ func TestRefPath_Equals(t *testing.T) {
 	r1 := RefPath{}
 	r2 := RefPath{}
 	if !r1.Equals(r2) {
-		t.Fail()
+		t.Errorf("Equals() failed for empty paths %#v and %#v", r1, r2)
 	}
 
 	if !r1.Equals(r1) {
-		t.Fail()
+		t.Errorf("Equals() failed on self for %#v", r1)
 	}
 
-	r1 = RefPathFromString("a.b.c")
-	r2 = RefPathFromString("a.b.c")
+	r1 = RefPathFromStrings("a", "b", "c")
+	r2 = RefPathFromStrings("a", "b", "c")
 	if !r1.Equals(r2) {
-		t.Fail()
-	}
-	r1 = r1.Append("b")
-	if r1.Equals(r2) {
-		t.Fail()
+		t.Errorf("Equals() failed for %#v and %#v", r1, r2)
 	}
 }
 
 func TestRefPath_Contains(t *testing.T) {
-	if !RefPathFromString("").Contains(RefPathFromString("")) {
-		t.Fail()
+	cases := []struct {
+		base, contains string
+		expected       bool
+	}{
+		{"", "", true},
+		{"a.b.c", "a.b.c", true},
+		{"a.b.c", "a.b.c.d", true},
+		{"a.b.c", "a.b", false},
+		{"a.b.c", "a.c", false},
 	}
 
-	if !RefPathFromString("a.b.c").Contains(RefPathFromString("a.b.c")) {
-		t.Fail()
-	}
+	for _, c := range cases {
+		base, err := RefPathFromString(c.base)
+		if err != nil {
+			t.Error(err)
+		}
 
-	if !RefPathFromString("a.b.c").Contains(RefPathFromString("a.b.c.d")) {
-		t.Fail()
-	}
+		contains, err := RefPathFromString(c.contains)
+		if err != nil {
+			t.Error(err)
+		}
 
-	if RefPathFromString("a.b.c").Contains(RefPathFromString("a.b")) {
-		t.Fail()
-	}
-
-	if RefPathFromString("a.b.c").Contains(RefPathFromString("a.c")) {
-		t.Fail()
+		if base.Contains(contains) != c.expected {
+			t.Errorf("(%#v).Contains(%#v) failed. Expected %v", base, contains, c.expected)
+		}
 	}
 }
 
 func TestRefPath_After(t *testing.T) {
-	if a, ok := RefPathFromString("a.b.c").After(RefPathFromString("a.b")); !ok || !a.Equals(RefPathFromString("c")) {
-		t.Fail()
+	a, ok := RefPathFromStrings("a", "b", "c").After(RefPathFromStrings("a", "b"))
+	if !ok {
+		t.Error("RefPathFromString().After() failed")
+	}
+	if !a.Equals(RefPathFromStrings("c")) {
+		t.Errorf("RefPathFromString().After() returned %#+v. Wanted \"c\"", a)
 	}
 }
