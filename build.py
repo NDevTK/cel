@@ -439,6 +439,14 @@ def _Generate(args):
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
+  _BuildTask(
+      protoc_command,
+      inp=['go/tools/gen_doc_proto/testdata/test.proto'],
+      out=os.path.join(SOURCE_PATH, 'go', 'tools', 'gen_doc_proto', 'testdata',
+                       'test.pb'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
 
 def _GetBuildDir(build_env):
   '''Return the build directory.

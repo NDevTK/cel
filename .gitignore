@@ -11,6 +11,7 @@
 # Generated files.
 *.pb.go
 go/gcp/compute/validate.go
+go/tools/gen_doc_proto/testdata/test.pb
 schema/gcp/compute/compute-api.proto
 
 # Vendored dependencies. Use `dep` to manage.

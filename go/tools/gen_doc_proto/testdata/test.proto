@@ -1,0 +1,29 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+// Package docs for testdata
+package testdata;
+option go_package = "chromium.googlesource.com/enterprise/cel/go/tools/gen_doc_proto/testdata";
+
+import "schema/common/validation.proto";
+
+// A Message
+message A {
+  // A's name
+  string name = 1;
+
+  // An annotated field.
+  string field = 2 [(common.v).type = LABEL];
+}
+
+// B Message
+message B {
+  // B's name
+  string name = 1;
+
+  // Another annotated field.
+  string bname = 2 [(common.v).ref = "host.a"];
+}
