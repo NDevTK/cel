@@ -513,8 +513,15 @@ Note: Tests can only be run when GOOS == GOHOSTOS. Hence there's no command
 line option to set GOOS.
 '''
 
+  if not args.fast:
+    _Deps(args)
+    _Generate(args)
+
   test_env = _MergeEnv(args, target_host=True)
-  _RunCommand(['go', 'test', './go/...'], env=test_env, cwd=SOURCE_PATH)
+  _RunCommand(
+      ['go', 'test'] + args.gotest_args + ['./go/...'],
+      env=test_env,
+      cwd=SOURCE_PATH)
 
 
 def GenCommand(args):
@@ -848,6 +855,11 @@ def main():
       description=TestCommand.__doc__,
       parents=[common_options],
       formatter_class=argparse.RawDescriptionHelpFormatter)
+  test_command.add_argument(
+      '--fast',
+      '-F',
+      action='store_true',
+      help='''fast build. Skips dependency and generator steps''')
   test_command.add_argument(
       'gotest_args',
       metavar='ARGS',
