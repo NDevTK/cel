@@ -560,36 +560,61 @@ arguments for this script.
   _RunCommand(args.prog, **run_args)
 
 
-def _FormatMarkdownFiles(args):
+def _FormatMarkdownFiles(args, md_files):
+  if len(md_files) == 0:
+    return []
 
-  o = subprocess.check_output(
-      ['git', 'ls-files', '--exclude-standard', '--', '*.md'],
-      cwd=SOURCE_PATH,
-      env=_MergeEnv(args, target_host=True))
-  md_files = o.splitlines()
-
+  modified = []
   for f in md_files:
-    FormatMarkdown(os.path.join(SOURCE_PATH, f))
+    m = FormatMarkdown(os.path.join(SOURCE_PATH, f), dry_run=args.check)
+    if m:
+      modified.append(f)
+
+  return modified
 
 
-def _FormatGoFiles(args):
+def _FormatGoFiles(args, go_files):
+  if len(go_files) == 0:
+    return []
+  if args.check:
+    o = subprocess.check_output(
+        ['gofmt', '-l'] + go_files, cwd=SOURCE_PATH, env=_MergeEnv(args))
+    return o.splitlines()
+
   _RunCommand(
-      ['go', 'fmt', './go/...'],
+      ['gofmt', '-l', '-w'] + go_files,
       cwd=SOURCE_PATH,
       env=_MergeEnv(args, target_host=True))
 
 
-def _FormatProtoFiles(args):
-  o = subprocess.check_output(
-      ['git', 'ls-files', '--exclude-standard', '--', '*.proto'],
-      cwd=SOURCE_PATH,
-      env=_MergeEnv(args))
-  proto_files = o.splitlines()
+def _CheckClangFormat(files, args):
+  env = _MergeEnv(args)
+  modified = []
+  for f in files:
+    o = subprocess.check_output(
+        ['clang-format', '-output-replacements-xml', '-style=Chromium', f],
+        cwd=SOURCE_PATH,
+        env=env)
+    lines = o.splitlines()
+    for line in lines:
+      if line.startswith('<replacement '):
+        modified.append(f)
+        break
+  return modified
+
+
+def _FormatProtoFiles(args, proto_files):
+  if len(proto_files) == 0:
+    return []
 
   try:
+    if args.check:
+      return _CheckClangFormat(proto_files, args)
+
     _RunCommand(
         ['clang-format', '-i', '-style=Chromium'] + proto_files,
         env=_MergeEnv(args, target_host=True))
+
   except OSError as e:
     if e.errno == errno.ENOENT:
       sys.stderr.write(
@@ -612,12 +637,32 @@ def _FormatProtoFiles(args):
     raise e
 
 
-def _FormatPythonFiles(args):
+def _FormatPythonFiles(args, py_files):
+  if len(py_files) == 0:
+    return []
+
   try:
+    if args.check:
+      o = subprocess.check_output(
+          ['yapf', '-r', '-d'] + py_files,
+          env=_MergeEnv(args, target_host=True),
+          cwd=SOURCE_PATH)
+      lines = o.splitlines()
+      modified = []
+      for line in lines:
+        if not line.startswith('--- '):
+          continue
+        fields = line.split()
+        if len(fields) < 3:
+          continue
+        modified.append(fields[1])
+      return modified
+
     _RunCommand(
-        ['yapf', '-i', '-r', '.'],
+        ['yapf', '-i', '-r'] + py_files,
         env=_MergeEnv(args, target_host=True),
         cwd=SOURCE_PATH)
+
   except OSError as e:
     if e.errno == errno.ENOENT:
       sys.stderr.write(
@@ -693,10 +738,58 @@ Problems with 'clang-format'?
 
 [1]: https://chromium.googlesource.com/chromium/src/+/master/styleguide/styleguide.md
 '''
-  _FormatProtoFiles(args)
-  _FormatMarkdownFiles(args)
-  _FormatGoFiles(args)
-  _FormatPythonFiles(args)
+
+  o = subprocess.check_output(
+      ['git', 'ls-files'], cwd=SOURCE_PATH, env=_MergeEnv(args))
+  all_files = o.splitlines()
+
+  logging.info("checking .proto files")
+  pr = _FormatProtoFiles(args, [f for f in all_files if f.endswith('.proto')])
+
+  logging.info("checking .md files")
+  md = _FormatMarkdownFiles(args, [f for f in all_files if f.endswith('.md')])
+
+  logging.info("checking .go files")
+  go = _FormatGoFiles(args, [f for f in all_files if f.endswith('.go')])
+
+  logging.info("checking .py files")
+  py = _FormatPythonFiles(args, [f for f in all_files if f.endswith('.py')])
+
+  if args.check:
+    modified_files = [
+        os.path.relpath(f, SOURCE_PATH) for f in (pr + md + go + py)
+    ]
+    if len(modified_files) == 0:
+      return
+
+    print(
+        "The following files need reformatting. Use 'python build.py format' to fix:\n"
+    )
+
+    for f in sorted(modified_files):
+      print(f)
+    sys.exit(1)
+
+
+def CheckFormatting(files):
+
+  class fakeargs(object):
+
+    def __init__(self):
+      self.check = True
+      self.verbose = False
+      self.goos = ''
+      self.goarch = ''
+
+  args = fakeargs()
+  pr = _FormatProtoFiles(args, [f for f in files if f.endswith('.proto')])
+  md = _FormatMarkdownFiles(args, [f for f in files if f.endswith('.md')])
+  go = _FormatGoFiles(args, [f for f in files if f.endswith('.go')])
+  py = _FormatPythonFiles(args, [f for f in files if f.endswith('.py')])
+  modified_files = [
+      os.path.relpath(f, SOURCE_PATH) for f in (pr + md + go + py)
+  ]
+  return modified_files
 
 
 def CleanCommand(args):
@@ -826,6 +919,12 @@ def main():
       description=FormatCommand.__doc__,
       formatter_class=argparse.RawDescriptionHelpFormatter,
       parents=[common_options])
+  format_command.add_argument(
+      '--check',
+      '-n',
+      action='store_true',
+      help=
+      'check if files are correctly formatted, but don\'t modify files on disk')
   format_command.set_defaults(closure=FormatCommand)
 
   # ----------------------------------------------------------------------------
