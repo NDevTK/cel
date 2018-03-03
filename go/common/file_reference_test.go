@@ -54,7 +54,7 @@ func TestFileReference_Basic(t *testing.T) {
 	})
 
 	t.Run("OutputParam", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar", ResolvedSource: "foo/bar"}
+		v := &FileReference{Source: "foo/bar", FullPath: "foo/bar"}
 		if err := InvokeValidate(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -76,8 +76,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedSource != "foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedSource)
+		if v.FullPath != "foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.FullPath)
 		}
 	})
 
@@ -88,8 +88,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedSource != "a/b/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedSource)
+		if v.FullPath != "a/b/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.FullPath)
 		}
 	})
 
@@ -100,8 +100,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedSource != "a/b/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedSource)
+		if v.FullPath != "a/b/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.FullPath)
 		}
 	})
 
@@ -112,8 +112,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedSource != "/a/b/c/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedSource)
+		if v.FullPath != "/a/b/c/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.FullPath)
 		}
 	})
 
@@ -124,8 +124,8 @@ func TestFileReference_Resolve(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.ResolvedSource != "/a/b/c/foo/bar" {
-			t.Fatalf("unexpected resolved path: %s", v.ResolvedSource)
+		if v.FullPath != "/a/b/c/foo/bar" {
+			t.Fatalf("unexpected resolved path: %s", v.FullPath)
 		}
 	})
 }
@@ -139,8 +139,8 @@ func TestFileReference_Resolver(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		if v.Ref.ResolvedSource != "/a/b/c/foo/bar" {
-			t.Fatalf("bad resolved path : %s", v.Ref.ResolvedSource)
+		if v.Ref.FullPath != "/a/b/c/foo/bar" {
+			t.Fatalf("bad resolved path : %s", v.Ref.FullPath)
 		}
 	})
 

@@ -1,0 +1,227 @@
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file lists builtin assets that are included for convenience.
+
+#*******************************************************************************
+# Google Compute Engine Public Images
+# 
+# The following assets are based on https://cloud.google.com/compute/docs/images
+# It is desirable that this file be generated, but currently it's included in
+# source.
+# 
+# Each asset represents a single image from the Public Images page. The URL
+# needs to be resolved at runtime.
+#*******************************************************************************
+
+image {
+  name: 'centos-7'
+  latest {
+    project: 'centos-cloud'
+    family: 'centos-7'
+  }
+}
+
+image {
+  name: 'centos-6'
+  latest {
+    project: 'centos-cloud'
+    family: 'centos-6'
+  }
+}
+
+image {
+  name: 'cos-stable'
+  latest {
+    project: 'cos-cloud'
+    family: 'cos-stable'
+  }
+}
+
+image {
+  name: 'cos-beta'
+  latest {
+    project: 'cos-cloud'
+    family: 'cos-beta'
+  }
+}
+
+image {
+  name: 'cos-dev'
+  latest {
+    project: 'cos-cloud'
+    family: 'cos-dev'
+  }
+}
+
+image {
+  name: 'debian-9'
+  latest {
+    project: 'debian-cloud'
+    family: 'debian-9'
+  }
+}
+
+image {
+  name: 'debian-8'
+  latest {
+    project: 'debian-cloud'
+    family: 'debian-8'
+  }
+}
+
+image {
+  name: 'rhel-7'
+  latest {
+    project: 'rhel-cloud'
+    family: 'rhel-7'
+  }
+}
+
+image {
+  name: 'rhel-6'
+  latest {
+    project: 'rhel-cloud'
+    family: 'rhel-6'
+  }
+}
+
+image {
+  name: 'sles-12'
+  latest {
+    project: 'suse-cloud'
+    family: 'sles-12'
+  }
+}
+
+image {
+  name: 'sles-11'
+  latest {
+    project: 'suse-cloud'
+    family: 'sles-11'
+  }
+}
+
+image {
+  name: 'ubuntu-1604-lts'
+  latest {
+    project: 'ubuntu-os-cloud'
+    family: 'ubuntu-1604-lts'
+  }
+}
+
+image {
+  name: 'ubuntu-1404-lts'
+  latest {
+    project: 'ubuntu-os-cloud'
+    family: 'ubuntu-1404-lts'
+  }
+}
+
+image {
+  name: 'ubuntu-1704'
+  latest {
+    project: 'ubuntu-os-cloud'
+    family: 'ubuntu-1704'
+  }
+}
+
+image {
+  name: 'ubuntu-1710'
+  latest {
+    project: 'ubuntu-os-cloud'
+    family: 'ubuntu-1710'
+  }
+}
+
+image {
+  name: 'windows-1709-core'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-1709-core'
+  }
+}
+
+image {
+  name: 'windows-2016'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2016'
+  }
+}
+
+image {
+  name: 'windows-2016-core'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2016-core'
+  }
+}
+
+image {
+  name: 'windows-2012-r2'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2012-r2'
+  }
+}
+
+image {
+  name: 'windows-2012-r2-core'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2012-r2-core'
+  }
+}
+
+image {
+  name: 'windows-2008-r2'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2008-r2'
+  }
+}
+
+#*******************************************************************************
+# Pseudo Images
+# 
+# These are based on the "Substitutions" section of the Chrome Enterprise Lab
+# design [1]. Taken as-is, the images provide functionality equivalent what's
+# implied by the image name. See [1] for exceptions.
+# 
+# [1]: https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/private-images.md
+#*******************************************************************************
+
+# Windows 8.1
+# 
+# See: https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/private-images.md#windows-8_1-windows-server-2012-r2
+image {
+  name: 'windows-8-1'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2012-r2'
+  }
+}
+
+# Windows 7
+# 
+# See: https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/private-images.md#windows-7-windows-server-2008-r2
+image {
+  name: 'windows-7'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2008-r2'
+  }
+}
+
+# Windows 10
+# 
+# See: https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/private-images.md#windows-10-windows-server-2016
+image {
+  name: 'windows-10'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2016'
+  }
+}

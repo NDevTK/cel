@@ -48,7 +48,6 @@ windows_user {
   # This is a domain user. The user will not be made a member of any additional
   # groups since there are no member_of entries.
   container: { ad_domain: 'bar.example' }
-  password: '123456'
 }
 
 # The second domain.
@@ -79,5 +78,4 @@ windows_user {
   name: 'joe'
   description: 'Joe The User'
   container: { ad_domain: 'baz.example' }
-  password: '123456'
 }

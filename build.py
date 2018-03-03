@@ -398,7 +398,7 @@ def _Generate(args):
       cwd=SOURCE_PATH,
       inp=[
           'schema/common/validation.proto',
-          'schema/common/file_reference.proto',
+          'schema/common/file_reference.proto', 'schema/common/secret.proto',
           'go/common/testdata/testmsgs.proto'
       ],
       out=os.path.join(descriptor_path, 'common.pb'))
@@ -419,16 +419,6 @@ def _Generate(args):
       protoc_command,
       inp=['schema/host/host_environment.proto'],
       out=os.path.join(descriptor_path, 'host.pb'),
-      env=_MergeEnv(args, target_host=True),
-      cwd=SOURCE_PATH)
-
-  _BuildTask(
-      protoc_command,
-      inp=[
-          'schema/meta/files.proto', 'schema/meta/command.proto',
-          'schema/meta/reference.proto', 'schema/meta/status.proto'
-      ],
-      out=os.path.join(descriptor_path, 'meta.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 

@@ -1,0 +1,557 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package asset;
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
+
+import "schema/asset/machine.proto";
+import "schema/asset/network.proto";
+import "schema/common/file_reference.proto";
+import "schema/common/secret.proto";
+import "schema/common/validation.proto";
+
+// Describes an Active Directory domain or forest.
+message ActiveDirectoryDomain {
+  // FQDN of the domain in lower case.
+  string name = 1 [(common.v).type = FQDN];
+
+  // Parent domain name. Only specify this if this domain is going to be a
+  // child domain.
+  string parent_name = 2
+      [(common.v) = {ref: "asset.ad_domain", optional: true}];
+
+  // Active Directory functional level. A.k.a. Domain Mode. See
+  // https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/active-directory-functional-levels
+  // for more details on the specific features that are available at each
+  // functional level.
+  enum Mode {
+    // Use the default. The default functional level depends on the host OS and
+    // on the other AD DS servers in the domain or forest.
+    DEFAULT = 0;
+
+    Win2003 = 2;
+    Win2008 = 3;
+    Win2008R2 = 4;
+    Win2012 = 5;
+    Win2012R2 = 6;
+    Win2016 = 7;
+  }
+  Mode domain_mode = 3;
+
+  // NetBIOS name. Required if |name| is longer than 15 characters.
+  string netbios_name = 4;
+
+  // Domain type
+  enum Type {
+    // Child of an existing domain. (This is the default)
+    CHILD = 0;
+
+    // Root of a new domain tree.
+    TREE = 1;
+  }
+  Type type = 5;
+
+  // Forest functional level (only applicable when creating a new forest.
+  Mode forest_mode = 6;
+
+  // Domain controllers for this domain. At least one must be specified.
+  repeated ActiveDirectoryDomainController domain_controller = 10
+      [(common.v).type = REQUIRED];
+};
+
+// Describes a single Active Directory Domain Controller. This message should
+// be embedded inside an ActiveDirectoryDomain message which implicitly binds
+// the Domain Controller to the containing domain.
+message ActiveDirectoryDomainController {
+  // Machine hosting the ADDS. Must match the `name` of a WindowsMachine entry.
+  string windows_machine = 1 [(common.v).ref = "asset.windows_machine"];
+
+  // Whether or not to install a DNS server on this machine. The default is
+  // almost always |true| unless the domain already exists and the existing
+  // domain controller does not host a DNS server.
+  //
+  // Don't specify the option if you would like the domain controller to do the
+  // default action. Or specify it to force one or the other.
+  oneof optional_dns { bool install_dns = 2; }
+
+  // Assume DNS service is not available on the network. Only applicable when
+  // installing DNS services. If this field is not set, or set to false, then
+  // the installation can assume that the TCP/IP client settings of the host OS
+  // specifies the DNS server to use.
+  bool no_dns_on_network = 3;
+
+  // This domain controller should not be a global catalog server. Default is
+  // to run with global catalog for Win2012 or later.
+  bool no_global_catalog = 4;
+
+  // If true, attempts to create a DNS delegation for the new DNS server. Only
+  // applicable when installing a DNS server. E.g.: If the authoritative DNS
+  // server for foo.example.com is using ActiveDirectory, and we are installing
+  // the subordinate domain bar, then setting this value to true causes
+  // foo.example.com to delegate the bar domain to the new DNS server.
+  bool create_dns_delegation = 5;
+}
+
+// Describes an Active Directory Organizational Unit.
+//
+// Note that this message omits location properties like postal code, city,
+// state, and country. Use the 'property' field to specify these if required.
+//
+// E.g.:
+//     ad_organizational_unit {
+//        name: 'foo'
+//        ...
+//        property { key: 'l', value: 'Cambridge' }
+//        property { key: 'st', value: 'MA' }
+//        ..
+//     }
+message ActiveDirectoryOrganizationalUnit {
+  // Name of the OU. Also populates the 'name' property of the AD object unless
+  // overridden by |full_name|.
+  string name = 1;
+
+  // The 'name' property of the AD object. Only specify this if |name| can't be
+  // used to store the display name.
+  string full_name = 2;
+
+  // The container in which this OU is created. Only the 'ad_domain' and
+  // 'ad_organizational_unit' values are valid.
+  WindowsContainer container = 3 [(common.v).type = REQUIRED];
+
+  // The AD DS server which should service the request for creating the OU if
+  // necessary. If left unspecified, one of the candidate AD DS instances
+  // associated with 'container' will be used.
+  string server = 4 [(common.v).ref = "asset.windows_machine"];
+
+  // Use the referred AD OU as the template. Any properties specified in this
+  // message will override corresponding properties from the template OU. Any
+  // properties specified in the template, but not in this message will be
+  // copied over.
+  string based_on = 5 [(common.v).ref = "asset.ad_organizational_unit"];
+
+  // The 'displayName' property of the AD object.
+  string display_name = 6;
+
+  // The 'description' property of the AD object.
+  string description = 7;
+
+  // The principal managing this OU. Note that the 'container' property for a
+  // user or a group is implicit and should be omitted.
+  UserOrGroupReference managed_by = 8;
+
+  // Additional properties. The key is the ldapDisplayName of the property. The
+  // value can be a single string. Repeat using the same key to specify more
+  // than one value for a single key.
+  //
+  // E.g.:
+  //     property {
+  //       key: 'favColors'
+  //       value: 'pink'
+  //     }
+  //
+  //     property {
+  //       key: 'favColors'
+  //       value: 'purple'
+  //     }
+  map<string, string> property = 9;
+}
+
+// Describes an Active Directory GPO. The GPO itself may not contain anything
+// particularly important on creation, and is entirely based on the starter
+// GPO. The GPO is also not linked anywhere by default. Use the
+// ActiveDirectoryGroupPolicyLink message to create links, and
+// ActiveDirectoryRegistryPolicy to add registry based policies.
+//
+// E.g.:
+//
+//     # Create a group policy.
+//     ad_group_policy {
+//       name: 'foo'
+//       ad_domain: 'my-domain'
+//     }
+//
+//     # Add some registry values to it.
+//     ad_registry_policy {
+//       name: 'reg-pol-0001'
+//       ad_group_policy: 'foo'
+//
+//       key {
+//         path: 'HKCU\\Software\\My Company\\Foo\\Bar'
+//
+//         value {
+//           name: 'version'
+//           value: '1.0'
+//         }
+//
+//         value {
+//           name: 'FooCount'
+//           type: DWORD
+//           value: '10'
+//         }
+//       }
+//     }
+//
+//     # And link it to one or more OUs.
+//     ad_group_policy_link {
+//       name: 'foo-link'
+//       ad_group_policy: 'foo'
+//       container { ad_organizational_unit: 'my-ou' }
+//       container { ad_organizational_unit: 'your-ou' }
+//       enforced: true
+//     }
+message ActiveDirectoryGroupPolicy {
+  // The name of the GPO.
+  string name = 1;
+
+  // The full name. Only use this if the full name cannot be specified in
+  // |name|.
+  string full_name = 2;
+
+  // The domain in which this GPO is created.
+  string ad_domain = 3 [(common.v).ref = "asset.ad_domain"];
+
+  // A comment for the GPO. This can contain up to 2047 characters.
+  string comment = 4;
+
+  // If a template GPO is specified, that will be used as the starter GPO.
+  // Creates a starter GPO is no value is specified here.
+  string based_on = 5 [(common.v).ref = "asset.ad_group_policy"];
+}
+
+// Describes one or more GPO links.
+message ActiveDirectoryGroupPolicyLink {
+  // A convenient identifier for this set of GPO links.
+  string name = 1;
+
+  // The policy that will be linked.
+  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
+
+  // The list of containers for which the GPO referred to in |ad_group_policy|
+  // will be linked. Only the |ad_domain| and |ad_organizational_unit| fields
+  // can be used. There should be at least one of these.
+  repeated WindowsContainer container = 3;
+
+  // If specified, sets the enforced state for the GPO links.
+  oneof optional_enforce { bool enforced = 4; }
+
+  // If specified, sets the enabled state for the GPO links.
+  oneof optional_enabled { bool enabled = 5; }
+}
+
+// Describes a set of registry keys that should be applied for a GPO.
+message ActiveDirectoryRegistryPolicy {
+  // An identifier for the registry policy.
+  string name = 1;
+
+  // The GPO that will be affected by this registry policy.
+  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
+
+  // If true, the registry values defined in this message will be added to the
+  // respective registry keys. The default behavior -- also the behavior when
+  // this field is set to false -- is to delete all the values under each key
+  // prior to adding the new values.
+  bool additive = 3;
+
+  // Set of registry keys and values that will be applied (in order).
+  repeated RegistryKey key = 4;
+}
+
+// Describes a registry change that should happen when applying a GPO.
+message ActiveDirectoryRegistryPrefPolicy {
+  // An identifier for the registry policy.
+  string name = 1;
+
+  // The GPO that will be affected by this registry policy.
+  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
+
+  // The action to take when processing the GPO.
+  enum Action {
+    CREATE = 0;
+    REPLACE = 1;
+    UPDATE = 2;
+    DELETE = 3;
+  }
+  Action action = 3;
+
+  // Set of registry keys and values that will be applied (in order).
+  repeated RegistryKey key = 4;
+}
+
+// A registry key.
+message RegistryKey {
+  // Path to registry key. Either backslashes or forwardslashes can be used as
+  // separators. The first component of the path selects the hive. The
+  // following values and aliases are accepted fas the first component of the
+  // path:
+  //
+  //     HKEY_CLASSES_ROOT, HKCR
+  //     HKEY_CURRENT_USER, HKCU
+  //     HKEY_LOCAL_MACHINE, HKLM
+  //     HKEY_USERS, HKU
+  //     HKEY_CURRENT_CONFIG, HKCC
+  //
+  // E.g.:
+  //     key {
+  //       path: 'HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Foo\\bar'
+  //       value: {
+  //         name: 'x'
+  //         type: STRING
+  //         value: 'y'
+  //       }
+  //     }
+  string path = 1 [(common.v).type = REQUIRED];
+
+  // The list of values under the key.
+  repeated RegistryValue value = 2;
+}
+
+// A single registry value. The registry key is implied based on the containing
+// message.
+message RegistryValue {
+  // Value name. Leave empty to set the default value.
+  string name = 1 [(common.v) = {type: LABEL, optional: true}];
+
+  // These values correspond to registry value types. Obviously only one of
+  // these can be specified.
+  oneof value_type {
+    // REG_SZ value in UTF-8. Will be re-encoded into UTF-16 when writing to the
+    // registry.
+    string string_value = 10;
+
+    // REG_EXPAND_SZ value in UTF-8.
+    string expand_string_value = 11;
+
+    // REG_BINARY
+    bytes binary_value = 12;
+
+    // REG_QWORD
+    int32 dword_value = 13;
+
+    // REG_DWORD
+    int64 qword_value = 14;
+
+    // REG_MULTI_SZ
+    MultiString multi_string_value = 15;
+  }
+
+  // MultiString represents a single REG_MULTI_SZ registry value. Each |value|
+  // represents a single \0 delimited string. All values are concatenated in
+  // order to construct the REG_MULTI_SZ value. No additional \0 values are
+  // required and the final registry value will be correctly \0\0 terminated.
+  message MultiString {
+    // A single string value in UTF-8. It will be re-encoded to UTF-16 before
+    // being written to the registry. Do not include any \0 characters here.
+    // |value| also cannot be the empty string.
+    repeated string value = 1;
+  }
+}
+
+// Describes a container that a Windows asset can reside in.
+//
+// Resources like machines, users, and groups can be specified per domain, per
+// machine, or per organizational unit. When specifying one of these asset
+// types, use the WindowsContainer member to specify where to create the asset.
+//
+// Note that this is not related to the Active Directory class named
+// [Container](https://msdn.microsoft.com/en-us/library/ms680997(v=vs.85).aspx).
+// The latter is an abstract class for Active Directory objects that can hold
+// other objects. In theory, any Active Directory object could contain other
+// objects, but this schema intends to keep things simple any only include a
+// few possible container objects that typically arise when describing an
+// enterprise deployment. Feel free to add to this list as more container
+// object types are needed.
+message WindowsContainer {
+  oneof container {
+    // Domain name.
+    string ad_domain = 1 [(common.v).ref = "asset.ad_domain"];
+
+    // Machine name.
+    string windows_machine = 2 [(common.v).ref = "asset.windows_machine"];
+
+    // Organizational unit.
+    string ad_organizational_unit = 3
+        [(common.v).ref = "asset.ad_organizational_unit"];
+  }
+}
+
+// Descibes an Active Directory or Windows local group.
+message WindowsGroup {
+  // Name of the group. Exclude the domain name. The name alone is not
+  // sufficient if this group corresponds to a Well Known group. Use the
+  // |well_known_sid| field for that.
+  string name = 1;
+
+  // The actual Unicode Windows group name. Only specify this if the desired
+  // name is different from the |name| field due to not being an RFC 1035
+  // label.
+  string full_name = 2;
+
+  // Human readable description of the group.
+  string description = 3;
+
+  // Container for the group. A container must be specified for a WindowsGroup.
+  WindowsContainer container = 4 [(common.v).type = REQUIRED];
+}
+
+// Describes a Active Directory or a Windows local user.
+message WindowsUser {
+  // Name of the user. Exclude the domain name.
+  //
+  // E.g.: joe
+  string name = 1;
+
+  // The actual Unicode Windows user name. Only specify this if the desired
+  // name is different from the |name| field due to not being an RFC 1035
+  // label.
+  string full_name = 2;
+
+  // Description.
+  string description = 3;
+
+  // Container for the user. A container must be specified for a WindowsUser.
+  WindowsContainer container = 4 [(common.v).type = REQUIRED];
+
+  // Password. Can be left blank in which case the Deployer will generate a new
+  // password.
+  common.Secret password = 5;
+
+  // List of groups that the user belongs to.
+  repeated GroupReference member_of = 6;
+}
+
+// A reference to a group. The combination of |name| and |container| must match
+// one of the WindowsGroup entries.
+message GroupReference {
+  // The name of the group.
+  string windows_group = 1 [(common.v).ref = "asset.windows_group"];
+
+  // Location. Since GroupReference messages are typically specified as a field
+  // of an object that already has a container, omiting this field results in
+  // the GroupReference inheriting the parent object's container. Take for
+  // example, the following WindowsUser definition:
+  //
+  //     windows_user {
+  //       name: 'joe'
+  //       container: { domain: 'foo.example' }
+  //       member_of: { name: 'bar' }
+  //     }
+  //
+  // This results in the user being a member of the group 'bar' in the
+  // 'foo.example' AD domain because that's the enclosing container.  Note
+  // however, that inheriting in this manner isn't always correct since it is
+  // possible for users to be members of groups from other containers.
+  WindowsContainer container = 2;
+}
+
+// A reference to a user. The combination of |name| and |container| must match
+// one of the WindowsUser entries.
+message UserReference {
+  // The name of the user.
+  string windows_user = 1 [(common.v).ref = "asset.windows_user"];
+
+  // Location. See GroupReference for how the container parameters are
+  // determined by default.
+  WindowsContainer container = 2;
+}
+
+// A reference to a user or a group. Provided as a convenience for cases where
+// either a single user or a group can be specified.
+message UserOrGroupReference {
+  oneof entity {
+    UserReference user = 1;
+    GroupReference group = 2;
+  }
+}
+
+// A Windows machine.
+message WindowsMachine {
+  // Name of the machine. This name will become the hostname for the machine,
+  // both absolute and domain relative (if applicable). Hence must be globally
+  // unique.
+  //
+  // For Windows machines, it's advisable to have *short* hostnames, ideally
+  // shorter than 11 characters. This allows the name to do double duty as a
+  // NetBios name as well as a DNS hostname.
+  string name = 1;
+
+  // The name of a host.MachineType entry that describes the host machine.
+  string machine_type = 2 [(common.v).ref = "host.machine_type"];
+
+  // Network interfaces. There can be more than one for multihomed machines.
+  // There must be at least one of these.
+  repeated NetworkInterface network_interface = 3 [(common.v).type = REQUIRED];
+
+  // Container. Only |domain| and |ou| values are acceptable. Currently
+  // |machine| is not a valid option. If no container is specified, the machine
+  // will be brought up as a standalone workstation or server depending on the
+  // installed operating system.
+  //
+  // This field should be empty for a machine that's referenced in a
+  // ActiveDirectoryDomainController entry.
+  //
+  // Specifying this field results in the machine being joined to the specified
+  // domain and, if necessary, placed in the specified container.
+  WindowsContainer container = 10;
+
+  // System locale. If left unspecified, the default is left unchanged. Use the
+  // following PowerShell command to determine the list of available locales on
+  // a Windows machine:
+  //
+  //     ``` ps1
+  //     [System.Globalization.CultureInfo]::GetCultures([System.Globalization.CultureTypes]::AllCultures).name
+  //     ```
+  //
+  // PS DSC Reference:
+  // * https://github.com/PowerShell/SystemLocaleDsc
+  string locale = 11;
+
+  // Set the system timezone. If left unspecified, the default is left
+  // unchanged. Use the following PowerShell command to determine the lsit of
+  // available timezone identifiers on a Windows machine:
+  //
+  //     ``` ps1
+  //     [System.TimeZoneInfo]::GetSystemTimeZones().Id
+  //     ```
+  //
+  // PS DSC Reference:
+  // * https://github.com/PowerShell/xTimeZone
+  string timezone = 12;
+
+  // List of additional Windows features or roles to install. The values here
+  // should be valid for the selected host machine type. You can use the
+  // 'Get-WindowsFeature' PowerShell commandlet to retrieve a list of available
+  // Windows features.
+  //
+  // E.g.: windows_feature: "Web-Server"
+  //
+  // Note: This method cannot be used to specify all sub-features. All
+  // features that needs to be installed should be listed explicitly.
+  //
+  // Note: Addition of roles can cause features to be installed implicitly.
+  // E.g. specifying a machine as the host for an IIS site will automatically
+  // install the necessary web server roles. The |windows_feature| field should
+  // be used for features that otherwise won't be installed as part of any such
+  // role assignment.
+  //
+  // Note: Any 'package' values specified in the
+  // host.machine_type.<machine-type> will be prepended to this list.
+  repeated string windows_feature = 13;
+
+  // Registry keys to set on the machine. These will be applied prior to the
+  // user login.
+  repeated RegistryKey registry_key = 14;
+
+  // A configuration file. Specify this if you've run Windows Server Manager
+  // and produced a configration file already.
+  common.FileReference configuration_file = 15;
+
+  // List of FQDNs that are known to refer to this machine. There can be
+  // multiple if there are aliases configured for this machine.
+  repeated string fqdn = 100 [(common.v).type = RUNTIME];
+
+  // IPv4 or IPv6 addresses that refer to this instance. These include both
+  // internal and, if applicable, external addresses.
+  repeated Address address = 101 [(common.v).type = RUNTIME];
+}

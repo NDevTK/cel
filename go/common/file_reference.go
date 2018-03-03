@@ -5,13 +5,15 @@
 package common
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/meta"
+	"archive/zip"
+	"bytes"
 	"context"
-	"github.com/golang/protobuf/proto"
 	pd "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/pkg/errors"
+	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -40,33 +42,26 @@ func (c *FileReference) ResolveRelativePath(base_path string) error {
 	if c.Source == "" {
 		errors.New("source is empty")
 	}
-	c.ResolvedSource = filepath.Clean(filepath.Join(base_path, c.Source))
+	c.FullPath = filepath.Clean(filepath.Join(base_path, c.Source))
 	return nil
 }
 
-func (c *FileReference) Resolve(ctx context.Context, resolver ResolverService) (err error) {
-	defer Action(&err, "resolving FileReference to \"%s\" (local path \"%s\")", c.Source, c.ResolvedSource)
+func (c *FileReference) Store(ctx context.Context, o ObjectStore) (err error) {
+	defer Action(&err, "storing FileReference with source \"%s\"", c.FullPath)
 
-	o, err := ObjectStoreFromContext(ctx)
-	if err != nil {
-		return
-	}
-
-	if c.ResolvedSource == "" {
+	if c.FullPath == "" {
 		return errors.Errorf("path to \"%s\" is not resolved", c.Source)
 	}
 
-	fi, err := os.Stat(c.ResolvedSource)
+	fi, err := os.Stat(c.FullPath)
 	if err != nil {
 		return
 	}
 
 	if fi.IsDir() {
-		c.ObjectReference, _, err = c.storeDir(ctx, o, c.ResolvedSource)
-	} else {
-		c.ObjectReference, _, err = c.storeFile(ctx, o, c.ResolvedSource)
+		return c.storeArchive(ctx, o)
 	}
-	return
+	return c.storeFile(ctx, o)
 }
 
 func GetPathResolver(base_path string) WalkProtoFunc {
@@ -84,67 +79,78 @@ func GetPathResolver(base_path string) WalkProtoFunc {
 	}
 }
 
-func (c *FileReference) storeFile(ctx context.Context, o ObjectStore, path string) (ref string, size int64, err error) {
-	defer Action(&err, "storing file at \"%s\"", path)
+func (c *FileReference) storeFile(ctx context.Context, o ObjectStore) (err error) {
+	defer Action(&err, "storing file at \"%s\"", c.FullPath)
 
-	contents, err := ioutil.ReadFile(path)
+	contents, err := ioutil.ReadFile(c.FullPath)
 	if err != nil {
 		return
 	}
-	size = int64(len(contents))
+	c.ResolvedType = FileReference_FILE
+	return c.storeBlob(ctx, o, contents)
+}
 
-	j := NewJobWaiter(c)
-	o.PutObject(ctx, contents, &ref, j.New())
-	err = j.Join()
+func (c *FileReference) storeBlob(ctx context.Context, o ObjectStore, contents []byte) (err error) {
+	c.Integrity = GetIntegrity(contents)
+	c.ObjectReference, err = o.PutObject(ctx, contents)
 	return
 }
 
-func (c *FileReference) storeDir(ctx context.Context, o ObjectStore, path string) (ref string, size int64, err error) {
-	defer Action(&err, "storing directory at \"%s\"", path)
+func (c *FileReference) storeArchive(ctx context.Context, o ObjectStore) (err error) {
+	defer Action(&err, "storing directory at \"%s\"", c.FullPath)
 
-	files, err := ioutil.ReadDir(path)
+	buf := new(bytes.Buffer)
+	w := zip.NewWriter(buf)
+
+	err = addDirectoryToZip(w, c.FullPath, "")
 	if err != nil {
-		return
+		return err
+	}
+	err = w.Close()
+	if err != nil {
+		return err
 	}
 
-	var tree meta.Tree
-	tree.File = make([]*meta.FileReference, len(files))
+	contents := buf.Bytes()
+	c.ResolvedType = FileReference_ZIP_ARCHIVE
+	return c.storeBlob(ctx, o, contents)
+}
 
-	j := NewJobWaiter(c)
-	for i, f := range files {
-		fr := &meta.FileReference{
-			Name: f.Name(),
-			Type: meta.FileReference_FILE}
-		new_path := filepath.Join(path, f.Name())
+func addDirectoryToZip(w *zip.Writer, fullPath, base string) error {
+	files, err := ioutil.ReadDir(fullPath)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
 		if f.IsDir() {
-			fr.Type = meta.FileReference_DIRECTORY
-			go func(result chan<- error) {
-				var err error
-				fr.Reference, fr.Size, err = c.storeDir(ctx, o, new_path)
-				result <- err
-			}(j.New())
-		} else {
-			go func(result chan<- error) {
-				var err error
-				fr.Reference, fr.Size, err = c.storeFile(ctx, o, new_path)
-				result <- err
-			}(j.New())
+			err = addDirectoryToZip(w, filepath.Join(fullPath, f.Name()), path.Join(base, f.Name()))
+			if err != nil {
+				return err
+			}
+			continue
 		}
-		tree.File[i] = fr
-	}
-	err = j.Join()
-	if err != nil {
-		return
-	}
 
-	tree.Canonicalize()
-	encoded, err := proto.Marshal(&tree)
-	if err != nil {
-		return
-	}
-	size = int64(len(encoded))
+		if !f.Mode().IsRegular() {
+			continue
+		}
 
-	o.PutObject(ctx, encoded, &ref, j.New())
-	err = j.Join()
-	return
+		fw, err := w.Create(path.Join(base, f.Name()))
+		if err != nil {
+			return err
+		}
+
+		fr, err := os.Open(filepath.Join(fullPath, f.Name()))
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(fw, fr)
+		fr.Close()
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

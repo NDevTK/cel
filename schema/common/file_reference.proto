@@ -1,0 +1,86 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package common;
+option go_package = "chromium.googlesource.com/enterprise/cel/go/common";
+
+import "schema/common/validation.proto";
+
+// A file reference. Use this when the configuration should refer to a file or
+// a directory that's specified as part of the configuration. All such paths
+// are resolved *relative to the source file* in which the reference appears.
+message FileReference {
+  // Path relative to the location of the .textpb file in which the reference
+  // appears. Absolute paths are not allowed.
+  //
+  //   * Path separators are always forward slashes.
+  //   * No parent directory traversal. I.e. ".." is an invalid path component.
+  //   * '.' is a valid component, but you might as well leave it out.
+  //   * The referenced path must exist.
+  //
+  // This, of course, means that textpb files that refer to other files should
+  // live higher up in the directory tree or live beside the relevant files.
+  //
+  // Note: This field is only valid during authoring. It is cleared when
+  // constructing the Completed Asset Manifest.
+  string source = 1 [(v).type = REQUIRED];
+
+  // The path where the target of this FileReference should be copied to on the
+  // target machine. This field is optional and is only meaningful when a file
+  // or directory should be placed in a specific location on a machine. The
+  // machine is implied based on the schema containing the FileReference.
+  //
+  // The containing schema also determines how the contents of the
+  // FileReference is treated. In cases where the local path doesn't matter
+  // then an indeterminate temporary path may be used.
+  //
+  // Must be a full path or empty.
+  string target_path = 2;
+
+  // The full path to file or directory contents being referred.
+  //
+  // During authoring the deployer sets this field to the full path to the
+  // source.
+  //
+  // Within the lab, this field is used to store the full path to the location
+  // where the referred files or directories are stored on the local file
+  // system. This could be the same as target_path if the latter was not empty
+  // and valid.
+  string full_path = 3 [(v).type = OUTPUT];
+
+  // Opaque reference to an accessible location where the contents of the file
+  // or folder could be found. For GCP, this would be a Google Cloud Storage
+  // URL.
+  //
+  // This reference is understood by the ObjectStorage service.
+  string object_reference = 4 [(v).type = OUTPUT];
+
+  // Subresource integrity string.
+  //
+  // This string is required for all deployed objects. On the client side, the
+  // object is rejected if the integrity check fails. Currently only SHA-256
+  // digests are supported.
+  //
+  // See https://w3c.github.io/webappsec-subresource-integrity/
+  string integrity = 5 [(v).type = OUTPUT];
+
+  // Type of object.
+  enum Type {
+    UNDEFINED = 0;
+
+    // A regular file. The object referenced by object_reference contains the
+    // contents of the file.
+    FILE = 1;
+
+    // A directory tree. The object referenced by object_reference is a Zipped
+    // archive which must be expanded at the location specified by target_path.
+    // All paths in the Zip files are considered to be relative to target_path.
+    //
+    // In the event that target_path is not specified, the archive contents are
+    // expanded to a location determined based on the integrity string.
+    ZIP_ARCHIVE = 2;
+  }
+  Type resolved_type = 6 [(v).type = OUTPUT];
+}

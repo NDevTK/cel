@@ -1,0 +1,71 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+// Asset manifest.
+package asset;
+
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
+
+// Keep list sorted.
+import "schema/asset/active_directory.proto";
+import "schema/asset/cert.proto";
+import "schema/asset/dns.proto";
+import "schema/asset/iis.proto";
+import "schema/asset/network.proto";
+
+// AssetManifest is the main container for all top level assets that go into an
+// asset manifest and can be identified by name. Please refer to each
+// individual message for naming and other requirements.
+//
+// The intended use for this message is to act as the primary message into
+// which text format protobufs can be deserialized when reading configuration
+// files. I.e., a file could be formatted as follows:
+//
+//     network  { name: 'foo' }
+//
+//     dns_zone  {
+//       origin: 'foo.example.'
+//       record  {
+//         name: 'bar'
+//         ttl: 3600
+//         record_type: 'A'
+//         answer: '10.10.2.20'
+//       }
+//     }
+//
+// This file can be parsed into an AssetManifest message. Furthermore, multiple
+// such messages can be concatenated without losing information.  The latter
+// property is important since it allows a single asset manifest to be
+// distributed across a number of files.
+//
+// The manner in which the names appear in a text format protobuf should
+// underscore the style descision to use singular forms when naming repeated
+// fields.
+message AssetManifest {
+  // Core networking. Use field numbers 1-99
+  repeated Network network = 1;
+  repeated DNSZone dns_zone = 2;
+
+  // Windows and ActiveDirectory. Use field numbers 100-199
+  repeated ActiveDirectoryDomain ad_domain = 100;
+  repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit = 101;
+  repeated ActiveDirectoryGroupPolicy ad_group_policy = 102;
+  repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link = 103;
+  repeated ActiveDirectoryRegistryPolicy ad_registry_policy = 104;
+  repeated ActiveDirectoryRegistryPrefPolicy ad_registry_pref_policy = 105;
+  repeated WindowsGroup windows_group = 106;
+  repeated WindowsMachine windows_machine = 107;
+  repeated WindowsUser windows_user = 108;
+
+  // PKI. Use field numbers 200-299
+  repeated Certificate certificate = 200;
+  repeated CertificatePool certificate_pool = 201;
+
+  // IIS. Use field numbers 300-399
+  repeated IISApplication iis_application = 300;
+  repeated IISServer iis_server = 301;
+  repeated IISSite iis_site = 302;
+}

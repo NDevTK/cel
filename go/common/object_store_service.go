@@ -9,22 +9,7 @@ import (
 )
 
 type ObjectStore interface {
-	PutObject(ctx context.Context, content []byte, reference *string, result chan<- error)
-	GetObject(ctx context.Context, reference string, target *[]byte, result chan<- error)
-}
-
-type objectStoreServiceKeyType int
-
-const objectStoreServiceKey objectStoreServiceKeyType = 0
-
-func ObjectStoreFromContext(ctx context.Context) (ObjectStore, error) {
-	o, ok := ctx.Value(objectStoreServiceKey).(ObjectStore)
-	if !ok {
-		return nil, &ServiceNotFoundError{Service: "ObjectStore"}
-	}
-	return o, nil
-}
-
-func ContextWithObjectStore(ctx context.Context, o ObjectStore) context.Context {
-	return context.WithValue(ctx, objectStoreServiceKey, o)
+	PutObject(ctx context.Context, content []byte) (reference string, result error)
+	PutNamedObject(ctx context.Context, name string, content []byte) (reference string, result error)
+	GetObject(ctx context.Context, reference string) (name string, target []byte, result error)
 }

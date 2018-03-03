@@ -1,0 +1,46 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package asset;
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
+
+import "schema/common/validation.proto";
+
+// DNSZone describes a DNS zone. Conceptually it encompasses the same
+// information included in a DNS zone file as described in
+// https://en.wikipedia.org/wiki/Zone_file
+//
+// TODO(asanka): Document the behavior when name == ActiveDirectoryDomain.name
+// for some ActiveDirectoryDomain entry. If the AD Domain also deploys a DNS
+// server, then the |record| entries should be added to the Active Directory
+// DNS server. Otherwise we need to deploy a different DNS server.
+message DNSZone {
+  // Origin described by zone. E.g. foo.example.com.
+  string name = 1 [(common.v).type = FQDN];
+
+  // DNS records that should be included in the zone.
+  repeated DNSRecord record = 2;
+}
+
+// DNSRecord describes a single DNS record in a Zone.
+message DNSRecord {
+  // Name on record.
+  string name = 1 [(common.v).type = LABEL];
+
+  // TTL in seconds.
+  int32 ttl = 2 [(common.v).type = REQUIRED];
+
+  // Must be omitted or is always IN.
+  string record_class = 3;
+
+  // Type of record. E.g. A, AAAA, NS, MX, ...
+  string record_type = 4 [(common.v).type = REQUIRED];
+
+  // Priority value.
+  int32 priority = 5;
+
+  // Answer section.
+  string answer = 6 [(common.v).type = REQUIRED];
+}
