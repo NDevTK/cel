@@ -371,17 +371,25 @@ def _Deps(args):
                   Feel free to delete these. The only visible effect would be
                   that the build might take a bit longer to run.'''))
 
+  update_deps = hasattr(args, 'update') and args.update
+
   sentinel = os.path.join(STAMP_PATH, 'deps.stamp')
-  if _IsTimestampNewer(sentinel,
-                       os.path.join(SOURCE_PATH, 'Gopkg.toml'),
-                       os.path.join(SOURCE_PATH, 'Gopkg.lock')):
+  if not update_deps and _IsTimestampNewer(
+      sentinel,
+      os.path.join(SOURCE_PATH, 'Gopkg.toml'),
+      os.path.join(SOURCE_PATH, 'Gopkg.lock')):
     return
 
+  update_flag = ['-update'] if update_deps else []
+
   _CheckAndInstall(
-      ['dep', 'ensure'] + verbose_flag,
+      ['dep', 'ensure'] + verbose_flag + update_flag,
       _InstallDep,
       env=_MergeEnv(args),
       cwd=SOURCE_PATH)
+
+  if update_deps:
+    subprocess.check_call(['dep', 'prune'])
 
   with open(sentinel, 'w') as f:
     pass
@@ -603,6 +611,9 @@ Check for and ensure build dependencies.
 
 Ensures that required build tools and Go packages are installed and ready to
 use. Use the '--install' option to attempt to install missing build tools.
+
+Developers can use the '--update' option as shorthand for invoking 'dep ensure
+-update && dep prune'.
 '''
   _Deps(args)
 
@@ -988,6 +999,8 @@ def main():
       '-I',
       action='store_true',
       help='install additional dependencies')
+  deps_command.add_argument(
+      '--update', '-U', action='store_true', help='update dependencies')
   deps_command.set_defaults(closure=DepsCommand)
 
   # ----------------------------------------------------------------------------
