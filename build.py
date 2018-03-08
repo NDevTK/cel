@@ -29,12 +29,23 @@ import subprocess
 import sys
 import textwrap
 
+# Root of the source tree.
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
-BUILD_PATH = os.path.join(SOURCE_PATH, 'build')
+
+# OUT_PATH is the root of the output tree. This is where build artifacts are placed.
 OUT_PATH = os.path.join(SOURCE_PATH, 'out')
+
+# STAMP_PATH is a directory that contains timestamp files that are used during
+# the build process to detect stale build artifacts.
 STAMP_PATH = os.path.join(OUT_PATH, 'stamps')
 
-sys.path.append(BUILD_PATH)
+# Go package root for the CEL toolchain.
+PACKAGE_ROOT = "chromium.googlesource.com/enterprise/cel/go"
+
+# Path containing the Go package corresponding to PACKAGE_ROOT.
+ROOT_GO_PATH = os.path.join(SOURCE_PATH, "go")
+
+sys.path.append(os.path.join(SOURCE_PATH, 'build'))
 from markdown_utils import FormatMarkdown
 
 # HOST_GOOS is the GOOS that corresponds to the host platform. Any tool that
@@ -48,6 +59,7 @@ HOST_GOOS = {
     "win32": "windows",
 }.get(sys.platform, "windows")
 
+# Used by _GetCustomBuildEnv to cache the generated build environment.
 CACHED_BUILD_ENV = None
 
 
@@ -107,11 +119,12 @@ def _RunCommand(args, **kwargs):
 
 
 def _GetDependents(fn):
-  '''_GetDependents returns a list of strings representing the full path to
-    the known direct depedents of the file at |fn|.
+  '''\
+_GetDependents returns a list of strings representing the full path to the
+known direct depedents of the file at |fn|.
 
-    Currently only works for .proto files.
-    '''
+Currently only works for .proto files.
+'''
 
   if not fn.endswith('.proto'):
     return []
@@ -141,8 +154,9 @@ def _ExpandArg(a, **kwargs):
 
 
 def _BuildTask(args, inp=[], **kwargs):
-  '''_BuildTask takes as input a list of input files and runs a build command
-  if the output file or a stamp file is found to be out of date.
+  '''\
+_BuildTask takes as input a list of input files and runs a build command
+if the output file or a stamp file is found to be out of date.
 
 In other words, it acts as a mini build step which only runs if the inputs are
 newer than the outputs. As a special case, it attempts to determine the imports
@@ -150,6 +164,7 @@ of a '.proto' file and also takes into account the timestamps of the dependent
 files.
 
 Recognized keyword arguments are:
+
     inp: List[string]
         The list of input files. Can be paths relative to SOURCE_PATH.
 
@@ -177,11 +192,11 @@ argument string '$^' expands to |inp|.
               [_GetDependents(_SourcePath(f)) for f in inp])))
   deps.extend([_SourcePath(f) for f in inp])
 
-  if 'stamp' in kwargs and _IsSentinelNewer(
+  if 'stamp' in kwargs and _IsTimestampNewer(
       _SourcePath(kwargs['stamp']), *deps):
     return
 
-  if 'out' in kwargs and _IsSentinelNewer(_SourcePath(kwargs['out']), *deps):
+  if 'out' in kwargs and _IsTimestampNewer(_SourcePath(kwargs['out']), *deps):
     return
 
   kwargs['inp'] = inp
@@ -286,7 +301,13 @@ def _InstallProtoc(args):
           '''))
 
 
-def _IsSentinelNewer(sentinel_path, *sources):
+def _IsTimestampNewer(sentinel_path, *sources):
+  '''\
+Returns true if any of the `sources` has a timestamp that's nevwer than
+`sentinel_path`.
+
+All of `sources` and `sentinel_path` are full paths to files.
+'''
   if not os.path.exists(sentinel_path):
     return False
   basetime = os.path.getmtime(sentinel_path)
@@ -351,9 +372,9 @@ def _Deps(args):
                   that the build might take a bit longer to run.'''))
 
   sentinel = os.path.join(STAMP_PATH, 'deps.stamp')
-  if _IsSentinelNewer(sentinel,
-                      os.path.join(SOURCE_PATH, 'Gopkg.toml'),
-                      os.path.join(SOURCE_PATH, 'Gopkg.lock')):
+  if _IsTimestampNewer(sentinel,
+                       os.path.join(SOURCE_PATH, 'Gopkg.toml'),
+                       os.path.join(SOURCE_PATH, 'Gopkg.lock')):
     return
 
   _CheckAndInstall(
@@ -367,7 +388,12 @@ def _Deps(args):
 
 
 def _Generate(args):
-  '''Generates Go code based on .proto files.'''
+  '''\
+Generates Go code based on .proto files.
+
+Requires `protoc` be present on PATH. Use _Deps() to install `protoc` if its
+missing.
+'''
 
   _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
   _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
@@ -439,7 +465,8 @@ def _Generate(args):
 
 
 def _GetBuildDir(build_env):
-  '''Return the build directory.
+  '''\
+Return the build directory.
 
 This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
 '''
@@ -451,7 +478,8 @@ This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
 
 
 def BuildCommand(args):
-  '''Build all non-test Go source files.
+  '''\
+Build all non-test Go source files.
 
 Build artifacts can be found in the out/$GOOS_$GOARCH/bin directory after a
 successful build.  Does not attempt to install any packages by default.
@@ -491,13 +519,39 @@ prior to the build, and only if the dependencies have changed.
         cwd=SOURCE_PATH)
 
 
+def _GetGoPackages(root_package, root_path):
+  has_go_files = False
+  packages = []
+  for d in os.listdir(root_path):
+    this_path = os.path.join(root_path, d)
+    if os.path.islink(this_path):
+      continue
+
+    if os.path.isdir(this_path):
+      packages.extend(_GetGoPackages(root_package + "/" + d, this_path))
+      continue
+
+    if d.endswith(".go"):
+      has_go_files = True
+
+  if has_go_files:
+    packages.append(root_package)
+
+  return packages
+
+
 def TestCommand(args):
-  '''Run Go tests.
+  '''\
+Run Go tests.
 
 Invokes 'go test' to run tests. Any additional arguments are passed down to 'go
 test'.
 
-'go test' is invoked for each known build target.
+'go test' is invoked for all known build targets.
+
+'build.py test' is basically equivalent to 'go test ...'. It's primarily here
+for convenience when running tests on all the go packages contained herein. If
+test filtering is to be performed, use 'go test' directly.
 
 Note: Tests can only be run when GOOS == GOHOSTOS. Hence there's no command
 line option to set GOOS.
@@ -508,14 +562,33 @@ line option to set GOOS.
     _Generate(args)
 
   test_env = _MergeEnv(args, target_host=True)
-  _RunCommand(
-      ['go', 'test'] + args.gotest_args + ['./go/...'],
-      env=test_env,
-      cwd=SOURCE_PATH)
+  packages = _GetGoPackages(PACKAGE_ROOT, ROOT_GO_PATH)
+
+  for p in packages:
+    cover_flags = []
+
+    if args.coverage:
+      rel_package_name = p[len(PACKAGE_ROOT) + 1:]
+      cover_profile = os.path.join(
+          OUT_PATH, ''.join('_' if x == '/' else x
+                            for x in rel_package_name) + ".cover")
+      cover_flags = [
+          '-cover', '-covermode', 'atomic', '-coverprofile', cover_profile
+      ]
+      print('''\
+
+Use 'go tool cover -http %s' to view coverage information in HTML.''' %
+            (cover_profile))
+
+    _RunCommand(
+        ['go', 'test'] + args.gotest_args + cover_flags + [p],
+        env=test_env,
+        cwd=SOURCE_PATH)
 
 
 def GenCommand(args):
-  '''Generate protobuf code.
+  '''\
+Generate protobuf code.
 
 Should be run after changing any of the *.proto files. This re-generates the Go
 protobuf code based on the .proto files.
@@ -525,7 +598,8 @@ protobuf code based on the .proto files.
 
 
 def DepsCommand(args):
-  '''Check for and ensure build dependencies.
+  '''\
+Check for and ensure build dependencies.
 
 Ensures that required build tools and Go packages are installed and ready to
 use. Use the '--install' option to attempt to install missing build tools.
@@ -534,7 +608,8 @@ use. Use the '--install' option to attempt to install missing build tools.
 
 
 def ShowEnvCommand(args):
-  '''Show the Go environment used for building.
+  '''\
+Show the Go environment used for building.
 
 Use the --goos option to see the Go environment used for cross compiling.
 '''
@@ -542,7 +617,8 @@ Use the --goos option to see the Go environment used for cross compiling.
 
 
 def RunCommand(args):
-  '''Run a command under the build environment.
+  '''\
+Run a command under the build environment.
 
 The specified command will be executed with environment variables configured
 for 'go build'. If the command requires passing commandline arguments, preface
@@ -679,7 +755,8 @@ def _FormatPythonFiles(args, py_files):
 
 
 def FormatCommand(args):
-  '''Reformat code and prepare for a code commit.
+  '''\
+Reformat code and prepare for a code commit.
 
 This command performs the following:
 
@@ -769,6 +846,13 @@ Problems with 'clang-format'?
 
 
 def CheckFormatting(files):
+  '''\
+CheckFormatting returns a list of files within our source tree that are
+incorrectly formatted.
+
+This function is used by our PRESUBMIT.py script to block commits of
+incorrectly formatted code.
+'''
 
   class fakeargs(object):
 
@@ -790,8 +874,8 @@ def CheckFormatting(files):
 
 
 def CleanCommand(args):
-  '''Remove build artifacts.
-'''
+  '''Remove build artifacts.'''
+
   force_option = ['-f' if args.force else '-n']
   _RunCommand(
       ['git', 'clean', '-X'] + force_option,
@@ -850,6 +934,11 @@ def main():
       '-F',
       action='store_true',
       help='''fast build. Skips dependency and generator steps''')
+  test_command.add_argument(
+      '--coverage',
+      '-c',
+      action='store_true',
+      help='''generate test coverage info''')
   test_command.add_argument(
       'gotest_args',
       metavar='ARGS',
