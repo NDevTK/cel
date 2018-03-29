@@ -23,3 +23,13 @@ files that comprise the Chrome Enterprise Lab schema. This data is used to
 compile and output the documentation.
 
 [descriptor.proto]: https://github.com/golang/protobuf/blob/master/protoc-gen-go/descriptor/descriptor.proto
+
+## TODO List
+
+* Generate documentation on validation constraints and type information.
+
+* Autolinkify cross references between symbols in comments.
+
+* Include a summary and a TOC for easier navigation.
+
+

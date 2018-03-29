@@ -120,6 +120,7 @@ func (g *generator) extractFromField(md *MessageData, p []int32, f *descriptor.F
 // Note that the message may be nested.
 //
 // Arguments:
+//
 //    fd : The FileData object which should receive the per-message
 //         documentation.
 //

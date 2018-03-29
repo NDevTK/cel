@@ -32,8 +32,7 @@ The MarkDown documentation will be written to <output-file>.
 Within the Chrome Enterprise Lab build environment, you can generate the
 documentation via the build.py build tool by invoking it as "build.py gen".
 
-Each invocation of gen_doc_proto must be limited to a single package.
-`)
+Each invocation of gen_doc_proto must be limited to a single package.`)
 	os.Exit(2)
 }
 
