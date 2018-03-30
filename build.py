@@ -109,9 +109,8 @@ def _EnsureDir(path_to_dir):
 
 
 def _RunCommand(args, **kwargs):
-  logging.info("%s [CWD: %s, GOOS: %s]", ' '.join([(x if ' ' not in x
-                                                    else '"' + x + '"')
-                                                   for x in args]),
+  logging.info("%s [CWD: %s, GOOS: %s]",
+               ' '.join([(x if ' ' not in x else '"' + x + '"') for x in args]),
                kwargs.get('cwd', os.getcwd()),
                kwargs.get('env', os.environ).get('GOOS', HOST_GOOS))
 
@@ -210,9 +209,8 @@ argument string '$^' expands to |inp|.
   if 'stamp' in kwargs:
     del kwargs['stamp']
 
-  logging.info("%s [CWD: %s, GOOS: %s]", ' '.join([(x if ' ' not in x
-                                                    else '"' + x + '"')
-                                                   for x in args]),
+  logging.info("%s [CWD: %s, GOOS: %s]",
+               ' '.join([(x if ' ' not in x else '"' + x + '"') for x in args]),
                kwargs.get('cwd', os.getcwd()),
                kwargs.get('env', os.environ).get('GOOS', HOST_GOOS))
 
@@ -375,8 +373,7 @@ def _Deps(args):
 
   sentinel = os.path.join(STAMP_PATH, 'deps.stamp')
   if not update_deps and _IsTimestampNewer(
-      sentinel,
-      os.path.join(SOURCE_PATH, 'Gopkg.toml'),
+      sentinel, os.path.join(SOURCE_PATH, 'Gopkg.toml'),
       os.path.join(SOURCE_PATH, 'Gopkg.lock')):
     return
 
@@ -578,8 +575,8 @@ line option to set GOOS.
     if args.coverage:
       rel_package_name = p[len(PACKAGE_ROOT) + 1:]
       cover_profile = os.path.join(
-          OUT_PATH, ''.join('_' if x == '/' else x
-                            for x in rel_package_name) + ".cover")
+          OUT_PATH,
+          ''.join('_' if x == '/' else x for x in rel_package_name) + ".cover")
       cover_flags = [
           '-cover', '-covermode', 'atomic', '-coverprofile', cover_profile
       ]
