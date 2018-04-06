@@ -6,18 +6,29 @@ syntax = "proto3";
 package host;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/host";
 
-import "schema/common/validation.proto";
 import "schema/asset/network.proto";
+import "schema/common/file_reference.proto";
+import "schema/common/validation.proto";
 import "schema/gcp/compute/compute-api.proto";
+import "schema/gcp/iam/iam-api.proto";
 
 // GCP project hosting.
 message Project {
-  // The project name.
+  // The project name. In GCP, this serves as the project ID.
+  //
+  // E.g. `my-project-123`.
   string name = 1 [(common.v).type = ORGLABEL];
 
   // The default zone to use when constructing resources. The |zone| also
-  // implicitly defines the region.
+  // implicitly defines the region. See
+  // https://cloud.google.com/compute/docs/regions-zones/ for an up-to-date
+  // list of regions and zones.
+  //
+  // Only the zone identifier should be entered here. E.g. "us-west1-a"
   string zone = 2 [(common.v).type = LABEL];
+
+  // The GCP Project number.
+  int64 project_number = 10 [(common.v).type = OUTPUT];
 }
 
 // Stackdriver log settings.
@@ -32,17 +43,31 @@ message LogSettings {
 // purposes.
 //
 // The storage configured here must exist throughout the entire lifetime of the
-// lab.
+// lab. In addition, the bucket should ideally belong to the same project as
+// the lab.
+//
+// TODO(asanka): Should include ways to configure retention of objects, and
+// perhaps customize ACLs.
 message Storage {
   // Name of the GCS bucket. No `gs:` prefix. Just the name.
   string bucket = 1 [(common.v).type = REQUIRED];
 
   // A prefix to attach to every named object stored in the GCS bucket. If left
-  // empty, the default prefix of /cel-deploy will be used.
+  // empty, the default prefix of cel-config will be used.
   //
-  // The prefix, if non-empty, must start with a "/" and must NOT end with a
-  // slash.
+  // The prefix must not end in a forward slash, though it can contain forward
+  // slashes.
+  //
+  // A lab will not access objects outside of the prefix. Hence the prefix used
+  // at deployment time must be passed along to the client instances. All
+  // object references are validated against the prefix. The CEL toolchain will
+  // handle this for you. However, it does mean that object references created
+  // against one prefix will not work with another.
   string prefix = 2;
+
+  // The time at which the storage bucket was created as a RFC 3339 formatted
+  // string.
+  string created_on = 10 [(common.v).type = OUTPUT];
 }
 
 // Dependencies are things that aren't referred to directly by an asset
@@ -94,6 +119,9 @@ message Image {
 }
 
 // Describes a type of machine (virtual or otherwise).
+//
+// Not to be confused with GCE machine type. I.e.
+// These are not https://cloud.google.com/compute/docs/machine-types
 message MachineType {
   // Name is used to match machine type name from asset description.
   string name = 1;
@@ -102,10 +130,9 @@ message MachineType {
   oneof base {
     // InstanceProperties are used for constructing a new GCE instance.
     //
-    // The instance_properties.AttachedDisk.Source is special and can refer to
-    // an image name using the syntax "${host.image.<imagename>.url}" where
-    // <imagename> is the name of an Image object in the enclosing
-    // HostEnvironment.
+    // The instance_properties.AttachedDisk.Source can refer to an image name
+    // using the syntax "${host.image.<imagename>.url}" where <imagename> is
+    // the name of an Image object in the enclosing HostEnvironment.
     compute.InstanceProperties instance_properties = 5;
 
     // An instance template to use for constructing a new GCE instance. Should
@@ -136,12 +163,33 @@ message AddressPool {
   repeated string reserved_address_regex = 4;
 }
 
+// Base support resources that must exist at the time the lab assets are
+// deployed.
+//
+// These values are output only and are determined at deployment time. They are
+// part of the schema so that on-host logic can refer to these values at
+// runtime and so that these values will appear in the completed asset
+// manifest.
+message RuntimeSupport {
+  // The GCP service account that will be used on all lab VMs.
+  iam.ServiceAccount service_account = 100 [(common.v).type = OUTPUT];
+
+  // Windows startup file.
+  common.FileReference win_startup = 101 [(common.v).type = OUTPUT];
+
+  // Windows CEL Agent executable.
+  common.FileReference win_agent_x64 = 102 [(common.v).type = OUTPUT];
+}
+
 message HostEnvironment {
   Project project = 1 [(common.v).type = REQUIRED];
-  LogSettings log_settings = 2 [(common.v).type = REQUIRED];
-  Storage storage = 3 [(common.v).type = REQUIRED];
+  Storage storage = 2 [(common.v).type = REQUIRED];
+  LogSettings log_settings = 3 [(common.v).type = REQUIRED];
 
   repeated MachineType machine_type = 10;
   repeated AddressPool address_pool = 11;
   repeated Image image = 12;
+
+  // Determined at deployment time.
+  RuntimeSupport resources = 100 [(common.v).type = OUTPUT];
 }

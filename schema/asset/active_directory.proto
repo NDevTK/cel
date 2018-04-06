@@ -12,21 +12,97 @@ import "schema/common/file_reference.proto";
 import "schema/common/secret.proto";
 import "schema/common/validation.proto";
 
-// Describes an Active Directory domain or forest.
+// Describes an Active Directory domain.
+//
+// All ActiveDirectoryDomain definitions live under the "asset.ad_domain"
+// collection. When authoring, leave out the "asset" component. E.g.:
+//
+// ``` textpb
+// ad_domain {
+//   name: "my-domain"
+//   ...
+// }
+// ```
+//
+// Deploying a new forest
+// ----------------------
+// An `ActiveDirectoryDomain` message with no `parent_name` and no `forest`
+// results in a new forest. The domain becomes the root domain for the forest.
+//
+// E.g.: The following messages describes a new forest where the root domain is
+// `win.example.com`.
+//
+// ``` textpb
+// ad_domain {
+//   name: "win.example.com"
+//   domain_controller {
+//     windows_machine: "my-ad"
+//   }
+// }
+// ```
+//
+// Deploying a new child domain
+// ----------------------------
+// An `ActiveDirectoryDomain` message with non-empty `parent_name` constructs a
+// child domain.
+//
+// E.g.: The following message describes a new child domain named `sales` under
+// the parent domain `win.example.com`.
+//
+// ``` textpb
+// ad_domain {
+//   name: "sales.win.example.com"
+//   parent_name: "win.example.com"
+//   domain_controller {
+//     windows_machine: "my-ad"
+//   }
+// }
+// ```
+//
+// Deploying a new tree in an existing forest
+// ------------------------------------------
+// An `ActiveDirectoryDomain` message with a non-empty `forest` constructs a
+// new tree in an existing forest.
+//
+// E.g.: The following message describes a new tree rooted at
+// `research.example.org` in the forest identified by `win.example.com`. Note
+// that the forest is identified by the `ActiveDirectoryDomain` message
+// corresponding to the root domain in the forest.
+//
+// ``` textpb
+// ad_domain {
+//   name: "research.example.org"
+//   forest: "win.example.com"
+//   domain_controller {
+//     windows_machine: "my-ad"
+//   }
+// }
+// ```
 message ActiveDirectoryDomain {
   // FQDN of the domain in lower case.
   string name = 1 [(common.v).type = FQDN];
 
-  // Parent domain name. Only specify this if this domain is going to be a
-  // child domain.
-  string parent_name = 2
-      [(common.v) = {ref: "asset.ad_domain", optional: true}];
+  oneof ancestor {
+    // Parent domain name. Only specify this if this domain is going to be a
+    // child domain.
+    string parent_name = 2
+        [(common.v) = {ref: "asset.ad_domain", optional: true}];
+
+    // Forest name. Only specify this if this domain should be a new tree in an
+    // existing forest. The value of this field should refer to the
+    // ActiveDirectoryDomain entry corresponding to the root domain of the
+    // forest.
+    //
+    // If this field is empty, then this domain will become the root domain of a
+    // new forest. Don't set this field to the same value as the `name` field.
+    string forest = 3 [(common.v) = {ref: "asset.ad_domain", optional: true}];
+  }
 
   // Active Directory functional level. A.k.a. Domain Mode. See
   // https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/active-directory-functional-levels
   // for more details on the specific features that are available at each
   // functional level.
-  enum Mode {
+  enum FunctionalLevel {
     // Use the default. The default functional level depends on the host OS and
     // on the other AD DS servers in the domain or forest.
     DEFAULT = 0;
@@ -38,27 +114,23 @@ message ActiveDirectoryDomain {
     Win2012R2 = 6;
     Win2016 = 7;
   }
-  Mode domain_mode = 3;
+  FunctionalLevel domain_mode = 4;
+
+  // Active Directory forest functinoal level. A.k.a. Forest Mode.
+  //
+  // This value only applies to ActiveDirectoryDomain objects that describe the
+  // root domain of a new forest. I.e. Whenever the `forest` field is empty.
+  FunctionalLevel forest_mode = 5;
 
   // NetBIOS name. Required if |name| is longer than 15 characters.
-  string netbios_name = 4;
+  string netbios_name = 6;
 
-  // Domain type
-  enum Type {
-    // Child of an existing domain. (This is the default)
-    CHILD = 0;
-
-    // Root of a new domain tree.
-    TREE = 1;
-  }
-  Type type = 5;
-
-  // Forest functional level (only applicable when creating a new forest.
-  Mode forest_mode = 6;
-
-  // Domain controllers for this domain. At least one must be specified.
-  repeated ActiveDirectoryDomainController domain_controller = 10
+  // Domain controllers for this domain. At least one is required.
+  repeated ActiveDirectoryDomainController domain_controller = 100
       [(common.v).type = REQUIRED];
+
+  // Safe Mode / Directory Services Resotre Mode Administrator password.
+  common.Secret safe_mode_admin_password = 200 [(common.v).type = OUTPUT];
 };
 
 // Describes a single Active Directory Domain Controller. This message should
@@ -94,7 +166,13 @@ message ActiveDirectoryDomainController {
   bool create_dns_delegation = 5;
 }
 
-// Describes an Active Directory Organizational Unit.
+// Describes an Active Directory Organizational-Unit.
+//
+// By default the `name` field corresponds to the `ou` attribute of the
+// `Organizational-Unit` object. If the `name` field cannot contain the value
+// (e.g. because the `ou` value needs to contain characters that are not
+// allowed in the `name` field), then the `full_name` field can be used
+// instead.
 //
 // Note that this message omits location properties like postal code, city,
 // state, and country. Use the 'property' field to specify these if required.
@@ -108,8 +186,9 @@ message ActiveDirectoryDomainController {
 //        ..
 //     }
 message ActiveDirectoryOrganizationalUnit {
-  // Name of the OU. Also populates the 'name' property of the AD object unless
-  // overridden by |full_name|.
+  // Name of the OU. Also populates the 'ou' attribute
+  // (`Organizational-Unit-Name`) of the AD object unless overridden by
+  // |full_name|.
   string name = 1;
 
   // The 'name' property of the AD object. Only specify this if |name| can't be
@@ -131,31 +210,31 @@ message ActiveDirectoryOrganizationalUnit {
   // copied over.
   string based_on = 5 [(common.v).ref = "asset.ad_organizational_unit"];
 
-  // The 'displayName' property of the AD object.
+  // The 'displayName' attribute (`Display-Name`) of the AD object.
   string display_name = 6;
 
-  // The 'description' property of the AD object.
+  // The 'description' attribute (`Description`) of the AD object.
   string description = 7;
 
   // The principal managing this OU. Note that the 'container' property for a
   // user or a group is implicit and should be omitted.
   UserOrGroupReference managed_by = 8;
 
-  // Additional properties. The key is the ldapDisplayName of the property. The
-  // value can be a single string. Repeat using the same key to specify more
-  // than one value for a single key.
+  // Additional attributes. The key is the ldapDisplayName of the attribute.
+  // The value can be a single string. Repeat using the same key to specify
+  // more than one value for a single attribute.
   //
   // E.g.:
-  //     property {
-  //       key: 'favColors'
-  //       value: 'pink'
+  //     attribute {
+  //       key: 'telephoneNumber'
+  //       value: '+1-617-555-1234'
   //     }
   //
-  //     property {
-  //       key: 'favColors'
-  //       value: 'purple'
+  //     attribute {
+  //       key: 'postalCode'
+  //       value: '02141'
   //     }
-  map<string, string> property = 9;
+  map<string, string> attribute = 9;
 }
 
 // Describes an Active Directory GPO. The GPO itself may not contain anything
@@ -218,6 +297,9 @@ message ActiveDirectoryGroupPolicy {
   // If a template GPO is specified, that will be used as the starter GPO.
   // Creates a starter GPO is no value is specified here.
   string based_on = 5 [(common.v).ref = "asset.ad_group_policy"];
+
+  repeated ActiveDirectoryRegistryPolicy registry = 6;
+  repeated ActiveDirectoryRegistryPrefPolicy registry_pref = 7;
 }
 
 // Describes one or more GPO links.
@@ -242,12 +324,6 @@ message ActiveDirectoryGroupPolicyLink {
 
 // Describes a set of registry keys that should be applied for a GPO.
 message ActiveDirectoryRegistryPolicy {
-  // An identifier for the registry policy.
-  string name = 1;
-
-  // The GPO that will be affected by this registry policy.
-  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
-
   // If true, the registry values defined in this message will be added to the
   // respective registry keys. The default behavior -- also the behavior when
   // this field is set to false -- is to delete all the values under each key
@@ -260,12 +336,6 @@ message ActiveDirectoryRegistryPolicy {
 
 // Describes a registry change that should happen when applying a GPO.
 message ActiveDirectoryRegistryPrefPolicy {
-  // An identifier for the registry policy.
-  string name = 1;
-
-  // The GPO that will be affected by this registry policy.
-  string ad_group_policy = 2 [(common.v).ref = "asset.ad_group_policy"];
-
   // The action to take when processing the GPO.
   enum Action {
     CREATE = 0;
@@ -364,13 +434,17 @@ message RegistryValue {
 // object types are needed.
 message WindowsContainer {
   oneof container {
-    // Domain name.
+    // Domain name. Users and groups that have an `ad_domain` container are
+    // automatically assigne as tenants of the domain controller for the
+    // associated domain.
     string ad_domain = 1 [(common.v).ref = "asset.ad_domain"];
 
     // Machine name.
     string windows_machine = 2 [(common.v).ref = "asset.windows_machine"];
 
-    // Organizational unit.
+    // Organizational unit. Users and groups that have an `ad_domain` container
+    // are automatically assigned as tenants of the domain controller for the
+    // associated domain.
     string ad_organizational_unit = 3
         [(common.v).ref = "asset.ad_organizational_unit"];
   }
@@ -396,6 +470,16 @@ message WindowsGroup {
 }
 
 // Describes a Active Directory or a Windows local user.
+//
+// WindowsUser messages are located under the "asset.windows_user" collection.
+// When authoring, leave out the "asset." prefix. E.g.:
+//
+// ``` textpb
+//   windows_user {
+//     name: "joe"
+//     container { ad_domain: "win-domain" }
+//   }
+// ```
 message WindowsUser {
   // Name of the user. Exclude the domain name.
   //
@@ -432,11 +516,13 @@ message GroupReference {
   // the GroupReference inheriting the parent object's container. Take for
   // example, the following WindowsUser definition:
   //
+  // ``` textpb
   //     windows_user {
   //       name: 'joe'
   //       container: { domain: 'foo.example' }
-  //       member_of: { name: 'bar' }
+  //       member_of: { windows_group: 'bar' }
   //     }
+  // ```
   //
   // This results in the user being a member of the group 'bar' in the
   // 'foo.example' AD domain because that's the enclosing container.  Note
@@ -466,6 +552,16 @@ message UserOrGroupReference {
 }
 
 // A Windows machine.
+//
+// WindowsMachine messages are located under the "asset.windows_machine"
+// collection.  When authoring, leave out the "asset." prefix. E.g.:
+//
+// ``` textpb
+//   windows_machine {
+//     name: "foo"
+//     container { ad_domain: "win-domain" }
+//   }
+// ```
 message WindowsMachine {
   // Name of the machine. This name will become the hostname for the machine,
   // both absolute and domain relative (if applicable). Hence must be globally
@@ -473,7 +569,9 @@ message WindowsMachine {
   //
   // For Windows machines, it's advisable to have *short* hostnames, ideally
   // shorter than 11 characters. This allows the name to do double duty as a
-  // NetBios name as well as a DNS hostname.
+  // NetBios name as well as a DNS hostname. If the name needs to be longer,
+  // then you can specify a shorter NetBIOS name using the `NetbiosName`
+  // property.
   string name = 1;
 
   // The name of a host.MachineType entry that describes the host machine.
@@ -499,9 +597,9 @@ message WindowsMachine {
   // following PowerShell command to determine the list of available locales on
   // a Windows machine:
   //
-  //     ``` ps1
-  //     [System.Globalization.CultureInfo]::GetCultures([System.Globalization.CultureTypes]::AllCultures).name
-  //     ```
+  // ``` ps1
+  // [System.Globalization.CultureInfo]::GetCultures([System.Globalization.CultureTypes]::AllCultures).name
+  // ```
   //
   // PS DSC Reference:
   // * https://github.com/PowerShell/SystemLocaleDsc
@@ -511,9 +609,9 @@ message WindowsMachine {
   // unchanged. Use the following PowerShell command to determine the lsit of
   // available timezone identifiers on a Windows machine:
   //
-  //     ``` ps1
-  //     [System.TimeZoneInfo]::GetSystemTimeZones().Id
-  //     ```
+  // ``` ps1
+  // [System.TimeZoneInfo]::GetSystemTimeZones().Id
+  // ```
   //
   // PS DSC Reference:
   // * https://github.com/PowerShell/xTimeZone
@@ -522,12 +620,15 @@ message WindowsMachine {
   // List of additional Windows features or roles to install. The values here
   // should be valid for the selected host machine type. You can use the
   // 'Get-WindowsFeature' PowerShell commandlet to retrieve a list of available
-  // Windows features.
+  // Windows features. E.g.:
   //
-  // E.g.: windows_feature: "Web-Server"
+  // ``` textpb
+  // windows_feature: "Web-Server"
+  // ```
   //
   // Note: This method cannot be used to specify all sub-features. All
-  // features that needs to be installed should be listed explicitly.
+  // features that needs to be installed should be listed individually and
+  // explicitly.
   //
   // Note: Addition of roles can cause features to be installed implicitly.
   // E.g. specifying a machine as the host for an IIS site will automatically
@@ -546,6 +647,11 @@ message WindowsMachine {
   // A configuration file. Specify this if you've run Windows Server Manager
   // and produced a configration file already.
   common.FileReference configuration_file = 15;
+
+  // List of all Windows features that must be installed and configured on this
+  // Windows machine. This is a union of `windows_feature` and features that
+  // are required due to additional services hosted on this machine.
+  repeated string all_features = 102 [(common.v).type = OUTPUT];
 
   // List of FQDNs that are known to refer to this machine. There can be
   // multiple if there are aliases configured for this machine.

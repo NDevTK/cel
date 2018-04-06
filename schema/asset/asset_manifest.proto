@@ -24,17 +24,19 @@ import "schema/asset/network.proto";
 // which text format protobufs can be deserialized when reading configuration
 // files. I.e., a file could be formatted as follows:
 //
-//     network  { name: 'foo' }
+// ``` textpb
+//   network  { name: "foo" }
 //
-//     dns_zone  {
-//       origin: 'foo.example.'
-//       record  {
-//         name: 'bar'
-//         ttl: 3600
-//         record_type: 'A'
-//         answer: '10.10.2.20'
-//       }
+//   dns_zone  {
+//     origin: "foo.example."
+//     record  {
+//       name: "bar"
+//       ttl: 3600
+//       record_type: "A"
+//       answer: "10.10.2.20"
 //     }
+//   }
+// ```
 //
 // This file can be parsed into an AssetManifest message. Furthermore, multiple
 // such messages can be concatenated without losing information.  The latter
@@ -54,11 +56,9 @@ message AssetManifest {
   repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit = 101;
   repeated ActiveDirectoryGroupPolicy ad_group_policy = 102;
   repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link = 103;
-  repeated ActiveDirectoryRegistryPolicy ad_registry_policy = 104;
-  repeated ActiveDirectoryRegistryPrefPolicy ad_registry_pref_policy = 105;
-  repeated WindowsGroup windows_group = 106;
-  repeated WindowsMachine windows_machine = 107;
-  repeated WindowsUser windows_user = 108;
+  repeated WindowsGroup windows_group = 104;
+  repeated WindowsMachine windows_machine = 105;
+  repeated WindowsUser windows_user = 106;
 
   // PKI. Use field numbers 200-299
   repeated Certificate certificate = 200;

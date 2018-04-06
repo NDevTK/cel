@@ -13,38 +13,42 @@ message Validation {
     // No validation is to be performed.
     UNKNOWN = 0;
 
-    // When applied to a 'string' field, implies that the field value cannot be
+    // When applied to a `string` field, implies that the field value cannot be
     // empty. This is implied for any field that has a non-empty external
-    // reference (i.e. ref != ""), or the validation type is LABEL, FQDN or
-    // ORGLABEL.
+    // reference (i.e. `[ref] != ""`), or the validation type is [LABEL],
+    // [FQDN] or [ORGLABEL].
     //
-    // When applied to a 'repeated' field, implies that there must be at least
+    // When applied to a `repeated` field, implies that there must be at least
     // one instance of the field.
     //
-    // When applied to 'oneof' implies that at least one of the alternatives
+    // When applied to `oneof` implies that at least one of the alternatives
     // must be specified.
     //
-    // When applied to a 'map' implies that there should be at least one
+    // When applied to a `map` implies that there should be at least one
     // mapping.
     //
-    // E.g.: Declare the 'h' field of Foo message to be required:
+    // E.g.: Declare the `h` field of Foo message to be required:
     //
-    //     message Foo {
-    //       string h = 1 [(v).type=REQUIRED]
-    //     }
+    // ``` proto
+    //   message Foo {
+    //     string h = 1 [(v).type=REQUIRED]
+    //   }
+    // ```
     REQUIRED = 1;
 
-    // The field value cannot be empty and must match the <label> production in
-    // RFC 1035. This validation type is applied by default for for any field
-    // named 'name'.
+    // The field value cannot be empty and must match the `<label>` production
+    // in [RFC 1035][]. This validation type is applied by default for for any
+    // field named 'name'.
+    //
+    // [RFC 1035]: https://www.ietf.org/rfc/rfc1035.txt
     LABEL = 2;
 
-    // The field value cannot be empty, and must match the <subdomains>
-    // production in RFC 1035. Can only be applied to 'string' fields.
+    // The field value cannot be empty, and must match the `<subdomains>`
+    // production in [RFC 1035][]. Can only be applied to `string` fields.
     FQDN = 3;
 
     // A label with an optional org component. These look like:
-    // example.com:foo. Cannot be empty.
+    // `example.com:foo`. Cannot be empty.
     ORGLABEL = 4;
 
     // This is an output field and is not expected to be populated in a asset
@@ -56,9 +60,9 @@ message Validation {
     // corresponding asset has been deployed and running. Runtime values can be
     // looked up via RuntimeConfiguration service from within the lab.
     //
-    // Unlike OUTPUT fields, RUNTIME fields can only be defined on top-level
+    // Unlike [OUTPUT] fields, [RUNTIME] fields can only be defined on top-level
     // assets. In other words, they can only appear if the asset in question is
-    // a child of the HostEnvironment or AssetManifest messages.
+    // a direct child of the HostEnvironment or AssetManifest messages.
     RUNTIME = 6;
   }
   FieldType type = 1;
@@ -66,12 +70,14 @@ message Validation {
   // The foreign key. If non-empty, designates that this string field is a
   // reference to a collection designated by |ref|.
   //
-  // E.g.: Declare 'network' to be a field that refers to an 'asset.network' by
+  // E.g.: Declare `network` to be a field that refers to an `asset.network` by
   // name.
   //
-  //     message Foo {
-  //       string network = 1 [(v).ref="asset.network"]
-  //     }
+  // ``` proto
+  //   message Foo {
+  //     string network = 1 [(v).ref="asset.network"]
+  //   }
+  // ```
   //
   // The annotated field must be a string.
   string ref = 2;
@@ -86,18 +92,29 @@ message Validation {
 // to indicate foreign keys, and additional validation requirements.
 extend google.protobuf.FieldOptions {
   // See Validation above.
+  //
   // Use as:
-  //     message Foo {
-  //       string my_field = 1 [(v).type=<type>];
-  //     }
+  //
+  // ``` proto
+  //   message Foo {
+  //     string my_field = 1 [(v).type=<type>];
+  //   }
+  // ```
   //
   // Or more commonly:
-  //     message Foo {
-  //       string my_field = 1 [(common.v).type=<type>];
+  //
+  // ``` proto
+  //   message Foo {
+  //     string my_field = 1 [(common.v).type=<type>];
+  //   }
+  // ```
   //
   // Or:
-  //     message Foo {
-  //       string my_field = 1 [(common.v)={type:<type>, ref:"<key>"}];
-  //     }
+  //
+  // ``` proto
+  //   message Foo {
+  //     string my_field = 1 [(common.v)={type:<type>, ref:"<key>"}];
+  //   }
+  // ```
   Validation v = 50000;
 }

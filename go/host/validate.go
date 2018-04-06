@@ -15,6 +15,7 @@ func (*Image_Family) Validate() error    { return nil }
 func (*LogSettings) Validate() error     { return nil }
 func (*MachineType) Validate() error     { return nil }
 func (*Project) Validate() error         { return nil }
+func (*RuntimeSupport) Validate() error  { return nil }
 
 func (i *Image) Validate() error {
 	if i.GetFixed() == "" && i.GetLatest() == nil {
@@ -28,8 +29,8 @@ func (s *Storage) Validate() error {
 		return nil
 	}
 
-	if !strings.HasPrefix(s.Prefix, "/") || strings.HasSuffix(s.Prefix, "/") {
-		return errors.Errorf("the GCS object name prefix must start with a forward slash \"/\" and must not end with a slash. Found name \"%s\"", s.Prefix)
+	if strings.HasSuffix(s.Prefix, "/") {
+		return errors.Errorf("the GCS object name prefix must not end with a slash. Found name \"%s\"", s.Prefix)
 	}
 	return nil
 }
