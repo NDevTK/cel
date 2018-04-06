@@ -31,7 +31,7 @@ func TestWalkProto_Order(t *testing.T) {
 		if len(accumulator) != len(expected) {
 			s := ""
 			for i := 0; i < len(accumulator); i++ {
-				type_name := getTypeString(accumulator[i].V.Type())
+				type_name := getGoTypeString(accumulator[i].V.Type())
 				field_name := "(object)"
 				if accumulator[i].D != nil {
 					field_name = accumulator[i].D.GetName()
@@ -43,7 +43,7 @@ func TestWalkProto_Order(t *testing.T) {
 		}
 
 		for i := 0; i < len(accumulator); i++ {
-			type_name := getTypeString(accumulator[i].V.Type())
+			type_name := getGoTypeString(accumulator[i].V.Type())
 			field_name := "(object)"
 			if accumulator[i].D != nil {
 				field_name = accumulator[i].D.GetName()
@@ -161,8 +161,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 		MapString: map[string]string{"map-string-key": "map-string-value"}}
 
 	t.Run("pod-field", func(t *testing.T) {
-		iv, err := ResolvePath(&v, RefPathFromStrings("abc", "def"), RefPathFromStrings("abc", "def", "name"),
-			ResolutionIncludeOutputs)
+		iv, err := Dereference(&v, RefPathFromComponents("abc", "def"), RefPathFromComponents("abc", "def", "name"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -170,8 +169,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 			t.Fatal()
 		}
 
-		iv, err = ResolvePath(&v, EmptyPath, RefPathFromStrings("repeated_field", "repeated-one", "name"),
-			ResolutionIncludeOutputs)
+		iv, err = Dereference(&v, EmptyPath, RefPathFromComponents("repeated_field", "repeated-one", "name"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -181,7 +179,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 	})
 
 	t.Run("regular-field", func(t *testing.T) {
-		iv, err := ResolvePath(&v, EmptyPath, RefPathFromStrings("field"), ResolutionIncludeOutputs)
+		iv, err := Dereference(&v, EmptyPath, RefPathFromComponents("field"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -191,8 +189,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 	})
 
 	t.Run("slice-field", func(t *testing.T) {
-		iv, err := ResolvePath(&v, EmptyPath, RefPathFromStrings("repeated_field", "repeated-one"),
-			ResolutionIncludeOutputs)
+		iv, err := Dereference(&v, EmptyPath, RefPathFromComponents("repeated_field", "repeated-one"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -202,7 +199,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 	})
 
 	t.Run("oneof-field", func(t *testing.T) {
-		iv, err := ResolvePath(&v, EmptyPath, RefPathFromStrings("optional_field", "name"), ResolutionIncludeOutputs)
+		iv, err := Dereference(&v, EmptyPath, RefPathFromComponents("optional_field", "name"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -212,7 +209,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 	})
 
 	t.Run("invalid-pod", func(t *testing.T) {
-		_, err := ResolvePath(&v, EmptyPath, RefPathFromStrings("namex"), ResolutionIncludeOutputs)
+		_, err := Dereference(&v, EmptyPath, RefPathFromComponents("namex"))
 		if err == nil {
 			t.Fatal()
 		}
@@ -222,7 +219,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 	})
 
 	t.Run("invalid-slice", func(t *testing.T) {
-		_, err := ResolvePath(&v, EmptyPath, RefPathFromStrings("repeated_field", "xxx"), ResolutionIncludeOutputs)
+		_, err := Dereference(&v, EmptyPath, RefPathFromComponents("repeated_field", "xxx"))
 		if err == nil {
 			t.Fatal()
 		}
@@ -232,7 +229,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 	})
 
 	t.Run("nil-object", func(t *testing.T) {
-		_, err := ResolvePath(&v, EmptyPath, RefPathFromStrings("field", "foo"), ResolutionIncludeOutputs)
+		_, err := Dereference(&v, EmptyPath, RefPathFromComponents("field", "foo"))
 		if err == nil {
 			t.Fatal()
 		}
@@ -240,4 +237,13 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
+}
+
+func TestWalkProto_NamedProtoType(t *testing.T) {
+	m := &TestMessageWithTypes{}
+	v := reflect.ValueOf(m)
+	ty := v.Type()
+	if !ty.Implements(NamedProtoType) {
+		t.Error("&m should implement NamedProtoType")
+	}
 }

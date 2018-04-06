@@ -15,12 +15,16 @@ import (
 	"strings"
 )
 
+var ProtoMessageType = reflect.TypeOf((*proto.Message)(nil)).Elem()
+
 // NamedProto is a proto.Message that has a GetName() method. This is a
 // well-known pattern for identifying self naming objects.
 type NamedProto interface {
 	proto.Message
 	GetName() string
 }
+
+var NamedProtoType = reflect.TypeOf((*NamedProto)(nil)).Elem()
 
 // WalkProtoFunc is invoked for each field found in a data structure
 // representing a proto.Message. See WalkProto for more details.
@@ -31,10 +35,10 @@ type WalkProtoFunc func(reflect.Value, RefPath, *pd.FieldDescriptorProto) error
 // direct dependency on "reflect", which in retrospect is kind of silly since
 // the WalkProtoFunc has more dependencies than WalkProto.
 func WalkProtoMessage(m proto.Message, p RefPath, f WalkProtoFunc) error {
-	return WalkProto(reflect.ValueOf(m), p, f)
+	return WalkProtoValue(reflect.ValueOf(m), p, f)
 }
 
-// WalkProto walks through the fields of a proto.Message recursively invoking
+// WalkProtoValue walks through the fields of a proto.Message recursively invoking
 // WalkProtoFunc at each field.
 //
 // For each field, the WalkProtoFunc is invoked with the following:
@@ -71,7 +75,7 @@ func WalkProtoMessage(m proto.Message, p RefPath, f WalkProtoFunc) error {
 //       Quux string
 //     }
 //
-// Assuming |f| is a WalkProtoFunc, when WalkProto is invoked on |v| which is a
+// Assuming |f| is a WalkProtoFunc, when WalkProtoValue is invoked on |v| which is a
 // *Foo object with one Bar object in the Baz field, the following invocations
 // will happen (in order):
 //
@@ -85,7 +89,7 @@ func WalkProtoMessage(m proto.Message, p RefPath, f WalkProtoFunc) error {
 // For convenience value_of(x) is assumed to mean reflect.ValueOf(x),
 // descriptor_of(x) is the descriptor.FieldDescriptorProto for the specified
 // field.
-func WalkProto(av reflect.Value, p RefPath, f WalkProtoFunc) error {
+func WalkProtoValue(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 	err_list := []error{}
 
 	if !av.IsValid() {
@@ -106,7 +110,7 @@ func WalkProto(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 			} else {
 				np = np.Append(fmt.Sprintf("@%d", i))
 			}
-			err_list = AppendErrorList(err_list, WalkProto(av.Index(i), np, f))
+			err_list = AppendErrorList(err_list, WalkProtoValue(av.Index(i), np, f))
 		}
 
 	case reflect.Ptr:
@@ -119,7 +123,7 @@ func WalkProto(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 		if av.Elem().Kind() == reflect.Struct {
 			err_list = AppendErrorList(err_list, walkPtrToStruct(av, p, f))
 		}
-		err_list = AppendErrorList(err_list, WalkProto(av.Elem(), p, f))
+		err_list = AppendErrorList(err_list, WalkProtoValue(av.Elem(), p, f))
 
 	case reflect.Struct:
 		err_list = walkStruct(av, p, f)
@@ -130,22 +134,22 @@ func WalkProto(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 		}
 
 		// For a non-empty field, this also covers the 'oneof' case.
-		return WalkProto(av.Elem(), p, f)
+		return WalkProtoValue(av.Elem(), p, f)
 
 	default:
 		return nil
 	}
 
-	return errors.Wrapf(WrapErrorList(err_list), "\ntype \"%s\"", getTypeString(av.Type()))
+	return errors.Wrapf(WrapErrorList(err_list), "\ntype \"%s\"", getGoTypeString(av.Type()))
 }
 
-// validatePtrToStruct invokes |f| on |av| if |av| is a proto.Message. This is
+// walkPtrToStruct invokes |f| on |av| if |av| is a proto.Message. This is
 // where |f| is invoked at the message level. See walkStruct() for where |f| is
 // invoked at the field level.
 func walkPtrToStruct(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 	// Ignore if *InnerType can't be converted to a proto.Message. There are
 	// additional types that are relevant, but those are handled in WalkProto().
-	if !av.Type().Implements(reflect.TypeOf((*proto.Message)(nil)).Elem()) {
+	if !av.Type().Implements(ProtoMessageType) {
 		return nil
 	}
 
@@ -168,7 +172,7 @@ func walkStruct(av reflect.Value, p RefPath, f WalkProtoFunc) (err_list []error)
 					av.Type().Field(i).Name, fd.GetName()))
 		}
 
-		err_list = AppendErrorList(err_list, WalkProto(av.Field(i), fp, f))
+		err_list = AppendErrorList(err_list, WalkProtoValue(av.Field(i), fp, f))
 	}
 	return
 }
@@ -306,39 +310,45 @@ func getNamedProtoField(av reflect.Value, name string) (reflect.Value, bool) {
 	return av, false
 }
 
-// getTypeString returns a string identifying the underlying Go type of |ty|.
-func getTypeString(ty reflect.Type) string {
+// getGoTypeString returns a string identifying the underlying Go type of |ty|.
+func getGoTypeString(ty reflect.Type) string {
 	s := ty.Name()
 	if s != "" {
 		return s
 	}
 	switch ty.Kind() {
 	case reflect.Array:
-		return "[" + string(ty.Len()) + "]" + getTypeString(ty.Elem())
+		return "[" + string(ty.Len()) + "]" + getGoTypeString(ty.Elem())
 
 	case reflect.Ptr:
-		return "*" + getTypeString(ty.Elem())
+		return "*" + getGoTypeString(ty.Elem())
 
 	case reflect.Slice:
-		return "[]" + getTypeString(ty.Elem())
+		return "[]" + getGoTypeString(ty.Elem())
 
 	case reflect.Map:
-		return "map[" + getTypeString(ty.Key()) + "]" + getTypeString(ty.Elem())
+		return "map[" + getGoTypeString(ty.Key()) + "]" + getGoTypeString(ty.Elem())
 	}
 	return "(unknown)"
 }
 
-// ResolvePath descends into a proto.Message and attempts to resolve a propery
+type ResolutionMode int
+
+const (
+	ResolutionIncludeOutputs ResolutionMode = iota
+	ResolutionSkipOutputs
+)
+
+// Dereference descends into a proto.Message and attempts to resolve a propery
 // reference chain. See RefPath for more details.
-func ResolvePath(m proto.Message, root RefPath, path RefPath, mode ResolutionMode) (interface{}, error) {
+func Dereference(m proto.Message, root, path RefPath) (interface{}, error) {
 	path, ok := path.After(root)
 	if !ok {
 		return nil, errors.Errorf("can't look up path %s in %s with root %s",
 			path.String(), m.String(), root.String())
 	}
-	root = EmptyPath
 
-	av, err := resolvePathInValue(reflect.ValueOf(m), path, mode)
+	av, err := resolvePathInValue(reflect.ValueOf(m), path)
 	if err != nil {
 		return nil, err
 	}
@@ -351,14 +361,14 @@ var OutputFieldSkippedError = errors.New("unresolved output field skipped")
 // a reflect.Value. If the value passed-in doesn't have a "name" field, returns
 // "",false. Otherwise returns the name.
 func nameOfNamedProto(av reflect.Value) (string, bool) {
-	if av.Type().Implements(reflect.TypeOf((*NamedProto)(nil)).Elem()) {
+	if av.Type().Implements(NamedProtoType) {
 		return av.Interface().(NamedProto).GetName(), true
 	}
 	return "", false
 }
 
 // resolvePathInValue resolves |path| relative to |av|.
-func resolvePathInValue(av reflect.Value, path RefPath, mode ResolutionMode) (reflect.Value, error) {
+func resolvePathInValue(av reflect.Value, path RefPath) (reflect.Value, error) {
 	if len(path) == 0 {
 		return av, nil
 	}
@@ -379,13 +389,13 @@ func resolvePathInValue(av reflect.Value, path RefPath, mode ResolutionMode) (re
 			if index < 0 || index >= av.Len() {
 				return av, errors.Errorf("index \"%s\" in collection is out of bounds", name)
 			}
-			return resolvePathInValue(av.Index(index), path, mode)
+			return resolvePathInValue(av.Index(index), path)
 		}
 
 		// A named reference
 		for i := 0; i < av.Len(); i++ {
 			if n, ok := nameOfNamedProto(av.Index(i)); ok && n == name {
-				return resolvePathInValue(av.Index(i), path, mode)
+				return resolvePathInValue(av.Index(i), path)
 			}
 		}
 		return av, errors.Errorf("path not found \"%s\". no object named \"%s\" in collection",
@@ -395,20 +405,7 @@ func resolvePathInValue(av reflect.Value, path RefPath, mode ResolutionMode) (re
 		if av.IsNil() {
 			return av, errors.Errorf("path not found \"%s\". object is nil.", path.String())
 		}
-		if av.Type().Implements(reflect.TypeOf((*descriptor.Message)(nil)).Elem()) {
-			_, md := descriptor.ForMessage(av.Interface().(descriptor.Message))
-			for _, f := range md.Field {
-				if f.GetName() == path[0] {
-					if mode == ResolutionSkipOutputs && f.GetOptions() != nil {
-						v := getValidationForField(f)
-						if v.Type == Validation_OUTPUT {
-							return av, OutputFieldSkippedError
-						}
-					}
-				}
-			}
-		}
-		return resolvePathInValue(av.Elem(), path, mode)
+		return resolvePathInValue(av.Elem(), path)
 
 	case reflect.Interface:
 		if av.IsNil() {
@@ -418,7 +415,7 @@ func resolvePathInValue(av reflect.Value, path RefPath, mode ResolutionMode) (re
 			av.Elem().Elem().Kind() != reflect.Struct || av.Elem().Elem().NumField() != 1 {
 			return av, errors.Errorf("path not found \"%s\". one of is invalid.", path.String())
 		}
-		return resolvePathInValue(av.Elem().Elem().Field(0), path, mode)
+		return resolvePathInValue(av.Elem().Elem().Field(0), path)
 
 	case reflect.Struct:
 		name, path := path.Shift()
@@ -427,7 +424,7 @@ func resolvePathInValue(av reflect.Value, path RefPath, mode ResolutionMode) (re
 			return av, errors.Errorf("path not found \"%s.%s\". no field named \"%s\"",
 				name, path.String(), name)
 		}
-		return resolvePathInValue(av, path, mode)
+		return resolvePathInValue(av, path)
 	}
 	return av, errors.Errorf("path not found: %s", path.String())
 }
