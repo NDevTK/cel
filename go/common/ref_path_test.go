@@ -9,7 +9,7 @@ import (
 )
 
 func TestRefPath_Basic(t *testing.T) {
-	r := RefPathFromStrings("a", "b")
+	r := RefPathFromComponents("a", "b")
 	if len(r) != 2 {
 		t.Errorf("RefPathFromStrings() returned a path with length %d. Want 2.", len(r))
 	}
@@ -23,19 +23,20 @@ func TestRefPath_Basic(t *testing.T) {
 		t.Errorf("RefPath.String() returned %s. Want \"a.b.c\"", r.String())
 	}
 
-	if !r.Equals(RefPathFromStrings("a", "b", "c")) {
+	if !r.Equals(RefPathFromComponents("a", "b", "c")) {
 		t.Error("RefPath.Equals() failed")
 	}
 
-	r2 := RefPathFromStrings("a", "b.c", "d")
+	r2 := RefPathFromComponents("a", "b.c", "d")
 	if r2.String() != "a.(b.c).d" {
 		t.Errorf("RefPath.String() returned %v. Want \"a.(b.c).d\"", r2.String())
 	}
 }
 
-// It's safe to call Append() multiple times on the same RefPath.
+// It's safe to call Append() multiple times on the same RefPath. The resulting
+// strings should be distinct.
 func TestRefPath_Append_Multiple(t *testing.T) {
-	rr := RefPathFromStrings("a", "b")
+	rr := RefPathFromComponents("a", "b")
 	r1 := rr.Append("c")
 	r2 := rr.Append("d")
 
@@ -44,6 +45,15 @@ func TestRefPath_Append_Multiple(t *testing.T) {
 	}
 	if r2.String() != "a.b.d" {
 		t.Errorf("Append() returned %v. Want \"a.b.d\"", r2.String())
+	}
+}
+
+// Append() can take a list of strings instead of a single string.
+func TestRefPath_Append_List(t *testing.T) {
+	rr := RefPathFromComponents("a", "b")
+	r1 := rr.Append("c", "d")
+	if r1.String() != "a.b.c.d" {
+		t.Errorf("Append() returned %v. Want \"a.b.c.d\"", r1.String())
 	}
 }
 
@@ -94,7 +104,7 @@ func TestRefPath_FromString(t *testing.T) {
 		t.Error(err)
 	}
 	if len(r) != 0 {
-		t.Error("RefPathFromString() returned %#v for empty string.", r)
+		t.Errorf("RefPathFromString() returned %#v for empty string.", r)
 	}
 }
 
@@ -109,8 +119,8 @@ func TestRefPath_Equals(t *testing.T) {
 		t.Errorf("Equals() failed on self for %#v", r1)
 	}
 
-	r1 = RefPathFromStrings("a", "b", "c")
-	r2 = RefPathFromStrings("a", "b", "c")
+	r1 = RefPathFromComponents("a", "b", "c")
+	r2 = RefPathFromComponents("a", "b", "c")
 	if !r1.Equals(r2) {
 		t.Errorf("Equals() failed for %#v and %#v", r1, r2)
 	}
@@ -146,11 +156,73 @@ func TestRefPath_Contains(t *testing.T) {
 }
 
 func TestRefPath_After(t *testing.T) {
-	a, ok := RefPathFromStrings("a", "b", "c").After(RefPathFromStrings("a", "b"))
+	a, ok := RefPathFromComponents("a", "b", "c").After(RefPathFromComponents("a", "b"))
 	if !ok {
 		t.Error("RefPathFromString().After() failed")
 	}
-	if !a.Equals(RefPathFromStrings("c")) {
+	if !a.Equals(RefPathFromComponents("c")) {
 		t.Errorf("RefPathFromString().After() returned %#+v. Wanted \"c\"", a)
+	}
+}
+
+func TestRefPath_TopLevel(t *testing.T) {
+	r := RefPathMust("a.b.c.d")
+	if r.TopLevel().String() != "a.b.c" {
+		t.Errorf("TopLevel() returned %s. Want a.b.c", r.TopLevel().String())
+	}
+
+	if !RefPathMust("a.b").TopLevel().Empty() {
+		t.Error("TopLevel('a.b')")
+	}
+
+	if !EmptyPath.TopLevel().Empty() {
+		t.Error("EmptyPath.TopLevel()")
+	}
+}
+
+func TestRefPath_IsTopLevel(t *testing.T) {
+	if RefPathMust("a").IsTopLevel() {
+		t.Error()
+	}
+
+	if RefPathMust("a.b").IsTopLevel() {
+		t.Error()
+	}
+
+	if !RefPathMust("a.b.c").IsTopLevel() {
+		t.Error()
+	}
+
+	if RefPathMust("a.b.c.d").IsTopLevel() {
+		t.Error()
+	}
+}
+
+func TestRefPath_Parent(t *testing.T) {
+	if RefPathMust("a.b.c").Parent().String() != "a.b" {
+		t.Error()
+	}
+
+	if !RefPathMust("a").Parent().Empty() {
+		t.Error()
+	}
+
+	if !EmptyPath.Parent().Empty() {
+		t.Error()
+	}
+}
+
+func TestRefPath_String_roundtrip(t *testing.T) {
+	tests := []string{
+		"a.b.c",
+		"a.(b.c).c",
+		"a.b.@3.d",
+		"",
+	}
+
+	for _, c := range tests {
+		if RefPathMust(c).String() != c {
+			t.Errorf("Got \"%s\". Want \"%s\"", RefPathMust(c).String(), c)
+		}
 	}
 }

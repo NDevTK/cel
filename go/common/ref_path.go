@@ -76,17 +76,17 @@ import (
 //
 //     "asset.windows_machine.(foo.bar)"
 //
-// The RefPathFromString() and RefPathFromStrings() functions can be used to
+// The RefPathFromString() and RefPathFromComponents() functions can be used to
 // construct RefPath objects. Meanwhile, the convenient global EmptyPath can be
 // used in place of an empty path.
 type RefPath []string
 
-// RefPathFromStrings constructs a RefPath from its arguments which are assumed
+// RefPathFromComponents constructs a RefPath from its arguments which are assumed
 // to be all strings.
 //
-// For example, RefPathFromStrings("a", "b", "c") will construct a RefPath with
+// For example, RefPathFromComponents("a", "b", "c") will construct a RefPath with
 // three components, "a", "b", and "c".
-func RefPathFromStrings(s ...string) RefPath {
+func RefPathFromComponents(s ...string) RefPath {
 	return s
 }
 
@@ -130,21 +130,32 @@ func RefPathFromString(s string) (RefPath, error) {
 	return r, nil
 }
 
+// RefPathMust parses a string and returns a RefPath. Unlike
+// RefPathFromString(), this version panics if the supplied string is not
+// valid.
+//
+// Only use this function with hardcoded or trusted strings.
+func RefPathMust(s string) RefPath {
+	r, err := RefPathFromString(s)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
 // Append returns a new RefPath that represents a path with one or more
 // additional labels. The receiver is not modified.
 //
 // For example:
 //
-//     a := RefPathFromStrings("a", "b")
+//     a := RefPathFromComponents("a", "b")
 //     b := a.Append("c", "d")
 //
 // |a| now contains the path "a.b", while |b| contains the path "a.b.c.d".
 func (r RefPath) Append(s ...string) RefPath {
-	rn := make([]string, len(r), len(r)+len(s))
+	rn := make([]string, len(r)+len(s))
 	copy(rn, r)
-	for _, ss := range s {
-		rn = append(rn, ss)
-	}
+	copy(rn[len(r):], s)
 	return rn
 }
 
@@ -154,7 +165,7 @@ func (r RefPath) Append(s ...string) RefPath {
 //
 // For example:
 //
-//     a := RefPathFromStrings("a", "b", "c.d", "e")
+//     a := RefPathFromComponents("a", "b", "c.d", "e")
 //
 // a.String() returns "a.b.(c.d).e"
 func (r RefPath) String() string {
@@ -213,18 +224,18 @@ func (r RefPath) Less(o RefPath) bool {
 //
 // E.g.:
 //
-//     a := RefPathFromStrings("a", "b")
+//     a := RefPathFromComponents("a", "b")
 //
 // These predicates evaluate to true:
 //
-//     a.Contains(RefPathFromStrings("a", "b", "c"))
-//     a.Contains(RefPathFromStrings("a", "b"))
+//     a.Contains(RefPathFromComponents("a", "b", "c"))
+//     a.Contains(RefPathFromComponents("a", "b"))
 //
 // These predicates evaluate to false:
 //
-//     a.Contains(RefPathFromStrings("a", "x")) returns false.
-//     a.Contains(RefPathFromStrings("a")) returns false.
-//     a.Contains(RefPathFromStrings("x")) returns false.
+//     a.Contains(RefPathFromComponents("a", "x")) returns false.
+//     a.Contains(RefPathFromComponents("a")) returns false.
+//     a.Contains(RefPathFromComponents("x")) returns false.
 func (r RefPath) Contains(o RefPath) bool {
 	if len(r) > len(o) {
 		return false
@@ -248,13 +259,50 @@ func (r RefPath) After(o RefPath) (RefPath, bool) {
 }
 
 // Shift returns the head and the tail of a reference path. The receiver is not
-// modified.
+// modified. Returns an empty string and a nil path if there the receiver is
+// empty.
 func (r RefPath) Shift() (string, RefPath) {
 	if len(r) == 0 {
 		return "", nil
 	}
 
 	return r[0], r[1:]
+}
+
+// TopLevel returns the top-level reference corresponding to this RefPath.
+//
+// For CEL, top level resources are always located three levels deep in the
+// hierarchy. E.g. "asset.ad_domain.my-domain.some_property" belongs to the
+// top-level resource "asset.ad_domain.my-domain".
+//
+// Returns EmptyPath if there's no top-level resource corresponding to `r`.
+func (r RefPath) TopLevel() RefPath {
+	if len(r) < 3 {
+		return EmptyPath
+	}
+	return r[:3]
+}
+
+// IsTopLevel returns true if this path refers to a top level node.
+func (r RefPath) IsTopLevel() bool {
+	return len(r) == 3
+}
+
+func (r RefPath) IsTopLevelOrAbove() bool {
+	return len(r) <= 3
+}
+
+// Parent returns a RefPath that excludes the final component.
+func (r RefPath) Parent() RefPath {
+	if len(r) == 0 {
+		return EmptyPath
+	}
+	return r[:len(r)-1]
+}
+
+// Empty returns true if the path is empty.
+func (r RefPath) Empty() bool {
+	return len(r) == 0
 }
 
 var (
