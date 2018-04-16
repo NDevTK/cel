@@ -17,7 +17,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 	p := RefPath{}
 	t.Run("Good", func(t *testing.T) {
 		v := TestGoodProto{"foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
 		}
@@ -27,7 +27,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 		v := TestHasGoodSlice{Name: "foo"}
 		// If the slice is empty, the test will vavuously pass.
 		v.Field = []*TestGoodProto{&TestGoodProto{"foo"}}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
 		}
@@ -35,7 +35,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 
 	t.Run("BadSliceIsEmpty", func(t *testing.T) {
 		v := TestHasBadSlice{Name: "foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
 		}
@@ -45,7 +45,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 		v := TestHasGoodField{Name: "foo"}
 		// If the field is nil, the test will vavuously pass.
 		v.Field = &TestGoodProto{"foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
 		}
@@ -54,7 +54,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 	t.Run("GoodOneOf", func(t *testing.T) {
 		v := TestGoodOneOf{Name: "foo"}
 		v.Opt = &TestGoodOneOf_Field{&TestGoodProto{"foo"}}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
 		}
@@ -62,7 +62,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 
 	t.Run("BadOneOfIsEmpty", func(t *testing.T) {
 		v := TestBadOneOf{Name: "foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
 		}
@@ -70,7 +70,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 
 	t.Run("BadFieldIsEmpty", func(t *testing.T) {
 		v := TestHasBadField{Name: "foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
 		}
@@ -83,7 +83,7 @@ func TestInvokeValidate_Bad(t *testing.T) {
 	p := RefPath{}
 	t.Run("Bad", func(t *testing.T) {
 		v := TestBadProto{"foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
@@ -94,7 +94,7 @@ func TestInvokeValidate_Bad(t *testing.T) {
 
 	t.Run("BadArgs", func(t *testing.T) {
 		v := TestBadValidateArgs{Name: "foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
@@ -105,7 +105,7 @@ func TestInvokeValidate_Bad(t *testing.T) {
 
 	t.Run("BadReturnType", func(t *testing.T) {
 		v := TestBadReturnType{Name: "foo"}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
@@ -117,7 +117,7 @@ func TestInvokeValidate_Bad(t *testing.T) {
 	t.Run("BadField", func(t *testing.T) {
 		v := TestHasBadField{Name: "foo"}
 		v.Field = &TestBadProto{}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
@@ -129,7 +129,7 @@ func TestInvokeValidate_Bad(t *testing.T) {
 	t.Run("BadSlice", func(t *testing.T) {
 		v := TestHasBadSlice{Name: "foo"}
 		v.Field = []*TestBadProto{&TestBadProto{}}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
@@ -141,7 +141,7 @@ func TestInvokeValidate_Bad(t *testing.T) {
 	t.Run("BadOneOf", func(t *testing.T) {
 		v := TestBadOneOf{Name: "foo"}
 		v.Opt = &TestBadOneOf_Field{&TestBadProto{}}
-		err := InvokeValidate(&v, p)
+		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
@@ -260,24 +260,24 @@ func TestExtractExtension(t *testing.T) {
 		t.Fatalf("can't determine fd and md")
 	}
 
-	if len(md.Field) == 0 || md.Field[1].GetName() != "key" {
+	if len(md.Field) <= 1 || md.Field[0].GetName() != "name" || md.Field[1].GetName() != "key" {
 		t.Fatalf(`unexpected TestMessageWithOptions proto.
 
 This test was written based on the expectation that the message was:
 
     message TestMessageWithOptions {
 	  string name = 1;
-	  string key = 2 [(common.v).ref="host.foreign-key"];
+	  string key = 2 [(common.v).ref="a.b.with_types.repeated_field"];
 	  ... // other fields
 	}
 `)
 	}
 
-	v := getValidationForField(md.Field[1])
+	v := GetValidationForField(md.Field[1])
 	if v.Type != Validation_REQUIRED {
 		t.Fatalf("failed to query validation information for field \"%s\"", md.Field[1].GetName())
 	}
-	if v.Ref != "with_types.repeated_field" {
+	if v.Ref != "a.b.with_types.repeated_field" {
 		t.Fatalf("unexpected key field")
 	}
 }
@@ -296,7 +296,7 @@ func TestValidateOptions(t *testing.T) {
 		Fqdn:           "foo.bar.baz",
 		Reqd:           "S",
 		OptionalString: "x"}
-	err := InvokeValidate(&v, p)
+	err := ValidateProto(&v, p)
 	if err != nil {
 		t.Fatalf("unexpected error %#v", err)
 	}
@@ -305,7 +305,7 @@ func TestValidateOptions(t *testing.T) {
 		// Label is annotated to require validation.
 		w := v
 		w.Label = "?"
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -318,7 +318,7 @@ func TestValidateOptions(t *testing.T) {
 		// It can't be empty either.
 		w := v
 		w.Label = ""
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -331,7 +331,7 @@ func TestValidateOptions(t *testing.T) {
 		// Key is a foreign key and hence is required.
 		w := v
 		w.Key = ""
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -344,7 +344,7 @@ func TestValidateOptions(t *testing.T) {
 		// OptionalKey is also a foreign key, but is annotated to be optional.
 		w := v
 		w.OptionalKey = ""
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -354,7 +354,7 @@ func TestValidateOptions(t *testing.T) {
 		// Optional string has an extended field option, but not a validation option.
 		w := v
 		w.OptionalString = ""
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -365,7 +365,7 @@ func TestValidateOptions(t *testing.T) {
 		// virtue of it being called 'name'.
 		w := v
 		w.Name = ""
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -378,7 +378,7 @@ func TestValidateOptions(t *testing.T) {
 		// FQDN is annotated as requiring validation as a domain name.
 		w := v
 		w.Fqdn = "a.b.c.?"
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -391,7 +391,7 @@ func TestValidateOptions(t *testing.T) {
 		// Reqd is annotated as required.
 		w := v
 		w.Reqd = ""
-		err = InvokeValidate(&w, p)
+		err = ValidateProto(&w, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}

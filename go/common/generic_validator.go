@@ -29,7 +29,7 @@ Actual:
     %s
 `
 
-// InvokeValidate analyzes the data structure at |a| and invokes the Validate()
+// ValidateProto analyzes the data structure at |a| and invokes the Validate()
 // method (see Validator interface) on objects that implement both
 // proto.Message and Validator.
 //
@@ -44,13 +44,13 @@ Actual:
 // warning if something is out of line.
 //
 // *Foo -- or Foo -- might contain fields that are themselves protobuf
-// messages, in which case InvokeValidate() recurses into each field to
+// messages, in which case ValidateProto() recurses into each field to
 // validate the entire data structure.
 //
 // See //docs/schema-guidelines.md for more details on why we are doing things
 // this way.
-func InvokeValidate(a interface{}, r RefPath) error {
-	return WalkProto(reflect.ValueOf(a), r, invokeValidateOnValue)
+func ValidateProto(a interface{}, r RefPath) error {
+	return WalkProtoValue(reflect.ValueOf(a), r, invokeValidateOnValue)
 }
 
 // invokeValidateOnValue is a WalkProtoFunc that invokes the Validate() method
@@ -100,11 +100,11 @@ func invokeValidateOnValue(av reflect.Value, p RefPath, d *descriptor.FieldDescr
 	return err
 }
 
-// getValidationForField queries the extensions for |fd| and returns a
-// Validation object if one is found. If there is no Validation extensino for
+// GetValidationForField queries the field extensions for |fd| and returns a
+// Validation object if one is found. If there is no Validation extension for
 // this field, returns an object representing the default set of validation
 // rules that should be applied to |fd|.
-func getValidationForField(fd *descriptor.FieldDescriptorProto) Validation {
+func GetValidationForField(fd *descriptor.FieldDescriptorProto) Validation {
 	var v *Validation
 
 	if fd.Options != nil {
@@ -130,10 +130,10 @@ func getValidationForField(fd *descriptor.FieldDescriptorProto) Validation {
 	return *v
 }
 
-// validateAnnotatedField performs validator for a field which has one or more
+// validateAnnotatedField performs validation for a field which has one or more
 // of the annotations in //schema/common/validation.proto.
 func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProto) error {
-	v := getValidationForField(fd)
+	v := GetValidationForField(fd)
 
 	// Skip over optional fields if empty.
 	if v.GetOptional() {
@@ -165,11 +165,19 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 			return fmt.Errorf("unexpected type for label field: %#v", af)
 		}
 
+		if ContainsInlineReferences(af.String()) {
+			return nil
+		}
+
 		return errors.Wrapf(IsRFC1035Label(af.String()), "validating field \"%s\"", fd.GetName())
 
 	case Validation_FQDN:
 		if af.Kind() != reflect.String {
 			return fmt.Errorf("unexpected kind for validatable field: %#v", af)
+		}
+
+		if ContainsInlineReferences(af.String()) {
+			return nil
 		}
 
 		return errors.Wrapf(IsRFC1035Domain(af.String()), "validating field \"%s\"", fd.GetName())
@@ -179,11 +187,17 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 			return fmt.Errorf("unexpected kind for validatable field: %#v", af)
 		}
 
+		if ContainsInlineReferences(af.String()) {
+			return nil
+		}
+
 		return errors.Wrapf(IsRFC1035DomainLabel(af.String()), "validating field \"%s\"", fd.GetName())
 	}
 	return nil
 }
 
+// VerifyValidatableType checks whether all types that implement proto.Message
+// rooted at a given type also implement the Validator interface.
 func VerifyValidatableType(at reflect.Type) error {
 	err_list := []error{}
 
@@ -200,7 +214,7 @@ func VerifyValidatableType(at reflect.Type) error {
 
 		// If *Foo doesn't implement proto.Message, assume this is something
 		// else and don't look any further.
-		if !at.Implements(reflect.TypeOf((*proto.Message)(nil)).Elem()) {
+		if !at.Implements(ProtoMessageType) {
 			break
 		}
 
@@ -212,7 +226,10 @@ func VerifyValidatableType(at reflect.Type) error {
 		}
 
 		// We can only check the method signature since we don't have a value
-		// to work with.
+		// to work with. Alternatively we can check whether the type implements
+		// the Validator interface, but that would yield less useful
+		// diagnostics since it can't tell the difference between getting the
+		// arguments wrong and leaving out the Validate() method entirely.
 		if mt.Type.NumIn() != 1 || mt.Type.NumOut() != 1 || mt.Type.Out(0) != reflect.TypeOf((*error)(nil)).Elem() {
 			err_list = AppendErrorList(err_list,
 				fmt.Errorf(kInvalidSignatureError, at.Elem().String(), at.Elem().String(), mt.Type.String()))
@@ -232,6 +249,10 @@ func VerifyValidatableType(at reflect.Type) error {
 // verifyOneOfTypes attempts to verify related subtypes that are used for
 // implementing 'oneof' support in ProtoBufs.
 //
+// |pt| is a reflect.Type for a proto.Message implementation. For protoc
+// generated code, it is always type representing a pointer to a struct. E.g.
+// type of *Foo if *Foo implements proto.Message.
+//
 // Here's where things get tricky. The only connection we have from |pt| to the
 // candidates oneof field subtypes is via the XXX_OneofFuncs() internal proto
 // method. It is likely that this will break in the future. There are panics
@@ -247,14 +268,26 @@ func verifyOneOfTypes(pt reflect.Type) error {
 		return nil
 	}
 
+	// mt is a method matching the signature:
+	//
+	//     func (*Foo) XXX_OneofFuncs() (
+	//       func(msg proto.Message, b *proto.Buffer) error,
+	//       func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error),
+	//       func(msg proto.Message) (n int),
+	//       []interface{})
+	//
+	// The receiver is unused. So we can pass in a reflect.Zero(pt). Of the
+	// results, we are only interested in the last one.
 	results := mt.Func.Call([]reflect.Value{reflect.Zero(pt)})
 	if len(results) != 4 {
 		panic("XXX_OneofFuncs behaved in an unexpected way")
 	}
 
 	// clist is a reflect.Value representing a []interface{} where each element
-	// is nil cast to *Type, where Type is a oneof substrate for |at|'s
-	// underlying type.
+	// is nil cast to *Type, where Type is a oneof substrate for |pt|'s
+	// underlying type. |pt| may have more than one one-of field. Either way
+	// this list should have all of them. We don't care about which type
+	// matches with which field since we have to validate all of them.
 	clist := results[3]
 	if clist.Kind() != reflect.Slice {
 		panic("Unexpected return type for interface list")
@@ -266,8 +299,9 @@ func verifyOneOfTypes(pt reflect.Type) error {
 		if ci.Kind() != reflect.Interface {
 			panic("Unexpected return type for interface list")
 		}
+		// conveniently, ci is now a reflect.Value whose Type is the type
+		// implementing the one-of substrate we want to examine.
 		ct := reflect.TypeOf(ci.Interface())
-		// conveniently, ci is now a reflect.Value whose Type() is the subtype we want to examine.
 		err_list = AppendErrorList(err_list, VerifyValidatableType(ct))
 	}
 	return WrapErrorList(err_list)

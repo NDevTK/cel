@@ -12,7 +12,7 @@ import (
 
 func TestAssetManifest_validateFields(t *testing.T) {
 	var a AssetManifest
-	err := common.InvokeValidate(&a, common.EmptyPath)
+	err := common.ValidateProto(&a, common.EmptyPath)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
 	}
