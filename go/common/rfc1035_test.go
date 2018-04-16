@@ -30,7 +30,7 @@ func TestIsRFC1035Label(t *testing.T) {
 		t.Parallel()
 
 		if err := IsRFC1035Label("0abc"); err == nil || !strings.Contains(err.Error(), "character '0' at position 1 is not valid") {
-			t.Fatalf("unexpected error", err)
+			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
@@ -38,7 +38,7 @@ func TestIsRFC1035Label(t *testing.T) {
 		t.Parallel()
 
 		if err := IsRFC1035Label("ab$c"); err == nil || !strings.Contains(err.Error(), "character '$' at position 3 is not valid") {
-			t.Fatalf("unexpected error", err)
+			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
@@ -46,7 +46,7 @@ func TestIsRFC1035Label(t *testing.T) {
 		t.Parallel()
 
 		if err := IsRFC1035Label("-abc"); err == nil || !strings.Contains(err.Error(), "character '-' at position 1 is not valid") {
-			t.Fatalf("unexpected error", err)
+			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
@@ -54,7 +54,7 @@ func TestIsRFC1035Label(t *testing.T) {
 		t.Parallel()
 
 		if err := IsRFC1035Label("abc-"); err == nil || !strings.Contains(err.Error(), "Cannot end with a '-'") {
-			t.Fatalf("unexpected error", err)
+			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
@@ -62,7 +62,7 @@ func TestIsRFC1035Label(t *testing.T) {
 		t.Parallel()
 
 		if err := IsRFC1035Label("abc0"); err != nil {
-			t.Fatalf("unexpected error", err)
+			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 }
