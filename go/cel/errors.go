@@ -5,7 +5,9 @@
 package cel
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"fmt"
+	"strings"
 )
 
 // ConfigurationError is returned when a configuration file failed to load.
@@ -39,4 +41,37 @@ func (c *ConfigurationError) Error() string {
 
 func NewConfigurationError(filename string, already_loaded bool, underlying_error error) *ConfigurationError {
 	return &ConfigurationError{filename, already_loaded, underlying_error}
+}
+
+type NotImplementedError struct {
+	thing string
+}
+
+func (n *NotImplementedError) Error() string {
+	return fmt.Sprintf("not implemented: %s", n.thing)
+}
+
+func NewNotImplementedError(thing string) error {
+	return &NotImplementedError{thing: thing}
+}
+
+type NotReadyError struct {
+	Root     common.RefPath
+	messages []string
+}
+
+func (n *NotReadyError) Error() string {
+	return fmt.Sprintf(`The subtree rooted at path "%s" is not fully resolved. The following issues were found:
+
+%s
+`, n.Root, strings.Join(n.messages, "\n"))
+}
+
+func NewNotReadyError(refs *common.Namespace, root common.RefPath) error {
+	var s []string
+	refs.VisitUnresolved(root, func(v common.UnresolvedValue) bool {
+		s = append(s, v.String())
+		return true
+	})
+	return &NotReadyError{Root: root, messages: s}
 }
