@@ -302,36 +302,14 @@ func (g *CloudState) FetchAll(ctx context.Context, client *http.Client) (err err
 		return
 	}
 
-	j := common.NewJobWaiter(nil)
-
-	go func(e chan<- error) {
-		e <- g.FetchServiceAccounts(ctx, client)
-	}(j.New())
-
-	go func(e chan<- error) {
-		e <- g.FetchAddresses(ctx, service)
-	}(j.New())
-
-	go func(e chan<- error) {
-		e <- g.FetchInstances(ctx, service)
-	}(j.New())
-
-	go func(e chan<- error) {
-		e <- g.FetchNetworks(ctx, service)
-	}(j.New())
-
-	go func(e chan<- error) {
-		e <- g.FetchFirewalls(ctx, service)
-	}(j.New())
-
-	go func(e chan<- error) {
-		e <- g.FetchImages(ctx, service)
-	}(j.New())
-
-	go func(e chan<- error) {
-		e <- g.FetchZones(ctx, service)
-	}(j.New())
-
+	j := common.NewTasks(nil)
+	j.Go(func() error { return g.FetchServiceAccounts(ctx, client) })
+	j.Go(func() error { return g.FetchAddresses(ctx, service) })
+	j.Go(func() error { return g.FetchInstances(ctx, service) })
+	j.Go(func() error { return g.FetchNetworks(ctx, service) })
+	j.Go(func() error { return g.FetchFirewalls(ctx, service) })
+	j.Go(func() error { return g.FetchImages(ctx, service) })
+	j.Go(func() error { return g.FetchZones(ctx, service) })
 	return j.Join()
 }
 
