@@ -6,8 +6,6 @@ package gcp
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	googleapi "google.golang.org/api/googleapi"
 	"strings"
 )
 
@@ -31,6 +29,17 @@ func ServiceAccountResource(project, email string) string {
 	return fmt.Sprintf("projects/%s/serviceAccounts/%s", project, email)
 }
 
+// ServiceAccountEmail returns the email address given a project ID and an account ID.
+func ServiceAccountEmail(project, accountId string) string {
+	// If the project ID has an org prefix (e.g.: "google.com:my-project"),
+	// then the org domain comes after the project name in the domain portion.
+	if strings.Contains(project, ":") {
+		s := strings.Split(project, ":")
+		return fmt.Sprintf("%s@%s.%s.iam.gserviceaccount.com", accountId, s[1], s[0])
+	}
+	return fmt.Sprintf("%s@%s.iam.gserviceaccount.com", accountId, project)
+}
+
 // MachineTypeResource returns the partial URL for a machine type resource.
 func MachineTypeResource(project, zone, machtype string) string {
 	return fmt.Sprintf("projects/%s/zones/%s/machineTypes/%s", project, zone, machtype)
@@ -49,17 +58,4 @@ func KeyringResource(project, keyring string) string {
 // CryptoKeyResource returns the partial URL for a KMS crypto key resource.
 func CryptoKeyResource(project, keyring, cryptokey string) string {
 	return fmt.Sprintf("projects/%s/locations/global/keyRings/%s/cryptoKeys/%s", project, keyring, cryptokey)
-}
-
-// IsNotFoundError returns true if |err| indicates that a requested Google
-// cloud resource was not found.
-func IsNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	inner := errors.Cause(err)
-	if e, ok := inner.(*googleapi.Error); ok {
-		return e.Code == 404
-	}
-	return false
 }
