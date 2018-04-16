@@ -13,56 +13,56 @@ func TestFileReference_Basic(t *testing.T) {
 	p := RefPath{}
 	t.Run("Empty", func(t *testing.T) {
 		v := &FileReference{}
-		if err := InvokeValidate(v, p); err == nil {
+		if err := ValidateProto(v, p); err == nil {
 			t.Fail()
 		}
 	})
 
 	t.Run("Absolute", func(t *testing.T) {
 		v := &FileReference{Source: "/foo/bar"}
-		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "cannot be absolute") {
+		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "cannot be absolute") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("Backslash", func(t *testing.T) {
 		v := &FileReference{Source: "foo\\bar"}
-		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "backslash") {
+		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "backslash") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefPrefix", func(t *testing.T) {
 		v := &FileReference{Source: "../bar"}
-		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
+		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefSuffix", func(t *testing.T) {
 		v := &FileReference{Source: "foo/bar/.."}
-		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
+		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefInfix", func(t *testing.T) {
 		v := &FileReference{Source: "foo/../bar"}
-		if err := InvokeValidate(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
+		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("OutputParam", func(t *testing.T) {
 		v := &FileReference{Source: "foo/bar", FullPath: "foo/bar"}
-		if err := InvokeValidate(v, p); err != nil {
+		if err := ValidateProto(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("Valid", func(t *testing.T) {
 		v := &FileReference{Source: "foo/bar"}
-		if err := InvokeValidate(v, p); err != nil {
+		if err := ValidateProto(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
