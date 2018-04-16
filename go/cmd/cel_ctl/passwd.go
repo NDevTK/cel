@@ -24,26 +24,31 @@ func (p *PasswdCommand) Run(ctx context.Context, c *Application, cmd *cobra.Comm
 		return fmt.Errorf("instance and username are required options")
 	}
 
-	err := c.LoadConfigFiles(ctx, args)
+	session, err := c.CreateSession(ctx, args)
 	if err != nil {
 		return err
 	}
 
-	session, err := c.GetSession(ctx)
+	cs, err := session.GetBackend().GetComputeService()
+	if err != nil {
+		return err
+	}
+	state := gcp.CloudState{HostEnvironment: &session.GetConfiguration().HostEnvironment}
+	err = state.FetchInstances(ctx, cs)
 	if err != nil {
 		return err
 	}
 
-	instance := session.Cloud.Instances[p.Instance]
+	instance := state.Instances[p.Instance]
 	if instance == nil {
-		return fmt.Errorf("instance not found: ", p.Instance)
+		return fmt.Errorf("instance not found: %v", p.Instance)
 	}
 
 	password, err := gcp.ResetWindowsPassword(ctx, c.Client,
-		c.Configuration.HostEnvironment.Project.Name,
+		session.GetConfiguration().HostEnvironment.Project.Name,
 		instance.Zone, instance.Name, p.Username, p.Email)
 	if err != nil {
-		return fmt.Errorf("failed to reset password: ", err)
+		return fmt.Errorf("failed to reset password: %v", err)
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), password)

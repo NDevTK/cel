@@ -12,7 +12,8 @@ import (
 )
 
 func init() {
-	app.AddCommand(&cobra.Command{
+	ic := &InfoCommand{}
+	cmd := &cobra.Command{
 		Use:   "info [configuration files]",
 		Short: "Show information about current enterprise lab configuration",
 		Long: `Shows information about current enterprise lab configuration.
@@ -20,21 +21,26 @@ func init() {
 Includes information about the desired state, and also the current state of the target Google Compute Engine project. This will spew a *lot* of information in JSON format.
 `,
 		Args: cobra.MinimumNArgs(1),
-	}, &InfoCommand{})
+	}
+
+	app.AddCommand(cmd, ic)
 }
 
 type InfoCommand struct {
+	Prune bool
 }
 
 func (i *InfoCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
-	err := a.LoadConfigFiles(ctx, args)
+	session, err := a.CreateSession(ctx, args)
 	if err != nil {
 		return err
 	}
-	bytes, err := json.MarshalIndent(a.Configuration, " ", "  ")
+
+	bytes, err := json.MarshalIndent(session.GetConfiguration().GetNamespace(), " ", "  ")
 	if err != nil {
 		return err
 	}
+
 	_, err = cmd.OutOrStdout().Write(bytes)
 	return err
 }

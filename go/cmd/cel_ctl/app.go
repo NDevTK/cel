@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"chromium.googlesource.com/enterprise/cel/go/cel"
-	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"github.com/spf13/cobra"
 )
@@ -37,9 +36,8 @@ type Runner interface {
 // To mitigate these we are using a separate AddCommand() method that takes as
 // input a Runner interface that supports all the parameters we care about.
 type Application struct {
-	Configuration cel.Configuration
-	Session       *gcp.Session
-	Client        *http.Client
+	Session *cel.DeployerSession
+	Client  *http.Client
 
 	GenericFiles []string
 	Verbose      bool
@@ -54,44 +52,18 @@ func (a *Application) setFlags() {
 	a.rootCommand.LocalFlags().BoolVarP(&a.Verbose, "verbose", "v", false, `verbose output`)
 }
 
-// GetSession returns a gcp.Session based on the current configuration. Only
-// makes sense to call after a successful LoadConfigFiles() call.
-func (a *Application) GetSession(ctx context.Context) (session *gcp.Session, err error) {
-	if a.Session != nil {
-		return a.Session, nil
+// CreateSession creates a DeployerSession based on a set of configuration
+// files.
+func (a *Application) CreateSession(ctx context.Context, inputs []string) (session *cel.DeployerSession, err error) {
+	a.Client, err = gcp.GetDefaultClient(ctx)
+	if err != nil {
+		return nil, err
 	}
-	a.Session, err = gcp.NewSession(ctx, a.Client, &a.Configuration.HostEnvironment)
+	a.Session, err = cel.NewDeployerSession(ctx, a.Client, inputs)
 	if err != nil {
 		return nil, err
 	}
 	return a.Session, nil
-}
-
-// LoadConfigFiles loads the configuration files specified via |files|. Each
-// element in the |files| slice must be a path (relative or absolute) to a
-// .textpb file containing configuration data as recognized by
-// cel.Configuration.
-func (a *Application) LoadConfigFiles(ctx context.Context, files []string) (err error) {
-	a.GenericFiles = files
-
-	for _, f := range a.GenericFiles {
-		err := a.Configuration.Merge(f)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = a.Configuration.Validate()
-	if err != nil {
-		return err
-	}
-
-	a.Client, err = common.GetDefaultClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddCommand should be used by init() functions to add new commands to the
