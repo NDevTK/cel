@@ -1,0 +1,42 @@
+# Copyright 2018 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# This file is a Google Cloud Platform Deployment Manager Configuration file.
+# It is used to deploy base set of components needed by every lab deployed by
+# the CEL toolchain.
+#
+# Documentation and reference links:
+#
+#   Deployment Manager : https://cloud.google.com/deployment-manager/docs/
+#   Supported Resource Types : https://cloud.google.com/deployment-manager/docs/configuration/supported-resource-types
+# This entire file will be evaluated as a Go text template with the pipeline
+# set to a cel.Configuration object.
+#
+# CEL toolchain is not responble for creating the hosting GCP project. The user
+# has to create the project. The toolchain assumes that the operator is an
+# owner of the project. Many of the steps below will fail if the operator does
+# not possess sufficient permissions over the target project.
+#
+# NOTE: In case you missed it the first time, this file will be evaluated as a
+# Golang text/template. It is not a Jinja file.
+
+resources:
+
+  # Service account used by all CEL VMs.
+  - name: internal-vm-service-account
+    type: iam.v1.serviceAccount
+    properties:
+      name: "{{ .ServiceAccountName }}"
+      accountId: "{{ .ServiceAccountId }}"
+      displayName: CEL Instance Service Account
+
+outputs:
+  - name: serviceAccountEmail
+    value: $(ref.internal-vm-service-account.email)
+
+  # TODO(asanka): Move the Cloud KMS management here once the Deployment
+  # Manager supports CloudKMS objects. We can easily create a service account
+  # directly, but this file is here to act as a template for moving more
+  # resources types into a deployment manifest as the DM capabilities evolve.
+
