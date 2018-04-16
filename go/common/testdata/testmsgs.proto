@@ -58,16 +58,35 @@ message TestGoodProto {
   string name = 1;
 }
 
+message TestMultipleOneOf {
+  string name = 1;
+  oneof opt1 {
+    string field2 = 2;
+    string field3 = 3;
+  }
+  oneof opt2 {
+    string field4 = 4;
+    string field5 = 5;
+  }
+  oneof opt3 {
+    TestBadProto field6 = 6;
+    TestBadProto field7 = 7;
+  }
+}
+
 message TestMessageWithOptions {
   string name = 1;
-  string key = 2 [(common.v).ref = "with_types.repeated_field"];
+  string key = 2 [(common.v).ref = "a.b.with_types.repeated_field"];
   string label = 3 [(common.v).type = LABEL];
   string optional_key = 4
-      [(common.v) = {ref: "with_types.repeated_field", optional: true}];
+      [(common.v) = {ref: "a.b.with_types.repeated_field", optional: true}];
   string fqdn = 5 [(common.v).type = FQDN];
   string reqd = 6 [(common.v).type = REQUIRED];
-  string output = 7 [(common.v).type = OUTPUT];
-  string optional_string = 8 [(x) = true];
+  string optional_string = 7 [(x) = true];
+  string output = 8 [(common.v).type = OUTPUT];
+  string output_alt = 9 [(common.v).type = OUTPUT];
+  int32 output_int = 10 [(common.v).type = OUTPUT];
+  TestGoodProto output_proto = 11 [(common.v).type = OUTPUT];
 }
 
 message TestBadMessageWithOptions {
