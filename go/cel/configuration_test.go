@@ -17,7 +17,7 @@ func TestLabConfiguration_MergeAssets_1(t *testing.T) {
 		t.Fatalf("failed to read asset example: %#v", err)
 	}
 
-	if len(l.AssetSourceFiles) == 0 {
+	if len(l.assetSources) == 0 {
 		t.Fatal("expected one source file, but found none")
 	}
 
@@ -52,8 +52,8 @@ func TestLabConfiguration_MergeAssets_2(t *testing.T) {
 		t.Fatalf("failed to read asset example: %#v", err)
 	}
 
-	if len(l.AssetSourceFiles) != 2 {
-		t.Fatalf("unexpected number of source files. Expected 2, found %d", len(l.AssetSourceFiles))
+	if len(l.assetSources) != 2 {
+		t.Fatalf("unexpected number of source files. Expected 2, found %d", len(l.assetSources))
 	}
 
 	if len(l.AssetManifest.GetAdDomain()) != 3 {
@@ -69,7 +69,7 @@ func TestLabConfiguration_MergeHost(t *testing.T) {
 		t.Fatalf("failed to read host example: %#v", err)
 	}
 
-	if len(l.HostSourceFiles) == 0 {
+	if len(l.hostSources) == 0 {
 		t.Fatal("expected one source file, but found none")
 	}
 
@@ -99,7 +99,7 @@ func TestLabConfiguration_Merge(t *testing.T) {
 		t.Fatalf("failed to read host example: %#v", err)
 	}
 
-	if len(l.HostSourceFiles) == 0 {
+	if len(l.hostSources) == 0 {
 		t.Fatal("expected one source file, but found none")
 	}
 
@@ -130,8 +130,8 @@ func TestLabConfiguration_Merge(t *testing.T) {
 		t.Fatalf("failed to read asset example: %#v", err)
 	}
 
-	if len(l.AssetSourceFiles) != 2 {
-		t.Fatalf("unexpected number of source files. Expected 2, found %d", len(l.AssetSourceFiles))
+	if len(l.assetSources) != 2 {
+		t.Fatalf("unexpected number of source files. Expected 2, found %d", len(l.assetSources))
 	}
 
 	if len(l.AssetManifest.GetAdDomain()) != 3 {

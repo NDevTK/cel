@@ -8,6 +8,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/host"
+	"chromium.googlesource.com/enterprise/cel/go/lab"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -15,8 +16,9 @@ import (
 )
 
 var (
-	AssetRootPath = common.RefPath{"asset"}
-	HostRootPath  = common.RefPath{"host"}
+	AssetRootPath = common.RefPathFromComponents("asset")
+	HostRootPath  = common.RefPathFromComponents("host")
+	LabRootPath   = common.RefPathFromComponents("lab")
 )
 
 // Configuration combines assets and host configuration from multiple source
@@ -31,24 +33,31 @@ type Configuration struct {
 	// The combined host environment.
 	HostEnvironment host.HostEnvironment `json:"host"`
 
+	// Lab. Lab? Lab!
+	Lab lab.Lab `json:"lab"`
+
+	Resources host.RuntimeSupport `json:"-"`
+
 	// Paths of source files that were merged into AssetManifest. The mapping
 	// is from the absolute path to the data that was loaded from it.
-	AssetSourceFiles map[string]*asset.AssetManifest `json:"-"`
+	assetSources map[string]*asset.AssetManifest
 
 	// Paths of source files that were merged into HostEnvironment. The mapping
 	// is from the absolute path to the data that was loaded from it.
-	HostSourceFiles map[string]*host.HostEnvironment `json:"-"`
+	hostSources map[string]*host.HostEnvironment
 
-	// Contains cross references between assets and hosts as well as
-	// constructed assets.
-	References common.References `json:"-"`
-
-	// Collection of all assets that need to be resolved in this configuration.
-	Assets common.Assets `json:"-"`
+	// Contains a cross referenced view of the combined asset manifest and host
+	// environment.
+	references common.Namespace
 
 	// sealed is a weak signal that no more source files should be added to
 	// this configuration. It's set automatically after a Validate() call.
 	sealed bool
+}
+
+// GetNamespace returns the loaded and validated namespace for this Configuration.
+func (l *Configuration) GetNamespace() *common.Namespace {
+	return &l.references
 }
 
 // MergeAssets merges a text format AssetManifest into this Configuration.
@@ -69,11 +78,11 @@ func (l *Configuration) MergeAssets(filename string) error {
 		return errors.Wrapf(err, "can't determine absolute path for %s", filename)
 	}
 
-	if l.AssetSourceFiles == nil {
-		l.AssetSourceFiles = make(map[string]*asset.AssetManifest)
+	if l.assetSources == nil {
+		l.assetSources = make(map[string]*asset.AssetManifest)
 	}
 
-	if _, ok := l.AssetSourceFiles[filename]; ok {
+	if _, ok := l.assetSources[filename]; ok {
 		return NewConfigurationError(filename, true, nil)
 	}
 
@@ -84,7 +93,7 @@ func (l *Configuration) MergeAssets(filename string) error {
 	}
 
 	proto.Merge(&l.AssetManifest, &a)
-	l.AssetSourceFiles[filename] = &a
+	l.assetSources[filename] = &a
 
 	return nil
 }
@@ -107,11 +116,11 @@ func (l *Configuration) MergeHost(filename string) error {
 		return errors.Wrapf(err, "can't determine absolute path for %s", filename)
 	}
 
-	if l.HostSourceFiles == nil {
-		l.HostSourceFiles = make(map[string]*host.HostEnvironment)
+	if l.hostSources == nil {
+		l.hostSources = make(map[string]*host.HostEnvironment)
 	}
 
-	if _, ok := l.HostSourceFiles[filename]; ok {
+	if _, ok := l.hostSources[filename]; ok {
 		return NewConfigurationError(filename, true, nil)
 	}
 
@@ -122,7 +131,7 @@ func (l *Configuration) MergeHost(filename string) error {
 	}
 
 	proto.Merge(&l.HostEnvironment, &h)
-	l.HostSourceFiles[filename] = &h
+	l.hostSources[filename] = &h
 	return nil
 }
 
@@ -147,23 +156,20 @@ func (l *Configuration) Validate() error {
 	// Hence not checking whether sealed is already true.
 	l.sealed = true
 
-	l.References.AddSource(&l.AssetManifest, AssetRootPath)
-	l.References.AddSource(&l.HostEnvironment, HostRootPath)
+	l.HostEnvironment.Resources = &l.Resources
+	l.references.Graft(&l.AssetManifest, AssetRootPath)
+	l.references.Graft(&l.HostEnvironment, HostRootPath)
+	l.references.Graft(&l.Lab, LabRootPath)
 
 	err_list := []error{
-		l.References.Resolve(common.ResolutionSkipOutputs),
-		common.InvokeValidate(&l.AssetManifest, AssetRootPath),
-		common.InvokeValidate(&l.HostEnvironment, HostRootPath),
+		common.ValidateProto(&l.AssetManifest, AssetRootPath),
+		common.ValidateProto(&l.HostEnvironment, HostRootPath),
 	}
 
-	l.References.Unresolved.Visit(func(p common.RefPath, i interface{}) bool {
-		u := i.(*common.UnresolvedReference)
-		// Output fields are expected to be unresolved at this point.
-		if u.IsOutput {
-			return true
+	l.references.VisitUnresolved(common.EmptyPath, func(v common.UnresolvedValue) bool {
+		if _, ok := v.Value.(common.UnresolvedValue_Placeholder); ok {
+			err_list = append(err_list, errors.New(v.String()))
 		}
-		err_list = append(err_list, errors.Errorf("unresolved reference to \"%s\" from \"%s\"",
-			u.To.String(), u.From.String()))
 		return true
 	})
 
