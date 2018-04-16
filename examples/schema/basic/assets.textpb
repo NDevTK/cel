@@ -1,0 +1,54 @@
+# Format: lab_config.proto:Assets
+# 
+# Configuration for the Chrome enterprise lab in textpb. See go/textpb before
+# editing this file.
+
+
+# Let's start by setting up a network. It's going to be a pretty simple one. So
+# it's just going to have a name. All parameters will be based on defaults.
+network {
+    name: "lab-network"
+}
+
+
+# Then add an AD domain. Note that the domain controller hasn't been defined
+# yet. We'll do so in a later step.
+ad_domain {
+    name: "win-domain.example.com"
+    domain_controller {
+        windows_machine: "dc"
+    }
+}
+
+# Also throw in some users. A default administrator account will be created
+# regardless.
+windows_user {
+    name: "joe"
+    container { ad_domain: "win-domain.example.com" }
+    member_of { windows_group: "my-group" } # defined below
+}
+
+# And a group.
+windows_group {
+    name: "my-group"
+    container { ad_domain: "win-domain.example.com" }
+}
+
+# And now, let's define a couple of machines.
+windows_machine {
+    name: "userland"
+    machine_type: "windows-2016"
+    network_interface { network: "lab-network" }
+    container: { ad_domain: "win-domain.example.com" }
+}
+
+# This is the machine hosting the domain controller.
+windows_machine {
+    name: "dc"
+    machine_type: "windows-2016"
+    network_interface { network: "lab-network" }
+    # Note the absence of a "container" entry. AD domain controllers don't need
+    # to specify their containers since they define the container.
+}
+
+# vim: set ft=conf tw=80 ts=4 sw=4:

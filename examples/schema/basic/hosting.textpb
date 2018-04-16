@@ -1,0 +1,20 @@
+# Example CEL hosting configuration.
+
+# GCE Project.
+project {
+  name: "chrome-auth-lab-dev"
+  zone: "us-east1-b"
+}
+
+# Google Cloud Storage bucket to use.
+storage { bucket: "chrome-auth-lab-staging" }
+
+# Logs go here.
+log_settings {
+  admin_log: "cel-admin"
+}
+
+# And a machine type
+machine_type {
+  name: "windows-2016"
+}
