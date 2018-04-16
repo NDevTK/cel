@@ -14,8 +14,8 @@ Most of the code is in Go. See the [README](/src/go/README.md/) file.
 
 ### Prerequisites
 
-* [Go][]: Download Go from the [Go download page][]. This project requires Go
-    1.9.4 or later. The build will fail with prior versions.
+* [Go][]: Download Go from the [Go download page][]. **This project requires Go
+    1.9.4 or later**. The build will fail with prior versions.
 
 * [Depot Tools][]: Used for managing the checkout and the contributor workflow.
 

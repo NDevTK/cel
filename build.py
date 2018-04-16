@@ -3,19 +3,32 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+'''
+Build and manage Chrome Enterprise Lab tools.
 
-# This script is for building the code in src/go. It will install required
-# dependencies as a part of the build.
-#
-# The build process may change substantially. In particular, it might be worth
-# setting it up so that users can check out the source under their `GOPATH` and
-# just invoke `go install .`.
-#
-# Also, currently, in addition to PowerShell and Go, there's a build-time
-# dependency on Python. This should be more-or-less reasonable, but one that we
-# can eliminate fairly easily.
-#
-# Currently, full builds are only supported on Windows.
+This script is for building the code in src/go. It will install required
+dependencies as a part of the build.
+
+If this is the first time you are building the toolchain, then you likely need
+to do the following:
+
+    build.py deps --install
+
+This will install the dependencies that are required for building the
+toolchain. Once you statisfy the dependencies, you can build the toolchain for
+the host platform by:
+
+    build.py build
+
+Or you can invoke tests by:
+
+    build.py test
+
+Use "build.py build --help" for more information about how the build tool works
+and instructions for setting up the build to work with "go build"/"go test".
+
+See CONTRIBUTING.md for details for contributing code upstream.
+'''
 
 import ast
 import argparse
@@ -152,9 +165,9 @@ def _ExpandArg(a, **kwargs):
   return [a.format(**kwargs)]
 
 
-def _BuildTask(args, inp=[], **kwargs):
+def _BuildStep(args, inp=[], **kwargs):
   '''\
-_BuildTask takes as input a list of input files and runs a build command
+_BuildStep takes as input a list of input files and runs a build command
 if the output file or a stamp file is found to be out of date.
 
 In other words, it acts as a mini build step which only runs if the inputs are
@@ -400,30 +413,47 @@ Requires `protoc` be present on PATH. Use _Deps() to install `protoc` if its
 missing.
 '''
 
-  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
-  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
   _EnsureDir(STAMP_PATH)
 
   descriptor_path = os.path.join(OUT_PATH, 'schema')
   _EnsureDir(descriptor_path)
 
-  _BuildTask(
+  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
+  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
+
+  gen_api_command = _BuildCommand('gen_api_proto', './go/tools/gen_api_proto',
+                                  _MergeEnv(args, target_host=True))
+
+  _BuildStep(
       [
-          'go', 'run', 'go/tools/gen_api_proto/main.go', '-i', '{inp[0]}', '-o',
-          '{out}', '-p', 'chromium.googlesource.com/enterprise/cel/go/gcp',
-          '-g', 'go/gcp/compute/validate.go'
+          gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
+          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
+          'go/gcp/compute/validate.go'
       ],
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH,
       inp=['vendor/google.golang.org/api/compute/v0.beta/compute-api.json'],
       out='schema/gcp/compute/compute-api.proto')
 
+  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'iam'))
+  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'iam'))
+  _BuildStep(
+      [
+          gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
+          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
+          'go/gcp/iam/validate.go'
+      ],
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH,
+      inp=['vendor/google.golang.org/api/iam/v1/iam-api.json'],
+      out='schema/gcp/iam/iam-api.proto')
+
   protoc_command = [
       'protoc', '--go_out=../../../', '--descriptor_set_out={out}',
       '--include_source_info', '$^'
   ]
 
-  _BuildTask(
+  _BuildStep(
       protoc_command,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH,
@@ -434,7 +464,7 @@ missing.
       ],
       out=os.path.join(descriptor_path, 'common.pb'))
 
-  _BuildTask(
+  _BuildStep(
       protoc_command,
       inp=[
           'schema/asset/active_directory.proto', 'schema/asset/cert.proto',
@@ -446,25 +476,52 @@ missing.
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
-  _BuildTask(
+  _BuildStep(
       protoc_command,
       inp=['schema/host/host_environment.proto'],
       out=os.path.join(descriptor_path, 'host.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
-  _BuildTask(
+  _BuildStep(
+      protoc_command,
+      inp=['schema/lab/lab.proto'],
+      out=os.path.join(descriptor_path, 'lab.pb'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
       protoc_command,
       inp=['schema/gcp/compute/compute-api.proto'],
       out=os.path.join(descriptor_path, 'gcp_compute.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
-  _BuildTask(
+  _BuildStep(
+      protoc_command,
+      inp=['schema/gcp/iam/iam-api.proto'],
+      out=os.path.join(descriptor_path, 'gcp_iam.pb'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
       protoc_command,
       inp=['go/tools/gen_doc_proto/testdata/test.proto'],
       out=os.path.join(SOURCE_PATH, 'go', 'tools', 'gen_doc_proto', 'testdata',
                        'test.pb'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  esc_command = _BuildCommand('esc', './vendor/github.com/mjibson/esc',
+                              _MergeEnv(args, target_host=True))
+
+  _BuildStep(
+      [
+          esc_command, '-pkg', 'gcp', '-prefix', 'resources', '-o', '{out}',
+          '-private', '$^'
+      ],
+      inp=['resources/deployment/cel-base.yaml'],
+      out=os.path.join(SOURCE_PATH, 'go', 'gcp', 'resources.gen.go'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -482,6 +539,26 @@ This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
   return os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
 
 
+def _BuildCommand(command, package, build_env, verbose=False):
+  '''\
+  _BuildCommand builds a Go command.
+
+  '''
+  flags = []
+  if verbose:
+    flags += ['-v', '-x']
+
+  out_dir = _GetBuildDir(build_env)
+  _EnsureDir(out_dir)
+  suffix = '.exe' if build_env['GOOS'] == 'windows' else ''
+  out = os.path.join(out_dir, command + suffix)
+  _RunCommand(
+      ['go', 'build'] + flags + ['-o', out, package],
+      env=build_env,
+      cwd=SOURCE_PATH)
+  return out
+
+
 def BuildCommand(args):
   '''\
 Build all non-test Go source files.
@@ -492,36 +569,47 @@ successful build.  Does not attempt to install any packages by default.
 The build step also checks if the dependencies are up-to-date. It also
 generates files that are needed by the build. These additional steps happen
 prior to the build, and only if the dependencies have changed.
+
+Why not just run "go build" ?
+
+    The CEL repository doesn't include generated sources. In particular this
+    includes:
+
+    * Code generated by the Protocol Buffers compiler.
+    * Prtocol buffer definitions of Google Cloud Platform REST objects and
+      their corresponding generated Go code.
+    * Vendored dependencies.
+
+    The "build.py build" invocation ensures that these generated and vendored
+    source files are present. It also places the resulting executables in
+    platform specific directories. The latter makes it possible to do cross
+    compilation.
+
+    If you'd like to be able to invoke "go build" manually, then invoke
+    "build.py deps" first. This provides the same assurances with regard to
+    dependencies as running "build.py build".
 '''
 
   if not args.fast:
     _Deps(args)
     _Generate(args)
 
+  build_env = _MergeEnv(args)
+
   flags = []
   if args.verbose:
     flags += ['-v', '-x']
 
-  build_env = _MergeEnv(args)
-
-  # Do a (redundant) full build. This catches build errors that don't affect
-  # the go/cmd/ build that's done next.
-  _RunCommand(
-      ['go', 'build'] + flags + ['./go/...'], env=build_env, cwd=SOURCE_PATH)
-
-  out_dir = _GetBuildDir(build_env)
-  _EnsureDir(out_dir)
-
-  suffix = '.exe' if args.goos == 'windows' else ''
+  if not args.fast:
+    # Do a (redundant) full build. This catches build errors that don't affect
+    # the go/cmd/ build that's done next.
+    _RunCommand(
+        ['go', 'build'] + flags + ['./go/...'], env=build_env, cwd=SOURCE_PATH)
 
   commands = os.listdir(os.path.join(SOURCE_PATH, 'go', 'cmd'))
 
   for command in commands:
-    out = os.path.join(out_dir, command + suffix)
-    _RunCommand(
-        ['go', 'build'] + flags + ['-o', out, './go/cmd/' + command],
-        env=build_env,
-        cwd=SOURCE_PATH)
+    _BuildCommand(command, './go/cmd/' + command, build_env, args.verbose)
 
 
 def _GetGoPackages(root_package, root_path):
@@ -549,18 +637,28 @@ def TestCommand(args):
   '''\
 Run Go tests.
 
-Invokes 'go test' to run tests. Any additional arguments are passed down to 'go
-test'.
-
-'go test' is invoked for all known build targets.
+Ensures dependencies are present and invokes 'go test' to run tests. Any
+additional arguments are passed down to 'go test'.
 
 'build.py test' is basically equivalent to 'go test ...'. It's primarily here
 for convenience when running tests on all the go packages contained herein. If
-test filtering is to be performed, use 'go test' directly.
+test filtering is to be performed, or you'd like to specify individual packages
+to be tested, use 'go test' directly.
+
+During development, you can invoke "build.py deps" separately and then manually
+invoke "go test <...>" as you see fit.
 
 Note: Tests can only be run when GOOS == GOHOSTOS. Hence there's no command
 line option to set GOOS.
 '''
+
+  for test_arg in args.gotest_args:
+    if not test_arg.startswith('-'):
+      raise (Exception(
+          textwrap.dedent('''\
+              It looks like you are passing in package names. If this is the
+              case, please invoke 'go test' directly.
+              ''')))
 
   if not args.fast:
     _Deps(args)
@@ -724,10 +822,14 @@ def _FormatPythonFiles(args, py_files):
 
   try:
     if args.check:
-      o = subprocess.check_output(
-          ['yapf', '-r', '-d'] + py_files,
-          env=_MergeEnv(args, target_host=True),
-          cwd=SOURCE_PATH)
+      try:
+        o = subprocess.check_output(
+            ['yapf', '-r', '-d'] + py_files,
+            env=_MergeEnv(args, target_host=True),
+            cwd=SOURCE_PATH)
+      except subprocess.CalledProcessError as e:
+        o = e.output
+
       lines = o.splitlines()
       modified = []
       for line in lines:
@@ -823,7 +925,7 @@ Problems with 'clang-format'?
 
   o = subprocess.check_output(
       ['git', 'ls-files'], cwd=SOURCE_PATH, env=_MergeEnv(args))
-  all_files = o.splitlines()
+  all_files = [os.path.join(SOURCE_PATH, p) for p in o.splitlines()]
 
   logging.info("checking .proto files")
   pr = _FormatProtoFiles(args, [f for f in all_files if f.endswith('.proto')])
@@ -908,9 +1010,8 @@ def main():
       '--verbose', '-v', help='verbose output', action='store_true')
 
   parser = argparse.ArgumentParser(
-      description='build and manage Chrome Enterprise Lab tools',
-      formatter_class=argparse.RawDescriptionHelpFormatter)
-  subparsers = parser.add_subparsers(help='sub-command help')
+      description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+  subparsers = parser.add_subparsers(help='Subcommands')
 
   # ----------------------------------------------------------------------------
   # build
@@ -923,7 +1024,7 @@ def main():
       formatter_class=argparse.RawDescriptionHelpFormatter)
   build_command.add_argument(
       '--fast',
-      '-F',
+      '-f',
       action='store_true',
       help='''fast build. Skips dependency and generator steps''')
   build_command.set_defaults(closure=BuildCommand)
@@ -979,7 +1080,7 @@ def main():
       '--force',
       '-f',
       action='store_true',
-      help='force. Without this option this command doesn\'t do anything.')
+      help='force. Without this option "clean" command doesn\'t do anything.')
   clean_command.set_defaults(closure=CleanCommand)
 
   # ----------------------------------------------------------------------------
