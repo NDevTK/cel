@@ -64,7 +64,7 @@ def ProcessIncludesInContent(lines, fname):
           r'<!-- INCLUDE +(?P<fn>[^ ]*) +(?:\((?P<lc>\d+) lines\) +|)(?:fenced as (?P<ft>\w+) +|)-->',
           l)
       if m is None:
-        continue
+        raise Exception("improperly formatted INCLUDE line: {}".format(l))
       replacements.append(
           Include(m.group('fn'), m.group('lc'), i, m.group('ft')))
 
@@ -90,7 +90,7 @@ def ProcessIncludesInContent(lines, fname):
 def FixOldStyleLinks(lines, fname):
   '''FixOldStyleLinks replaces links of the form [foo] with [foo][]
   
-  The former style is accepted by Gitliles, but is not valid CommonMark. Hence
+  The former style is accepted by Gitiles, but is not valid CommonMark. Hence
   this function replaces it with the equivalent latter form. This replacement
   ensures that the links are correctly handled by editors and viewers other
   than Gitiles.
@@ -123,8 +123,8 @@ def CheckLinksInContent(lines, fname):
   '''CheckLinksInContent verifies that reference style links are defined in the
   same document.
 
-  Referene style links are links of the form [foo][], or [Foo][foo] where [foo]
-  needs to be defiend somewhere else in the document as:
+  Reference style links are links of the form [foo][], or [Foo][foo] where
+  [foo] needs to be defiend somewhere else in the document as:
 
       [foo]: https://example.com/foo
 
@@ -141,6 +141,7 @@ def CheckLinksInContent(lines, fname):
     links.add(m.group('ref'))
 
   whole_thing = re.sub(r'\s+', ' ', ''.join(lines), count=0)
+  whole_thing = re.sub(r'`[^`]*`', '', whole_thing, count=0)
   not_found = set()
   for m in re.finditer(r'\[(?P<a>[^]]*)\]\[(?P<ref>[^]]*)\]', whole_thing):
     ref = m.group('ref') if m.group('ref') != '' else m.group('a')
