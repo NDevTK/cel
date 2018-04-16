@@ -125,29 +125,29 @@ func (c *CertificatePool) Validate() error {
 	return nil
 }
 
-var kValidRegistryHives = [...]string{
+var validRegistryHives = [...]string{
 	"HKEY_CLASSES_ROOT", "HKCR",
 	"HKEY_CURRENT_USER", "HKCU",
 	"HKEY_LOCAL_MACHINE", "HKLM",
 	"HKEY_USERS", "HKU",
 	"HKEY_CURRENT_CONFIG", "HKCC"}
 
-const kRegistryKeyPathSeparator = "/"
+const registryKeyPathSeparator = "/"
 
 func (r *RegistryKey) Validate() error {
-	if !strings.Contains(r.Path, kRegistryKeyPathSeparator) {
+	if !strings.Contains(r.Path, registryKeyPathSeparator) {
 		return errors.Errorf("registry key path is invalid: \"%s\"", r.Path)
 	}
-	hive := r.Path[:strings.Index(r.Path, kRegistryKeyPathSeparator)]
+	hive := r.Path[:strings.Index(r.Path, registryKeyPathSeparator)]
 	found := false
-	for _, h := range kValidRegistryHives {
+	for _, h := range validRegistryHives {
 		if h == hive {
 			found = true
 			break
 		}
 	}
 	if !found {
-		return errors.Errorf("registry hive is \"%s\" which doesn't match allowed list: %v", hive, kValidRegistryHives)
+		return errors.Errorf("registry hive is \"%s\" which doesn't match allowed list: %v", hive, validRegistryHives)
 	}
 
 	if strings.ContainsRune(r.Path, '/') {
