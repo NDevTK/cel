@@ -1,4 +1,3 @@
-
 # Gopkg.toml example
 #
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
@@ -20,6 +19,8 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+required = ["github.com/mjibson/esc"]
+
 [[constraint]]
   name = "cloud.google.com/go"
   version = "0.14.0"
@@ -27,10 +28,6 @@
 [[constraint]]
   branch = "master"
   name = "github.com/golang/protobuf"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/maruel/subcommands"
 
 [[constraint]]
   branch = "master"
@@ -43,3 +40,4 @@
 [[constraint]]
   branch = "master"
   name = "google.golang.org/api"
+
