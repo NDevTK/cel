@@ -5,101 +5,165 @@
 package gcp
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 	"cloud.google.com/go/logging"
+	"fmt"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 	cloudresourcemanager "google.golang.org/api/cloudresourcemanager/v1"
 	compute "google.golang.org/api/compute/v1"
+	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 	iam "google.golang.org/api/iam/v1"
+	"log"
 	"net/http"
 	"sync"
 )
 
 type Session struct {
-	Context         context.Context
-	Client          *http.Client
-	Cloud           *CloudState
+	ctx             context.Context
+	client          *http.Client
 	HostEnvironment *host.HostEnvironment
 
-	compute_service *compute.Service
-	compute_once    sync.Once
+	computeService *compute.Service
+	computeOnce    sync.Once
+	computeResult  error
 
-	cloudkms_service      *cloudkms.Service
-	cloudkms_service_once sync.Once
+	cloudkmsService     *cloudkms.Service
+	cloudkmsServiceOnce sync.Once
+	cloudkmsResult      error
 
-	iam_service      *iam.Service
-	iam_service_once sync.Once
+	iamService     *iam.Service
+	iamServiceOnce sync.Once
+	iamResult      error
 
-	cloudresourcemanager_service *cloudresourcemanager.Service
-	cloudresourcemanager_once    sync.Once
+	cloudresourcemanagerService *cloudresourcemanager.Service
+	cloudresourcemanagerOnce    sync.Once
+	cloudresourcemanagerResult  error
 
-	// Logging. Use one of the Log* methods.
-	log_client *logging.Client
-	logger     *logging.Logger
+	deploymentmanagerService *deploymentmanager.Service
+	deploymentmanagerOnce    sync.Once
+	deploymentmanagerResult  error
+
+	logClient *logging.Client
+	logger    *logging.Logger
+
+	Logger common.Logger
 }
 
-func NewSession(ctx context.Context, client *http.Client, env *host.HostEnvironment) (s *Session, err error) {
-	s = &Session{Context: ctx, Client: client, HostEnvironment: env}
+type gcpSessionKeyType int
 
-	s.log_client, err = logging.NewClient(s.Context, env.Project.Name)
-	if err != nil {
-		return
+var gcpSessionKey = gcpSessionKeyType(1)
+
+func NewSession(ctx context.Context, client *http.Client, env *host.HostEnvironment, genId string) (s *Session, err error) {
+	s = &Session{ctx: nil, client: client, HostEnvironment: env}
+	s.ctx = context.WithValue(ctx, gcpSessionKey, s)
+
+	if env.LogSettings.GetAdminLog() != "" {
+		s.logClient, err = logging.NewClient(s.ctx, env.Project.Name)
+		if err != nil {
+			return
+		}
+		s.logger = s.logClient.Logger(env.LogSettings.AdminLog)
 	}
-	s.logger = s.log_client.Logger(env.LogSettings.AdminLog)
+	s.Logger = &loggerAdapter{gcpLogger: s.logger, generationId: genId}
 
-	s.Cloud, err = QueryCloudState(s.Context, s.Client, env)
 	return
 }
 
-func (s *Session) GetComputeService() *compute.Service {
-	s.compute_once.Do(func() {
-		var err error
-		s.compute_service, err = compute.New(s.Client)
-		if err != nil {
-			panic(err)
-		}
+func SessionFromContext(ctx context.Context) (*Session, error) {
+	if s, ok := ctx.Value(gcpSessionKey).(*Session); ok {
+		return s, nil
+	}
+	return nil, errors.New("context does not have a gcp Session associated with it")
+}
+
+func (s *Session) GetContext() context.Context {
+	return s.ctx
+}
+
+func (s *Session) GetProject() string {
+	return s.HostEnvironment.Project.Name
+}
+
+func (s *Session) GetComputeService() (*compute.Service, error) {
+	s.computeOnce.Do(func() {
+		s.computeService, s.computeResult = compute.New(s.client)
 	})
-	return s.compute_service
+	return s.computeService, s.computeResult
 }
 
-func (s *Session) GetCloudKmsService() *cloudkms.Service {
-	s.cloudkms_service_once.Do(func() {
-		var err error
-		s.cloudkms_service, err = cloudkms.New(s.Client)
-		if err != nil {
-			panic(err)
-		}
+func (s *Session) GetCloudKmsService() (*cloudkms.Service, error) {
+	s.cloudkmsServiceOnce.Do(func() {
+		s.cloudkmsService, s.cloudkmsResult = cloudkms.New(s.client)
 	})
-	return s.cloudkms_service
+	return s.cloudkmsService, s.cloudkmsResult
 }
 
-func (s *Session) GetIamService() *iam.Service {
-	s.iam_service_once.Do(func() {
-		var err error
-		s.iam_service, err = iam.New(s.Client)
-		if err != nil {
-			panic(err)
-		}
+func (s *Session) GetIamService() (*iam.Service, error) {
+	s.iamServiceOnce.Do(func() {
+		s.iamService, s.iamResult = iam.New(s.client)
 	})
-	return s.iam_service
+	return s.iamService, s.iamResult
 }
 
-func (s *Session) GetCloudResourceManagerService() *cloudresourcemanager.Service {
-	s.cloudresourcemanager_once.Do(func() {
-		var err error
-		s.cloudresourcemanager_service, err = cloudresourcemanager.New(s.Client)
-		if err != nil {
-			panic(err)
-		}
+func (s *Session) GetCloudResourceManagerService() (*cloudresourcemanager.Service, error) {
+	s.cloudresourcemanagerOnce.Do(func() {
+		s.cloudresourcemanagerService, s.cloudresourcemanagerResult = cloudresourcemanager.New(s.client)
 	})
-	return s.cloudresourcemanager_service
+	return s.cloudresourcemanagerService, s.cloudresourcemanagerResult
 }
 
-func (s *Session) LogInfo(e LogEntrySource) {
-	s.logger.Log(e.Entry(logging.Info))
+func (s *Session) GetDeploymentManagerService() (*deploymentmanager.Service, error) {
+	s.deploymentmanagerOnce.Do(func() {
+		s.deploymentmanagerService, s.deploymentmanagerResult = deploymentmanager.New(s.client)
+	})
+	return s.deploymentmanagerService, s.deploymentmanagerResult
 }
 
-func (s *Session) LogError(e LogEntrySource) {
-	s.logger.Log(e.Entry(logging.Error))
+func (s *Session) GetLogger() (common.Logger, error) {
+	if s.Logger == nil {
+		return nil, errors.New("Logging not configured")
+	}
+
+	return s.Logger, nil
+}
+
+type loggerAdapter struct {
+	gcpLogger    *logging.Logger
+	generationId string
+}
+
+func (l *loggerAdapter) getEntry(s logging.Severity, v fmt.Stringer) logging.Entry {
+	return logging.Entry{
+		Severity: s,
+		Payload:  v,
+		Labels:   map[string]string{"generation-id": l.generationId},
+	}
+}
+
+func (l *loggerAdapter) Debug(v fmt.Stringer) {
+	log.Println(v.String())
+}
+
+func (l *loggerAdapter) Info(v fmt.Stringer) {
+	if l.gcpLogger != nil {
+		l.gcpLogger.Log(l.getEntry(logging.Info, v))
+	}
+	log.Println(v.String())
+}
+
+func (l *loggerAdapter) Warning(v fmt.Stringer) {
+	if l.gcpLogger != nil {
+		l.gcpLogger.Log(l.getEntry(logging.Warning, v))
+	}
+	log.Println(v.String())
+}
+
+func (l *loggerAdapter) Error(v fmt.Stringer) {
+	if l.gcpLogger != nil {
+		l.gcpLogger.Log(l.getEntry(logging.Error, v))
+	}
+	log.Println(v.String())
 }
