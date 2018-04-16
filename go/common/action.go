@@ -67,14 +67,15 @@ import (
 // But this approach is a more usable and much less noisy when multiple
 // external libraries are involved.
 func Action(err *error, action string, v ...interface{}) {
-	if *err != nil {
-		*err = errors.WithMessage(*err, fmt.Sprintf(action, v...))
+	if r := recover(); r != nil {
+		if rerr, ok := r.(error); ok {
+			*err = rerr
+		} else {
+			*err = errors.Errorf("panic: %v", r)
+		}
 	}
-}
 
-func AsyncAction(err *error, result chan<- error, action string, v ...interface{}) {
 	if *err != nil {
 		*err = errors.WithMessage(*err, fmt.Sprintf(action, v...))
 	}
-	result <- *err
 }
