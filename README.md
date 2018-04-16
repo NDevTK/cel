@@ -14,19 +14,28 @@ Most of the code is in Go. See the [README](/src/go/README.md/) file.
 
 ### Prerequisites
 
-* [Go](https://golang.org/): Download Go from the [Go download
-    page](https://golang.org/dl/).
+* [Go][]: Download Go from the [Go download page][]. This project requires Go
+    1.9.4 or later. The build will fail with prior versions.
 
-* [Depot Tools](https://dev.chromium.org/developers/how-tos/install-depot-tools)
+* [Depot Tools][]: Used for managing the checkout and the contributor workflow.
 
-* [Protocol Buffers Compiler](https://developers.google.com/protocol-buffers/)
+* [Protocol Buffers Compiler][]: Protocol buffers are used extensively for
+    wranging all the data that needs to be shuttled around. Can be installed
+    automatically via `./build.py deps --install`.
 
-* [Dep](https://github.com/golang/dep) : This can be installed automatically by
-    running `./build.py deps --install` from the root of the source tree.
+* [Dep][] : Used for Go depedency management. This can be installed
+    automatically by running `./build.py deps --install` from the root of the
+    source tree.
 
-* [Go support for Protocol Buffers](https://github.com/golang/protobuf) : This
-    can be installed automatically by running `./build.py deps --install` from
-    the root of the source tree.
+* [Go support for Protocol Buffers][] : This can be installed automatically by
+  running `./build.py deps --install` from the root of the source tree.
+
+[Go]: https://golang.org/
+[Go download page]: https://golang.org/dl/
+[Depot Tools]: https://dev.chromium.org/developers/how-tos/install-depot-tools
+[Protocol Buffers Compiler]: https://developers.google.com/protocol-buffers/
+[Dep]: https://github.com/golang/dep
+[Go support for Protocol Buffers]: https://github.com/golang/protobuf
 
 ### Get The Source
 

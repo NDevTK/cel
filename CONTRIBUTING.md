@@ -29,7 +29,7 @@ contributor, then please sign the [CLA](https://cla.developers.google.com/).
 
    This will ensure that the code you are about to upload is correctly
    formatted. In addition, it runs a set of checks on Markdown source to ensure
-   that links are correct. For more information, see `bulid.py format --help`.
+   that links are correct. For more information, see `build.py format --help`.
 
 4. Upload your changes:
 
@@ -61,7 +61,9 @@ contributor, then please sign the [CLA](https://cla.developers.google.com/).
    [here](https://chromium.googlesource.com/chromium/tools/depot_tools.git) for
    more details).
 
-## Updating Go Dependencies
+## Adding a new Go Dependency
+
+This project uses [GoDep][] to manage dependencies.
 
 If you add a new import, then it's likely that `Dep` will complain. In that
 case, just run the following:
@@ -70,7 +72,19 @@ case, just run the following:
 dep ensure
 ```
 
-This will fetch the dependency in to `vendor` and pin the version.
+This will fetch the dependency in to `vendor` and update the version
+constraints. You may need to check in `Gopkg.lock` and `Gopkg.toml` files if
+they change.
+
+[GoDep]: https://golang.github.io/dep/
+
+## Updating Go Dependencies
+
+*** note
+**Warning**: This is not safe unless you take special care to understand the new
+changes you are pulling in. There might be version incompatibilities that you'll
+need to resolve by hand.
+***
 
 When updates to dependent packages are available, run:
 
@@ -82,6 +96,10 @@ dep ensure -update
 code drops are safe and doesn't regress.
 
 Add the `Gopkg.lock` and `Gopkg.toml` files and commit the change.
+
+See [Go Dep](https://golang.github.io/dep/docs/introduction.html) documentation
+for dealing with dependencies using Dep and also dealing with version mismatch
+issues across dependencies.
 
 *** note
 **Note** : Please update deps as a separate commit. Don't mix depependecy

@@ -21,7 +21,8 @@ type Validator interface {
 	// *  DONT recursively validate embedded fields. The toolchain will do that
 	//    for you.
 	//
-	// *  DONT check formatting for external references.
+	// *  DONT check formatting for external references. The references will
+	//    fail in due course if invalid.
 	//
 	// *  DONT be overly aggressive when enforcing restrictions. The validators
 	//    are merely a convenience and shouldn't be considered a comprehensive
