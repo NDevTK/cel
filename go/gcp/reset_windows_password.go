@@ -5,8 +5,8 @@
 package gcp
 
 import (
+	"context"
 	"fmt"
-	"golang.org/x/net/context"
 	compute "google.golang.org/api/compute/v1"
 	"net/http"
 	"strings"

@@ -31,10 +31,6 @@ required = ["github.com/mjibson/esc"]
 
 [[constraint]]
   branch = "master"
-  name = "golang.org/x/net"
-
-[[constraint]]
-  branch = "master"
   name = "golang.org/x/oauth2"
 
 [[constraint]]

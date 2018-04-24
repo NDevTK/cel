@@ -7,8 +7,8 @@ package gcp
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/host"
+	"context"
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 	compute "google.golang.org/api/compute/v1"
 	iam "google.golang.org/api/iam/v1"
 	"net/http"

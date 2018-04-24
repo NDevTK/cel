@@ -7,7 +7,7 @@ package gcp
 import (
 	"chromium.googlesource.com/enterprise/cel/go/host"
 	th "chromium.googlesource.com/enterprise/cel/go/testhelpers"
-	"golang.org/x/net/context"
+	"context"
 	"testing"
 )
 
