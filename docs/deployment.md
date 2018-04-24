@@ -215,7 +215,7 @@ deployment, they could start a deployment using a command-line such as the
 following:
 
 ``` sh
-cel_ctl deploy --builtins assets.textpb hostenv.textpb
+cel_ctl deploy --builtins mylab.asset.textpb mylab.host.textpb
 ```
 
 
@@ -397,8 +397,6 @@ assigned to the Deployment Manager and the work that is to be assigned to
 per-instance startup scripts.
 
 Therefore, for each asset that must be deployed, we need to determine:
-
-
 
 * **Who** deploys it: Deployment Manager, or a specific Instance, or both. Some
   resources like `windows_machine` as mentioned above will be split across DM
@@ -693,7 +691,7 @@ The next steps are:
 *   [Deployment Manager Invocation Phase](#deployment-manager-invocation-phase).
 *   [Instance Configuration Phase](#instance-configuration-phase).
 
-##### GCP Prep Phase
+##### GCP Prep Phase                                           {#gcp-prep-phase}
 
 Prior to launching anything, the deployer needs to make sure that global
 resources and metadata required for the lab are up-to-date. Thus the deployer:
@@ -769,18 +767,32 @@ resources and metadata required for the lab are up-to-date. Thus the deployer:
 
 * **Updates project scoped metadata**.
 
-  * `cel-manifest` ← reference to Completed Asset Manifest.
+  * `cel-manifest` ← reference to Completed Asset Manifest. The contents is a
+    JSON encoded `FileReference` object with the `object_reference` and
+    `integrity` values populated at a minimum. The manifest itself should be
+    expected to be encoded as a text protobuf.
 
-  * `cel-agent` ← JSON object mapping the string `$GOOS_$GOARCH` to the
-    corresponding reference to the uploaded CEL agent binary. E.g.
+  * `cel-agent` ← JSON encoded object mapping the string `$GOOS_$GOARCH` to the
+    corresponding reference to the uploaded CEL agent binary. The mapped value
+    is a JSON encoded `FileReference` object which specifies the
+    `object_reference` and `integrity` values at a minimum.
 
     ``` json
-    { "windows_amd64": "gs://my-test-project-bucket/cel/objects/f810e00210b",
-      "windows_386": "gs://my-test-project-bucket/cel/objects/e289537b42f"}
+    {
+      "windows_amd64": {
+        "object_reference": "gs://my-test-project-bucket/cel/objects/f2342535",
+        "integrity": "sha384-2342352352"
+      },
+      "windows_386": {
+        "object_reference": "gs://my-test-project-bucket/cel/objects/fa235235",
+        "integrity": "sha384-43643463"
+      },
+      ...
+    }
     ```
 
-  * `cel-admin-log` ← Name of Stackdriver log to use for administrative messages
-    during deployment.
+  * `cel-admin-log` ←  Name of Stackdriver log to use for administrative
+    messages during deployment.
 
     Log settings are a part of the Completed Asset Manifest as well, but it's
     exposed as a separate entry so that entities in the lab can correctly
@@ -1096,7 +1108,7 @@ message FileReference {
   // Subresource integrity string.
   //
   // This string is required for all deployed objects. On the client side, the
-  // object is rejected if the integrity check fails. Currently only SHA-256
+  // object is rejected if the integrity check fails. Currently only SHA-384
   // digests are supported.
   //
   // See https://w3c.github.io/webappsec-subresource-integrity/

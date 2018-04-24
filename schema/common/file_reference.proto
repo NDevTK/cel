@@ -60,7 +60,7 @@ message FileReference {
   // Subresource integrity string.
   //
   // This string is required for all deployed objects. On the client side, the
-  // object is rejected if the integrity check fails. Currently only SHA-256
+  // object is rejected if the integrity check fails. Currently only SHA-384
   // digests are supported.
   //
   // See https://w3c.github.io/webappsec-subresource-integrity/
