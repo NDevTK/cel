@@ -6,15 +6,38 @@ package cel
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	"github.com/pkg/errors"
+	"strings"
 	"testing"
 )
 
-func TestLabConfiguration_MergeAssets_1(t *testing.T) {
+func TestConfiguration_Merge_singleTextPb(t *testing.T) {
 	var l Configuration
 
-	err := l.MergeAssets("../../examples/schema/ad/one-domain.asset.textpb")
+	err := l.Merge("../../examples/schema/ad/one-domain.asset.textpb")
 	if err != nil {
-		t.Fatalf("failed to read asset example: %#v", err)
+		t.Fatalf("failed to read asset example: %s", err)
+	}
+
+	if len(l.assetSources) == 0 {
+		t.Fatal("expected one source file, but found none")
+	}
+
+	if len(l.AssetManifest.AdDomain) != 1 {
+		t.Fatalf("expected to find one domain, but found %d", len(l.AssetManifest.AdDomain))
+	}
+
+	if l.AssetManifest.AdDomain[0].Name != "foo.example" {
+		t.Fatalf("unexpected domain: %#v", l.AssetManifest.AdDomain[0])
+	}
+}
+
+func TestConfiguration_Merge_singleYaml(t *testing.T) {
+	var l Configuration
+
+	err := l.Merge("../../examples/schema/ad/one-domain.asset.yaml")
+	if err != nil {
+		t.Fatalf("failed to read asset example: %s", err)
 	}
 
 	if len(l.assetSources) == 0 {
@@ -29,25 +52,70 @@ func TestLabConfiguration_MergeAssets_1(t *testing.T) {
 		t.Fatalf("unexpected domain: %#v", l.AssetManifest.AdDomain[0])
 	}
 
-	err = l.MergeAssets("../../examples/schema/ad/one-domain.asset.textpb")
-	if err == nil {
-		t.Fatalf("duplicate file was not detected")
-	}
-
-	if _, ok := err.(*ConfigurationError); !ok {
-		t.Fatal("unexpected error type")
+	if len(l.AssetManifest.WindowsMachine) != 2 {
+		t.Fatal("repeated object not parsed properly")
 	}
 }
 
-func TestLabConfiguration_MergeAssets_2(t *testing.T) {
+func TestConfiguration_Merge_duplicate(t *testing.T) {
 	var l Configuration
 
-	err := l.MergeAssets("../../examples/schema/ad/one-domain.asset.textpb")
+	err := l.Merge("../../examples/schema/ad/one-domain.asset.textpb")
 	if err != nil {
 		t.Fatalf("failed to read asset example: %#v", err)
 	}
 
-	err = l.MergeAssets("../../examples/schema/ad/two-domains.asset.textpb")
+	err = l.Merge("../../examples/schema/ad/one-domain.asset.textpb")
+	if errors.Cause(err) != ConfigurationAlreadyLoadedError {
+		t.Fatalf("duplicate file was not detected")
+	}
+}
+
+func TestConfiguration_Merge_nonexistent(t *testing.T) {
+	var l Configuration
+
+	err := l.Merge("../../examples/schema/ad/one-domain.asset.textpbnotreally")
+	if err == nil || !strings.Contains(errors.Cause(err).Error(), "no such file or directory") {
+		t.Fail()
+	}
+}
+
+func TestConfiguration_Merge_noschema(t *testing.T) {
+	var l Configuration
+
+	err := l.MergeContents("../../examples/schema/ad/one-domain.textpb", []byte("asdf"))
+	if errors.Cause(err) != IncorrectFilenameFormatError {
+		t.Fail()
+	}
+}
+
+func TestConfiguration_Merge_unsupportedType(t *testing.T) {
+	var l Configuration
+
+	err := l.MergeContents("../../examples/schema/ad/one-domain.asset.abc", []byte("asdf"))
+	if errors.Cause(err) != IncorrectFilenameFormatError {
+		t.Fail()
+	}
+}
+
+func TestConfiguration_Merge_cantParse(t *testing.T) {
+	var l Configuration
+
+	err := l.MergeContents("../../examples/schema/ad/one-domain.asset.textpb", []byte("asdf"))
+	if err == nil || !strings.Contains(errors.Cause(err).Error(), "unknown field name \"asdf\"") {
+		t.Fatal(err)
+	}
+}
+
+func TestConfiguration_Merge_twoDomains(t *testing.T) {
+	var l Configuration
+
+	err := l.Merge("../../examples/schema/ad/one-domain.asset.textpb")
+	if err != nil {
+		t.Fatalf("failed to read asset example: %#v", err)
+	}
+
+	err = l.Merge("../../examples/schema/ad/two-domains.asset.textpb")
 	if err != nil {
 		t.Fatalf("failed to read asset example: %#v", err)
 	}
@@ -61,37 +129,7 @@ func TestLabConfiguration_MergeAssets_2(t *testing.T) {
 	}
 }
 
-func TestLabConfiguration_MergeHost(t *testing.T) {
-	var l Configuration
-
-	err := l.MergeHost("../../examples/schema/ad/one-domain.host.textpb")
-	if err != nil {
-		t.Fatalf("failed to read host example: %#v", err)
-	}
-
-	if len(l.hostSources) == 0 {
-		t.Fatal("expected one source file, but found none")
-	}
-
-	if l.HostEnvironment.Project == nil {
-		t.Fatalf("project entry failed to load")
-	}
-
-	if l.HostEnvironment.Project.Name != "my-test-gcp-project" {
-		t.Fatalf("project name incorrect")
-	}
-
-	err = l.MergeHost("../../examples/schema/ad/one-domain.host.textpb")
-	if err == nil {
-		t.Fatalf("duplicate file was not detected")
-	}
-
-	if _, ok := err.(*ConfigurationError); !ok {
-		t.Fatalf("unexpected error type")
-	}
-}
-
-func TestLabConfiguration_Merge(t *testing.T) {
+func TestConfiguration_Merge_oneHost(t *testing.T) {
 	var l Configuration
 
 	err := l.Merge("../../examples/schema/ad/one-domain.host.textpb")
@@ -112,12 +150,29 @@ func TestLabConfiguration_Merge(t *testing.T) {
 	}
 
 	err = l.Merge("../../examples/schema/ad/one-domain.host.textpb")
-	if err == nil {
+	if errors.Cause(err) != ConfigurationAlreadyLoadedError {
 		t.Fatalf("duplicate file was not detected")
 	}
+}
 
-	if _, ok := err.(*ConfigurationError); !ok {
-		t.Fatalf("unexpected error type")
+func TestConfiguration_Merge_assetAndHost(t *testing.T) {
+	var l Configuration
+
+	err := l.Merge("../../examples/schema/ad/one-domain.host.textpb")
+	if err != nil {
+		t.Fatalf("failed to read host example: %#v", err)
+	}
+
+	if len(l.hostSources) == 0 {
+		t.Fatal("expected one source file, but found none")
+	}
+
+	if l.HostEnvironment.Project == nil {
+		t.Fatalf("project entry failed to load")
+	}
+
+	if l.HostEnvironment.Project.Name != "my-test-gcp-project" {
+		t.Fatalf("project name incorrect")
 	}
 
 	err = l.Merge("../../examples/schema/ad/one-domain.asset.textpb")
@@ -139,13 +194,13 @@ func TestLabConfiguration_Merge(t *testing.T) {
 	}
 }
 
-func TestLabConfiguration_Validate(t *testing.T) {
+func TestConfiguration_Validate(t *testing.T) {
 	var l Configuration
 
 	errl := common.AppendErrorList(nil,
 		l.Merge("../../examples/schema/ad/one-domain.host.textpb"),
 		l.Merge("../../examples/schema/ad/one-domain.asset.textpb"),
-		l.Merge("../../schema/gcp/builtins.textpb"))
+		l.Merge("../../schema/gcp/builtins.host.textpb"))
 	if errl != nil {
 		t.Fatal(errl)
 	}
@@ -154,12 +209,18 @@ func TestLabConfiguration_Validate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Once sealed, Merge() no longer allows changes.
+	err = l.Merge("../../examples/schema/ad/two-domains.asset.textpb")
+	if errors.Cause(err) != ConfigurationSealedError {
+		t.Fatal("merges allowed after validation", err)
+	}
 }
 
-func TestLabConfiguration_ValidateBuiltins(t *testing.T) {
+func TestConfiguration_ValidateBuiltins(t *testing.T) {
 	var l Configuration
 
-	err := l.Merge("../../schema/gcp/builtins.textpb")
+	err := l.Merge("../../schema/gcp/builtins.host.textpb")
 	if err != nil {
 		t.Fatal(err)
 	}
