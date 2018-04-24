@@ -200,7 +200,7 @@ func TestConfiguration_Validate(t *testing.T) {
 	errl := common.AppendErrorList(nil,
 		l.Merge("../../examples/schema/ad/one-domain.host.textpb"),
 		l.Merge("../../examples/schema/ad/one-domain.asset.textpb"),
-		l.Merge("../../schema/gcp/builtins.host.textpb"))
+		l.Merge("../../resources/deployment/gcp-builtins.host.textpb"))
 	if errl != nil {
 		t.Fatal(errl)
 	}
@@ -214,27 +214,5 @@ func TestConfiguration_Validate(t *testing.T) {
 	err = l.Merge("../../examples/schema/ad/two-domains.asset.textpb")
 	if errors.Cause(err) != ConfigurationSealedError {
 		t.Fatal("merges allowed after validation", err)
-	}
-}
-
-func TestConfiguration_ValidateBuiltins(t *testing.T) {
-	var l Configuration
-
-	err := l.Merge("../../schema/gcp/builtins.host.textpb")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// This shouldn't be necessary, but by merging these two, we get a well
-	// formed set of project settings. Otherwise validation will fail since
-	// project and log parameters are required.
-	err = l.Merge("../../examples/schema/ad/one-domain.host.textpb")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = l.Validate()
-	if err != nil {
-		t.Fatal(err)
 	}
 }

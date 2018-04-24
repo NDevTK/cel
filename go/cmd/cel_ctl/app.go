@@ -54,12 +54,12 @@ func (a *Application) setFlags() {
 
 // CreateSession creates a DeployerSession based on a set of configuration
 // files.
-func (a *Application) CreateSession(ctx context.Context, inputs []string) (session *cel.DeployerSession, err error) {
+func (a *Application) CreateSession(ctx context.Context, inputs []string, useBuiltins bool) (session *cel.DeployerSession, err error) {
 	a.Client, err = gcp.GetDefaultClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	a.Session, err = cel.NewDeployerSession(ctx, a.Client, inputs)
+	a.Session, err = cel.NewDeployerSession(ctx, a.Client, inputs, useBuiltins)
 	if err != nil {
 		return nil, err
 	}

@@ -31,7 +31,7 @@ type InfoCommand struct {
 }
 
 func (i *InfoCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
-	session, err := a.CreateSession(ctx, args)
+	session, err := a.CreateSession(ctx, args, false)
 	if err != nil {
 		return err
 	}

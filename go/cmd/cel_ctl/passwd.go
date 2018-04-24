@@ -24,7 +24,7 @@ func (p *PasswdCommand) Run(ctx context.Context, c *Application, cmd *cobra.Comm
 		return fmt.Errorf("instance and username are required options")
 	}
 
-	session, err := c.CreateSession(ctx, args)
+	session, err := c.CreateSession(ctx, args, false)
 	if err != nil {
 		return err
 	}

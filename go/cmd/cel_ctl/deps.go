@@ -23,15 +23,17 @@ assets from the live environment.
 `,
 	}
 	cmd.Flags().BoolVarP(&dc.Prune, "prune", "p", false, "Prune dependencies")
+	cmd.Flags().BoolVarP(&dc.UseBuiltins, "builtins", "B", false, "Use builtin assets")
 	app.AddCommand(cmd, dc)
 }
 
 type DepsCommand struct {
-	Prune bool
+	Prune       bool
+	UseBuiltins bool
 }
 
 func (d *DepsCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
-	session, err := a.CreateSession(ctx, args)
+	session, err := a.CreateSession(ctx, args, d.UseBuiltins)
 	if err != nil {
 		return err
 	}

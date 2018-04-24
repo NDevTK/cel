@@ -150,7 +150,7 @@ The `HOST ENVIRONMENT` is:
 # Google Cloud Platform Project information
 project {
   # Name of project
-  name: 'my-test-gcp-project'
+  name: 'cel-test-alpha'
 
   # All assets will be created in this zone. The region/location is implicit.
   zone: 'us-east1-b'
@@ -161,7 +161,7 @@ log_settings { admin_log: "admin" }
 
 # The GCS storage bucket and prefix to use.
 storage {
-  bucket: "my-test-gcp-bucket",
+  bucket: "chrome-auth-lab-staging",
   prefix: "/cel/test-lab"
 }
 

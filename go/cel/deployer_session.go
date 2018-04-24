@@ -20,7 +20,7 @@ type DeployerSession struct {
 	backend *gcp.Session
 }
 
-func NewDeployerSession(ctx context.Context, client *http.Client, inputs []string) (*DeployerSession, error) {
+func NewDeployerSession(ctx context.Context, client *http.Client, inputs []string, includeBuiltins bool) (*DeployerSession, error) {
 	gen, err := createGenerationId()
 	if err != nil {
 		return nil, err
@@ -29,6 +29,13 @@ func NewDeployerSession(ctx context.Context, client *http.Client, inputs []strin
 	c := &Configuration{}
 	for _, f := range inputs {
 		err := c.Merge(f)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if includeBuiltins {
+		err = c.MergeContents(gcp.GetBuiltinHostEnvironment())
 		if err != nil {
 			return nil, err
 		}
