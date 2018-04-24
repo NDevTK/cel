@@ -130,6 +130,15 @@ def _RunCommand(args, **kwargs):
   subprocess.check_call(args, **kwargs)
 
 
+def _RunCommandOutput(args, **kwargs):
+  logging.info("%s [CWD: %s, GOOS: %s]",
+               ' '.join([(x if ' ' not in x else '"' + x + '"') for x in args]),
+               kwargs.get('cwd', os.getcwd()),
+               kwargs.get('env', os.environ).get('GOOS', HOST_GOOS))
+
+  return subprocess.check_output(args, **kwargs)
+
+
 def _GetDependents(fn):
   '''\
 _GetDependents returns a list of strings representing the full path to the
@@ -756,7 +765,7 @@ def _FormatGoFiles(args, go_files):
   if len(go_files) == 0:
     return []
   if args.check:
-    o = subprocess.check_output(
+    o = _RunCommandOutput(
         ['gofmt', '-l'] + go_files, cwd=SOURCE_PATH, env=_MergeEnv(args))
     return o.splitlines()
 
@@ -770,7 +779,7 @@ def _CheckClangFormat(files, args):
   env = _MergeEnv(args)
   modified = []
   for f in files:
-    o = subprocess.check_output(
+    o = _RunCommandOutput(
         ['clang-format', '-output-replacements-xml', '-style=Chromium', f],
         cwd=SOURCE_PATH,
         env=env)
@@ -823,7 +832,7 @@ def _FormatPythonFiles(args, py_files):
   try:
     if args.check:
       try:
-        o = subprocess.check_output(
+        o = _RunCommandOutput(
             ['yapf', '-r', '-d'] + py_files,
             env=_MergeEnv(args, target_host=True),
             cwd=SOURCE_PATH)
@@ -922,6 +931,21 @@ Problems with 'clang-format'?
 
 [1]: https://chromium.googlesource.com/chromium/src/+/master/styleguide/styleguide.md
 '''
+
+  logging.info("checking annotations")
+  vet_annotations_cmd = _BuildCommand('vet_annotations',
+                                      './go/tools/vet_annotations',
+                                      _MergeEnv(args, target_host=True))
+
+  broken_calls = _RunCommandOutput([vet_annotations_cmd] + [
+      os.path.join(SOURCE_PATH, 'go', d)
+      for d in os.listdir(os.path.join(SOURCE_PATH, 'go'))
+      if d != 'tools'
+  ])
+
+  if broken_calls != "":
+    print(broken_calls)
+    sys.exit(1)
 
   o = subprocess.check_output(
       ['git', 'ls-files'], cwd=SOURCE_PATH, env=_MergeEnv(args))

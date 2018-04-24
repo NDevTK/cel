@@ -27,11 +27,19 @@ import (
 // of the function (or at least the point at which it was invoked). It is the
 // responsibility of the Logger to record timing information. LoggedAction by
 // itself doesn't explicitly record timing.
+//
+//
+// Vetting LoggedAction Calls
+//
+// The go/tools/vet_annotations tool vets invocations to all known LoggedAction
+// derivatives. Please keep the derivative list in
+// go/tools/vet_annotations/vet.go up-to-date.
 func LoggedAction(l Logger, err *error, action string, v ...interface{}) func() {
 	msg := fmt.Sprintf(action, v...)
 	l.Info(event{Step: msg, State: actionBegin})
 	return func() {
-		// Note that the inner function call to Action() can't recover.
+		// Inner function call to Action() can't call recover on behalf of the
+		// call frame of our invoker.
 		if r := recover(); r != nil {
 			if rerr, ok := r.(error); ok {
 				*err = errors.Wrapf(rerr, "panic")
