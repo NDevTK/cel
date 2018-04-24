@@ -29,7 +29,7 @@ func (d *DeployCommand) Run(ctx context.Context, a *Application, cmd *cobra.Comm
 		return err
 	}
 
-	err = cel.Start(session)
+	err = cel.Deploy(session)
 	if err != nil {
 		if bytes, err := json.MarshalIndent(session.GetConfiguration().GetNamespace(), " ", "  "); err == nil {
 			cmd.OutOrStderr().Write(bytes)

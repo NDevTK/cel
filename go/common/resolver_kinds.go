@@ -24,10 +24,13 @@ type resolverFunc func(ctx Context, m proto.Message) error
 //
 // While some dependencies can be expressed in the asset and host environment
 // schema, others may be easier to calculate. Still others may need to be
-// calcuated.
+// calcuated. In such cases introduce a resolver of this type. During
+// execution, ctx.PublishDependency() can be used to add new dependencies.
 //
-// In such cases introduce a resolver of this type. During execution,
-// ctx.PublishDependency() can be used to add new dependencies.
+// This resolver kind is invoked before doing any other work that depends on
+// inter-resource dependencies. In particular, these resolvers are invoked
+// prior to pruning any resources that are not connected to the resource being
+// deployed.
 type AdditionalDependencyResolver interface {
 	ResolveAdditionalDependencies(ctx Context, m proto.Message) error
 }

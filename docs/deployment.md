@@ -237,9 +237,8 @@ Defining an asset hierarchy necessarily involves stating relationships between
 assets. This can be done explicitly as is the case with the `windows_machine`
 entry for `ad`, or done implicitly as is the case with the `machine_type` entry.
 
-In
-the explicit case, the structure of the entity itself demands the nature of the
-relationship. For example, the `windows_machine` entry needs to specify a
+In the explicit case, the structure of the entity itself demands the nature of
+the relationship. For example, the `windows_machine` entry needs to specify a
 `network_interface` which in turn needs to state the network to which the
 interface is connected. The nature of the dependency can be readily inferred
 from context.
@@ -1217,7 +1216,7 @@ See the [Key Management][] document.
 
 ### Validation                                               {#asset-validation}
 
-<span style="color:#980000;">Skipping this part. Please comment if this needs to be expanded.</span>
+Skipping this part. Please comment if this needs to be expanded.
 
 ### Service Account                                           {#service-account}
 
@@ -1283,61 +1282,53 @@ the entire hierarchy of assets and host environment entities can be thought of
 as a graph of `proto.Message` objects. Therefore a topological traversal of the
 asset graph is, in effect, a topological traversal of `proto.Message` objects.
 
-During initialization, resolvers of different types can register themselves as
-such using a syntax similar to the following:
+The `cel` toolchain processes resources at deployment time by applying different
+kinds of resolvers to the asset graph in topological order. The list of
+different resolver kinds is documented in
+[resolver_kinds.go](/go/common/resolver_kinds.go). Of note, different kinds of
+resolvers are applied at different times during deployment.
 
+During initialization, resolvers can register themselves as such using a syntax
+similar to the following:
+
+<!-- INCLUDE ../go/common/resolver_kinds_example_test.go (32 lines) fenced as go -->
 ``` go
-// ImmediateResolver is a strawman resolver for assets that can be fully resolved
-// at deployment time.
-type ImmediateResolver interface {
-        ResolveImmediate(m *proto.Message, s *gcp.Session) error
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+package common_test
+
+import (
+	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/host"
+)
+
+// ExampleResolver is an example resolver.
+//
+// Resolver functions can be named anything. But by convention, they are named
+// as <Something>Resolver.
+//
+// Note how the second argument is not a proto.Message? When the second
+// argument is a pointer to a concrete type that implements proto.Message, the
+// RegisterResolverFunc() invocation correctly deduces the tyep of resources
+// that the resolver is expected to handle.
+func ExampleResolver(ctx common.Context, i *host.Image) error {
+	// Do stuff
+	return nil
 }
 
-// ImageResolver is an ImmediateResolver for CEL image types. The CEL Images are
-// resolved against GCP public or private images based on the Host Environment.
-type ImageResolver struct {
-}
-
-func (i *ImageResolver) ResolveImmediate(m *proto.Message, s *gcp.Session) error {}
-
-func registerResolvers(r *ResolverRegistry) {
-        r.Register(&host.Image{},
-                   *((*ImmediateResolver)(nil)),
-                   &ImageResolver{})
+// Don't forget to call RegisterResolverFunc in the init() function or any time
+// before the resolver is run.
+func init() {
+	common.RegisterResolverFunc(common.ImmediateResolverKind, ExampleResolver)
 }
 ```
-
 
 The assets support a topological visit function which asserts that when visiting
 asset A, all assets that A depends on have been visited successfully. As
 implied, any asset that depends on A will not be visited until A's visit has
 been successfully completed.
-
-
-``` go
-// ResolveAssets invokes |f| on each asset in |A| such that the following holds:
-//   If A depends on B, then f(A) will be called only after f(B) has returned
-//       successfully.
-//   If A depends on B, and f(B) returns a non-nil error, then f(A) will not be
-//       called.
-func ResolveAssets(A *Assets, f func(m *proto.Message) error) error {}
-```
-
-
-Combined with `ResolveAssets`, we can invoke a specific type of resolver over
-all assets in topological order like this:
-
-
-``` go
-ResolveAssets(A, func(m *proto.Message) error {
-  resolver, ok := r.Lookup(m, *((*ImmediateResolver)(nil)))
-  if !ok {
-    return nil
-  }
-  return resolver.(ImmediateResolver).ResolveImmediate(m, s)
-})
-```
-
 
 
 ### Use Of GCP Deployment Manager               {#use-of-gcp-deployment-manager}

@@ -9,41 +9,47 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 )
 
-// Start is the starting point for a deployment. All the required parameters
+// Deploy is the starting point for a deployment. All the required parameters
 // should already have been configured in the DeployerSession.
 //
 // It invokes the remainder of the workflow in a pre-determined order.
-func Start(d *DeployerSession) (err error) {
+func Deploy(d *DeployerSession) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "Deployment %s", d.config.Lab.GenerationId)()
 
+	// Right off the bat, lab and host.log_settings must be complete.
 	err = checkNamespaceIsReady(&d.GetConfiguration().references,
 		[]common.RefPath{common.RefPathMust("host.log_settings"), common.RefPathMust("lab")})
 	if err != nil {
 		return err
 	}
 
-	err = ResolveAdditionalDependencies(d)
+	// Allow resolvers to add additional dependencies before doing anything
+	// else. Note that this is the last opportunity to add dependencies before
+	// we prune the graph.
+	err = InvokeAdditionalDependencyResolvers(d)
 	if err != nil {
 		return err
 	}
 
+	// Drop any assets that aren't connected by now.
 	err = Prune(d)
 	if err != nil {
 		return err
 	}
 
-	err = ResolveHostEnvironment(d)
+	err = InvokeImmediateResolvers(d)
 	if err != nil {
 		return err
 	}
 
+	// host.project, and host.storage should be complete by now.
 	err = checkNamespaceIsReady(&d.GetConfiguration().references,
-		[]common.RefPath{common.RefPathMust("host.project")})
+		[]common.RefPath{common.RefPathMust("host.project"), common.RefPathMust("host.storage")})
 	if err != nil {
 		return err
 	}
 
-	err = ResolveGeneratedContent(d)
+	err = InvokeGeneratedContentResolvers(d)
 	if err != nil {
 		return err
 	}
@@ -54,12 +60,6 @@ func Start(d *DeployerSession) (err error) {
 	}
 
 	err = StopAllVMs(d)
-	if err != nil {
-		return err
-	}
-
-	err = checkNamespaceIsReady(&d.GetConfiguration().references,
-		[]common.RefPath{common.RefPathMust("host.storage")})
 	if err != nil {
 		return err
 	}
@@ -109,11 +109,11 @@ func Start(d *DeployerSession) (err error) {
 	return InvokeDeploymentManager(d)
 }
 
-// ResolveAdditionalDependencies step adds any explicit dependences that were
+// InvokeAdditionalDependencyResolvers step adds any explicit dependences that were
 // not explicitly set in the input asset manifest. This step is needed so that
 // required assets and host environment elements don't disappear during the
 // pruning phase.
-func ResolveAdditionalDependencies(d *DeployerSession) (err error) {
+func InvokeAdditionalDependencyResolvers(d *DeployerSession) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "ResolveAdditionalDependencies")()
 
 	return common.ApplyResolvers(d.ctx, &d.config.references, common.AdditionalDependencyResolverKind)
@@ -137,17 +137,17 @@ func Prune(d *DeployerSession) (err error) {
 	return d.config.references.Prune(anchors)
 }
 
-// ResolveHostEnvironment is the discovery phase where the GCP logic performs
+// InvokeImmediateResolvers is the discovery phase where the GCP logic performs
 // lookups for project metadata.
-func ResolveHostEnvironment(d *DeployerSession) (err error) {
-	defer common.LoggedAction(d.GetContext(), &err, "ResolveHostEnvironment")()
+func InvokeImmediateResolvers(d *DeployerSession) (err error) {
+	defer common.LoggedAction(d.GetContext(), &err, "InvokeImmediateResolvers")()
 
 	return common.ApplyResolvers(d.ctx, &d.config.references, common.ImmediateResolverKind)
 }
 
-// ResolveGeneratedContent step generates assets that must be generated as
+// InvokeGeneratedContentResolvers step generates assets that must be generated as
 // deployemnt time. These are assets like generated passwords and certificates.
-func ResolveGeneratedContent(d *DeployerSession) (err error) {
+func InvokeGeneratedContentResolvers(d *DeployerSession) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "ResolveGeneratedContent")()
 
 	return common.ApplyResolvers(d.ctx, &d.config.references, common.GeneratedContentResolverKind)

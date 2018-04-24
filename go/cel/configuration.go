@@ -36,6 +36,7 @@ type Configuration struct {
 	// Lab. Lab? Lab!
 	Lab lab.Lab `json:"lab"`
 
+	// Runtime resources.
 	Resources host.RuntimeSupport `json:"-"`
 
 	// Paths of source files that were merged into AssetManifest. The mapping

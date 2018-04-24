@@ -36,7 +36,7 @@ func (d *DepsCommand) Run(ctx context.Context, a *Application, cmd *cobra.Comman
 		return err
 	}
 
-	err = cel.ResolveAdditionalDependencies(session)
+	err = cel.InvokeAdditionalDependencyResolvers(session)
 	if err != nil {
 		return err
 	}
