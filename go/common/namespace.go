@@ -823,12 +823,14 @@ func (r *Namespace) anneal() error {
 }
 
 func (r *Namespace) assign(v *namespaceNode, newValue interface{}) error {
+	err := v.assign(newValue)
+	if err != nil {
+		return err
+	}
+
 	if m, ok := newValue.(proto.Message); ok {
-		if !v.isOutput {
-			return errors.Errorf("attempt to publish a value at path %s which is not annotated as an OUTPUT value.", v.location)
-		}
 		return r.collectFrom(v.location, m)
 	}
 
-	return v.assign(newValue)
+	return nil
 }

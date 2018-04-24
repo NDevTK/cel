@@ -92,6 +92,10 @@ func (v *namespaceNode) bind(rv reflect.Value, validation *Validation) error {
 		return nil
 	}
 
+	if v.value.IsValid() && v.value.CanInterface() && rv.CanInterface() && v.value.Interface() == rv.Interface() {
+		return nil
+	}
+
 	// The only two cases where we allow bind() is if:
 	// - the value is a placeholder (i.e. we haven't bound anything to this node yet).
 	// - the value is an OUTPUT that isn't available.
@@ -106,7 +110,36 @@ func (v *namespaceNode) bind(rv reflect.Value, validation *Validation) error {
 		v.isOutput = validation.IsOutput()
 		v.isRuntime = validation.IsRuntime()
 	}
-	v.isValueAvailable = !v.isOutput || (v.value.Kind() == reflect.Interface && !v.value.IsNil())
+
+	wasAvailable := v.isValueAvailable
+
+	v.isValueAvailable = !v.isOutput
+
+	// Output values that have a non-zero or non-empty value should be
+	// considered available on bind.
+	if v.isOutput && v.value.IsValid() {
+		switch v.value.Kind() {
+		case reflect.Interface, reflect.Ptr, reflect.UnsafePointer:
+			v.isValueAvailable = !v.value.IsNil()
+
+		case reflect.Chan, reflect.Func:
+			// Do nothing
+
+		case reflect.Array, reflect.Slice, reflect.String, reflect.Map:
+			v.isValueAvailable = (v.value.Len() != 0)
+
+		case reflect.Struct:
+			v.isValueAvailable = true
+
+		default:
+			v.isValueAvailable = (v.value.Interface() != reflect.Zero(v.value.Type()).Interface())
+		}
+	}
+
+	if !wasAvailable && v.isValueAvailable {
+		return v.propagate()
+	}
+
 	return nil
 }
 
@@ -192,7 +225,7 @@ func (v *namespaceNode) assign(i interface{}) (err error) {
 // on them. This should be done after the value of this field changes so that
 // dependent nodes are incrementally resolved.
 func (v *namespaceNode) propagate() error {
-	if v.propagated {
+	if v.propagated || v.value.Kind() != reflect.String {
 		return nil
 	}
 

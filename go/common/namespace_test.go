@@ -295,6 +295,10 @@ func TestNamespace_SetOutput_otherTypes(t *testing.T) {
 		t.Error(err)
 	}
 
+	if w.OutputProto == nil {
+		t.Error("published value not assigned to parent")
+	}
+
 	err = r.PublishOutput(RefPathMust("a.b.c.output_int"), int32(1))
 	if err != nil {
 		t.Error(err)
