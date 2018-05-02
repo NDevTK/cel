@@ -162,7 +162,7 @@ log_settings { admin_log: "admin" }
 # The GCS storage bucket and prefix to use.
 storage {
   bucket: "chrome-auth-lab-staging",
-  prefix: "/cel/test-lab"
+  prefix: "cel-test-alpha-files"
 }
 
 # We only use one machine type in our examples
@@ -1073,7 +1073,7 @@ message FileReference {
   //
   // Note: This field is only valid during authoring. It is cleared when
   // constructing the Completed Asset Manifest.
-  string source = 1 [(v).type = REQUIRED];
+  string source = 1;
 
   // The path where the target of this FileReference should be copied to on the
   // target machine. This field is optional and is only meaningful when a file

@@ -30,14 +30,15 @@ and instructions for setting up the build to work with "go build"/"go test".
 See CONTRIBUTING.md for details for contributing code upstream.
 '''
 
-import ast
 import argparse
+import ast
 import errno
-import logging
 import itertools
-import shutil
+import logging
+import multiprocessing
 import os
 import re
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -694,8 +695,7 @@ line option to set GOOS.
     if not test_arg.startswith('-'):
       raise (Exception(
           textwrap.dedent('''\
-              It looks like you are passing in package names. If this is the
-              case, please invoke 'go test' directly.
+              It looks like you are passing in package names. Please invoke 'go test' directly.
               ''')))
 
   if not args.fast:
@@ -704,6 +704,15 @@ line option to set GOOS.
 
   test_env = _MergeEnv(args, target_host=True)
   packages = _GetGoPackages(PACKAGE_ROOT, ROOT_GO_PATH)
+
+  # If no coverage information is needed, parallelize the test invocation.
+  if not args.coverage:
+    par_arg = ['-p={}'.format(multiprocessing.cpu_count())]
+    _RunCommand(
+        ['go', 'test'] + par_arg + args.gotest_args + packages,
+        env=test_env,
+        cwd=SOURCE_PATH)
+    return
 
   for p in packages:
     cover_flags = []
