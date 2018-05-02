@@ -7,7 +7,6 @@ package common
 import (
 	"archive/zip"
 	"bytes"
-	"context"
 	pd "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/pkg/errors"
 	"io"
@@ -48,7 +47,7 @@ func (c *FileReference) ResolveRelativePath(base_path string) error {
 	return nil
 }
 
-func (c *FileReference) Store(ctx context.Context, o ObjectStore) (err error) {
+func (c *FileReference) Store(ctx Context) (err error) {
 	defer Action(&err, "storing FileReference with source \"%s\"", c.FullPath)
 
 	if c.FullPath == "" {
@@ -61,9 +60,17 @@ func (c *FileReference) Store(ctx context.Context, o ObjectStore) (err error) {
 	}
 
 	if fi.IsDir() {
-		return c.storeArchive(ctx, o)
+		return c.storeArchive(ctx)
 	}
-	return c.storeFile(ctx, o)
+	return c.storeFile(ctx)
+}
+
+func (c *FileReference) StoreFile(ctx Context, contents []byte) (err error) {
+	defer Action(&err, "storing blob")
+
+	c.ResolvedType = FileReference_FILE
+	c.FullPath = "/?"
+	return c.storeBlob(ctx, contents)
 }
 
 func GetPathResolver(base_path string) WalkProtoFunc {
@@ -81,7 +88,7 @@ func GetPathResolver(base_path string) WalkProtoFunc {
 	}
 }
 
-func (c *FileReference) storeFile(ctx context.Context, o ObjectStore) (err error) {
+func (c *FileReference) storeFile(ctx Context) (err error) {
 	defer Action(&err, "storing file at \"%s\"", c.FullPath)
 
 	contents, err := ioutil.ReadFile(c.FullPath)
@@ -89,16 +96,16 @@ func (c *FileReference) storeFile(ctx context.Context, o ObjectStore) (err error
 		return
 	}
 	c.ResolvedType = FileReference_FILE
-	return c.storeBlob(ctx, o, contents)
+	return c.storeBlob(ctx, contents)
 }
 
-func (c *FileReference) storeBlob(ctx context.Context, o ObjectStore, contents []byte) (err error) {
+func (c *FileReference) storeBlob(ctx Context, contents []byte) (err error) {
 	c.Integrity = IntegrityToken(contents)
-	c.ObjectReference, err = o.PutObject(contents)
+	c.ObjectReference, err = ctx.GetObjectStore().PutObject(contents)
 	return
 }
 
-func (c *FileReference) storeArchive(ctx context.Context, o ObjectStore) (err error) {
+func (c *FileReference) storeArchive(ctx Context) (err error) {
 	defer Action(&err, "storing directory at \"%s\"", c.FullPath)
 
 	buf := new(bytes.Buffer)
@@ -115,7 +122,7 @@ func (c *FileReference) storeArchive(ctx context.Context, o ObjectStore) (err er
 
 	contents := buf.Bytes()
 	c.ResolvedType = FileReference_ZIP_ARCHIVE
-	return c.storeBlob(ctx, o, contents)
+	return c.storeBlob(ctx, contents)
 }
 
 func addDirectoryToZip(w *zip.Writer, fullPath, base string) error {
