@@ -36,8 +36,8 @@ func TestIntegrity_knownVectors(t *testing.T) {
 
 func TestIntegrityURLToken_sanity(t *testing.T) {
 	input := []byte("hello world!")
-	s := IntegrityURLToken(input)
-	if s != "sha256-dQnlvaDHYtK6x_kNdYtbImP6Acy8VCq1498WO-CObKk" {
+	s := IntegrityLabel(input)
+	if s != "lsha256-ek4ubfd0othd5em7v46nb2qr49hvk0ecnha2ldf3rsb3no4edikg" {
 		t.Errorf("Got \"%s\"", s)
 	}
 
@@ -50,8 +50,8 @@ func TestIntegrityURLToken_sanity(t *testing.T) {
 // As long as the length limit for GCP metadata strings are at 64, this test
 // should ensure that the token emitted by IntegrityURLToken is less than that.
 func TestIntegrityURLToken_length(t *testing.T) {
-	s := IntegrityURLToken([]byte("hello world!"))
-	if len(s) > 64 {
+	s := IntegrityLabel([]byte("hello world!"))
+	if len(s) > 63 {
 		t.Errorf("IntegrityURLToken returned a token of length %d. Want less than 64", len(s))
 	}
 }

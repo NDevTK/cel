@@ -66,7 +66,7 @@ func (c *FileReference) Store(ctx Context) (err error) {
 }
 
 func (c *FileReference) StoreFile(ctx Context, contents []byte) (err error) {
-	defer Action(&err, "storing blob")
+	defer Action(&err, "storing blob of length %d", len(contents))
 
 	c.ResolvedType = FileReference_FILE
 	c.FullPath = "/?"

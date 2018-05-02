@@ -7,6 +7,7 @@ package common
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base32"
 	"encoding/base64"
 	"errors"
 	"strings"
@@ -25,6 +26,11 @@ var DigestMismatchError = errors.New("integrity check failure")
 // Prefix for SRI compliant integrity token.
 const sriMetadataPrefix = "sha256-"
 
+// Token prefix to use for label encoded SRI token. This is distinct from the
+// spec compliant prefix sriMetadataPrefix in order to distinguish tokens with
+// different encodings.
+const labelPrefix = "lsha256-"
+
 // IntegrityToken calculates the subresource integrity metadata for a given
 // blob of data.
 //
@@ -42,19 +48,20 @@ func IntegrityToken(data []byte) string {
 	return sriMetadataPrefix + base64.StdEncoding.EncodeToString(digest[:])
 }
 
-// IntegrityURLToken is similar to IntegrityToken, but uses SHA-256 and the URL
-// safe alternate base64 encoding (RFC 4648) with no padding.
+// IntegrityLabel is similar to IntegrityToken, but uses SHA-256 and uses a
+// base-32 encoding that produces valid label tokens.
 //
-// It is important that the length of the resulting string is less than 64.
-// This means that integrity tokens can be used in GCP labels which are
-// constrained to 64 bytes.
+// It is important that the length of the resulting string is at most 63.  This
+// means that integrity tokens can be used in GCP labels which are constrained
+// to 63 bytes.
 //
-// Note: The tokens returned by this function is not strictly compliant with
+// Note: The tokens returned by this function is not compliant with
 // https://www.w3.org/TR/SRI/ which specifies using the standard Base64
 // encoding.
-func IntegrityURLToken(data []byte) string {
+func IntegrityLabel(data []byte) string {
 	digest := sha256.Sum256(data)
-	return sriMetadataPrefix + base64.RawURLEncoding.EncodeToString(digest[:])
+	return labelPrefix + strings.ToLower(base32.HexEncoding.WithPadding(base32.NoPadding).
+		EncodeToString(digest[:]))
 }
 
 // ValidateIntegrity validates subresource integrity metadata for a given blob.
@@ -67,26 +74,29 @@ func IntegrityURLToken(data []byte) string {
 // ValidateIntegrity() can be called with the output of either GetIntegrity()
 // or GetIntegrityURLToken().
 func ValidateIntegrity(data []byte, integrity string) error {
-	if !strings.HasPrefix(integrity, sriMetadataPrefix) {
-		return UnknownDigestAlgorithmError
+	var rawDigest []byte
+	var err error
+	switch {
+	case strings.HasPrefix(integrity, sriMetadataPrefix):
+		rawDigest, err = base64.StdEncoding.DecodeString(integrity[len(sriMetadataPrefix):])
+
+	case strings.HasPrefix(integrity, labelPrefix):
+		rawDigest, err = base32.HexEncoding.WithPadding(base32.NoPadding).
+			DecodeString(strings.ToUpper(integrity[len(labelPrefix):]))
+
+	default:
+		err = UnknownDigestAlgorithmError
 	}
 
-	integrity = integrity[len(sriMetadataPrefix):]
-	digest := sha256.Sum256(data)
-	expected_digest, err := base64.StdEncoding.DecodeString(integrity)
-
-	// Try URL encoding as well. This way we have our bases covered regardless
-	// of which encoding scheme is in use. The condings differ in their use of
-	// '+' and '/' characters. All other matching characters are used to
-	// represent the same base64 values.
-	if err != nil {
-		expected_digest, err = base64.RawURLEncoding.DecodeString(integrity)
-	}
 	if err != nil {
 		return err
 	}
-	if !bytes.Equal(digest[:], expected_digest) {
+
+	digest := sha256.Sum256(data)
+
+	if !bytes.Equal(digest[:], rawDigest) {
 		return DigestMismatchError
 	}
+
 	return nil
 }

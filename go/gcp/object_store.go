@@ -159,11 +159,11 @@ func (o *ObjectStore) GetObject(reference string) (name string, payload []byte, 
 	return
 }
 
-func (o *ObjectStore) objectName(suffixName string, payload []byte) string {
-	sri := common.IntegrityURLToken(payload)
+func (o *ObjectStore) objectName(baseName string, payload []byte) string {
+	sri := common.IntegrityLabel(payload)
 	suffix := ""
-	if suffixName != "" {
-		suffix = "/" + suffixName
+	if baseName != "" {
+		suffix = "/" + baseName
 	}
 	return o.prefix + sri + suffix
 }
