@@ -75,8 +75,8 @@ func (o *ObjectStore) PutObject(payload []byte) (string, error) {
 }
 
 func (o *ObjectStore) PutNamedObject(name string, payload []byte) (ref string, err error) {
-	name = o.objectName(name, payload)
-	h := o.bucket.Object(name)
+	objName := o.objectName(name, payload)
+	h := o.bucket.Object(objName)
 	attrs, err := h.Attrs(o.context)
 
 	// An unexpected error
@@ -85,17 +85,19 @@ func (o *ObjectStore) PutNamedObject(name string, payload []byte) (ref string, e
 	}
 
 	sum := md5.Sum(payload)
-	if err == nil {
-		if bytes.Equal(sum[:], attrs.MD5) {
-			return attrs.MediaLink, nil
-		}
-		// If the MD5 sum doesn't match, we are going to assume that a prior
-		// write operation failed. Since we have the data, let's try to write
-		// the object again.
-
-		// TODO(asanka): Validate that ACLs are sane. We should refuse to use
-		// an object that has a sketchy ACL.
+	if err != nil {
+		return "", err
 	}
+
+	if bytes.Equal(sum[:], attrs.MD5) {
+		return objName, nil
+	}
+	// If the MD5 sum doesn't match, we are going to assume that a prior
+	// write operation failed. Since we have the data, let's try to write
+	// the object again.
+
+	// TODO(asanka): Validate that ACLs are sane. We should refuse to use
+	// an object that has a sketchy ACL.
 
 	ctx, cancelFunc := context.WithCancel(o.context)
 	defer func() {
@@ -120,7 +122,7 @@ func (o *ObjectStore) PutNamedObject(name string, payload []byte) (ref string, e
 		return "", err
 	}
 
-	return w.Attrs().Name, nil
+	return objName, nil
 }
 
 func (o *ObjectStore) GetObject(reference string) (name string, payload []byte, err error) {
@@ -158,7 +160,7 @@ func (o *ObjectStore) GetObject(reference string) (name string, payload []byte, 
 }
 
 func (o *ObjectStore) objectName(suffixName string, payload []byte) string {
-	sri := common.IntegrityToken(payload)
+	sri := common.IntegrityURLToken(payload)
 	suffix := ""
 	if suffixName != "" {
 		suffix = "/" + suffixName
