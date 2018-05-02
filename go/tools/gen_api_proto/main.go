@@ -31,30 +31,36 @@ type RestDescription struct {
 	DiscoveryVersion string `json:"discoveryVersion"`
 	Id               string `json:"id"`
 
-	BaseUrl           string `json:"baseUrl"`
-	Description       string `json:"description"`
-	DocumentationLink string `json:"documentationLink"`
 	Name              string `json:"name"`
+	Version           string `json:"version"`
 	Revision          string `json:"revision"`
 	Title             string `json:"title"`
-	Version           string `json:"version"`
+	Description       string `json:"description"`
+	DocumentationLink string `json:"documentationLink"`
+	BaseUrl           string `json:"baseUrl"`
 
 	Schemas map[string]*Property `json:"schemas"`
 
 	GoPackage string `json:"-"`
 }
 
+// Property represents both a Property in a Google Discovery Document and also
+// a JsonSchema object as described in
+// https://tools.ietf.org/html/draft-zyp-json-schema-03.
 type Property struct {
 	Id                   string               `json:"id"`
 	Type                 string               `json:"type"`
+	Ref                  string               `json:"$ref"`
 	Description          string               `json:"description"`
-	Format               string               `json:"format"`
 	Default              string               `json:"default"`
+	Required             bool                 `json:"required"`
+	Format               string               `json:"format"`
+	Pattern              string               `json:"pattern"`
 	Enum                 []string             `json:"enum"`
+	EnumDescriptions     []string             `json:"enumDescriptions"`
 	Properties           map[string]*Property `json:"properties"`
 	AdditionalProperties *Property            `json:"additionalProperties"`
 	Items                *Property            `json:"items"`
-	Ref                  string               `json:"$ref"`
 }
 
 type Arguments struct {
@@ -64,18 +70,14 @@ type Arguments struct {
 	GoPackage           string
 }
 
-const kIndent = 2
+const kIndentSpaces = 2
 
-func Indent(level int, w io.Writer) error {
-	_, err := w.Write([]byte(strings.Repeat(" ", level*kIndent)))
-	return err
-}
-
-func IndentedLine(w io.Writer, level int, format string, args ...interface{}) error {
-	err := Indent(level, w)
+func writeln(w io.Writer, indent int, format string, args ...interface{}) error {
+	_, err := w.Write([]byte(strings.Repeat(" ", indent*kIndentSpaces)))
 	if err != nil {
 		return err
 	}
+
 	_, err = fmt.Fprintf(w, format, args...)
 	if err != nil {
 		return err
@@ -84,8 +86,8 @@ func IndentedLine(w io.Writer, level int, format string, args ...interface{}) er
 	return err
 }
 
-func WrapLines(lines []string) (out []string) {
-	const kColumns = 70
+func wrapLines(lines []string) (out []string) {
+	const kColumns = 77
 
 	for _, line := range lines {
 		line = strings.TrimRightFunc(line, unicode.IsSpace)
@@ -112,110 +114,97 @@ func WrapLines(lines []string) (out []string) {
 	return
 }
 
-func EmitDescription(level int, description string, w io.Writer) error {
+func emitDescription(level int, description string, w io.Writer) error {
 	if description == "" {
 		return nil
 	}
-	lines := WrapLines(strings.Split(description, "\n"))
+	lines := wrapLines(strings.Split(description, "\n"))
 	for _, line := range lines {
-		IndentedLine(w, level, "// %s", line)
+		writeln(w, level, "// %s", line)
 	}
 	return nil
 }
 
-type FieldType int
-
-const (
-	SINGULAR FieldType = iota
-	REPEATED
-	MAP
-)
-
-func TypeWithDecoration(name string, field_type FieldType) string {
-	switch field_type {
-	case SINGULAR:
-		return name
-
-	case REPEATED:
-		return "repeated " + name
-
-	case MAP:
-		return "map<string, " + name + ">"
+func emitField(indent int, fieldName string, fieldIdx int, p *Property, w io.Writer) error {
+	emitDescription(indent, p.Description, w)
+	if len(p.Enum) > 0 {
+		writeln(w, indent, "// Valid values:")
+		for _, e := range p.Enum {
+			writeln(w, indent, "//     %s", e)
+		}
 	}
-	return name
+
+	typeName, err := emitMessage(indent, strings.Title(fieldName), p, w)
+	if err != nil {
+		return err
+	}
+
+	return writeln(w, indent, "%s %s = %d;", typeName, fieldName, fieldIdx)
 }
 
-func EmitField(level int, name string, index int, p *Property, field_type FieldType, w io.Writer) error {
-	EmitDescription(level, p.Description, w)
-	switch {
-	case p.Ref != "":
-		return IndentedLine(w, level, "%s %s = %d;", TypeWithDecoration(p.Ref, field_type), name, index)
-
-	case p.Type == "object":
-		type_name := strings.Title(name)
-		type_name, _ = EmitProtoForProperty(level, type_name, p, w)
-		return IndentedLine(w, level, "%s %s = %d;", TypeWithDecoration(type_name, field_type), name, index)
-
-	case p.Type == "string":
-		if len(p.Enum) > 0 {
-			IndentedLine(w, level, "// Valid values:")
-			for _, e := range p.Enum {
-				IndentedLine(w, level, "//     %s", e)
-			}
-		}
-		return IndentedLine(w, level, "%s %s = %d;", TypeWithDecoration("string", field_type), name, index)
-
-	case p.Type == "boolean":
-		return IndentedLine(w, level, "%s %s = %d;", TypeWithDecoration("bool", field_type), name, index)
-
-	case p.Type == "integer" || p.Type == "number":
-		int_type := "int32"
-		if p.Format != "" {
-			int_type = p.Format
-		}
-		return IndentedLine(w, level, "%s %s = %d;", TypeWithDecoration(int_type, field_type), name, index)
-
-	case p.Type == "array":
-		if field_type != SINGULAR {
-			return fmt.Errorf("repeated repeated? %s: %#v", name, p)
-		}
-
-		if p.Items == nil {
-			return fmt.Errorf("Array does not have a type for field %s: %#v", name, p)
-		}
-
-		return EmitField(level, name, index, p.Items, REPEATED, w)
-	}
-	return fmt.Errorf("Unknown type for field %s: %#v", name, p)
-}
-
-func EmitProtoForProperty(level int, name string, p *Property, w io.Writer) (string, error) {
-	if p.Id == "" && p.Ref == "" && name == "" {
-		return "", fmt.Errorf("Required property \"Id\" missing")
-	}
-
+// emitMessage emits a ProtoBuf message definition for the type
+// described by a JsonSchema. If the type is a reference or a well known type,
+// then no message definition is emitted. In either case, the function returns
+// the ProtoBuf type name corresponding to the JsonSchema.
+func emitMessage(level int, parentId string, p *Property, w io.Writer) (string, error) {
 	if p.Ref != "" {
 		return p.Ref, nil
 	}
 
-	if p.Type != "object" {
-		return p.Type, nil
+	// No message is necessary for well known or basic types.
+	switch p.Type {
+	case "string":
+		return "string", nil
+
+	case "boolean":
+		return "bool", nil
+
+	case "integer":
+		return "int32", nil
+
+	case "number":
+		return "double", nil
+
+	case "any":
+		return "google.protobuf.Any", nil
+
+	case "array":
+		if p.Items == nil {
+			return "", fmt.Errorf("array does not have an inner type")
+		}
+
+		innerType, err := emitMessage(level, parentId, p.Items, w)
+		if err != nil {
+			return "", err
+		}
+		return "repeated " + innerType, nil
+
+	case "object":
+		break
+
+	default:
+		return "", fmt.Errorf("unsupported type \"%s\" as a top level field type or map value type", p.Type)
 	}
 
-	if p.Id != "" {
-		name = p.Id
+	name := p.Id
+	if name == "" {
+		name = parentId
+	}
+	if name == "" {
+		return "", fmt.Errorf("JsonSchema has no \"id\" and has no parent schema name")
 	}
 
+	// A pure map from string to whichever type is described in AdditionalProperties.
 	if len(p.Properties) == 0 && p.AdditionalProperties != nil {
-		mapped_type, _ := EmitProtoForProperty(level, name, p.AdditionalProperties, w)
-		return TypeWithDecoration(mapped_type, MAP), nil
+		mapped_type, _ := emitMessage(level, name, p.AdditionalProperties, w)
+		return fmt.Sprintf("map<string, %s>", mapped_type), nil
 	}
 
-	EmitDescription(level, p.Description, w)
-	IndentedLine(w, level, "message %s {", name)
+	emitDescription(level, p.Description, w)
+	writeln(w, level, "message %s {", name)
 
 	index := 1
-	is_first := true
+	isFirst := true
 
 	properties := make([]string, 0, len(p.Properties))
 	for name, _ := range p.Properties {
@@ -225,18 +214,18 @@ func EmitProtoForProperty(level int, name string, p *Property, w io.Writer) (str
 
 	for _, name := range properties {
 		pp := p.Properties[name]
-		if is_first {
-			is_first = false
+		if isFirst {
+			isFirst = false
 		} else {
 			w.Write([]byte("\n"))
 		}
-		err := EmitField(level+1, name, index, pp, SINGULAR, w)
+		err := emitField(level+1, name, index, pp, w)
 		if err != nil {
 			return "", err
 		}
 		index += 1
 	}
-	IndentedLine(w, level, "}")
+	writeln(w, level, "}")
 	return name, nil
 }
 
@@ -254,7 +243,7 @@ func GenerateProtoFile(desc *RestDescription, args *Arguments) error {
 // This ProtoBuf source file is based on the REST protocol defintion for the
 // service at {{.BaseUrl}}.
 //
-// {{.Title}}:{{.Description}}
+// {{.Title}}: {{.Description}}
 // 
 // API Name      : {{.Name}} ({{.Id}})
 // Version       : {{.Version}}
@@ -264,6 +253,8 @@ func GenerateProtoFile(desc *RestDescription, args *Arguments) error {
 syntax="proto3";
 package {{.Name}};
 option go_package="{{.GoPackage}}";
+
+import "google/protobuf/any.proto";
 
 
 `
@@ -280,7 +271,7 @@ option go_package="{{.GoPackage}}";
 	sort.Strings(schemas)
 
 	for _, s := range schemas {
-		_, err = EmitProtoForProperty(0, "", desc.Schemas[s], f)
+		_, err = emitMessage(0, "", desc.Schemas[s], f)
 		if err != nil {
 			return err
 		}
@@ -319,7 +310,7 @@ func GenerateValidatorFile(desc *RestDescription, args *Arguments) error {
 // This ProtoBuf source file is based on the REST protocol defintion for the
 // service at {{.BaseUrl}}.
 //
-// {{.Title}}:{{.Description}}
+// {{.Title}}: {{.Description}}
 // 
 // API Name      : {{.Name}} ({{.Id}})
 // Version       : {{.Version}}
