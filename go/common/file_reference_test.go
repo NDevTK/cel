@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestFileReference_Basic(t *testing.T) {
+func TestFileReference_Validate(t *testing.T) {
 	p := RefPath{}
 	t.Run("Empty", func(t *testing.T) {
 		v := &FileReference{}
@@ -62,6 +62,20 @@ func TestFileReference_Basic(t *testing.T) {
 
 	t.Run("Valid", func(t *testing.T) {
 		v := &FileReference{Source: "foo/bar"}
+		if err := ValidateProto(v, p); err != nil {
+			t.Fatalf("unexpected error: %#v", err)
+		}
+	})
+
+	t.Run("NoSource", func(t *testing.T) {
+		v := &FileReference{}
+		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "'source' is required") {
+			t.Fatalf("unexpected error: %#v", err)
+		}
+	})
+
+	t.Run("NoSourceWithObjectReference", func(t *testing.T) {
+		v := &FileReference{ObjectReference: "foo"}
 		if err := ValidateProto(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}

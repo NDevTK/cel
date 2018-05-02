@@ -20,19 +20,21 @@ import (
 )
 
 func (c *FileReference) Validate() error {
-	if len(c.Source) == 0 {
+	if c.Source == "" && c.ObjectReference == "" {
 		return errors.New("'source' is required")
 	}
-	if filepath.IsAbs(c.Source) {
-		return errors.New("'source' cannot be absolute")
-	}
-	if strings.Contains(c.Source, "\\") {
-		return errors.New("'source' cannot contain backslashes")
-	}
-	components := strings.Split(c.Source, "/")
-	for _, c := range components {
-		if c == ".." {
-			return errors.New("'source' contains parent path references")
+	if c.Source != "" {
+		if filepath.IsAbs(c.Source) {
+			return errors.New("'source' cannot be absolute")
+		}
+		if strings.Contains(c.Source, "\\") {
+			return errors.New("'source' cannot contain backslashes")
+		}
+		components := strings.Split(c.Source, "/")
+		for _, c := range components {
+			if c == ".." {
+				return errors.New("'source' contains parent path references")
+			}
 		}
 	}
 	return nil

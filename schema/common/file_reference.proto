@@ -25,7 +25,7 @@ message FileReference {
   //
   // Note: This field is only valid during authoring. It is cleared when
   // constructing the Completed Asset Manifest.
-  string source = 1 [(v).type = REQUIRED];
+  string source = 1;
 
   // The path where the target of this FileReference should be copied to on the
   // target machine. This field is optional and is only meaningful when a file
