@@ -158,7 +158,7 @@ func (o *ObjectStore) GetObject(reference string) (name string, payload []byte, 
 }
 
 func (o *ObjectStore) objectName(suffixName string, payload []byte) string {
-	sri := common.GetIntegrity(payload)
+	sri := common.IntegrityToken(payload)
 	suffix := ""
 	if suffixName != "" {
 		suffix = "/" + suffixName

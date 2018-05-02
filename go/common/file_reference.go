@@ -91,7 +91,7 @@ func (c *FileReference) storeFile(ctx context.Context, o ObjectStore) (err error
 }
 
 func (c *FileReference) storeBlob(ctx context.Context, o ObjectStore, contents []byte) (err error) {
-	c.Integrity = GetIntegrity(contents)
+	c.Integrity = IntegrityToken(contents)
 	c.ObjectReference, err = o.PutObject(contents)
 	return
 }
