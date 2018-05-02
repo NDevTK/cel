@@ -1,7 +1,7 @@
 #Requires -Version 2.0
 #Requires -RunAsAdministrator
 
-# Copyright 2017 The Chromium Authors. All rights reserved.
+# Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,25 +9,8 @@
 # https://chromium.googlesource.com/enterprise/cel/+/HEAD/README.md
 #
 # Startup script for all Windows VMs deployed in CEL.
-#
-# Make sure Win-RM is installed and running.
-# Create and install a certificate if one is missing.
-# Copy over files from the correct GCS bucket.
-# Signal successful start via serial port.
-
-# Copyright 2017 The Chromium Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
-#
-# See https://g3doc/company/teams/chrome/chrome_authentication_lab.md
-#
-# This script should be run on a freshly provisioned Windows machine in order to
-# set it up for use within the enterprise lab:
 
 Set-Location -Path C:\
-
-$ToolsPath = "C:\cel"
-$KeysPath = "C:\keys"
 
 # Additional headers to be included when invoking a REST API call to GCP.
 $GceApiHeaders = @{
@@ -105,7 +88,7 @@ function Assert-DirectoryIsInPath {
 <#
 .SYNOPSIS
 
-Get-InstanceAttribute returns either the instance or project metdata with the
+Get-GcpMetadata returns either the instance or project metdata with the
 specified name.
 
 .PARAMETER Name
@@ -127,11 +110,11 @@ The objects resulting from querying the metadata.
 
 .EXAMPLE
 
-  C:\PS> Get-InstanceAttribute -name "foo"
+  C:\PS> Get-GcpMetadata -name "foo"
   bar
 
 #>
-function Get-InstanceAttribute {
+function Get-GcpMetadata {
   [CmdletBinding()]
   param(
     [Parameter(Mandatory=$true,ValueFromPipeline=$true)] [string] $Name,
@@ -160,24 +143,13 @@ function Get-InstanceAttribute {
   }
 }
 
-function EnsureCelTools {
-  Assert-Directory -Path $LabToolsPath
-  Assert-DirectoryIsInPath -Path $LabToolsPath
+<#
 
-  $BootstrapPath = Get-InstanceAttribute -Name "cel-bootstrap" -ProjectScoped
-  & gsutil rsync -d -r $BootstrapPath $LabToolsPath
-}
+TODO(feiling): Update script to fetch agent binary from GCS and execute it. The
+startup script should not attempt to do anything else.
 
-function EnsureWinRM {
-  & winrm quickconfig
-  Enable-PSRemoting -force
-}
+See
+https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/deployment.md#gcp-prep-phase
+for details on how the agent binary should be located.
 
-function EnsureCelAgentService {
-  # This is where we register (if not registered already) the CelAgent service
-  # and start it if it isn't already running.
-}
-
-EnsureCelTools
-EnsureWinRM
-EnsureCelAgentService
+#>

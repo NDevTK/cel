@@ -145,7 +145,7 @@ func TestConfiguration_Merge_oneHost(t *testing.T) {
 		t.Fatalf("project entry failed to load")
 	}
 
-	if l.HostEnvironment.Project.Name != "my-test-gcp-project" {
+	if l.HostEnvironment.Project.Name != "cel-test-alpha" {
 		t.Fatalf("project name incorrect")
 	}
 
@@ -171,7 +171,7 @@ func TestConfiguration_Merge_assetAndHost(t *testing.T) {
 		t.Fatalf("project entry failed to load")
 	}
 
-	if l.HostEnvironment.Project.Name != "my-test-gcp-project" {
+	if l.HostEnvironment.Project.Name != "cel-test-alpha" {
 		t.Fatalf("project name incorrect")
 	}
 

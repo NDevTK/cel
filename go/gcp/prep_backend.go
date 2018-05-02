@@ -190,6 +190,40 @@ func launchBaseAssets(ctx common.Context, s *Session) (err error) {
 	return ctx.Publish(s.HostEnvironment.Resources, "service_account", pIam)
 }
 
+func uploadNamedResource(ctx common.Context, s *Session, name string) (fr *common.FileReference, err error) {
+	defer common.LoggedAction(ctx, &err, "uploading %s", name)()
+	data := _escFSMustByte(false, name)
+	fr = &common.FileReference{}
+	err = fr.StoreFile(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+	return fr, nil
+}
+
+func uploadStartupDependencies(ctx common.Context, s *Session) error {
+	fr, err := uploadNamedResource(ctx, s, "/windows/instance-startup.ps1")
+	if err != nil {
+		return err
+	}
+
+	err = ctx.Publish(s.HostEnvironment.Resources, "win_startup", fr)
+	if err != nil {
+		return err
+	}
+
+	fr, err = uploadNamedResource(ctx, s, "/windows/gen/windows_amd64/cel_agent.exe")
+	if err != nil {
+		return err
+	}
+
+	err = ctx.Publish(s.HostEnvironment.Resources, "win_agent_x64", fr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func PrepBackend(ctx common.Context, s *Session) error {
 	err := enableRequiredAPIs(ctx, s)
 	if err != nil {
@@ -197,6 +231,11 @@ func PrepBackend(ctx common.Context, s *Session) error {
 	}
 
 	err = launchBaseAssets(ctx, s)
+	if err != nil {
+		return err
+	}
+
+	err = uploadStartupDependencies(ctx, s)
 	if err != nil {
 		return err
 	}

@@ -111,11 +111,6 @@ func Deploy(d *DeployerSession) (err error) {
 		return err
 	}
 
-	err = ResolveInstanceStartupDependencies(d)
-	if err != nil {
-		return err
-	}
-
 	err = checkNamespaceIsReady(&d.GetConfiguration().references,
 		[]common.RefPath{common.RefPathMust("host.resources")})
 	if err != nil {
@@ -230,13 +225,6 @@ func PrepBackend(d *DeployerSession) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "PrepBackend")()
 
 	return gcp.PrepBackend(d.ctx, d.backend)
-}
-
-// ResolveInstanceStartupDependencies uploads -- if necessary -- the instance
-// startup scripts and the CEL agent binaries. Also updates any other packages
-// that need to be made available to the lab.
-func ResolveInstanceStartupDependencies(d *DeployerSession) error {
-	return NewNotImplementedError("ResolveInstanceStartupDependencies")
 }
 
 // ResolveIndexedObjects uploads blobs of data to the object store in order to

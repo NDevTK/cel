@@ -22,3 +22,6 @@ vendor/
 
 # Build artifacts.
 out/
+
+# Generated agent binaries
+resources/windows/gen/

@@ -75,6 +75,18 @@ HOST_GOOS = {
 # Used by _GetCustomBuildEnv to cache the generated build environment.
 CACHED_BUILD_ENV = None
 
+# Supported target environments. Tuple of GOOS / GOARCH
+TARGET_ARCHS = [
+    # This list should include all our supported target platforms. For
+    # example, once we start supporting 32-bit Windows environments, we'd
+    # add something like this:
+    #
+    # Note that you might need to modify the backend_prep.go file to
+    # include all the platforms.
+    #   ("windows", "386"),
+    ("windows", "amd64"),
+]
+
 
 def _GetCustomBuildEnv():
   global CACHED_BUILD_ENV
@@ -521,6 +533,15 @@ missing.
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
+  agent_bins = []
+  for goos, goarch in TARGET_ARCHS:
+    agent_dir = 'resources/windows/gen/{}_{}'.format(goos, goarch)
+    env = _MergeEnv(args)
+    env['GOOS'] = goos
+    env['GOARCH'] = goarch
+    _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=agent_dir)
+    agent_bins.append(agent_dir + "/cel_agent.exe")
+
   esc_command = _BuildCommand('esc', './vendor/github.com/mjibson/esc',
                               _MergeEnv(args, target_host=True))
 
@@ -533,7 +554,7 @@ missing.
           'resources/deployment/cel-base.yaml',
           'resources/deployment/gcp-builtins.host.textpb',
           'resources/windows/instance-startup.ps1'
-      ],
+      ] + agent_bins,
       out=os.path.join(SOURCE_PATH, 'go', 'gcp', 'resources.gen.go'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
@@ -552,7 +573,7 @@ This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
   return os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
 
 
-def _BuildCommand(command, package, build_env, verbose=False):
+def _BuildCommand(command, package, build_env, out_dir=None, verbose=False):
   '''\
   _BuildCommand builds a Go command.
 
@@ -561,7 +582,8 @@ def _BuildCommand(command, package, build_env, verbose=False):
   if verbose:
     flags += ['-v', '-x']
 
-  out_dir = _GetBuildDir(build_env)
+  if out_dir is None:
+    out_dir = _GetBuildDir(build_env)
   _EnsureDir(out_dir)
   suffix = '.exe' if build_env['GOOS'] == 'windows' else ''
   out = os.path.join(out_dir, command + suffix)
@@ -605,7 +627,9 @@ Why not just run "go build" ?
 
   if not args.fast:
     _Deps(args)
-    _Generate(args)
+
+  # Generate should do minimal work if nothing has changed.
+  _Generate(args)
 
   build_env = _MergeEnv(args)
 
@@ -622,7 +646,8 @@ Why not just run "go build" ?
   commands = os.listdir(os.path.join(SOURCE_PATH, 'go', 'cmd'))
 
   for command in commands:
-    _BuildCommand(command, './go/cmd/' + command, build_env, args.verbose)
+    _BuildCommand(
+        command, './go/cmd/' + command, build_env, verbose=args.verbose)
 
 
 def _GetGoPackages(root_package, root_path):
