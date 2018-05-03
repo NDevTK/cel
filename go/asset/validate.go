@@ -164,7 +164,7 @@ func (v *RegistryValue) Validate() error {
 func (v *RegistryValue_MultiString) Validate() error {
 	for _, s := range v.Value {
 		if len(s) == 0 {
-			return errors.New("registry MultString value cannot be empty")
+			return errors.New("registry MultiString value cannot be empty")
 		}
 
 		if strings.ContainsRune(s, 0) {
