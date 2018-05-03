@@ -296,7 +296,8 @@ message ActiveDirectoryGroupPolicy {
 
   // If a template GPO is specified, that will be used as the starter GPO.
   // Creates a starter GPO is no value is specified here.
-  string based_on = 5 [(common.v).ref = "asset.ad_group_policy"];
+  string based_on = 5
+      [(common.v) = {ref: "asset.ad_group_policy", optional: true}];
 
   repeated ActiveDirectoryRegistryPolicy registry = 6;
   repeated ActiveDirectoryRegistryPrefPolicy registry_pref = 7;
