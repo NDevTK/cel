@@ -421,6 +421,22 @@ func (r *Namespace) PathFor(m proto.Message) (RefPath, bool) {
 	return n.location, true
 }
 
+// IndirectReference returns the object referred to by a field. It's an error
+// to call this on a field that is not a named reference.
+func (r *Namespace) IndirectReference(p RefPath) (interface{}, error) {
+	n, ok := r.getNode(p)
+	if !ok {
+		return nil, errors.Errorf("reference not found \"%s\"", p.String())
+	}
+	if !n.isValueAvailable {
+		return nil, errors.Errorf("value at \"%s\" is not currently available", p.String())
+	}
+	if n.referenceRoot.Empty() {
+		return nil, errors.Errorf("value at \"%s\" is not a reference", p.String())
+	}
+	return r.Get(n.referenceRoot.Append(n.value.String()))
+}
+
 // ExpandString string expands the resolved string references in the string
 // `s`. For the call to be successful, all references in `s` must either have
 // already been resolved or they should be unresolved OUTPUTs.
@@ -590,6 +606,11 @@ func (r *Namespace) collectFrom(l RefPath, m proto.Message) error {
 			return nil
 		}
 
+		node.referenceRoot, err = v.ReferenceRoot()
+		if err != nil {
+			return errors.Wrapf(err, "invalid reference in validation string %#v", v.Ref)
+		}
+
 		// Also if the value is empty or is not a string, we are done. Here we
 		// are assuming that the proto is valid. I.e. Validate(m) will return
 		// true. Thus the empty value is not indicative of an error. It's
@@ -604,12 +625,7 @@ func (r *Namespace) collectFrom(l RefPath, m proto.Message) error {
 				p.String(), av.String())
 		}
 
-		refpath, err := v.ReferenceRoot()
-		if err != nil {
-			return errors.Wrapf(err, "invalid reference in validation string %#v", v.Ref)
-		}
-
-		target := refpath.Append(av.String())
+		target := node.referenceRoot.Append(av.String())
 		node.addParent(r.newNode(target))
 		return nil
 	})

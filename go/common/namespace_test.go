@@ -619,3 +619,27 @@ func TestNamespace_anneal(t *testing.T) {
 		t.Error("all subtrees should be resolved by now")
 	}
 }
+
+func TestNamespace_IndirectReference(t *testing.T) {
+	var r Namespace
+	xPath := RefPathMust("a.b.options")
+	yPath := RefPathMust("a.b.with_types")
+
+	r.Graft(&TestMessageWithOptions{Name: "options", Key: "foo", OptionalKey: "baz"}, xPath)
+	r.Graft(&TestMessageWithTypes{Name: "with_types", RepeatedField: []*TestGoodProto{
+		{Name: "foo"},
+		{Name: "bar"},
+	}}, yPath)
+
+	if o, err := r.IndirectReference(RefPathMust("a.b.options.key")); err == nil {
+		if v, ok := o.(*TestGoodProto); ok {
+			if v.Name != "foo" {
+				t.Error("incorrect reference")
+			}
+		} else {
+			t.Error("incorrect reference type")
+		}
+	} else {
+		t.Error("couldn't resolve reference")
+	}
+}

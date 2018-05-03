@@ -60,6 +60,12 @@ type namespaceNode struct {
 	// in this field being reset to false.
 	propagated bool
 
+	// If this value is a reference to another value, then this field will
+	// contain the refpath that should be the root of the reference. I.e.: for
+	// a field that is a referenence to a WindowsMachine, the referenceRoot
+	// would be ["asset", "windows_machine"].
+	referenceRoot RefPath
+
 	// set of nodes that this node depends on.
 	dependsOn namespaceNodeSet
 
@@ -187,7 +193,7 @@ func (v *namespaceNode) assign(i interface{}) (err error) {
 
 	if !v.isOutput {
 		return errors.Errorf("attempting at assign a value to property at %s which is not an OUTPUT."+
-			" Use the Publsih methods from assocated Namespace object to assign a value to an OUTPUT field.", v.location)
+			" Use the Publish methods from assocated Namespace object to assign a value to an OUTPUT field.", v.location)
 	}
 
 	if v.isValueAvailable {
