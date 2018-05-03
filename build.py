@@ -390,7 +390,7 @@ def _Deps(args):
         stdout=f,
         stderr=f)
     _CheckAndInstall(
-        ['protoc', '-h'],
+        ['protoc', '--version'],
         _InstallProtoc,
         env=_MergeEnv(args, target_host=True),
         cwd=SOURCE_PATH,
@@ -457,12 +457,11 @@ missing.
   descriptor_path = os.path.join(OUT_PATH, 'schema')
   _EnsureDir(descriptor_path)
 
-  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
-  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
-
   gen_api_command = _BuildCommand('gen_api_proto', './go/tools/gen_api_proto',
                                   _MergeEnv(args, target_host=True))
 
+  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
+  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
   _BuildStep(
       [
           gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
@@ -473,6 +472,19 @@ missing.
       cwd=SOURCE_PATH,
       inp=['vendor/google.golang.org/api/compute/v0.beta/compute-api.json'],
       out='schema/gcp/compute/compute-api.proto')
+
+  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'cloudkms'))
+  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'cloudkms'))
+  _BuildStep(
+      [
+          gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
+          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
+          'go/gcp/cloudkms/validate.go'
+      ],
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH,
+      inp=['vendor/google.golang.org/api/cloudkms/v1/cloudkms-api.json'],
+      out='schema/gcp/cloudkms/cloudkms-api.proto')
 
   protoc_command = [
       'protoc', '--go_out=../../../', '--descriptor_set_out={out}',
@@ -521,6 +533,13 @@ missing.
       protoc_command,
       inp=['schema/gcp/compute/compute-api.proto'],
       out=os.path.join(descriptor_path, 'gcp_compute.pb'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
+      protoc_command,
+      inp=['schema/gcp/cloudkms/cloudkms-api.proto'],
+      out=os.path.join(descriptor_path, 'gcp_cloudkms.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 

@@ -10,6 +10,7 @@ import "schema/asset/network.proto";
 import "schema/common/file_reference.proto";
 import "schema/common/validation.proto";
 import "schema/gcp/compute/compute-api.proto";
+import "schema/gcp/cloudkms/cloudkms-api.proto";
 import "google/iam/admin/v1/iam.proto";
 
 // GCP project hosting.
@@ -175,11 +176,15 @@ message RuntimeSupport {
   google.iam.admin.v1.ServiceAccount service_account = 100
       [(common.v).type = OUTPUT];
 
+  // CryptoKey used for encrypting/decrypting privileged information between
+  // the deployer and the instance VMs.
+  cloudkms.CryptoKey crypto_key = 101 [(common.v).type = OUTPUT];
+
   // Windows startup file. Must be a Powershell ps1 file.
-  common.FileReference win_startup = 101 [(common.v).type = OUTPUT];
+  common.FileReference win_startup = 102 [(common.v).type = OUTPUT];
 
   // Windows CEL Agent executable.
-  common.FileReference win_agent_x64 = 102 [(common.v).type = OUTPUT];
+  common.FileReference win_agent_x64 = 103 [(common.v).type = OUTPUT];
 }
 
 message HostEnvironment {

@@ -10,9 +10,11 @@
 
 # Generated files.
 *.pb.go
+go/gcp/cloudkms/validate.go
 go/gcp/compute/validate.go
 go/gcp/resources.gen.go
 go/tools/gen_doc_proto/testdata/test.pb
+schema/gcp/cloudkms/cloudkms-api.proto
 schema/gcp/compute/compute-api.proto
 
 # Vendored dependencies. Use `dep` to manage.
