@@ -3,7 +3,17 @@
 
 [[projects]]
   name = "cloud.google.com/go"
-  packages = ["compute/metadata","iam","internal","internal/optional","internal/version","logging","logging/apiv2","logging/internal","storage"]
+  packages = [
+    "compute/metadata",
+    "iam",
+    "internal",
+    "internal/optional",
+    "internal/version",
+    "logging",
+    "logging/apiv2",
+    "logging/internal",
+    "storage"
+  ]
   revision = "f6de2c509ed9d2af648c3c147207eaaf97149aed"
   version = "v0.14.0"
 
@@ -16,7 +26,18 @@
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["descriptor","jsonpb","proto","protoc-gen-go/descriptor","ptypes","ptypes/any","ptypes/duration","ptypes/empty","ptypes/struct","ptypes/timestamp"]
+  packages = [
+    "descriptor",
+    "jsonpb",
+    "proto",
+    "protoc-gen-go/descriptor",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/empty",
+    "ptypes/struct",
+    "ptypes/timestamp"
+  ]
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
 
 [[projects]]
@@ -33,7 +54,10 @@
 
 [[projects]]
   name = "github.com/mjibson/esc"
-  packages = [".","embed"]
+  packages = [
+    ".",
+    "embed"
+  ]
   revision = "58d9cde84f237ecdd89bd7f61c2de2853f4c5c6e"
   version = "v0.1.0"
 
@@ -58,13 +82,28 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
+  packages = [
+    "context",
+    "context/ctxhttp",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "lex/httplex",
+    "trace"
+  ]
   revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [".","google","internal","jws","jwt"]
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt"
+  ]
   revision = "30785a2c434e431ef7c507b54617d6a951d5f2b4"
 
 [[projects]]
@@ -76,36 +115,149 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable"
+  ]
   revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
 
 [[projects]]
   branch = "master"
   name = "gonum.org/v1/gonum"
-  packages = ["blas","blas/blas64","blas/gonum","floats","graph","graph/encoding","graph/encoding/dot","graph/formats/dot","graph/formats/dot/ast","graph/formats/dot/internal/astx","graph/formats/dot/internal/errors","graph/formats/dot/internal/lexer","graph/formats/dot/internal/parser","graph/formats/dot/internal/token","graph/internal/linear","graph/internal/ordered","graph/internal/set","graph/internal/uid","graph/simple","graph/topo","graph/traverse","internal/asm/c128","internal/asm/f32","internal/asm/f64","internal/math32","lapack","lapack/gonum","lapack/lapack64","mat"]
+  packages = [
+    "blas",
+    "blas/blas64",
+    "blas/gonum",
+    "floats",
+    "graph",
+    "graph/encoding",
+    "graph/encoding/dot",
+    "graph/formats/dot",
+    "graph/formats/dot/ast",
+    "graph/formats/dot/internal/astx",
+    "graph/formats/dot/internal/errors",
+    "graph/formats/dot/internal/lexer",
+    "graph/formats/dot/internal/parser",
+    "graph/formats/dot/internal/token",
+    "graph/internal/linear",
+    "graph/internal/ordered",
+    "graph/internal/set",
+    "graph/internal/uid",
+    "graph/simple",
+    "graph/topo",
+    "graph/traverse",
+    "internal/asm/c128",
+    "internal/asm/f32",
+    "internal/asm/f64",
+    "internal/math32",
+    "lapack",
+    "lapack/gonum",
+    "lapack/lapack64",
+    "mat"
+  ]
   revision = "d38bfd5a8d0b4455dba3b7f7b1347b390cea856e"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
-  packages = ["cloudkms/v1","cloudresourcemanager/v1","compute/v1","deploymentmanager/v2beta","gensupport","googleapi","googleapi/internal/uritemplates","googleapi/transport","iam/v1","internal","iterator","option","servicemanagement/v1","storage/v1","support/bundler","transport","transport/grpc","transport/http"]
+  packages = [
+    "cloudkms/v1",
+    "cloudresourcemanager/v1",
+    "compute/v1",
+    "deploymentmanager/v2beta",
+    "gensupport",
+    "googleapi",
+    "googleapi/internal/uritemplates",
+    "googleapi/transport",
+    "iam/v1",
+    "internal",
+    "iterator",
+    "option",
+    "servicemanagement/v1",
+    "storage/v1",
+    "support/bundler",
+    "transport",
+    "transport/grpc",
+    "transport/http"
+  ]
   revision = "ff5d3c38820f8fd8bd04f917bc656d894edf390d"
 
 [[projects]]
   name = "google.golang.org/appengine"
-  packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/socket","internal/urlfetch","socket","urlfetch"]
+  packages = [
+    ".",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/socket",
+    "internal/urlfetch",
+    "socket",
+    "urlfetch"
+  ]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/genproto"
-  packages = ["googleapis/api/annotations","googleapis/api/distribution","googleapis/api/label","googleapis/api/metric","googleapis/api/monitoredres","googleapis/iam/v1","googleapis/logging/type","googleapis/logging/v2","googleapis/rpc/status","protobuf/field_mask"]
+  packages = [
+    "googleapis/api/annotations",
+    "googleapis/api/distribution",
+    "googleapis/api/label",
+    "googleapis/api/metric",
+    "googleapis/api/monitoredres",
+    "googleapis/iam/admin/v1",
+    "googleapis/iam/v1",
+    "googleapis/logging/type",
+    "googleapis/logging/v2",
+    "googleapis/rpc/status",
+    "protobuf/field_mask"
+  ]
   revision = "a8101f21cf983e773d0c1133ebc5424792003214"
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = [".","balancer","balancer/base","balancer/roundrobin","codes","connectivity","credentials","credentials/oauth","encoding","grpclb/grpc_lb_v1/messages","grpclog","internal","keepalive","metadata","naming","peer","resolver","resolver/dns","resolver/passthrough","stats","status","tap","transport"]
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "codes",
+    "connectivity",
+    "credentials",
+    "credentials/oauth",
+    "encoding",
+    "grpclb/grpc_lb_v1/messages",
+    "grpclog",
+    "internal",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+    "transport"
+  ]
   revision = "7cea4cc846bcf00cbb27595b07da5de875ef7de9"
   version = "v1.9.1"
 
@@ -118,6 +270,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fc7bce3d786f33d77b4ea4e74b3fda5699b3da5d34bf32b85e3a492a840db4ee"
+  inputs-digest = "2faf26aabb3433e27d84e1b181642ef696f027724062a906ab21916f564495e5"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -10,7 +10,7 @@ import "schema/asset/network.proto";
 import "schema/common/file_reference.proto";
 import "schema/common/validation.proto";
 import "schema/gcp/compute/compute-api.proto";
-import "schema/gcp/iam/iam-api.proto";
+import "google/iam/admin/v1/iam.proto";
 
 // GCP project hosting.
 message Project {
@@ -172,7 +172,8 @@ message AddressPool {
 // manifest.
 message RuntimeSupport {
   // The GCP service account that will be used on all lab VMs.
-  iam.ServiceAccount service_account = 100 [(common.v).type = OUTPUT];
+  google.iam.admin.v1.ServiceAccount service_account = 100
+      [(common.v).type = OUTPUT];
 
   // Windows startup file. Must be a Powershell ps1 file.
   common.FileReference win_startup = 101 [(common.v).type = OUTPUT];

@@ -59,6 +59,12 @@ PACKAGE_ROOT = "chromium.googlesource.com/enterprise/cel/go"
 # Path containing the Go package corresponding to PACKAGE_ROOT.
 ROOT_GO_PATH = os.path.join(SOURCE_PATH, "go")
 
+# Path containing third party dependencies that are not managed via 'dep'.
+THIRD_PARTY_DIR = os.path.join(SOURCE_PATH, "third_party")
+
+# Path containing github.com/googleapis/googleapis
+GOOGLEAPIS_DIR = os.path.join(THIRD_PARTY_DIR, "googleapis")
+
 sys.path.append(os.path.join(SOURCE_PATH, 'build'))
 from markdown_utils import FormatMarkdown
 
@@ -426,6 +432,17 @@ def _Deps(args):
   with open(sentinel, 'w') as f:
     pass
 
+  # Thirdparty Protos
+  _EnsureDir(THIRD_PARTY_DIR)
+
+  if not os.path.exists(GOOGLEAPIS_DIR):
+    subprocess.check_call(
+        ['git', 'clone', 'https://github.com/googleapis/googleapis.git'],
+        cwd=THIRD_PARTY_DIR)
+  if update_deps:
+    subprocess.check_call(
+        ['git', 'pull', 'origin', 'master'], cwd=GOOGLEAPIS_DIR)
+
 
 def _Generate(args):
   '''\
@@ -457,22 +474,10 @@ missing.
       inp=['vendor/google.golang.org/api/compute/v0.beta/compute-api.json'],
       out='schema/gcp/compute/compute-api.proto')
 
-  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'iam'))
-  _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'iam'))
-  _BuildStep(
-      [
-          gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
-          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
-          'go/gcp/iam/validate.go'
-      ],
-      env=_MergeEnv(args, target_host=True),
-      cwd=SOURCE_PATH,
-      inp=['vendor/google.golang.org/api/iam/v1/iam-api.json'],
-      out='schema/gcp/iam/iam-api.proto')
-
   protoc_command = [
       'protoc', '--go_out=../../../', '--descriptor_set_out={out}',
-      '--include_source_info', '$^'
+      '--include_source_info', '--proto_path=.',
+      '--proto_path={}'.format(GOOGLEAPIS_DIR), '$^'
   ]
 
   _BuildStep(
@@ -516,13 +521,6 @@ missing.
       protoc_command,
       inp=['schema/gcp/compute/compute-api.proto'],
       out=os.path.join(descriptor_path, 'gcp_compute.pb'),
-      env=_MergeEnv(args, target_host=True),
-      cwd=SOURCE_PATH)
-
-  _BuildStep(
-      protoc_command,
-      inp=['schema/gcp/iam/iam-api.proto'],
-      out=os.path.join(descriptor_path, 'gcp_iam.pb'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 

@@ -11,14 +11,15 @@
 # Generated files.
 *.pb.go
 go/gcp/compute/validate.go
-go/gcp/iam/validate.go
 go/gcp/resources.gen.go
 go/tools/gen_doc_proto/testdata/test.pb
 schema/gcp/compute/compute-api.proto
-schema/gcp/iam/iam-api.proto
 
 # Vendored dependencies. Use `dep` to manage.
 vendor/
+
+# Thirdparty dependencies that are not managed by 'dep'
+third_party/
 
 # Build artifacts.
 out/

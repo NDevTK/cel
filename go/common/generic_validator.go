@@ -6,12 +6,16 @@ package common
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/pkg/errors"
-	"reflect"
 )
 
+// Name of "Validate" method. This method must conform to the Validator
+// interface.
 const kValidateMethodName = "Validate"
 
 const kNoMethodFoundError = `No "Validate" method found for type %s.
@@ -206,6 +210,11 @@ func VerifyValidatableType(at reflect.Type) error {
 		return VerifyValidatableType(at.Elem())
 
 	case reflect.Ptr:
+		// Exclude vendored dependencies.
+		if strings.Contains(at.Elem().PkgPath(), "/vendor/") {
+			break
+		}
+
 		// |at| is a Type for *Foo. First dive down and examine Foo.
 		err_list = AppendErrorList(err_list, VerifyValidatableType(at.Elem()))
 
@@ -221,6 +230,7 @@ func VerifyValidatableType(at reflect.Type) error {
 		// *Foo *should* have a Validate method since it implements proto.Message.
 		mt, ok := at.MethodByName(kValidateMethodName)
 		if !ok {
+			fmt.Printf("package is \"%s\"", at.Elem().PkgPath())
 			err_list = AppendErrorList(err_list, fmt.Errorf(kNoMethodFoundError, at.String()))
 			break
 		}
