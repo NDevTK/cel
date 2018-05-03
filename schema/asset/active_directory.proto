@@ -129,7 +129,7 @@ message ActiveDirectoryDomain {
   repeated ActiveDirectoryDomainController domain_controller = 100
       [(common.v).type = REQUIRED];
 
-  // Safe Mode / Directory Services Resotre Mode Administrator password.
+  // Safe Mode / Directory Services Restore Mode Administrator password.
   common.Secret safe_mode_admin_password = 200 [(common.v).type = OUTPUT];
 };
 
@@ -397,10 +397,10 @@ message RegistryValue {
     // REG_BINARY
     bytes binary_value = 12;
 
-    // REG_QWORD
+    // REG_DWORD
     int32 dword_value = 13;
 
-    // REG_DWORD
+    // REG_QWORD
     int64 qword_value = 14;
 
     // REG_MULTI_SZ
