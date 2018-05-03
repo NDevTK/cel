@@ -498,12 +498,13 @@ message WindowsUser {
   // Container for the user. A container must be specified for a WindowsUser.
   WindowsContainer container = 4 [(common.v).type = REQUIRED];
 
-  // Password. Can be left blank in which case the Deployer will generate a new
-  // password.
-  common.Secret password = 5;
+  // Hardcoded password in UTF-8. Don't use this field.
+  string hardcoded_password = 5;
 
   // List of groups that the user belongs to.
   repeated GroupReference member_of = 6;
+
+  common.Secret password = 100 [(common.v).type = OUTPUT];
 }
 
 // A reference to a group. The combination of |name| and |container| must match
