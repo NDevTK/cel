@@ -325,6 +325,38 @@ func deployBaseAssets(ctx common.Context, s *Session) (err error) {
 	return deployKmsKey(ctx, s)
 }
 
+// uploadNamedResource fetches a named resource and uploads it to the
+// ObjectStore.
+//
+// embeddedResource is the string identifying the embedded resources. E.g.
+// /windows/instance-startup.ps1.
+//
+// fieldName is the name of the field in HostEnvironment.Resources where the
+// resulting FileReference should be published.
+func uploadNamedResource(ctx common.Context, s *Session, embeddedResource, fieldName string) (err error) {
+	defer common.LoggedAction(ctx, &err, "uploading %s", embeddedResource)()
+
+	data := _escFSMustByte(false, embeddedResource)
+	fr := &common.FileReference{}
+	err = fr.StoreFile(ctx, data)
+	if err != nil {
+		return err
+	}
+
+	return ctx.Publish(s.HostEnvironment.Resources, fieldName, fr)
+}
+
+// uploadStartupDependencies uploads the assets that are used during VM
+// instance startup.
+func uploadStartupDependencies(ctx common.Context, s *Session) error {
+	err := uploadNamedResource(ctx, s, "/windows/instance-startup.ps1", "win_startup")
+	if err != nil {
+		return err
+	}
+
+	return uploadNamedResource(ctx, s, "/windows/gen/windows_amd64/cel_agent.exe", "win_agent_x64")
+}
+
 // PrepBackend prepares the backend for hosting a lab. The resources deployed
 // here are not specific to inputs, but are based solely on the version of the
 // toolchain.
@@ -335,6 +367,11 @@ func PrepBackend(ctx common.Context, s *Session) error {
 	}
 
 	err = deployBaseAssets(ctx, s)
+	if err != nil {
+		return err
+	}
+
+	err = uploadStartupDependencies(ctx, s)
 	if err != nil {
 		return err
 	}
