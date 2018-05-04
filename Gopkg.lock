@@ -6,6 +6,7 @@
   packages = [
     "compute/metadata",
     "iam",
+    "iam/admin/apiv1",
     "internal",
     "internal/optional",
     "internal/version",
@@ -270,6 +271,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2faf26aabb3433e27d84e1b181642ef696f027724062a906ab21916f564495e5"
+  inputs-digest = "c063e196e651016153376d34dceef5b4a43a02cad6abd0b58b6dbfe9e8683c4d"
   solver-name = "gps-cdcl"
   solver-version = 1

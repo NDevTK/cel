@@ -7,6 +7,7 @@ package gcp
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/host"
+	iam "cloud.google.com/go/iam/admin/apiv1"
 	"cloud.google.com/go/logging"
 	"context"
 	"fmt"
@@ -15,7 +16,6 @@ import (
 	cloudresourcemanager "google.golang.org/api/cloudresourcemanager/v1"
 	compute "google.golang.org/api/compute/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
-	iam "google.golang.org/api/iam/v1"
 	"log"
 	"net/http"
 	"sync"
@@ -34,9 +34,9 @@ type Session struct {
 	cloudkmsServiceOnce sync.Once
 	cloudkmsResult      error
 
-	iamService     *iam.Service
-	iamServiceOnce sync.Once
-	iamResult      error
+	iamClient     *iam.IamClient
+	iamClientOnce sync.Once
+	iamResult     error
 
 	cloudresourcemanagerService *cloudresourcemanager.Service
 	cloudresourcemanagerOnce    sync.Once
@@ -79,6 +79,10 @@ func SessionFromContext(ctx context.Context) (*Session, error) {
 	return nil, errors.New("context does not have a gcp Session associated with it")
 }
 
+func (s *Session) GetHttpClient() *http.Client {
+	return s.client
+}
+
 func (s *Session) GetContext() context.Context {
 	return s.ctx
 }
@@ -101,11 +105,11 @@ func (s *Session) GetCloudKmsService() (*cloudkms.Service, error) {
 	return s.cloudkmsService, s.cloudkmsResult
 }
 
-func (s *Session) GetIamService() (*iam.Service, error) {
-	s.iamServiceOnce.Do(func() {
-		s.iamService, s.iamResult = iam.New(s.client)
+func (s *Session) GetIamClient() (*iam.IamClient, error) {
+	s.iamClientOnce.Do(func() {
+		s.iamClient, s.iamResult = iam.NewIamClient(s.ctx)
 	})
-	return s.iamService, s.iamResult
+	return s.iamClient, s.iamResult
 }
 
 func (s *Session) GetCloudResourceManagerService() (*cloudresourcemanager.Service, error) {

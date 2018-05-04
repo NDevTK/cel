@@ -6,12 +6,13 @@ package gcp
 
 import (
 	"bytes"
-	"chromium.googlesource.com/enterprise/cel/go/common"
-	protoIam "chromium.googlesource.com/enterprise/cel/go/gcp/iam"
 	"fmt"
+	"text/template"
+
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 	servicemanagement "google.golang.org/api/servicemanagement/v1"
-	"text/template"
+	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
 )
 
 const (
@@ -110,6 +111,21 @@ func enableRequiredAPIs(ctx common.Context, s *Session) (err error) {
 	return j.Join()
 }
 
+func publishServiceAccount(ctx common.Context, s *Session) (err error) {
+	iamClient, err := s.GetIamClient()
+	if err != nil {
+		return err
+	}
+
+	saName := ServiceAccountResource(s.GetProject(), ServiceAccountEmail(s.GetProject(), ServiceAccountId))
+	sa, err := iamClient.GetServiceAccount(ctx, &adminpb.GetServiceAccountRequest{Name: saName})
+	if err != nil {
+		return err
+	}
+
+	return ctx.Publish(s.HostEnvironment.Resources, "service_account", sa)
+}
+
 func launchBaseAssets(ctx common.Context, s *Session) (err error) {
 	defer GcpLoggedServiceAction(s, deploymentManagerServiceName, &err,
 		"Launching base assets for lab in GCP project \"%s\"", s.GetProject())()
@@ -172,22 +188,7 @@ func launchBaseAssets(ctx common.Context, s *Session) (err error) {
 		return err
 	}
 
-	iam, err := s.GetIamService()
-	if err != nil {
-		return err
-	}
-
-	sa, err := iam.Projects.ServiceAccounts.Get(saName).Context(s.GetContext()).Do()
-	if err != nil {
-		return err
-	}
-
-	var pIam *protoIam.ServiceAccount
-	err = common.HomomorphicCopy(&sa, &pIam)
-	if err != nil {
-		return err
-	}
-	return ctx.Publish(s.HostEnvironment.Resources, "service_account", pIam)
+	return publishServiceAccount(ctx, s)
 }
 
 func uploadNamedResource(ctx common.Context, s *Session, name string) (fr *common.FileReference, err error) {
