@@ -59,7 +59,7 @@ func joinGenericOperation(s *Session, op interface{}, refresher operationRefresh
 // JoinComputeOperation waits for the specific GCE compute operation to complete.
 // These require periodic polling to make sure it's succeeded.
 func JoinComputeOperation(s *Session, op *compute.Operation) (err error) {
-	defer GcpLoggedServiceAction(s, computeServiceName, &err,
+	defer GcpLoggedServiceAction(s, ComputeServiceName, &err,
 		"Compute %s", op.Name)()
 
 	o, err := joinGenericOperation(s, op, func() (interface{}, error) {
@@ -98,7 +98,7 @@ func JoinComputeOperation(s *Session, op *compute.Operation) (err error) {
 }
 
 func JoinDeploymentOperation(s *Session, op *deploymentmanager.Operation) (err error) {
-	defer GcpLoggedServiceAction(s, deploymentManagerServiceName, &err,
+	defer GcpLoggedServiceAction(s, DeploymentManagerServiceName, &err,
 		"Deployment %s", op.Name)()
 
 	o, err := joinGenericOperation(s, op, func() (interface{}, error) {
@@ -134,7 +134,7 @@ func JoinDeploymentOperation(s *Session, op *deploymentmanager.Operation) (err e
 }
 
 func JoinServiceManagementOperation(s *Session, op *servicemanagement.Operation) (err error) {
-	defer GcpLoggedServiceAction(s, serviceManagementServiceName, &err,
+	defer GcpLoggedServiceAction(s, ServiceManagementServiceName, &err,
 		"Service Management %s", op.Name)()
 
 	sm, err := servicemanagement.New(s.client)

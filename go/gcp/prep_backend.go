@@ -15,29 +15,6 @@ import (
 	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
 )
 
-const (
-	computeServiceName              = "compute.googleapis.com"
-	deploymentManagerServiceName    = "deploymentmanager.googleapis.com"
-	iamServiceName                  = "iam.googleapis.com"
-	loggingServiceName              = "logging.googleapis.com"
-	cloudKmsServiceName             = "cloudkms.googleapis.com"
-	monitoringServiceName           = "monitoring.googleapis.com"
-	serviceManagementServiceName    = "servicemanagement.googleapis.com"
-	cloudResourceManagerServiceName = "cloudresourcemanager.googleapis.com"
-)
-
-// These are the APIs that are required by the CEL toolchain. During deployment
-// these APIs will be automatically enabled on new projects.
-var RequiredGcpApis = []string{
-	cloudKmsServiceName,
-	computeServiceName,
-	deploymentManagerServiceName,
-	iamServiceName,
-	loggingServiceName,
-	monitoringServiceName,
-	cloudResourceManagerServiceName,
-}
-
 // The name of the GCP Deployment Manager Deployment that is used to create
 // some of the base assets.
 //
@@ -55,7 +32,7 @@ type celBaseTemplateParams struct {
 }
 
 func enableRequiredAPIs(ctx common.Context, s *Session) (err error) {
-	defer GcpLoggedServiceAction(s, serviceManagementServiceName, &err,
+	defer GcpLoggedServiceAction(s, ServiceManagementServiceName, &err,
 		"Enabling required services for GCP project \"%s\"", s.GetProject())()
 
 	sm, err := servicemanagement.New(s.client)
@@ -64,7 +41,7 @@ func enableRequiredAPIs(ctx common.Context, s *Session) (err error) {
 	}
 
 	required := make(map[string]bool)
-	for _, api := range RequiredGcpApis {
+	for _, api := range RequiredGcpServices {
 		required[api] = true
 	}
 
@@ -127,7 +104,7 @@ func publishServiceAccount(ctx common.Context, s *Session) (err error) {
 }
 
 func launchBaseAssets(ctx common.Context, s *Session) (err error) {
-	defer GcpLoggedServiceAction(s, deploymentManagerServiceName, &err,
+	defer GcpLoggedServiceAction(s, DeploymentManagerServiceName, &err,
 		"Launching base assets for lab in GCP project \"%s\"", s.GetProject())()
 
 	dm, err := s.GetDeploymentManagerService()

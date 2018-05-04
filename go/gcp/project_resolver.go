@@ -19,7 +19,7 @@ func (ProjectResolver) ResolveImmediate(ctx common.Context, p *host.Project) (er
 		return err
 	}
 
-	defer GcpLoggedServiceAction(session, cloudResourceManagerServiceName, &err,
+	defer GcpLoggedServiceAction(session, CloudResourceManagerServiceName, &err,
 		"Resolving metadata for Project \"%s\"", p.GetName())()
 
 	svc, err := session.GetCloudResourceManagerService()
