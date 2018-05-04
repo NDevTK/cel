@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestAssetManifest_validateFields(t *testing.T) {
+func TestHostEnvironment_validateFields(t *testing.T) {
 	var h HostEnvironment
 	h.Project = &Project{Name: "T", Zone: "Z"}
 	h.LogSettings = &LogSettings{AdminLog: "A"}
@@ -23,11 +23,11 @@ func TestAssetManifest_validateFields(t *testing.T) {
 
 	err = common.VerifyValidatableType(reflect.TypeOf(&h))
 	if err != nil {
-		t.Fatal("unexpected error ", err)
+		t.Fatal("unexpected error: ", err)
 	}
 }
 
-func TestAssetManifest_validateStorage(t *testing.T) {
+func TestHostEnvironment_validateStorage(t *testing.T) {
 	var h HostEnvironment
 	h.Project = &Project{Name: "T", Zone: "Z"}
 	h.LogSettings = &LogSettings{AdminLog: "A"}
