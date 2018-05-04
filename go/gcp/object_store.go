@@ -74,24 +74,27 @@ func (o *ObjectStore) PutObject(payload []byte) (string, error) {
 	return o.PutNamedObject("", payload)
 }
 
-func (o *ObjectStore) PutNamedObject(name string, payload []byte) (ref string, err error) {
-	objName := o.objectName(name, payload)
+func (o *ObjectStore) PutNamedObject(baseName string, payload []byte) (ref string, err error) {
+	objName := o.objectName(baseName, payload)
 	h := o.bucket.Object(objName)
-	attrs, err := h.Attrs(o.context)
 
-	// An unexpected error
+	// If the object is new, an error of type ErrObjectNotExist is expected.
+	attrs, err := h.Attrs(o.context)
 	if err != nil && err != storage.ErrObjectNotExist {
-		return "", err
+		return "", errors.Wrapf(err, "checking if object named \"%s\" exists in GCS bucket \"%s\"",
+			objName, o.bucketName)
 	}
 
 	sum := md5.Sum(payload)
-	if err != nil {
-		return "", err
-	}
 
-	if bytes.Equal(sum[:], attrs.MD5) {
+	// The object in storage is the same as the one we are about to upload, at
+	// least as far as MD5 can tell apart. The consumer end of the API uses
+	// subresource integrity with a better digest algorithm to make sure the
+	// contents are what we expected them to be.
+	if attrs != nil && bytes.Equal(sum[:], attrs.MD5) && attrs.Size == int64(len(payload)) {
 		return objName, nil
 	}
+
 	// If the MD5 sum doesn't match, we are going to assume that a prior
 	// write operation failed. Since we have the data, let's try to write
 	// the object again.
@@ -114,12 +117,14 @@ func (o *ObjectStore) PutNamedObject(name string, payload []byte) (ref string, e
 
 	_, err = w.Write(payload)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "writing to object named \"%s\" in GCS bucket \"%s\"",
+			objName, o.bucketName)
 	}
 
 	err = w.Close()
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "closing object named \"%s\" in GCS bucket \"%s\"", objName,
+			o.bucketName)
 	}
 
 	return objName, nil
