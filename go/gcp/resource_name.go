@@ -40,22 +40,28 @@ func ServiceAccountEmail(project, accountId string) string {
 	return fmt.Sprintf("%s@%s.iam.gserviceaccount.com", accountId, project)
 }
 
+// ServiceAccountAclBinding returns the binding string to be used in a iam
+// Policy object to refer to a service account by email.
+func ServiceAccountAclBinding(saEmail string) string {
+	return fmt.Sprintf("serviceAccount:%s", saEmail)
+}
+
 // MachineTypeResource returns the partial URL for a machine type resource.
 func MachineTypeResource(project, zone, machtype string) string {
 	return fmt.Sprintf("projects/%s/zones/%s/machineTypes/%s", project, zone, machtype)
 }
 
 // KmsLocationResource returns the partial URL for a KMS Location resource.
-func KmsLocationResource(project string) string {
-	return fmt.Sprintf("projects/%s/locations/global", project)
+func KmsLocationResource(project, location string) string {
+	return fmt.Sprintf("projects/%s/locations/%s", project, location)
 }
 
 // KeyringResource return the partial URL for a KMS Keyring resource.
-func KeyringResource(project, keyring string) string {
-	return fmt.Sprintf("projects/%s/locations/global/keyRings/%s", project, keyring)
+func KeyringResource(project, location, keyring string) string {
+	return fmt.Sprintf("projects/%s/locations/%s/keyRings/%s", project, location, keyring)
 }
 
 // CryptoKeyResource returns the partial URL for a KMS crypto key resource.
-func CryptoKeyResource(project, keyring, cryptokey string) string {
-	return fmt.Sprintf("projects/%s/locations/global/keyRings/%s/cryptoKeys/%s", project, keyring, cryptokey)
+func CryptoKeyResource(project, location, keyring, cryptokey string) string {
+	return fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", project, location, keyring, cryptokey)
 }
