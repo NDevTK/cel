@@ -7,8 +7,12 @@ package lab;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/lab";
 
 import "schema/common/validation.proto";
+import "schema/asset/asset_manifest.proto";
+import "schema/host/host_environment.proto";
 
-// Lab metadata.
+// The expanded asset manifest and lab metadata.
 message Lab {
   string generation_id = 1 [(common.v).type = OUTPUT];
+  host.HostEnvironment host_environment = 2 [(common.v).type = OUTPUT];
+  asset.AssetManifest asset_manifest = 3 [(common.v).type = OUTPUT];
 }
