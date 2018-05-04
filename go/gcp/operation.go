@@ -5,14 +5,15 @@
 package gcp
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/common"
 	"fmt"
+	"reflect"
+	"time"
+
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"github.com/pkg/errors"
 	compute "google.golang.org/api/compute/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 	servicemanagement "google.golang.org/api/servicemanagement/v1"
-	"reflect"
-	"time"
 )
 
 const kWaitForOperationTimeout = time.Second * 2
