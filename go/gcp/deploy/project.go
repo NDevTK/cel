@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gcp
+package deploy
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 )
 
@@ -13,13 +14,13 @@ import (
 
 type ProjectResolver struct{}
 
-func (ProjectResolver) ResolveImmediate(ctx common.Context, p *host.Project) (err error) {
-	session, err := SessionFromContext(ctx)
+func (*ProjectResolver) ResolveImmediate(ctx common.Context, p *host.Project) (err error) {
+	session, err := gcp.SessionFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	defer GcpLoggedServiceAction(session, CloudResourceManagerServiceName, &err,
+	defer gcp.GcpLoggedServiceAction(session, gcp.CloudResourceManagerServiceName, &err,
 		"Resolving metadata for Project \"%s\"", p.GetName())()
 
 	svc, err := session.GetCloudResourceManagerService()

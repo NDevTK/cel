@@ -2,31 +2,34 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package deploy
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/common"
-	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+
+	"chromium.googlesource.com/enterprise/cel/go/cel"
+	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
+	gcp_deploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
 )
 
-type DeployerSession struct {
+type Session struct {
 	ctx     common.Context
 	client  *http.Client
-	config  *Configuration
+	config  *cel.Configuration
 	backend *gcp.Session
 }
 
-func NewDeployerSession(ctx context.Context, client *http.Client, inputs []string, includeBuiltins bool) (*DeployerSession, error) {
+func NewSession(ctx context.Context, client *http.Client, inputs []string, includeBuiltins bool) (*Session, error) {
 	gen, err := createGenerationId()
 	if err != nil {
 		return nil, err
 	}
 
-	c := &Configuration{}
+	c := &cel.Configuration{}
 	for _, f := range inputs {
 		err := c.Merge(f)
 		if err != nil {
@@ -35,7 +38,7 @@ func NewDeployerSession(ctx context.Context, client *http.Client, inputs []strin
 	}
 
 	if includeBuiltins {
-		err = c.MergeContents(gcp.GetBuiltinHostEnvironment())
+		err = c.MergeContents(gcp_deploy.GetBuiltinHostEnvironment())
 		if err != nil {
 			return nil, err
 		}
@@ -56,7 +59,7 @@ func NewDeployerSession(ctx context.Context, client *http.Client, inputs []strin
 		return nil, err
 	}
 
-	err = c.references.Publish(&c.Lab, "generation_id", gen)
+	err = c.GetNamespace().Publish(&c.Lab, "generation_id", gen)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +69,7 @@ func NewDeployerSession(ctx context.Context, client *http.Client, inputs []strin
 		return nil, err
 	}
 
-	return &DeployerSession{ctx: &deployerContext{
+	return &Session{ctx: &deployerContext{
 		ctx:         b.GetContext(),
 		objectStore: o,
 		publisher:   c.GetNamespace(),
@@ -74,15 +77,15 @@ func NewDeployerSession(ctx context.Context, client *http.Client, inputs []strin
 	}, client: client, config: c, backend: b}, nil
 }
 
-func (d *DeployerSession) GetContext() common.Context {
+func (d *Session) GetContext() common.Context {
 	return d.ctx
 }
 
-func (d *DeployerSession) GetConfiguration() *Configuration {
+func (d *Session) GetConfiguration() *cel.Configuration {
 	return d.config
 }
 
-func (d *DeployerSession) GetBackend() *gcp.Session {
+func (d *Session) GetBackend() *gcp.Session {
 	return d.backend
 }
 

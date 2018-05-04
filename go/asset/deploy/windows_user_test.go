@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package asset
+package deploy
 
 import (
 	"testing"
 )
 
-func TestGeneratePassword_foo(t *testing.T) {
+func TestWindowsUser_GeneratePassword_length(t *testing.T) {
 	p, err := generatePassword()
 	if err != nil {
 		t.Fatal(err)

@@ -2,16 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gcp
+package deploy
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 	"github.com/pkg/errors"
 )
 
 func ImageResolver(ctx common.Context, i *host.Image) error {
-	session, err := SessionFromContext(ctx)
+	session, err := gcp.SessionFromContext(ctx)
 	if err != nil {
 		return err
 	}

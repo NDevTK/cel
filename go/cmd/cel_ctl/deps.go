@@ -5,7 +5,7 @@
 package main
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/cel"
+	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
 	"context"
 	"github.com/spf13/cobra"
 )
@@ -38,13 +38,13 @@ func (d *DepsCommand) Run(ctx context.Context, a *Application, cmd *cobra.Comman
 		return err
 	}
 
-	err = cel.InvokeAdditionalDependencyResolvers(session)
+	err = deploy.InvokeAdditionalDependencyResolvers(session)
 	if err != nil {
 		return err
 	}
 
 	if d.Prune {
-		err = cel.Prune(session)
+		err = deploy.Prune(session)
 		if err != nil {
 			return err
 		}

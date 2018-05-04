@@ -565,7 +565,7 @@ missing.
 
   _BuildStep(
       [
-          esc_command, '-pkg', 'gcp', '-prefix', 'resources', '-o', '{out}',
+          esc_command, '-pkg', 'deploy', '-prefix', 'resources', '-o', '{out}',
           '-private', '$^'
       ],
       inp=[
@@ -573,7 +573,7 @@ missing.
           'resources/deployment/gcp-builtins.host.textpb',
           'resources/windows/instance-startup.ps1'
       ] + agent_bins,
-      out=os.path.join(SOURCE_PATH, 'go', 'gcp', 'resources.gen.go'),
+      out=os.path.join(SOURCE_PATH, 'go', 'gcp', 'deploy', 'resources.gen.go'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 

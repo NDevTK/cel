@@ -55,12 +55,9 @@ type GeneratedContentResolver interface {
 	ResolveGeneratedContent(ctx Context, m proto.Message) error
 }
 
-type HostAssignmentResolver interface {
-	AssignToHost(ctx Context, m proto.Message) error
-}
-
-type MetadataResolver interface {
-	ResolveMetadata(ctx Context, m proto.Message) error
+// IndexedObjectResolver uploads indexed objects.
+type IndexedObjectResolver interface {
+	ResolveIndexedObjects(ctx Context, m proto.Message) error
 }
 
 // OnHostResolver is a resolver type that's invoked exclusively on the VM
@@ -76,18 +73,16 @@ type OnHostResolver interface {
 
 var AdditionalDependencyResolverKind ResolverKind = reflect.TypeOf((*AdditionalDependencyResolver)(nil)).Elem()
 var GeneratedContentResolverKind ResolverKind = reflect.TypeOf((*GeneratedContentResolver)(nil)).Elem()
-var HostAssignmentResolverKind ResolverKind = reflect.TypeOf((*HostAssignmentResolver)(nil)).Elem()
 var ImmediateResolverKind ResolverKind = reflect.TypeOf((*ImmediateResolver)(nil)).Elem()
-var MetadataResolverKind ResolverKind = reflect.TypeOf((*MetadataResolver)(nil)).Elem()
+var IndexedObjectResolverKind ResolverKind = reflect.TypeOf((*IndexedObjectResolver)(nil)).Elem()
 var OnHostResolverKind ResolverKind = reflect.TypeOf((*OnHostResolver)(nil)).Elem()
 
 // Keep sorted:
 
 var allResolverTypes = map[string]ResolverKind{
-	"AssignToHost":                  HostAssignmentResolverKind,
 	"ResolveAdditionalDependencies": AdditionalDependencyResolverKind,
 	"ResolveGeneratedContent":       GeneratedContentResolverKind,
 	"ResolveImmediate":              ImmediateResolverKind,
-	"ResolveMetadata":               MetadataResolverKind,
+	"ResolveIndexedObjects":         IndexedObjectResolverKind,
 	"ResolveOnHost":                 OnHostResolverKind,
 }

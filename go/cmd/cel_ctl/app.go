@@ -8,7 +8,7 @@ import (
 	"context"
 	"net/http"
 
-	"chromium.googlesource.com/enterprise/cel/go/cel"
+	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +36,7 @@ type Runner interface {
 // To mitigate these we are using a separate AddCommand() method that takes as
 // input a Runner interface that supports all the parameters we care about.
 type Application struct {
-	Session *cel.DeployerSession
+	Session *deploy.Session
 	Client  *http.Client
 
 	GenericFiles []string
@@ -54,12 +54,12 @@ func (a *Application) setFlags() {
 
 // CreateSession creates a DeployerSession based on a set of configuration
 // files.
-func (a *Application) CreateSession(ctx context.Context, inputs []string, useBuiltins bool) (session *cel.DeployerSession, err error) {
+func (a *Application) CreateSession(ctx context.Context, inputs []string, useBuiltins bool) (session *deploy.Session, err error) {
 	a.Client, err = gcp.GetDefaultClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	a.Session, err = cel.NewDeployerSession(ctx, a.Client, inputs, useBuiltins)
+	a.Session, err = deploy.NewSession(ctx, a.Client, inputs, useBuiltins)
 	if err != nil {
 		return nil, err
 	}

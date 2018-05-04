@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gcp
+package deploy
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/asset"

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gcp_test
+package deploy_test
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/cel"
@@ -12,7 +12,7 @@ import (
 func TestConfiguration_ValidateBuiltins(t *testing.T) {
 	var l cel.Configuration
 
-	err := l.Merge("../../resources/deployment/gcp-builtins.host.textpb")
+	err := l.Merge("../../../resources/deployment/gcp-builtins.host.textpb")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func TestConfiguration_ValidateBuiltins(t *testing.T) {
 	// This shouldn't be necessary, but by merging these two, we get a well
 	// formed set of project settings. Otherwise validation will fail since
 	// project and log parameters are required.
-	err = l.Merge("../../examples/schema/ad/one-domain.host.textpb")
+	err = l.Merge("../../../examples/schema/ad/one-domain.host.textpb")
 	if err != nil {
 		t.Fatal(err)
 	}

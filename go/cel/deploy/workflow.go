@@ -2,11 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package cel
+package deploy
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/common"
-	"chromium.googlesource.com/enterprise/cel/go/gcp"
+
+	// The following must be imported here for side-effects.
+	_ "chromium.googlesource.com/enterprise/cel/go/asset/deploy"
+	// _ "chromium.googlesource.com/enterprise/cel/go/common/deploy"
+	gcp_deploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
 )
 
 // Deploy is the starting point for a deployment. All the required parameters
@@ -55,12 +60,14 @@ import (
 //
 // * Think about how we should handle login sessions. Can cel_ctl construct and
 //   invoke RDP sessions to the VMs? What about non-Windows platforms?
-func Deploy(d *DeployerSession) (err error) {
+func Deploy(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "Deployment %s", d.config.Lab.GenerationId)()
 
 	// Right off the bat, lab and host.log_settings must be complete.
-	err = checkNamespaceIsReady(&d.GetConfiguration().references,
-		[]common.RefPath{common.RefPathMust("host.log_settings"), common.RefPathMust("lab")})
+	err = checkNamespaceIsReady(d.GetConfiguration().GetNamespace(),
+		[]common.RefPath{
+			common.RefPathMust("host.log_settings"),
+			common.RefPathMust("lab.generation_id")})
 	if err != nil {
 		return err
 	}
@@ -85,7 +92,7 @@ func Deploy(d *DeployerSession) (err error) {
 	}
 
 	// host.project, and host.storage should be complete by now.
-	err = checkNamespaceIsReady(&d.GetConfiguration().references,
+	err = checkNamespaceIsReady(d.GetConfiguration().GetNamespace(),
 		[]common.RefPath{common.RefPathMust("host.project"), common.RefPathMust("host.storage")})
 	if err != nil {
 		return err
@@ -111,18 +118,18 @@ func Deploy(d *DeployerSession) (err error) {
 		return err
 	}
 
-	err = checkNamespaceIsReady(&d.GetConfiguration().references,
+	err = checkNamespaceIsReady(d.GetConfiguration().GetNamespace(),
 		[]common.RefPath{common.RefPathMust("host.resources")})
 	if err != nil {
 		return err
 	}
 
-	err = ResolveIndexedObjects(d)
+	err = InvokeIndexedObjectResolvers(d)
 	if err != nil {
 		return err
 	}
 
-	err = checkNamespaceIsReady(&d.GetConfiguration().references,
+	err = checkNamespaceIsReady(d.GetConfiguration().GetNamespace(),
 		[]common.RefPath{common.RefPathMust("asset"), common.RefPathMust("host")})
 	if err != nil {
 		return err
@@ -150,14 +157,14 @@ func Deploy(d *DeployerSession) (err error) {
 // not explicitly set in the input asset manifest. This step is needed so that
 // required assets and host environment elements don't disappear during the
 // pruning phase.
-func InvokeAdditionalDependencyResolvers(d *DeployerSession) (err error) {
+func InvokeAdditionalDependencyResolvers(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "ResolveAdditionalDependencies")()
 
-	return common.ApplyResolvers(d.ctx, &d.config.references, common.AdditionalDependencyResolverKind)
+	return common.ApplyResolvers(d.ctx, d.config.GetNamespace(), common.AdditionalDependencyResolverKind)
 }
 
 // Prune removes unneeded resources from the namespace.
-func Prune(d *DeployerSession) (err error) {
+func Prune(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "Prune")()
 
 	// TODO(asanka): The operator should be able to override the "asset" entry
@@ -171,49 +178,49 @@ func Prune(d *DeployerSession) (err error) {
 		common.RefPathMust("host.log_settings"),
 	}
 
-	return d.config.references.Prune(anchors)
+	return d.config.GetNamespace().Prune(anchors)
 }
 
 // InvokeImmediateResolvers is the discovery phase where the GCP logic performs
 // lookups for project metadata.
-func InvokeImmediateResolvers(d *DeployerSession) (err error) {
+func InvokeImmediateResolvers(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "InvokeImmediateResolvers")()
 
-	return common.ApplyResolvers(d.ctx, &d.config.references, common.ImmediateResolverKind)
+	return common.ApplyResolvers(d.ctx, d.config.GetNamespace(), common.ImmediateResolverKind)
 }
 
 // InvokeGeneratedContentResolvers step generates assets that must be generated as
 // deployemnt time. These are assets like generated passwords and certificates.
-func InvokeGeneratedContentResolvers(d *DeployerSession) (err error) {
+func InvokeGeneratedContentResolvers(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "ResolveGeneratedContent")()
 
-	return common.ApplyResolvers(d.ctx, &d.config.references, common.GeneratedContentResolverKind)
+	return common.ApplyResolvers(d.ctx, d.config.GetNamespace(), common.GeneratedContentResolverKind)
 }
 
 // DeleteObsoleteDeployments removes any deployments that are not needed. The
 // CEL toolchain assumes that all the deployments that exist within the project
 // are under its control. If any deployments are not recognized, the toolchain
 // will remove them.
-func DeleteObsoleteDeployments(d *DeployerSession) (err error) {
+func DeleteObsoleteDeployments(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "DeleteObsoleteDeployments")()
 
 	if true {
 		return nil
 	}
-	return NewNotImplementedError("DeleteObsoleteDeployments")
+	return cel.NewNotImplementedError("DeleteObsoleteDeployments")
 }
 
 // StopAllVMs stops all running instances. This step ensures that even if we
 // reuse instance, they will still pick up the correct up-to-date configuration
 // that is about to be applied to the project. Configuration is typically only
 // reqd during instance startup.
-func StopAllVMs(d *DeployerSession) (err error) {
+func StopAllVMs(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "StopAllVMs")()
 
 	if true {
 		return nil
 	}
-	return NewNotImplementedError("StopAllVMs")
+	return cel.NewNotImplementedError("StopAllVMs")
 }
 
 // PrepBackend prepares the base set of services on the hosting environment.
@@ -221,46 +228,55 @@ func StopAllVMs(d *DeployerSession) (err error) {
 // In this phase, the toolchain ensures that there are service accounts and KMS
 // keys as required by the deployment process. It also enables the services and
 // APIs on the target project that are required by the CEL toolchain.
-func PrepBackend(d *DeployerSession) (err error) {
+func PrepBackend(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "PrepBackend")()
 
-	return gcp.PrepBackend(d.ctx, d.backend)
+	return gcp_deploy.PrepBackend(d.ctx, d.backend)
 }
 
-// ResolveIndexedObjects uploads blobs of data to the object store in order to
+// InvokeIndexedObjectResolvers uploads blobs of data to the object store in order to
 // make them available to lab VMs. Currently these are FileReference and Secret
 // objects.
-func ResolveIndexedObjects(d *DeployerSession) error {
-	return NewNotImplementedError("ResolveIndexedObjects")
+func InvokeIndexedObjectResolvers(d *Session) (err error) {
+	defer common.LoggedAction(d.GetContext(), &err, "ResolveIndexedObjects")()
+
+	return common.ApplyResolvers(d.ctx, d.config.GetNamespace(), common.IndexedObjectResolverKind)
 }
 
 // VerifyCompletedAssetManifest ensures that all OUTPUT fields in the namespace
 // have values. It then serializes and uploads the asset manifest to the
 // project's object storage.
-func VerifyCompletedAssetManifest(d *DeployerSession) error {
-	return NewNotImplementedError("VerifyCompletedAssetManifest")
+func VerifyCompletedAssetManifest(d *Session) (err error) {
+	defer common.LoggedAction(d.GetContext(), &err, "VerifyCompletedAssetManifest")()
+
+	manifest, err := d.config.GenerateCompletedManifest()
+	if err != nil {
+		return
+	}
+
+	return d.config.Manifest.StoreFile(d.GetContext(), manifest)
 }
 
 // UpdateProjectMetadata sets the project scoped metadata.
-func UpdateProjectMetadata(d *DeployerSession) error {
-	return NewNotImplementedError("UpdateProjectMetadata")
+func UpdateProjectMetadata(d *Session) error {
+	return cel.NewNotImplementedError("UpdateProjectMetadata")
 }
 
 // GenerateDeploymentManifest emits the deployment manifest for lab assets.
-func GenerateDeploymentManifest(d *DeployerSession) error {
-	return NewNotImplementedError("GenerateDeploymentManifest")
+func GenerateDeploymentManifest(d *Session) error {
+	return cel.NewNotImplementedError("GenerateDeploymentManifest")
 }
 
 // InvokeDeploymentManager uploads and creates a new deployment based on the
 // manifest that was generated in the prior steps.
-func InvokeDeploymentManager(d *DeployerSession) error {
-	return NewNotImplementedError("InvokeDeploymentManager")
+func InvokeDeploymentManager(d *Session) error {
+	return cel.NewNotImplementedError("InvokeDeploymentManager")
 }
 
 func checkNamespaceIsReady(r *common.Namespace, ns []common.RefPath) error {
 	for _, p := range ns {
 		if !r.Ready(p) {
-			return NewNotReadyError(r, p)
+			return cel.NewNotReadyError(r, p)
 		}
 	}
 	return nil

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gcp
+package deploy
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	cloudkmspb "chromium.googlesource.com/enterprise/cel/go/gcp/cloudkms"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
@@ -22,10 +23,10 @@ import (
 //
 // Unfortunately, not all required asset types are currently supported by the
 // Deployment Manager. So some of them have to be constructed "manually".
-const BaseAssetDeploymentName string = "cel-base"
+const baseAssetDeploymentName string = "cel-base"
 
 // The account ID for the CEL instance service account.
-const ServiceAccountId string = "cel-instance-service"
+const serviceAccountId string = "cel-instance-service"
 
 // CloudKMS KeyRing ID
 const kmsKeyRingId string = "cel"
@@ -46,17 +47,17 @@ const integrityTokenKey string = "integrity"
 // enableRequiredAPIs checks and enables the list of GCP services and APIs that
 // are needed by the CEL toolchain. The authoritative list of services is
 // requiredGcpServices.
-func enableRequiredAPIs(ctx common.Context, s *Session) (err error) {
-	defer GcpLoggedServiceAction(s, ServiceManagementServiceName, &err,
+func enableRequiredAPIs(ctx common.Context, s *gcp.Session) (err error) {
+	defer gcp.GcpLoggedServiceAction(s, gcp.ServiceManagementServiceName, &err,
 		"Enabling required services for GCP project \"%s\"", s.GetProject())()
 
-	sm, err := servicemanagement.New(s.client)
+	sm, err := servicemanagement.New(s.GetHttpClient())
 	if err != nil {
 		return err
 	}
 
 	required := make(map[string]bool)
-	for _, api := range RequiredGcpServices {
+	for _, api := range gcp.RequiredGcpServices {
 		required[api] = true
 	}
 
@@ -96,7 +97,7 @@ func enableRequiredAPIs(ctx common.Context, s *Session) (err error) {
 			if err != nil {
 				return err
 			}
-			return JoinServiceManagementOperation(s, op)
+			return gcp.JoinServiceManagementOperation(s, op)
 		})
 	}
 
@@ -106,7 +107,7 @@ func enableRequiredAPIs(ctx common.Context, s *Session) (err error) {
 // constructBaseDeploymentManifest constructs the GCP deployment manifest for
 // the set of base resources that must be present in every GCP project hosting
 // a CEL lab.
-func constructBaseDeploymentManifest(s *Session) ([]byte, error) {
+func constructBaseDeploymentManifest(s *gcp.Session) ([]byte, error) {
 	// Resource name for the deployment manifest *template*. The template itself
 	// will be evaluated as a text/template with the a single parameter of type
 	// celBaseTemplateParams.
@@ -136,10 +137,10 @@ func constructBaseDeploymentManifest(s *Session) ([]byte, error) {
 	tmpl := template.Must(template.New("cel-base").Parse(ttext))
 
 	var b bytes.Buffer
-	saName := ServiceAccountResource(s.GetProject(), ServiceAccountEmail(s.GetProject(), ServiceAccountId))
+	saName := gcp.ServiceAccountResource(s.GetProject(), gcp.ServiceAccountEmail(s.GetProject(), serviceAccountId))
 	err = tmpl.Execute(&b, celBaseTemplateParams{
 		ProjectId:          s.GetProject(),
-		ServiceAccountId:   ServiceAccountId,
+		ServiceAccountId:   serviceAccountId,
 		ServiceAccountName: saName,
 	})
 
@@ -150,13 +151,13 @@ func constructBaseDeploymentManifest(s *Session) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func publishServiceAccount(ctx common.Context, s *Session) (err error) {
+func publishServiceAccount(ctx common.Context, s *gcp.Session) (err error) {
 	iamClient, err := s.GetIamClient()
 	if err != nil {
 		return err
 	}
 
-	saName := ServiceAccountResource(s.GetProject(), ServiceAccountEmail(s.GetProject(), ServiceAccountId))
+	saName := gcp.ServiceAccountResource(s.GetProject(), gcp.ServiceAccountEmail(s.GetProject(), serviceAccountId))
 	sa, err := iamClient.GetServiceAccount(ctx, &adminpb.GetServiceAccountRequest{Name: saName})
 	if err != nil {
 		return err
@@ -165,20 +166,20 @@ func publishServiceAccount(ctx common.Context, s *Session) (err error) {
 	return ctx.Publish(s.HostEnvironment.Resources, "service_account", sa)
 }
 
-func deployKmsKey(ctx common.Context, s *Session) (err error) {
-	defer GcpLoggedServiceAction(s, CloudKmsServiceName, &err, "Deploying KMS keys")()
+func deployKmsKey(ctx common.Context, s *gcp.Session) (err error) {
+	defer gcp.GcpLoggedServiceAction(s, gcp.CloudKmsServiceName, &err, "Deploying KMS keys")()
 
 	kms, err := s.GetCloudKmsService()
 	if err != nil {
 		return err
 	}
 
-	locName := KmsLocationResource(s.GetProject(), kmsLocationId)
+	locName := gcp.KmsLocationResource(s.GetProject(), kmsLocationId)
 
 	// First make sure our keyring exists.
 	krName := locName + "/keyRings/" + kmsKeyRingId
 	kr, err := kms.Projects.Locations.KeyRings.Get(krName).Context(ctx).Do()
-	if IsNotFoundError(err) {
+	if gcp.IsNotFoundError(err) {
 		kr, err = kms.Projects.Locations.KeyRings.
 			Create(locName, &cloudkms.KeyRing{}).
 			KeyRingId(kmsKeyRingId).
@@ -191,7 +192,7 @@ func deployKmsKey(ctx common.Context, s *Session) (err error) {
 	// Then make sure our cryptokey exists.
 	ckName := kr.Name + "/cryptoKeys/" + kmsCryptoKeyId
 	ck, err := kms.Projects.Locations.KeyRings.CryptoKeys.Get(ckName).Context(ctx).Do()
-	if IsNotFoundError(err) {
+	if gcp.IsNotFoundError(err) {
 		ck, err = kms.Projects.Locations.KeyRings.CryptoKeys.
 			Create(krName, &cloudkms.CryptoKey{
 				Purpose: "ENCRYPT_DECRYPT",
@@ -222,7 +223,7 @@ func deployKmsKey(ctx common.Context, s *Session) (err error) {
 		pol.Bindings = append(pol.Bindings, binding)
 	}
 
-	aclLine := ServiceAccountAclBinding(s.HostEnvironment.Resources.ServiceAccount.Email)
+	aclLine := gcp.ServiceAccountAclBinding(s.HostEnvironment.Resources.ServiceAccount.Email)
 	found := false
 	for _, m := range binding.Members {
 		if m == aclLine {
@@ -250,8 +251,8 @@ func deployKmsKey(ctx common.Context, s *Session) (err error) {
 // deployBaseAssets ensures that the base set of assets required by the CEL
 // toolchain are present in the target GCP project, deploying them if
 // necessary.
-func deployBaseAssets(ctx common.Context, s *Session) (err error) {
-	defer GcpLoggedServiceAction(s, DeploymentManagerServiceName, &err,
+func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
+	defer gcp.GcpLoggedServiceAction(s, gcp.DeploymentManagerServiceName, &err,
 		"Launching base assets for lab in GCP project \"%s\"", s.GetProject())()
 
 	dm, err := s.GetDeploymentManagerService()
@@ -266,7 +267,7 @@ func deployBaseAssets(ctx common.Context, s *Session) (err error) {
 
 	reDeploy := true
 
-	dep, err := dm.Deployments.Get(s.GetProject(), BaseAssetDeploymentName).Context(ctx).Do()
+	dep, err := dm.Deployments.Get(s.GetProject(), baseAssetDeploymentName).Context(ctx).Do()
 	if err == nil && (dep.Operation == nil || dep.Operation.Status == "DONE") {
 		for _, l := range dep.Labels {
 			if l.Key != integrityTokenKey {
@@ -281,14 +282,14 @@ func deployBaseAssets(ctx common.Context, s *Session) (err error) {
 	}
 
 	if reDeploy {
-		op, err := dm.Deployments.Delete(s.GetProject(), BaseAssetDeploymentName).
+		op, err := dm.Deployments.Delete(s.GetProject(), baseAssetDeploymentName).
 			Context(ctx).DeletePolicy("DELETE").Do()
 		if err == nil {
-			err = JoinDeploymentOperation(s, op)
+			err = gcp.JoinDeploymentOperation(s, op)
 
 			// This step can fail if there was no deployment named "cel-base" to
 			// begin with. If so, we are going to ignore the error.
-			if err != nil && !IsNotFoundError(err) {
+			if err != nil && !gcp.IsNotFoundError(err) {
 				return err
 			}
 		}
@@ -296,7 +297,7 @@ func deployBaseAssets(ctx common.Context, s *Session) (err error) {
 		token := common.IntegrityLabel(manifest)
 		dep = &deploymentmanager.Deployment{
 			Description: "Chrome Enterprise Lab : Base environment deployment",
-			Name:        BaseAssetDeploymentName,
+			Name:        baseAssetDeploymentName,
 			Target: &deploymentmanager.TargetConfiguration{
 				Config: &deploymentmanager.ConfigFile{
 					Content: string(manifest),
@@ -311,7 +312,7 @@ func deployBaseAssets(ctx common.Context, s *Session) (err error) {
 			return err
 		}
 
-		err = JoinDeploymentOperation(s, op)
+		err = gcp.JoinDeploymentOperation(s, op)
 		if err != nil {
 			return err
 		}
@@ -333,7 +334,7 @@ func deployBaseAssets(ctx common.Context, s *Session) (err error) {
 //
 // fieldName is the name of the field in HostEnvironment.Resources where the
 // resulting FileReference should be published.
-func uploadNamedResource(ctx common.Context, s *Session, embeddedResource, fieldName string) (err error) {
+func uploadNamedResource(ctx common.Context, s *gcp.Session, embeddedResource, fieldName string) (err error) {
 	defer common.LoggedAction(ctx, &err, "uploading %s", embeddedResource)()
 
 	data := _escFSMustByte(false, embeddedResource)
@@ -348,7 +349,7 @@ func uploadNamedResource(ctx common.Context, s *Session, embeddedResource, field
 
 // uploadStartupDependencies uploads the assets that are used during VM
 // instance startup.
-func uploadStartupDependencies(ctx common.Context, s *Session) error {
+func uploadStartupDependencies(ctx common.Context, s *gcp.Session) error {
 	err := uploadNamedResource(ctx, s, "/windows/instance-startup.ps1", "win_startup")
 	if err != nil {
 		return err
@@ -360,7 +361,7 @@ func uploadStartupDependencies(ctx common.Context, s *Session) error {
 // PrepBackend prepares the backend for hosting a lab. The resources deployed
 // here are not specific to inputs, but are based solely on the version of the
 // toolchain.
-func PrepBackend(ctx common.Context, s *Session) error {
+func PrepBackend(ctx common.Context, s *gcp.Session) error {
 	err := enableRequiredAPIs(ctx, s)
 	if err != nil {
 		return err

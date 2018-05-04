@@ -2,25 +2,30 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package asset
+package deploy
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"crypto/rand"
 	"github.com/pkg/errors"
 )
 
-func (w *WindowsUser) ResolveGeneratedContent(ctx common.Context) error {
-	if w.Password.GetHardcoded() != "" {
-		return ctx.Publish(w.Password, "final", []byte(w.Password.GetHardcoded()))
+type windowsUser struct{}
+
+func (*windowsUser) ResolveGeneratedContent(ctx common.Context, u *asset.WindowsUser) (err error) {
+	var p string
+	if u.HardcodedPassword != "" {
+		p = u.HardcodedPassword
+	} else {
+		p, err = generatePassword()
+		if err != nil {
+			return err
+		}
 	}
 
-	p, err := generatePassword()
-	if err != nil {
-		return err
-	}
-
-	return ctx.Publish(w.Password, "final", []byte(p))
+	s := &common.Secret{Final: []byte(p)}
+	return ctx.Publish(u, "password", s)
 }
 
 // The printable characters from 0x21-0x7e rearranged to have a bias for
@@ -47,4 +52,8 @@ func generatePassword() (string, error) {
 	}
 
 	return pwd, nil
+}
+
+func init() {
+	common.RegisterResolverClass(&windowsUser{})
 }

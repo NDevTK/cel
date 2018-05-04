@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gcp
+package deploy
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -15,18 +16,18 @@ import (
 type StorageResolver struct{}
 
 func (StorageResolver) ResolveImmediate(ctx common.Context, s *host.Storage) error {
-	session, err := SessionFromContext(ctx)
+	session, err := gcp.SessionFromContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	client, err := storage.NewClient(ctx, option.WithHTTPClient(session.client))
+	client, err := storage.NewClient(ctx, option.WithHTTPClient(session.GetHttpClient()))
 	if err != nil {
 		return err
 	}
 
 	bh := client.Bucket(s.GetBucket())
-	attrs, err := bh.Attrs(session.ctx)
+	attrs, err := bh.Attrs(session.GetContext())
 	if err != nil {
 		return err
 	}
