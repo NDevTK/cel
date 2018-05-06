@@ -18,17 +18,12 @@ import (
 // should already have been configured in the DeployerSession.
 //
 // It invokes the remainder of the workflow in a pre-determined order.
+//
 // TODO(asanka): Here's what we need to do here:
 //
 // * Make sure that we are calling checkNamespaceIsReady() correctly. In
 //   particular, ensure that the checked resources are already resolved by the
 //   time we call checkNamespaceIsReady().
-//
-// * Fix use of --builtins in cel_ctl.
-//
-// * Add a startup script and a mock cel_agent binary to the list of resources.
-//   Maybe allow the cel_agent binary to be specified at runtime, although we
-//   need to make sure that we support multiple architectures.
 //
 // * Add tests for verifying that the object store invocations are correct, at
 //   least as far as we can see.
@@ -98,11 +93,6 @@ func Deploy(d *Session) (err error) {
 		return err
 	}
 
-	err = InvokeGeneratedContentResolvers(d)
-	if err != nil {
-		return err
-	}
-
 	err = DeleteObsoleteDeployments(d)
 	if err != nil {
 		return err
@@ -120,6 +110,11 @@ func Deploy(d *Session) (err error) {
 
 	err = checkNamespaceIsReady(d.GetConfiguration().GetNamespace(),
 		[]common.RefPath{common.RefPathMust("host.resources")})
+	if err != nil {
+		return err
+	}
+
+	err = InvokeGeneratedContentResolvers(d)
 	if err != nil {
 		return err
 	}
