@@ -283,15 +283,6 @@ func (r RefPath) TopLevel() RefPath {
 	return r[:3]
 }
 
-// IsTopLevel returns true if this path refers to a top level node.
-func (r RefPath) IsTopLevel() bool {
-	return len(r) == 3
-}
-
-func (r RefPath) IsTopLevelOrAbove() bool {
-	return len(r) <= 3
-}
-
 // Parent returns a RefPath that excludes the final component.
 func (r RefPath) Parent() RefPath {
 	if len(r) == 0 {

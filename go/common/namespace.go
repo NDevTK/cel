@@ -189,15 +189,14 @@ func (r *Namespace) Prune(anchors []RefPath) error {
 	}
 
 	for _, a := range anchors {
-		// Promote 'a' to something that's at least at top-level. We are only
-		// interested in looking at top level assets.
-		if !a.IsTopLevelOrAbove() {
-			a = a.TopLevel()
+		// Promote a to its top level node. Otherwise, "a" stays as is.
+		if ta, err := r.TopLevel(a); err == nil {
+			a = ta
 		}
 
 		// Visit all the top level nodes starting at a:
 		r.ns.VisitFrom(a, func(p RefPath, o interface{}) bool {
-			if !p.IsTopLevel() {
+			if !r.IsTopLevel(p) {
 				return true
 			}
 
@@ -220,7 +219,7 @@ func (r *Namespace) Prune(anchors []RefPath) error {
 	// t should have visited all the nodes that we are interested in keeping.
 	// We now need to remove all top level nodes that aren't in t.
 	r.ns.Visit(func(p RefPath, o interface{}) bool {
-		if !p.IsTopLevel() {
+		if !r.IsTopLevel(p) {
 			return true
 		}
 		n := o.(*namespaceNode)
@@ -421,12 +420,50 @@ func (r *Namespace) PathFor(m proto.Message) (RefPath, bool) {
 	return n.location, true
 }
 
+// TopLevel returns the path to the nearest top level ancestor of a given path.
+// Returns the path itself if the path refers to a top level node. On error,
+// returns nil along with a non-nil error. Note that if there are no top level
+// ancestors of the node, that is considered an error.
+func (r *Namespace) TopLevel(p RefPath) (RefPath, error) {
+	if p.Empty() {
+		return p, nil
+	}
+
+	for pp := p.Parent(); !pp.Empty(); {
+		n, ok := r.getNode(pp)
+		if !ok {
+			return nil, errors.Errorf("\"%s\" is not part of the namespace", pp)
+		}
+
+		if n.isTopLevelCollection {
+			return p, nil
+		}
+
+		p = pp
+		pp = p.Parent()
+	}
+	return nil, errors.Errorf("\"%s\" has no top level ancestors")
+}
+
+// IsTopLevel returns true if a given path refers to a top level node.
+func (r *Namespace) IsTopLevel(p RefPath) bool {
+	if p.Empty() {
+		return false
+	}
+	pp := p.Parent()
+	pn, ok := r.getNode(pp)
+	if !ok {
+		return false
+	}
+	return pn.isTopLevelCollection
+}
+
 // IndirectReference returns the object referred to by a field. It's an error
 // to call this on a field that is not a named reference.
 func (r *Namespace) IndirectReference(p RefPath) (interface{}, error) {
 	n, ok := r.getNode(p)
 	if !ok {
-		return nil, errors.Errorf("reference not found \"%s\"", p.String())
+		return nil, errors.Errorf("\"%s\" is not a part of the namespace", p)
 	}
 	if !n.isValueAvailable {
 		return nil, errors.Errorf("value at \"%s\" is not currently available", p.String())

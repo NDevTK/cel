@@ -165,39 +165,6 @@ func TestRefPath_After(t *testing.T) {
 	}
 }
 
-func TestRefPath_TopLevel(t *testing.T) {
-	r := RefPathMust("a.b.c.d")
-	if r.TopLevel().String() != "a.b.c" {
-		t.Errorf("TopLevel() returned %s. Want a.b.c", r.TopLevel().String())
-	}
-
-	if !RefPathMust("a.b").TopLevel().Empty() {
-		t.Error("TopLevel('a.b')")
-	}
-
-	if !EmptyPath.TopLevel().Empty() {
-		t.Error("EmptyPath.TopLevel()")
-	}
-}
-
-func TestRefPath_IsTopLevel(t *testing.T) {
-	if RefPathMust("a").IsTopLevel() {
-		t.Error()
-	}
-
-	if RefPathMust("a.b").IsTopLevel() {
-		t.Error()
-	}
-
-	if !RefPathMust("a.b.c").IsTopLevel() {
-		t.Error()
-	}
-
-	if RefPathMust("a.b.c.d").IsTopLevel() {
-		t.Error()
-	}
-}
-
 func TestRefPath_Parent(t *testing.T) {
 	if RefPathMust("a.b.c").Parent().String() != "a.b" {
 		t.Error()

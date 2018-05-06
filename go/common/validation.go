@@ -16,6 +16,10 @@ func (v Validation) IsRuntime() bool {
 	return v.Type == Validation_RUNTIME
 }
 
+func (v Validation) IsTopLevelCollection() bool {
+	return v.Type == Validation_TOPLEVEL
+}
+
 func (v Validation) ReferenceRoot() (RefPath, error) {
 	return RefPathFromString(v.Ref)
 }

@@ -196,6 +196,11 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 		}
 
 		return errors.Wrapf(IsRFC1035DomainLabel(af.String()), "validating field \"%s\"", fd.GetName())
+
+	case Validation_TOPLEVEL:
+		if af.Kind() != reflect.Slice {
+			return fmt.Errorf("TOPLEVEL attribute should only be applied to a collection")
+		}
 	}
 	return nil
 }
@@ -210,7 +215,7 @@ func VerifyValidatableType(at reflect.Type) error {
 		return VerifyValidatableType(at.Elem())
 
 	case reflect.Ptr:
-		// Exclude vendored dependencies.
+		// Exclude external or vendored dependencies.
 		if strings.Contains(at.Elem().PkgPath(), "/vendor/") {
 			break
 		}

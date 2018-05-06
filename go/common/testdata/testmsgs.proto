@@ -89,6 +89,11 @@ message TestMessageWithOptions {
   TestGoodProto output_proto = 11 [(common.v).type = OUTPUT];
 }
 
+message TestContainer {
+  repeated TestGoodProto a = 1 [(common.v).type = TOPLEVEL];
+  repeated TestMessageWithOptions b = 2 [(common.v).type = TOPLEVEL];
+}
+
 message TestBadMessageWithOptions {
   int32 name = 1 [(common.v).type = LABEL];
 }

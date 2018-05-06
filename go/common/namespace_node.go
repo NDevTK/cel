@@ -44,6 +44,9 @@ type namespaceNode struct {
 	// unavailable during the deployment stage.
 	isRuntime bool
 
+	// if true, this node represents a top level collection.
+	isTopLevelCollection bool
+
 	// if true, the value at this node is currently available. Implies that
 	// isValueAvailable is true for all elemments in dependsOn.
 	isValueAvailable bool
@@ -115,6 +118,7 @@ func (v *namespaceNode) bind(rv reflect.Value, validation *Validation) error {
 	if validation != nil {
 		v.isOutput = validation.IsOutput()
 		v.isRuntime = validation.IsRuntime()
+		v.isTopLevelCollection = validation.IsTopLevelCollection()
 	}
 
 	wasAvailable := v.isValueAvailable

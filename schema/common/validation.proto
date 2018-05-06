@@ -64,6 +64,15 @@ message Validation {
     // assets. In other words, they can only appear if the asset in question is
     // a direct child of the HostEnvironment or AssetManifest messages.
     RUNTIME = 6;
+
+    // This is a top-level field. This type is applicable only to fields that
+    // constititue top level collections. Any element in a top level collection
+    // that doesn't have a rooted reference will be removed during the pruning
+    // phase.
+    //
+    // See description of pruning in
+    // https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/deployment.md#Pruning.
+    TOPLEVEL = 7;
   }
   FieldType type = 1;
 

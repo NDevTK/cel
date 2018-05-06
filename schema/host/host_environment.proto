@@ -192,9 +192,9 @@ message HostEnvironment {
   Storage storage = 2 [(common.v).type = REQUIRED];
   LogSettings log_settings = 3 [(common.v).type = REQUIRED];
 
-  repeated MachineType machine_type = 10;
-  repeated AddressPool address_pool = 11;
-  repeated Image image = 12;
+  repeated MachineType machine_type = 10 [(common.v).type = TOPLEVEL];
+  repeated AddressPool address_pool = 11 [(common.v).type = TOPLEVEL];
+  repeated Image image = 12 [(common.v).type = TOPLEVEL];
 
   // Determined at deployment time.
   RuntimeSupport resources = 100 [(common.v).type = OUTPUT];

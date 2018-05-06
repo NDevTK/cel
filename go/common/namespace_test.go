@@ -561,15 +561,62 @@ func TestNamespace_nearestMessage(t *testing.T) {
 	}
 }
 
+func TestNamespace_TopLevel(t *testing.T) {
+	var r Namespace
+	xPath := RefPathMust("a.b.x")
+
+	g := &TestContainer{B: []*TestMessageWithOptions{
+		{Name: "x", Label: "${a.b.y.label}"},
+		{Name: "y", Label: "y-label"},
+		{Name: "z"},
+	}}
+
+	r.Graft(g, RefPathMust("a"))
+
+	t.Run("IsTopLevel", func(t *testing.T) {
+		if !r.IsTopLevel(xPath) {
+			t.Errorf("failed to identify %s as a top level node", xPath)
+		}
+	})
+
+	t.Run("TopLevel_valid", func(t *testing.T) {
+		p, err := r.TopLevel(RefPathMust("a.b.x.label"))
+		if err != nil {
+			t.Errorf("unexpected error %s", err)
+		}
+		if !p.Equals(xPath) {
+			t.Errorf("failed to determine correct top level node. Got %s. Want %s", p, xPath)
+		}
+	})
+
+	t.Run("TopLevel_invalid", func(t *testing.T) {
+		_, err := r.TopLevel(RefPathMust("a.b.x.labely.foo"))
+		if err == nil {
+			t.Errorf("incorrect top level")
+		}
+	})
+
+	t.Run("TopLevel_root", func(t *testing.T) {
+		_, err := r.TopLevel(RefPathMust("a"))
+		if err == nil {
+			t.Errorf("incorrect top level")
+		}
+	})
+}
+
 func TestNamespace_Prune_basic(t *testing.T) {
 	var r Namespace
 	xPath := RefPathMust("a.b.x")
 	yPath := RefPathMust("a.b.y")
 	zPath := RefPathMust("a.b.z")
 
-	r.Graft(&TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
-	r.Graft(&TestMessageWithOptions{Name: "y", Label: "y-label"}, yPath)
-	r.Graft(&TestMessageWithOptions{Name: "z"}, zPath)
+	g := &TestContainer{B: []*TestMessageWithOptions{
+		{Name: "x", Label: "${a.b.y.label}"},
+		{Name: "y", Label: "y-label"},
+		{Name: "z"},
+	}}
+
+	r.Graft(g, RefPathMust("a"))
 
 	if !r.Has(xPath) || !r.Has(yPath) || !r.Has(zPath) {
 		t.Fatal()

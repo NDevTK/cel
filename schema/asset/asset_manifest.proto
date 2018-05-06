@@ -15,6 +15,7 @@ import "schema/asset/cert.proto";
 import "schema/asset/dns.proto";
 import "schema/asset/iis.proto";
 import "schema/asset/network.proto";
+import "schema/common/validation.proto";
 
 // AssetManifest is the main container for all top level assets that go into an
 // asset manifest and can be identified by name. Please refer to each
@@ -48,24 +49,27 @@ import "schema/asset/network.proto";
 // fields.
 message AssetManifest {
   // Core networking. Use field numbers 1-99
-  repeated Network network = 1;
-  repeated DNSZone dns_zone = 2;
+  repeated Network network = 1 [(common.v).type = TOPLEVEL];
+  repeated DNSZone dns_zone = 2 [(common.v).type = TOPLEVEL];
 
   // Windows and ActiveDirectory. Use field numbers 100-199
-  repeated ActiveDirectoryDomain ad_domain = 100;
-  repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit = 101;
-  repeated ActiveDirectoryGroupPolicy ad_group_policy = 102;
-  repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link = 103;
-  repeated WindowsGroup windows_group = 104;
-  repeated WindowsMachine windows_machine = 105;
-  repeated WindowsUser windows_user = 106;
+  repeated ActiveDirectoryDomain ad_domain = 100 [(common.v).type = TOPLEVEL];
+  repeated ActiveDirectoryOrganizationalUnit ad_organizational_unit = 101
+      [(common.v).type = TOPLEVEL];
+  repeated ActiveDirectoryGroupPolicy ad_group_policy = 102
+      [(common.v).type = TOPLEVEL];
+  repeated ActiveDirectoryGroupPolicyLink ad_group_policy_link = 103
+      [(common.v).type = TOPLEVEL];
+  repeated WindowsGroup windows_group = 104 [(common.v).type = TOPLEVEL];
+  repeated WindowsMachine windows_machine = 105 [(common.v).type = TOPLEVEL];
+  repeated WindowsUser windows_user = 106 [(common.v).type = TOPLEVEL];
 
   // PKI. Use field numbers 200-299
-  repeated Certificate certificate = 200;
-  repeated CertificatePool certificate_pool = 201;
+  repeated Certificate certificate = 200 [(common.v).type = TOPLEVEL];
+  repeated CertificatePool certificate_pool = 201 [(common.v).type = TOPLEVEL];
 
   // IIS. Use field numbers 300-399
-  repeated IISApplication iis_application = 300;
-  repeated IISServer iis_server = 301;
-  repeated IISSite iis_site = 302;
+  repeated IISApplication iis_application = 300 [(common.v).type = TOPLEVEL];
+  repeated IISServer iis_server = 301 [(common.v).type = TOPLEVEL];
+  repeated IISSite iis_site = 302 [(common.v).type = TOPLEVEL];
 }
