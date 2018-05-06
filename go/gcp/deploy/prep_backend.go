@@ -97,7 +97,7 @@ func enableRequiredAPIs(ctx common.Context, s *gcp.Session) (err error) {
 			if err != nil {
 				return err
 			}
-			return gcp.JoinServiceManagementOperation(s, op)
+			return gcp.JoinOperation(s, op, fmt.Sprintf("enabling service %s", a))
 		})
 	}
 
@@ -285,7 +285,7 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 		op, err := dm.Deployments.Delete(s.GetProject(), baseAssetDeploymentName).
 			Context(ctx).DeletePolicy("DELETE").Do()
 		if err == nil {
-			err = gcp.JoinDeploymentOperation(s, op)
+			err = gcp.JoinOperation(s, op, "removing existing stale base asset deployment")
 
 			// This step can fail if there was no deployment named "cel-base" to
 			// begin with. If so, we are going to ignore the error.
@@ -312,7 +312,7 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 			return err
 		}
 
-		err = gcp.JoinDeploymentOperation(s, op)
+		err = gcp.JoinOperation(s, op, "running base asset deployment")
 		if err != nil {
 			return err
 		}
