@@ -193,3 +193,9 @@ func (o *ObjectStore) crackObjectName(name string) (suffix, sri string, err erro
 	}
 	return
 }
+
+// AbsoluteReference returns the full GCS path based on a bucket name and an
+// objectReference. The function assumes that both inputs are valud.
+func AbsoluteReference(bucketName, objectReference string) string {
+	return "gs://" + bucketName + "/" + objectReference
+}
