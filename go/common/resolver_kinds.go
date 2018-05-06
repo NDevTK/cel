@@ -60,6 +60,13 @@ type IndexedObjectResolver interface {
 	ResolveIndexedObjects(ctx Context, m proto.Message) error
 }
 
+// PreCompleteManifestResolver is invoked prior to constructing the completed
+// asset manifest. This type of resolver is used to cleanup assets prior to
+// being included in the final manifest.
+type PreCompleteManifestResolver interface {
+	ResolvePreManifestCompletion(ctx Context, m proto.Message) error
+}
+
 // OnHostResolver is a resolver type that's invoked exclusively on the VM
 // hosting the corresponding asset.
 //
@@ -76,6 +83,7 @@ var GeneratedContentResolverKind ResolverKind = reflect.TypeOf((*GeneratedConten
 var ImmediateResolverKind ResolverKind = reflect.TypeOf((*ImmediateResolver)(nil)).Elem()
 var IndexedObjectResolverKind ResolverKind = reflect.TypeOf((*IndexedObjectResolver)(nil)).Elem()
 var OnHostResolverKind ResolverKind = reflect.TypeOf((*OnHostResolver)(nil)).Elem()
+var PreCompleteManifestResolverKind = reflect.TypeOf((*PreCompleteManifestResolver)(nil)).Elem()
 
 // Keep sorted:
 
@@ -85,4 +93,5 @@ var allResolverTypes = map[string]ResolverKind{
 	"ResolveImmediate":              ImmediateResolverKind,
 	"ResolveIndexedObjects":         IndexedObjectResolverKind,
 	"ResolveOnHost":                 OnHostResolverKind,
+	"ResolvePreManifestCompletion":  PreCompleteManifestResolverKind,
 }

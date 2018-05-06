@@ -124,6 +124,11 @@ func Deploy(d *Session) (err error) {
 		return err
 	}
 
+	err = InvokePreCompleteManifestResolvers(d)
+	if err != nil {
+		return err
+	}
+
 	err = checkNamespaceIsReady(d.GetConfiguration().GetNamespace(),
 		[]common.RefPath{common.RefPathMust("asset"), common.RefPathMust("host")})
 	if err != nil {
@@ -236,6 +241,14 @@ func InvokeIndexedObjectResolvers(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "ResolveIndexedObjects")()
 
 	return common.ApplyResolvers(d.ctx, d.config.GetNamespace(), common.IndexedObjectResolverKind)
+}
+
+// InvokePreCompleteManifestResolvers step cleans up assets prior to them being
+// included in the final completed asset manifest.
+func InvokePreCompleteManifestResolvers(d *Session) (err error) {
+	defer common.LoggedAction(d.GetContext(), &err, "ResolvePreManifestCompletion")()
+
+	return common.ApplyResolvers(d.ctx, d.config.GetNamespace(), common.PreCompleteManifestResolverKind)
 }
 
 // VerifyCompletedAssetManifest ensures that all OUTPUT fields in the namespace
