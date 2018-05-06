@@ -1,0 +1,23 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package gcp;
+option go_package = "chromium.googlesource.com/enterprise/cel/go/gcp";
+
+
+// Cel-Agent metadata format.
+message CelAgentMetadata {
+  message GCSObject {
+    // Absolute Google Cloud Storage path. Starts with gs://...
+    string abs_path = 1;
+
+    // Subresource integrity token used to verify contents.
+    string integrity = 2;
+  }
+
+  // Object containing Windows x64 cel_agent binary
+  GCSObject win_agent_x64 = 1;
+}
+

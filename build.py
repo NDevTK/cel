@@ -531,6 +531,13 @@ missing.
 
   _BuildStep(
       protoc_command,
+      inp=['schema/gcp/agent_metadata.proto'],
+      out=os.path.join(descriptor_path, 'gcp_agent_metadata.pb'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
+      protoc_command,
       inp=['schema/gcp/compute/compute-api.proto'],
       out=os.path.join(descriptor_path, 'gcp_compute.pb'),
       env=_MergeEnv(args, target_host=True),

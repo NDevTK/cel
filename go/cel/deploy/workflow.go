@@ -266,8 +266,10 @@ func VerifyCompletedAssetManifest(d *Session) (err error) {
 }
 
 // UpdateProjectMetadata sets the project scoped metadata.
-func UpdateProjectMetadata(d *Session) error {
-	return cel.NewNotImplementedError("UpdateProjectMetadata")
+func UpdateProjectMetadata(d *Session) (err error) {
+	defer common.LoggedAction(d.GetContext(), &err, "UpdateProjectMetadata")()
+
+	return gcp_deploy.UpdateProjectMetadata(d.ctx, d.backend, &d.config.Manifest)
 }
 
 // GenerateDeploymentManifest emits the deployment manifest for lab assets.
