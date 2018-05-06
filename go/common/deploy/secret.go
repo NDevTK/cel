@@ -10,7 +10,9 @@ import (
 
 type secret struct{}
 
-func (secret) ResolveMetadata(ctx common.Context, s *common.Secret) error {
+func (secret) ResolvePreManifestCompletion(ctx common.Context, s *common.Secret) error {
+	s.Hardcoded = ""
+	s.Final = nil
 	return nil
 }
 
