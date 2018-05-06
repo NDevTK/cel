@@ -164,6 +164,14 @@ message AddressPool {
   repeated string reserved_address_regex = 4;
 }
 
+message Startup {
+  // Windows startup file. Must be a Powershell ps1 file.
+  common.FileReference win_startup = 100 [(common.v).type = OUTPUT];
+
+  // Windows CEL Agent executable.
+  common.FileReference win_agent_x64 = 101 [(common.v).type = OUTPUT];
+}
+
 // Base support resources that must exist at the time the lab assets are
 // deployed.
 //
@@ -180,11 +188,8 @@ message RuntimeSupport {
   // the deployer and the instance VMs.
   cloudkms.CryptoKey crypto_key = 101 [(common.v).type = OUTPUT];
 
-  // Windows startup file. Must be a Powershell ps1 file.
-  common.FileReference win_startup = 102 [(common.v).type = OUTPUT];
-
-  // Windows CEL Agent executable.
-  common.FileReference win_agent_x64 = 103 [(common.v).type = OUTPUT];
+  // Startup dependencies.
+  Startup startup = 102 [(common.v).type = REQUIRED];
 }
 
 message HostEnvironment {

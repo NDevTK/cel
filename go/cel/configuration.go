@@ -44,7 +44,8 @@ following:
   * .asset.: Asset manifest
 
 For example, the filename "foo.host.textpb" describes host environment data
-encoded as a text formatted protobuf.
+encoded as a text formatted protobuf. The root name component (i.e. "foo" in
+our example above) is required.
 `)
 )
 
@@ -198,6 +199,8 @@ func (l *Configuration) GenerateCompletedManifest() (data []byte, err error) {
 	l.Lab.HostEnvironment = &l.HostEnvironment
 	l.Lab.AssetManifest = &l.AssetManifest
 
+	// TODO(asanka): Remove elements from the tree that are no longer part of
+	// the namespace.
 	m := proto.MarshalTextString(&l.Lab)
 	return []byte(m), nil
 }
@@ -209,6 +212,7 @@ func (l *Configuration) Validate() error {
 	// Hence not checking whether sealed is already true.
 	l.sealed = true
 
+	l.Resources.Startup = &host.Startup{}
 	l.HostEnvironment.Resources = &l.Resources
 	l.references.Graft(&l.AssetManifest, AssetRootPath)
 	l.references.Graft(&l.HostEnvironment, HostRootPath)

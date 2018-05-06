@@ -9,8 +9,8 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 )
 
-var startup_script_path = common.RefPathMust("host.resources.win_startup")
-var agent_x64_path = common.RefPathMust("host.resources.win_agent_x64")
+var startup_script_path = common.RefPathMust("host.resources.startup.win_startup")
+var agent_x64_path = common.RefPathMust("host.resources.startup.win_agent_x64")
 
 // WindowsMachine_AddStartupDependencies adds depedencies on the windows
 // startup scripts and windows agent binaries to a machine.

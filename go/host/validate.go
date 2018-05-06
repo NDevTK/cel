@@ -16,6 +16,7 @@ func (*LogSettings) Validate() error     { return nil }
 func (*MachineType) Validate() error     { return nil }
 func (*Project) Validate() error         { return nil }
 func (*RuntimeSupport) Validate() error  { return nil }
+func (*Startup) Validate() error         { return nil }
 
 func (i *Image) Validate() error {
 	if i.GetFixed() == "" && i.GetLatest() == nil {
