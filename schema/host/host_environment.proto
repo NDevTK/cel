@@ -28,8 +28,8 @@ message Project {
   // Only the zone identifier should be entered here. E.g. "us-west1-a"
   string zone = 2 [(common.v).type = LABEL];
 
-  // The GCP Project number.
-  int64 project_number = 10 [(common.v).type = OUTPUT];
+  // Project
+  compute.Project project = 100 [(common.v).type = OUTPUT];
 }
 
 // Stackdriver log settings.

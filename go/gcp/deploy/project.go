@@ -7,6 +7,7 @@ package deploy
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
+	computepb "chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 )
 
@@ -20,21 +21,23 @@ func (*ProjectResolver) ResolveImmediate(ctx common.Context, p *host.Project) (e
 		return err
 	}
 
-	defer gcp.GcpLoggedServiceAction(session, gcp.CloudResourceManagerServiceName, &err,
+	defer gcp.GcpLoggedServiceAction(session, gcp.ComputeServiceName, &err,
 		"Resolving metadata for Project \"%s\"", p.GetName())()
 
-	svc, err := session.GetCloudResourceManagerService()
+	svc, err := session.GetComputeService()
 	if err != nil {
 		return err
 	}
 
-	cp, err := svc.Projects.Get(p.GetName()).Context(ctx).Do()
-
+	proj, err := svc.Projects.Get(p.GetName()).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
 
-	return ctx.Publish(p, "project_number", cp.ProjectNumber)
+	var pbProj *computepb.Project
+	err = common.HomomorphicCopy(&proj, &pbProj)
+
+	return ctx.Publish(p, "project", pbProj)
 }
 
 func init() {
