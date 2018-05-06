@@ -67,6 +67,31 @@ func homomorphicCopy(from reflect.Value, to reflect.Value) (err error) {
 		return errors.Errorf("value cannot be set: %#v", to)
 	}
 
+	// Special case:
+	//
+	//   While generating protobuf messages from discovery document schema, it
+	//   turned out that some fields that are optional in the Google API client
+	//   libraries can't be marked as opetional in the generated proto files.
+	//   It just so happens that there are no distinguishing attributes for
+	//   such fields.
+	//
+	//   For now, we are going to use an ugly hack here. When copying fields
+	//   from "A" to "B", if A has a field that has type *Foo and B has field
+	//   of type Foo of the same name, then we'll copy the indirected object
+	//   from A to B. The same applies when the indirection exists in reverse.
+	if from.Kind() == reflect.Ptr && to.Kind() != reflect.Ptr {
+		if !from.IsNil() {
+			to.Set(from.Elem())
+		}
+		return nil
+	}
+
+	if from.Kind() != reflect.Ptr && to.Kind() == reflect.Ptr {
+		to.Set(reflect.New(to.Type().Elem()))
+		to.Elem().Set(from)
+		return nil
+	}
+
 	if from.Type().AssignableTo(to.Type()) {
 		to.Set(from)
 		return nil
@@ -103,7 +128,7 @@ func homomorphicCopy(from reflect.Value, to reflect.Value) (err error) {
 		}
 
 	default:
-		return errors.Errorf("unsupported type %v", from)
+		return errors.Errorf("unsupported type %+v vs %+v", from.Kind(), to.Kind())
 	}
 
 	return nil

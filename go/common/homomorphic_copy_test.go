@@ -60,6 +60,39 @@ func TestHomomorphicCopy_small(t *testing.T) {
 	}
 }
 
+func TestHomomorphicCopy_indirection(t *testing.T) {
+	type A struct {
+		A *string
+	}
+
+	type B struct {
+		A string
+	}
+
+	s := "foo"
+	a := A{A: &s}
+	var b B
+
+	err := HomomorphicCopy(&a, &b)
+	if err != nil {
+		t.Errorf("Unexpected error : %s", err.Error())
+	}
+
+	if b.A != "foo" {
+		t.Errorf("indirected field didn't copy correcty")
+	}
+
+	b.A = "bar"
+	err = HomomorphicCopy(&b, &a)
+	if err != nil {
+		t.Errorf("Unexpected error : %s", err.Error())
+	}
+
+	if *a.A != "bar" {
+		t.Errorf("indirected field didn't copy correcty")
+	}
+}
+
 func TestHomomorphicCopy_large(t *testing.T) {
 	la := largeA{A: 1, B: "foo", C: &smallA{A: 2}, D: []*smallA{{A: 1}, {A: 2}}, E: smallA{A: 4}}
 	var lb largeB
