@@ -18,32 +18,6 @@ import (
 	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
 )
 
-// The name of the GCP Deployment Manager Deployment that is used to create
-// some of the base assets.
-//
-// Unfortunately, not all required asset types are currently supported by the
-// Deployment Manager. So some of them have to be constructed "manually".
-const baseAssetDeploymentName string = "cel-base"
-
-// The account ID for the CEL instance service account.
-const serviceAccountId string = "cel-instance-service"
-
-// CloudKMS KeyRing ID
-const kmsKeyRingId string = "cel"
-
-// CloudKMS CryptoKey ID.
-const kmsCryptoKeyId string = "cel-manifest-key"
-
-// All of our KMS resources are global.
-// TODO(asanka): Consider restricting to the project's zone.
-const kmsLocationId = "global"
-
-// IAM role on the KMS crypto key to assign the instance service account.
-const kmsRoleIdForServiceAccount = "roles/cloudkms.cryptoKeyDecrypter"
-
-// Label key name for storing subresource integrity tokens.
-const integrityTokenKey string = "integrity"
-
 // enableRequiredAPIs checks and enables the list of GCP services and APIs that
 // are needed by the CEL toolchain. The authoritative list of services is
 // requiredGcpServices.
@@ -137,10 +111,10 @@ func constructBaseDeploymentManifest(s *gcp.Session) ([]byte, error) {
 	tmpl := template.Must(template.New("cel-base").Parse(ttext))
 
 	var b bytes.Buffer
-	saName := gcp.ServiceAccountResource(s.GetProject(), gcp.ServiceAccountEmail(s.GetProject(), serviceAccountId))
+	saName := gcp.ServiceAccountResource(s.GetProject(), gcp.ServiceAccountEmail(s.GetProject(), gcp.ServiceAccountId))
 	err = tmpl.Execute(&b, celBaseTemplateParams{
 		ProjectId:          s.GetProject(),
-		ServiceAccountId:   serviceAccountId,
+		ServiceAccountId:   gcp.ServiceAccountId,
 		ServiceAccountName: saName,
 	})
 
@@ -157,7 +131,7 @@ func publishServiceAccount(ctx common.Context, s *gcp.Session) (err error) {
 		return err
 	}
 
-	saName := gcp.ServiceAccountResource(s.GetProject(), gcp.ServiceAccountEmail(s.GetProject(), serviceAccountId))
+	saName := gcp.ServiceAccountResource(s.GetProject(), gcp.ServiceAccountEmail(s.GetProject(), gcp.ServiceAccountId))
 	sa, err := iamClient.GetServiceAccount(ctx, &adminpb.GetServiceAccountRequest{Name: saName})
 	if err != nil {
 		return err
@@ -174,15 +148,15 @@ func deployKmsKey(ctx common.Context, s *gcp.Session) (err error) {
 		return err
 	}
 
-	locName := gcp.KmsLocationResource(s.GetProject(), kmsLocationId)
+	locName := gcp.KmsLocationResource(s.GetProject(), gcp.KmsLocationId)
 
 	// First make sure our keyring exists.
-	krName := locName + "/keyRings/" + kmsKeyRingId
+	krName := locName + "/keyRings/" + gcp.KmsKeyRingId
 	kr, err := kms.Projects.Locations.KeyRings.Get(krName).Context(ctx).Do()
 	if gcp.IsNotFoundError(err) {
 		kr, err = kms.Projects.Locations.KeyRings.
 			Create(locName, &cloudkms.KeyRing{}).
-			KeyRingId(kmsKeyRingId).
+			KeyRingId(gcp.KmsKeyRingId).
 			Context(ctx).Do()
 	}
 	if err != nil {
@@ -190,14 +164,14 @@ func deployKmsKey(ctx common.Context, s *gcp.Session) (err error) {
 	}
 
 	// Then make sure our cryptokey exists.
-	ckName := kr.Name + "/cryptoKeys/" + kmsCryptoKeyId
+	ckName := kr.Name + "/cryptoKeys/" + gcp.KmsCryptoKeyId
 	ck, err := kms.Projects.Locations.KeyRings.CryptoKeys.Get(ckName).Context(ctx).Do()
 	if gcp.IsNotFoundError(err) {
 		ck, err = kms.Projects.Locations.KeyRings.CryptoKeys.
 			Create(krName, &cloudkms.CryptoKey{
 				Purpose: "ENCRYPT_DECRYPT",
 			}).
-			CryptoKeyId(kmsCryptoKeyId).
+			CryptoKeyId(gcp.KmsCryptoKeyId).
 			Context(ctx).
 			Do()
 	}
@@ -213,13 +187,13 @@ func deployKmsKey(ctx common.Context, s *gcp.Session) (err error) {
 
 	var binding *cloudkms.Binding
 	for _, b := range pol.Bindings {
-		if b.Role == kmsRoleIdForServiceAccount {
+		if b.Role == gcp.KmsRoleIdForServiceAccount {
 			binding = b
 			break
 		}
 	}
 	if binding == nil {
-		binding = &cloudkms.Binding{Role: kmsRoleIdForServiceAccount}
+		binding = &cloudkms.Binding{Role: gcp.KmsRoleIdForServiceAccount}
 		pol.Bindings = append(pol.Bindings, binding)
 	}
 
@@ -267,10 +241,10 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 
 	reDeploy := true
 
-	dep, err := dm.Deployments.Get(s.GetProject(), baseAssetDeploymentName).Context(ctx).Do()
+	dep, err := dm.Deployments.Get(s.GetProject(), gcp.BaseAssetDeploymentName).Context(ctx).Do()
 	if err == nil && (dep.Operation == nil || dep.Operation.Status == "DONE") {
 		for _, l := range dep.Labels {
-			if l.Key != integrityTokenKey {
+			if l.Key != gcp.IntegrityTokenKey {
 				continue
 			}
 
@@ -282,7 +256,7 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 	}
 
 	if reDeploy {
-		op, err := dm.Deployments.Delete(s.GetProject(), baseAssetDeploymentName).
+		op, err := dm.Deployments.Delete(s.GetProject(), gcp.BaseAssetDeploymentName).
 			Context(ctx).DeletePolicy("DELETE").Do()
 		if err == nil {
 			err = gcp.JoinOperation(s, op, "removing existing stale base asset deployment")
@@ -297,14 +271,14 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 		token := common.IntegrityLabel(manifest)
 		dep = &deploymentmanager.Deployment{
 			Description: "Chrome Enterprise Lab : Base environment deployment",
-			Name:        baseAssetDeploymentName,
+			Name:        gcp.BaseAssetDeploymentName,
 			Target: &deploymentmanager.TargetConfiguration{
 				Config: &deploymentmanager.ConfigFile{
 					Content: string(manifest),
 				},
 			},
 			Labels: []*deploymentmanager.DeploymentLabelEntry{
-				{Key: integrityTokenKey, Value: token},
+				{Key: gcp.IntegrityTokenKey, Value: token},
 			},
 		}
 		op, err = dm.Deployments.Insert(s.GetProject(), dep).Context(ctx).Do()
@@ -344,7 +318,7 @@ func uploadNamedResource(ctx common.Context, s *gcp.Session, embeddedResource, f
 		return err
 	}
 
-	return ctx.Publish(s.HostEnvironment.Resources, fieldName, fr)
+	return ctx.Publish(s.HostEnvironment.Resources.Startup, fieldName, fr)
 }
 
 // uploadStartupDependencies uploads the assets that are used during VM
