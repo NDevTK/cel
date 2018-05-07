@@ -218,19 +218,19 @@ func (l *Configuration) Validate() error {
 	l.references.Graft(&l.HostEnvironment, HostRootPath)
 	l.references.Graft(&l.Lab, LabRootPath)
 
-	err_list := []error{
+	errList := []error{
 		common.ValidateProto(&l.AssetManifest, AssetRootPath),
 		common.ValidateProto(&l.HostEnvironment, HostRootPath),
 	}
 
 	l.references.VisitUnresolved(common.EmptyPath, func(v common.UnresolvedValue) bool {
 		if _, ok := v.Value.(common.UnresolvedValue_Placeholder); ok {
-			err_list = append(err_list, errors.New(v.String()))
+			errList = append(errList, errors.New(v.String()))
 		}
 		return true
 	})
 
-	return common.WrapErrorList(common.AppendErrorList(nil, err_list...))
+	return common.WrapErrorList(common.AppendErrorList(nil, errList...))
 }
 
 // unmarshallFromNamedBlob unmarshals an encoded protobuf message from a blob

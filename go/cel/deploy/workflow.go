@@ -11,7 +11,7 @@ import (
 	// The following must be imported here for side-effects.
 	_ "chromium.googlesource.com/enterprise/cel/go/asset/deploy"
 	// _ "chromium.googlesource.com/enterprise/cel/go/common/deploy"
-	gcp_deploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
+	gcpDeploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
 )
 
 // Deploy is the starting point for a deployment. All the required parameters
@@ -231,7 +231,7 @@ func StopAllVMs(d *Session) (err error) {
 func PrepBackend(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "PrepBackend")()
 
-	return gcp_deploy.PrepBackend(d.ctx, d.backend)
+	return gcpDeploy.PrepBackend(d.ctx, d.backend)
 }
 
 // InvokeIndexedObjectResolvers uploads blobs of data to the object store in order to
@@ -269,7 +269,7 @@ func VerifyCompletedAssetManifest(d *Session) (err error) {
 func UpdateProjectMetadata(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "UpdateProjectMetadata")()
 
-	return gcp_deploy.UpdateProjectMetadata(d.ctx, d.backend, &d.config.Manifest)
+	return gcpDeploy.UpdateProjectMetadata(d.ctx, d.backend, &d.config.Manifest)
 }
 
 // GenerateDeploymentManifest emits the deployment manifest for lab assets.

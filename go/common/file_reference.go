@@ -39,11 +39,11 @@ func (c *FileReference) Validate() error {
 	return nil
 }
 
-func (c *FileReference) ResolveRelativePath(base_path string) error {
+func (c *FileReference) ResolveRelativePath(basePath string) error {
 	if c.Source == "" {
 		errors.New("source is empty")
 	}
-	c.FullPath = filepath.Clean(filepath.Join(base_path, c.Source))
+	c.FullPath = filepath.Clean(filepath.Join(basePath, c.Source))
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (c *FileReference) StoreFile(ctx Context, contents []byte) (err error) {
 	return c.storeBlob(ctx, contents)
 }
 
-func GetPathResolver(base_path string) WalkProtoFunc {
+func GetPathResolver(basePath string) WalkProtoFunc {
 	return func(av reflect.Value, p RefPath, fd *pd.FieldDescriptorProto) error {
 		if av.Kind() != reflect.Ptr || av.IsNil() || av.Elem().Kind() != reflect.Struct {
 			return nil
@@ -84,7 +84,7 @@ func GetPathResolver(base_path string) WalkProtoFunc {
 			return nil
 		}
 
-		return fr.ResolveRelativePath(base_path)
+		return fr.ResolveRelativePath(basePath)
 	}
 }
 

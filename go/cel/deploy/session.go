@@ -13,7 +13,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	gcp_deploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
+	gcpDeploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
 )
 
 type Session struct {
@@ -38,7 +38,7 @@ func NewSession(ctx context.Context, client *http.Client, inputs []string, inclu
 	}
 
 	if includeBuiltins {
-		err = c.MergeContents(gcp_deploy.GetBuiltinHostEnvironment())
+		err = c.MergeContents(gcpDeploy.GetBuiltinHostEnvironment())
 		if err != nil {
 			return nil, err
 		}

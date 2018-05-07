@@ -9,18 +9,18 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 )
 
-var startup_script_path = common.RefPathMust("host.resources.startup.win_startup")
-var agent_x64_path = common.RefPathMust("host.resources.startup.win_agent_x64")
+var startupScriptPath = common.RefPathMust("host.resources.startup.win_startup")
+var agentX64Path = common.RefPathMust("host.resources.startup.win_agent_x64")
 
 // WindowsMachine_AddStartupDependencies adds depedencies on the windows
 // startup scripts and windows agent binaries to a machine.
 func windowsMachine_AddStartupDeps(ctx common.Context, m *asset.WindowsMachine) error {
-	err := ctx.PublishDependency(m, startup_script_path)
+	err := ctx.PublishDependency(m, startupScriptPath)
 	if err != nil {
 		return err
 	}
 
-	return ctx.PublishDependency(m, agent_x64_path)
+	return ctx.PublishDependency(m, agentX64Path)
 }
 
 func init() {
