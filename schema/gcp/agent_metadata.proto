@@ -6,7 +6,6 @@ syntax = "proto3";
 package gcp;
 option go_package = "chromium.googlesource.com/enterprise/cel/go/gcp";
 
-
 // Cel-Agent metadata format.
 message CelAgentMetadata {
   message GCSObject {
@@ -20,4 +19,3 @@ message CelAgentMetadata {
   // Object containing Windows x64 cel_agent binary
   GCSObject win_agent_x64 = 1;
 }
-

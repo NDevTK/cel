@@ -42,6 +42,7 @@ import shutil
 import subprocess
 import sys
 import textwrap
+from distutils.version import LooseVersion
 
 # Root of the source tree.
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -326,7 +327,8 @@ def _InstallGoProtoc(args):
 def _InstallProtoc(args):
   raise Exception(
       textwrap.dedent('''\
-          "protoc" not found.
+          "protoc" not found or is too old. The version should be at least
+          3.5.1 as reported by 'protoc --version'.
 
           The CEL project relies on generating Go code for Google ProtoBuf files. This
           requires having the ProtoBuf compiler in the PATH.
@@ -397,6 +399,31 @@ def _Deps(args):
         stdin=f,
         stdout=f,
         stderr=f)
+
+  o = subprocess.check_output(['protoc', '--version']).strip()
+  if o.startswith('libprotoc '):
+    if LooseVersion(o[len('libprotoc '):]) < LooseVersion("3.5.1"):
+      raise Exception(
+          textwrap.dedent('''\
+          The version of ProtoBuf compiler installed on this machine is too
+          old.  The version as reported by protoc is "{}". It should be at
+          least 3.5.1 to build the CEL toolchain.
+
+          Instructions for installing "protoc" can be found at
+          https://developers.google.com/protocol-buffers/docs/downloads
+
+          Unfortunately, protoc can't be installed automatically. So you'll need to
+          install it manually. If you've arleady installed it, it's possible that the
+          installed location is not in the system PATH.
+          '''.format(o)))
+  else:
+    raise Exception(
+        textwrap.dedent('''\
+    "protoc --version" returned an unexpected string. Returned string was:
+       "{}"
+
+    Expected something like "libprotoc 1.2.3"
+    '''.format(o)))
 
   # Using a sentinel file to make sure we only run 'dep' if either the last run
   # was unsuccessful or if there has been a change to Gopkg.* files.
