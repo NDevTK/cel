@@ -6,11 +6,12 @@ package common
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 )
 
 type fakeContext struct{}
