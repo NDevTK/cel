@@ -577,7 +577,7 @@ message WindowsMachine {
   string name = 1;
 
   // The name of a host.MachineType entry that describes the host machine.
-  string machine_type = 2 [(common.v).ref = "host.machine_type"];
+  string machine_type = 2 [(common.v) = {ref: "host.machine_type", type: REQUIRED}];
 
   // Network interfaces. There can be more than one for multihomed machines.
   // There must be at least one of these.
