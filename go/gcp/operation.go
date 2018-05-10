@@ -58,7 +58,7 @@ func joinComputeOperation(s *Session, op *compute.Operation, desc string) (err e
 	}
 
 	for retriesLeft := maxRetries; op.Status != "DONE" && retriesLeft > 0; retriesLeft-- {
-		s.Logger.Debug(common.MakeStringer("Status: (%s:%d) %s", op.Status, op.Progress, op.StatusMessage))
+		s.Logger.Debug(common.MakeStringer("Status: (%s) %s", op.Status, op.Progress, op.StatusMessage))
 
 		time.Sleep(pollDuration)
 
@@ -90,7 +90,8 @@ func joinComputeOperation(s *Session, op *compute.Operation, desc string) (err e
 		// operation start. The error in this case would be a 404.
 		if IsNotFoundError(err) {
 			s.Logger.Debug(common.MakeStringer("Operation not found: %s", err.Error()))
-			s.Logger.Debug(common.MakeStringer("Failed getting project=\"%s\",zone=\"%s\",region=\"%s\",op=\"%s\"",
+			s.Logger.Debug(common.MakeStringer(
+				"Failed getting project=\"%s\",zone=\"%s\",region=\"%s\",op=\"%s\"",
 				s.GetProject(), op.Zone, op.Region, op.Name))
 			continue
 		}
@@ -118,7 +119,9 @@ func joinComputeOperation(s *Session, op *compute.Operation, desc string) (err e
 func joinDeploymentOperation(s *Session, op *deploymentmanager.Operation, desc string) (err error) {
 	defer GcpLoggedServiceAction(s, DeploymentManagerServiceName, &err, "%s", desc)()
 
-	s.Logger.Debug(common.MakeStringer("Description %s", op.Description))
+	if op.Description != "" {
+		s.Logger.Debug(common.MakeStringer("Description %s", op.Description))
+	}
 
 	ds, err := s.GetDeploymentManagerService()
 	if err != nil {
