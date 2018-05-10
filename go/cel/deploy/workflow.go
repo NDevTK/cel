@@ -93,11 +93,6 @@ func Deploy(d *Session) (err error) {
 		return err
 	}
 
-	err = DeleteObsoleteDeployments(d)
-	if err != nil {
-		return err
-	}
-
 	err = StopAllVMs(d)
 	if err != nil {
 		return err
@@ -140,12 +135,17 @@ func Deploy(d *Session) (err error) {
 		return err
 	}
 
+	err = DeleteObsoleteDeployments(d)
+	if err != nil {
+		return err
+	}
+
 	err = UpdateProjectMetadata(d)
 	if err != nil {
 		return err
 	}
 
-	err = GenerateDeploymentManifest(d)
+	err = InvokeConstructedAssetResolvers(d)
 	if err != nil {
 		return err
 	}
@@ -204,10 +204,7 @@ func InvokeGeneratedContentResolvers(d *Session) (err error) {
 func DeleteObsoleteDeployments(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "DeleteObsoleteDeployments")()
 
-	if true {
-		return nil
-	}
-	return cel.NewNotImplementedError("DeleteObsoleteDeployments")
+	return gcpDeploy.DeleteObsoleteDeployments(d.ctx, d.backend)
 }
 
 // StopAllVMs stops all running instances. This step ensures that even if we
@@ -272,15 +269,19 @@ func UpdateProjectMetadata(d *Session) (err error) {
 	return gcpDeploy.UpdateProjectMetadata(d.ctx, d.backend, &d.config.Manifest)
 }
 
-// GenerateDeploymentManifest emits the deployment manifest for lab assets.
-func GenerateDeploymentManifest(d *Session) error {
-	return cel.NewNotImplementedError("GenerateDeploymentManifest")
+// InvokeConstructedAssetResolvers emits the deployment manifest for lab assets.
+func InvokeConstructedAssetResolvers(d *Session) (err error) {
+	defer common.LoggedAction(d.GetContext(), &err, "InvokeConstructedAssetResolvers")()
+
+	return common.ApplyResolvers(d.ctx, d.config.GetNamespace(), common.ConstructedAssetResolverKind)
 }
 
 // InvokeDeploymentManager uploads and creates a new deployment based on the
 // manifest that was generated in the prior steps.
-func InvokeDeploymentManager(d *Session) error {
-	return cel.NewNotImplementedError("InvokeDeploymentManager")
+func InvokeDeploymentManager(d *Session) (err error) {
+	defer common.LoggedAction(d.GetContext(), &err, "InvokeDeploymentManager")()
+
+	return gcpDeploy.InvokeDeploymentManager(d.ctx, d.backend)
 }
 
 func checkNamespaceIsReady(r *common.Namespace, ns []common.RefPath) error {
