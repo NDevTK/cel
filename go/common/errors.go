@@ -35,3 +35,21 @@ type ServiceNotFoundError struct {
 func (s *ServiceNotFoundError) Error() string {
 	return fmt.Sprintf("service \"%s\" not found", s.Service)
 }
+
+// NotImplementedError is an error that's returned when something hasn't been
+// implemented yet.
+type NotImplementedError struct {
+	thing string
+}
+
+func (n *NotImplementedError) Thing() string {
+	return n.thing
+}
+
+func (n *NotImplementedError) Error() string {
+	return fmt.Sprintf("not implemented: %s", n.thing)
+}
+
+func NewNotImplementedError(thing string) error {
+	return &NotImplementedError{thing: thing}
+}
