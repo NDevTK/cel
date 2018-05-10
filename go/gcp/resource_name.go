@@ -40,6 +40,18 @@ func ServiceAccountEmail(project, accountId string) string {
 	return fmt.Sprintf("%s@%s.iam.gserviceaccount.com", accountId, project)
 }
 
+// PartialUrl returns the GCP partial URL given a full URL. The partial URL
+// looks like "/projects/<yourproject>/..." while a full URL looks like
+// "https://www.googleapis.com/compute/.../projects/<yourproject>/...".
+func PartialUrl(fullUrl string) string {
+	const projectC = "/projects/"
+	idx := strings.Index(fullUrl, projectC)
+	if idx < 0 {
+		return fullUrl
+	}
+	return fullUrl[idx+1:]
+}
+
 // ServiceAccountAclBinding returns the binding string to be used in a iam
 // Policy object to refer to a service account by email.
 func ServiceAccountAclBinding(saEmail string) string {
