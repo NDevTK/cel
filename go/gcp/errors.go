@@ -53,6 +53,20 @@ func IsNotFoundError(err error) bool {
 	return false
 }
 
+// IsDuplicateResourceError returns true if |err| indicates that a resource
+// couldn't be created because there's another resource by the same name that
+// already exists.
+func IsDuplicateResourceError(err error) bool {
+	if err == nil {
+		return false
+	}
+	inner := errors.Cause(err)
+	if e, ok := inner.(*googleapi.Error); ok {
+		return e.Code == 409
+	}
+	return false
+}
+
 func IsBadCredentialsError(err error) bool {
 	if err == nil {
 		return false
