@@ -7,8 +7,6 @@ package main
 import (
 	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
 	"context"
-	"fmt"
-	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 )
 
@@ -34,12 +32,5 @@ func (d *DeployCommand) Run(ctx context.Context, a *Application, cmd *cobra.Comm
 		return err
 	}
 
-	err = deploy.Deploy(session)
-	if err != nil {
-		if bytes, err := yaml.Marshal(session.GetConfiguration().GetNamespace()); err == nil {
-			cmd.OutOrStderr().Write(bytes)
-		}
-		fmt.Fprintln(cmd.OutOrStderr(), "\n----")
-	}
-	return err
+	return deploy.Deploy(session)
 }

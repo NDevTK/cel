@@ -96,6 +96,8 @@ var app = &Application{
 		Short:            "Tools for managing your Chrome Enterprise Lab",
 		Long:             "",
 		TraverseChildren: true,
+		SilenceErrors:    true,
+		SilenceUsage:     true,
 	},
 }
 
