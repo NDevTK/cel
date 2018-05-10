@@ -67,6 +67,12 @@ type PreCompleteManifestResolver interface {
 	ResolvePreManifestCompletion(ctx Context, m proto.Message) error
 }
 
+// ConstructedAssetResolver is invoked when resolving constructed assets. These
+// are assets that need to be constructed within the hosting environment.
+type ConstructedAssetResolver interface {
+	ResolveConstructedAssets(ctx Context, m proto.Message) error
+}
+
 // OnHostResolver is a resolver type that's invoked exclusively on the VM
 // hosting the corresponding asset.
 //
@@ -79,6 +85,7 @@ type OnHostResolver interface {
 // Keep sorted:
 
 var AdditionalDependencyResolverKind ResolverKind = reflect.TypeOf((*AdditionalDependencyResolver)(nil)).Elem()
+var ConstructedAssetResolverKind = reflect.TypeOf((*ConstructedAssetResolver)(nil)).Elem()
 var GeneratedContentResolverKind ResolverKind = reflect.TypeOf((*GeneratedContentResolver)(nil)).Elem()
 var ImmediateResolverKind ResolverKind = reflect.TypeOf((*ImmediateResolver)(nil)).Elem()
 var IndexedObjectResolverKind ResolverKind = reflect.TypeOf((*IndexedObjectResolver)(nil)).Elem()
@@ -89,6 +96,7 @@ var PreCompleteManifestResolverKind = reflect.TypeOf((*PreCompleteManifestResolv
 
 var allResolverTypes = map[string]ResolverKind{
 	"ResolveAdditionalDependencies": AdditionalDependencyResolverKind,
+	"ResolveConstructedAssets":      ConstructedAssetResolverKind,
 	"ResolveGeneratedContent":       GeneratedContentResolverKind,
 	"ResolveImmediate":              ImmediateResolverKind,
 	"ResolveIndexedObjects":         IndexedObjectResolverKind,
