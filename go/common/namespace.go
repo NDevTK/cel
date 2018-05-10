@@ -283,6 +283,9 @@ func (r *Namespace) TopoVisit(visitor func(m proto.Message) error) error {
 	// TODO(asanka): This section can be parallelized since tl[i] only needs to
 	// wait on its dependencies. As written it waits for all of tl[0:i] to be
 	// done.
+	//
+	// TODO(asanka): This section must deal with panics in the visitor()
+	// function.
 	for _, n := range tl {
 		err = visitor(n.value.Interface().(proto.Message))
 		if err != nil {
