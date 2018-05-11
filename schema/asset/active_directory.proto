@@ -86,7 +86,7 @@ message ActiveDirectoryDomain {
     // Parent domain name. Only specify this if this domain is going to be a
     // child domain.
     string parent_name = 2
-        [(common.v) = {ref: "asset.ad_domain", optional: true}];
+        [(common.v) = { ref: "asset.ad_domain", optional: true }];
 
     // Forest name. Only specify this if this domain should be a new tree in an
     // existing forest. The value of this field should refer to the
@@ -95,7 +95,7 @@ message ActiveDirectoryDomain {
     //
     // If this field is empty, then this domain will become the root domain of a
     // new forest. Don't set this field to the same value as the `name` field.
-    string forest = 3 [(common.v) = {ref: "asset.ad_domain", optional: true}];
+    string forest = 3 [(common.v) = { ref: "asset.ad_domain", optional: true }];
   }
 
   // Active Directory functional level. A.k.a. Domain Mode. See
@@ -297,7 +297,7 @@ message ActiveDirectoryGroupPolicy {
   // If a template GPO is specified, that will be used as the starter GPO.
   // Creates a starter GPO is no value is specified here.
   string based_on = 5
-      [(common.v) = {ref: "asset.ad_group_policy", optional: true}];
+      [(common.v) = { ref: "asset.ad_group_policy", optional: true }];
 
   repeated ActiveDirectoryRegistryPolicy registry = 6;
   repeated ActiveDirectoryRegistryPrefPolicy registry_pref = 7;
@@ -382,7 +382,7 @@ message RegistryKey {
 // message.
 message RegistryValue {
   // Value name. Leave empty to set the default value.
-  string name = 1 [(common.v) = {type: LABEL, optional: true}];
+  string name = 1 [(common.v) = { type: LABEL, optional: true }];
 
   // These values correspond to registry value types. Obviously only one of
   // these can be specified.
