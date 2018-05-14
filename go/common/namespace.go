@@ -379,9 +379,9 @@ func (r *Namespace) PublishDependency(m proto.Message, dependsOn RefPath) error 
 }
 
 // Get returns the value a location specified as a RefPath. If the location
-// doesn't exist, the function returns a non-nil error. Otherwise the returned
-// `interface{}` is the value found at the location. Resolved values shadow
-// original values.
+// doesn't exist or the value is not known, the function returns a non-nil
+// error. Otherwise the returned `interface{}` is the value found at the
+// location. Resolved values shadow original values.
 func (r *Namespace) Get(p RefPath) (interface{}, error) {
 	vr, ok := r.getNode(p)
 	if !ok {
@@ -408,6 +408,43 @@ func (r *Namespace) Has(p RefPath) bool {
 	}
 
 	return vr.isValueAvailable && !vr.isNodeRemoved
+}
+
+// Indirect indirects (or follows) a named reference.
+//
+// It's function is best explained via an example. Suppose you have a field
+// that is a named reference to another as below:
+//
+//   windows_user {
+//     ...
+//     container {
+//       ad_domain: "mydomain.example"
+//     }
+//   }
+//
+// A resolver will aquire a reference to the outer WindowsUser message, and in
+// turn the inner WindowsContainer message. However, it will also likely need
+// access to the ActiveDirectoryDomain object that corresponds to the
+// "ad_domain" field in WindowsContainer.
+//
+// This can be resolved as follows:
+//
+//    v, err := namespace.Indirect(u.Container, "ad_domain")
+//    if err != nil {
+//      // handle error
+//    }
+//    domain, ok := v.(*ActiveDirectoryDomain)
+//
+// This pattern effectively indirects or follows a reference across objects in
+// a single namespace.
+//
+// If there's an error, the returned "err" will be non-nil.
+func (r *Namespace) Indirect(m proto.Message, field string) (interface{}, error) {
+	p, ok := r.PathFor(m)
+	if !ok {
+		return nil, errors.New("reference not found for message")
+	}
+	return r.IndirectReference(p.Append(field))
 }
 
 // PathFor returns a RefPath given a proto.Message. Returns EmptyPath and false

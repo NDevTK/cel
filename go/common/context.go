@@ -18,6 +18,7 @@ type Context interface {
 	context.Context
 	Publisher
 	Logger
+	Getter
 	GetObjectStore() ObjectStore
 }
 

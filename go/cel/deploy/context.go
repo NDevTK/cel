@@ -5,18 +5,24 @@
 package deploy
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/common"
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"time"
+
+	"chromium.googlesource.com/enterprise/cel/go/common"
+	"github.com/golang/protobuf/proto"
 )
 
-// deployerContext implements common.Context. It's used by DeployerSession.
+// deployerContext implements common.Context. It's used by DeployerSession and
+// wraps the various interfaces that are required by common.Context.
+//
+// TODO(asanka): Move towards model of exposing the interfaces rather than
+// wrapping each one.
 type deployerContext struct {
 	ctx         context.Context // Layered context
 	objectStore common.ObjectStore
 	publisher   common.Publisher
+	getter      common.Getter
 	logger      common.Logger
 }
 
@@ -62,4 +68,12 @@ func (d *deployerContext) Warning(v fmt.Stringer) {
 
 func (d *deployerContext) Error(v fmt.Stringer) {
 	d.logger.Error(v)
+}
+
+func (d *deployerContext) Get(p common.RefPath) (interface{}, error) {
+	return d.getter.Get(p)
+}
+
+func (d *deployerContext) Indirect(m proto.Message, f string) (interface{}, error) {
+	return d.getter.Indirect(m, f)
 }

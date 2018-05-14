@@ -26,6 +26,8 @@ func (f *fakeContext) Info(v fmt.Stringer)                                      
 func (f *fakeContext) Warning(v fmt.Stringer)                                     {}
 func (f *fakeContext) Error(v fmt.Stringer)                                       {}
 func (f *fakeContext) GetObjectStore() ObjectStore                                { return nil }
+func (f *fakeContext) Get(RefPath) (interface{}, error)                           { return nil, nil }
+func (f *fakeContext) Indirect(proto.Message, string) (interface{}, error)        { return nil, nil }
 
 func TestWrapGenericResolverFunction_identity(t *testing.T) {
 	expectedErr := errors.New("mock")

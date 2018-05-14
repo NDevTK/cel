@@ -72,6 +72,7 @@ func NewSession(ctx context.Context, client *http.Client, inputs []string, inclu
 	return &Session{ctx: &deployerContext{
 		ctx:         b.GetContext(),
 		objectStore: o,
+		getter:      c.GetNamespace(),
 		publisher:   c.GetNamespace(),
 		logger:      l,
 	}, client: client, config: c, backend: b}, nil
