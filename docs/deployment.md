@@ -140,7 +140,7 @@ windows_user {
 
 The `HOST ENVIRONMENT` is:
 
-<!-- INCLUDE ../examples/schema/ad/one-domain.host.textpb (65 lines) fenced as textpb -->
+<!-- INCLUDE ../examples/schema/ad/one-domain.host.textpb (67 lines) fenced as textpb -->
 ``` textpb
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -176,7 +176,7 @@ machine_type {
   instance_properties {
     # Go with 2 CPUs and 7.5GB of RAM. This is the GCE machine type, not to be
     # confused with the CEL machine_type.
-    machineType: 'n1-standard-2'
+    machineType: 'projects/${host.project.name}/zones/${host.project.zone}/machineTypes/n1-standard-2'
 
     # Scheduling options. By default instances are not pre-emptible.
     scheduling {
@@ -189,11 +189,13 @@ machine_type {
       # will become the boot disk by default.
       boot: true
 
-      # This is a special form for referencing the URL property of the image
-      # object named windows-2012-r2. Furthermore, this image type is not
-      # defined in this file. Instead see the builtins.textpb file for a list
-      # of builtin host assets that can be included for convenience.
-      source: '${host.image.windows-2012-r2.url}'
+      initializeParams {
+        # This is a special form for referencing the URL property of the image
+        # object named windows-2012-r2. Furthermore, this image type is not
+        # defined in this file. Instead see the builtins.textpb file for a list
+        # of builtin host assets that can be included for convenience.
+        sourceImage: '${host.image.windows-2012-r2.url}'
+      }
     }
 
     # Note that we are leaving a bunch of fields out because their defaults are
