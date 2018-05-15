@@ -56,9 +56,11 @@ func TestDeploymentManifest_GetYaml(t *testing.T) {
 		t.Error("unexpected error", err)
 	}
 
+	// This test relies on the fact that objects are emitted with sorted field
+	// names.
 	expected := `resources:
 - name: instance-1
-  property:
+  properties:
     description: description of foo instance
     metadata:
       items:
@@ -68,6 +70,29 @@ func TestDeploymentManifest_GetYaml(t *testing.T) {
   type: compute.beta.instance
 `
 	if string(y) != expected {
-		t.Errorf("Unexpected result. Got:\n%s\n\nWant:\n%s", string(y), expected)
+		exp := strings.Split(expected, "\n")
+		got := strings.Split(string(y), "\n")
+
+		var diff []string
+
+		// Not a diff.
+		for i := 0; i < len(exp); i++ {
+			if i >= len(got) {
+				diff = append(diff, "- "+exp[i])
+				continue
+			}
+
+			if got[i] != exp[i] {
+				diff = append(diff, "- "+exp[i], "+ "+got[i])
+			} else {
+				diff = append(diff, "  "+exp[i])
+			}
+		}
+
+		for i := len(exp); i < len(got); i++ {
+			diff = append(diff, "+ "+got[i])
+		}
+
+		t.Errorf("Unexpected result. Diff:\n%s", strings.Join(diff, "\n"))
 	}
 }

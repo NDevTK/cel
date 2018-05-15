@@ -5,7 +5,7 @@
 package common_test
 
 import (
-	"chromium.chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"os"
 )
 
