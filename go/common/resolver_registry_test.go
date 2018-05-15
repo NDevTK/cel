@@ -5,30 +5,12 @@
 package common
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )
-
-type fakeContext struct{}
-
-func (f *fakeContext) Deadline() (deadline time.Time, ok bool)                    { return time.Now(), false }
-func (f *fakeContext) Done() <-chan struct{}                                      { return nil }
-func (f *fakeContext) Err() error                                                 { return nil }
-func (f *fakeContext) Value(key interface{}) interface{}                          { return nil }
-func (f *fakeContext) Publish(proto.Message, string, interface{}) error           { return nil }
-func (f *fakeContext) PublishDependency(m proto.Message, dependsOn RefPath) error { return nil }
-func (f *fakeContext) Debug(v fmt.Stringer)                                       {}
-func (f *fakeContext) Info(v fmt.Stringer)                                        {}
-func (f *fakeContext) Warning(v fmt.Stringer)                                     {}
-func (f *fakeContext) Error(v fmt.Stringer)                                       {}
-func (f *fakeContext) GetObjectStore() ObjectStore                                { return nil }
-func (f *fakeContext) Get(RefPath) (interface{}, error)                           { return nil, nil }
-func (f *fakeContext) Indirect(proto.Message, string) (interface{}, error)        { return nil, nil }
 
 func TestWrapGenericResolverFunction_identity(t *testing.T) {
 	expectedErr := errors.New("mock")

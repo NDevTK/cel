@@ -7,6 +7,7 @@ package deploy
 import (
 	"bytes"
 	"fmt"
+	"path"
 	"text/template"
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
@@ -312,7 +313,9 @@ func uploadNamedResource(ctx common.Context, s *gcp.Session, embeddedResource, f
 	defer common.LoggedAction(ctx, &err, "uploading %s", embeddedResource)()
 
 	data := _escFSMustByte(false, embeddedResource)
-	fr := &common.FileReference{}
+	fr := &common.FileReference{
+		TargetPath: path.Join("/cel", path.Base(embeddedResource)),
+	}
 	err = fr.StoreFile(ctx, data)
 	if err != nil {
 		return err

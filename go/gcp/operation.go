@@ -58,7 +58,7 @@ func joinComputeOperation(s *Session, op *compute.Operation, desc string) (err e
 	}
 
 	for retriesLeft := maxRetries; op.Status != "DONE" && retriesLeft > 0; retriesLeft-- {
-		s.Logger.Debug(common.MakeStringer("Status: (%s) %s", op.Status, op.Progress, op.StatusMessage))
+		s.Logger.Debug(common.MakeStringer("Operation %s %s", op.Status, op.StatusMessage))
 
 		time.Sleep(pollDuration)
 

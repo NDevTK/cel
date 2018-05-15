@@ -101,7 +101,12 @@ func (c *FileReference) storeFile(ctx Context) (err error) {
 
 func (c *FileReference) storeBlob(ctx Context, contents []byte) (err error) {
 	c.Integrity = IntegrityToken(contents)
-	c.ObjectReference, err = ctx.GetObjectStore().PutObject(contents)
+	if c.TargetPath != "" {
+		last := path.Base(c.TargetPath)
+		c.ObjectReference, err = ctx.GetObjectStore().PutNamedObject(last, contents)
+	} else {
+		c.ObjectReference, err = ctx.GetObjectStore().PutObject(contents)
+	}
 	return
 }
 

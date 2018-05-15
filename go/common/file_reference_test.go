@@ -5,6 +5,7 @@
 package common
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -173,4 +174,72 @@ func TestFileReference_Resolver(t *testing.T) {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
+}
+
+func TestFileReference_Store_unnamedBlob(t *testing.T) {
+	o := &fakeObjectStore{}
+	ctx := &fakeContext{
+		objectStore: o,
+	}
+
+	v := &FileReference{Source: filepath.Join("testdata", "tiny.bin")}
+	err := v.ResolveRelativePath(".")
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	err = v.Store(ctx)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	if len(o.Log) != 1 {
+		t.Fatal("wrong number of calls recorded")
+	}
+	if o.Log[0] != "PutObject:abcd" {
+		t.Fatal("unexpected log value: ", o.Log[0])
+	}
+}
+
+func TestFileReference_StoreFile(t *testing.T) {
+	o := &fakeObjectStore{}
+	ctx := &fakeContext{
+		objectStore: o,
+	}
+
+	v := &FileReference{}
+	err := v.StoreFile(ctx, []byte("abcd"))
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	if len(o.Log) != 1 {
+		t.Fatal("wrong number of calls recorded")
+	}
+	if o.Log[0] != "PutObject:abcd" {
+		t.Fatal("unexpected log value: ", o.Log[0])
+	}
+}
+
+func TestFileReference_Store_withTarget(t *testing.T) {
+	o := &fakeObjectStore{}
+	ctx := &fakeContext{
+		objectStore: o,
+	}
+
+	v := &FileReference{
+		Source:     filepath.Join("testdata", "tiny.bin"),
+		TargetPath: "foo/targetfn.png",
+	}
+	err := v.ResolveRelativePath(".")
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	err = v.Store(ctx)
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+	if len(o.Log) != 1 {
+		t.Fatal("wrong number of calls recorded")
+	}
+	if o.Log[0] != "PutNamedObject:targetfn.png:abcd" {
+		t.Fatal("unexpected log value: ", o.Log[0])
+	}
 }
