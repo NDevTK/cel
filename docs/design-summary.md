@@ -263,9 +263,7 @@ For more information about the structure of assets, see [ASSET MANIFEST][] below
 
 
 
-### The HOST ENVIRONMENT (The foundation upon which the lab sits)
-
-{#host-environment}
+### The HOST ENVIRONMENT (The foundation upon which the lab sits) {#host-environment}
 
 While the ASSET MANIFEST describes what goes into the enterprise lab, the HOST ENVIRONMENT describes the environment in which the lab itself sits. For example, the HOST ENVIRONMENT defines:
 

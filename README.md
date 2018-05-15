@@ -8,7 +8,8 @@ Have a peek at the [Design](/docs/design-overview.md) document.
 
 Also have a peek at the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-Most of the code is in Go. See the [README](/src/go/README.md/) file.
+Most of the code is in Go. See [Guide to code](/docs/guide-to-code.md) to get a
+head start on the code in this repository.
 
 ## Building
 

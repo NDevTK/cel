@@ -63,7 +63,7 @@ contributor, then please sign the [CLA](https://cla.developers.google.com/).
 
 ## Adding a new Go Dependency
 
-This project uses [GoDep][] to manage dependencies.
+This project uses [Dep][] to manage dependencies.
 
 If you add a new import, then it's likely that `Dep` will complain. In that
 case, just run the following:
@@ -76,7 +76,7 @@ This will fetch the dependency in to `vendor` and update the version
 constraints. You may need to check in `Gopkg.lock` and `Gopkg.toml` files if
 they change.
 
-[GoDep]: https://golang.github.io/dep/
+[Dep]: https://golang.github.io/dep/
 
 ## Updating Go Dependencies
 
