@@ -4,6 +4,12 @@
 
 package common
 
+// ErrorUnpacker can unpack an enclosed list of errors.
+type ErrorUnpacker interface {
+	// UnpackErrors returns the list of errors that are contained herein.
+	UnpackErrors() []error
+}
+
 // Wraps a list of errors in a single error. Useful for aggregating a list of
 // errors.
 func WrapErrorList(list []error) error {
@@ -25,6 +31,11 @@ func WrapErrorList(list []error) error {
 // status of a list of parallelized tasks. See WaitFor().
 type wrappedErrors struct {
 	innerErrors []error
+}
+
+// UnpackErrors returns the list of wrapped errors.
+func (w *wrappedErrors) UnpackErrors() []error {
+	return w.innerErrors
 }
 
 // Error returns a string describing the collection of errors contained in this
@@ -62,8 +73,8 @@ func AppendErrorList(list []error, values ...error) []error {
 // UnpackErrorList takes as input a possibly wrapped error and returns the
 // underlying error list.
 func UnpackErrorList(err error) []error {
-	if el, ok := err.(*wrappedErrors); ok {
-		return el.innerErrors
+	if u, ok := err.(ErrorUnpacker); ok {
+		return u.UnpackErrors()
 	}
 	return []error{err}
 }
