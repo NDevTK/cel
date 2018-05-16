@@ -12,13 +12,13 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 )
 
-func TestDeploymentManifest_Ref(t *testing.T) {
-	m := &asset.Machine{}
+func TestDeploymentManifest_Ref_unnamed(t *testing.T) {
+	m := &asset.NetworkInterface{}
 
 	d := newDeploymentManifest()
 	n := d.Ref(m)
-	if !strings.HasPrefix(n, "machine-") {
-		t.Errorf("resource name doesn't have correct prefix. Got \"%s\". Want \"machine-\"", n)
+	if n != "networkinterface-1" {
+		t.Errorf("resource name doesn't have correct prefix. Got \"%s\". Want \"networkinterface-\"", n)
 	}
 
 	nn := d.Ref(m)
@@ -26,14 +26,32 @@ func TestDeploymentManifest_Ref(t *testing.T) {
 		t.Errorf("duplicate id issued for same asset")
 	}
 
-	m = &asset.Machine{}
+	m = &asset.NetworkInterface{}
 	nn = d.Ref(m)
 	if nn == n {
 		t.Errorf("same id issued for different asset")
 	}
 }
 
-func TestDeploymentManifest_Emit(t *testing.T) {
+func TestDeploymentManifest_Ref_named(t *testing.T) {
+	m := &asset.Machine{Name: "foo"}
+
+	d := newDeploymentManifest()
+	n := d.Ref(m)
+	if n != "foo" {
+		t.Errorf("resource name incorrect. Got \"%s\". Want \"foo\"", n)
+	}
+
+	nn := d.Ref(m)
+	if nn != n {
+		t.Errorf("duplicate id issued for same asset")
+	}
+
+	m = &asset.Machine{Name: "foo"}
+	nn = d.Ref(m)
+	if nn == n {
+		t.Errorf("same id issued for different asset")
+	}
 }
 
 func TestDeploymentManifest_GetYaml(t *testing.T) {
@@ -59,7 +77,7 @@ func TestDeploymentManifest_GetYaml(t *testing.T) {
 	// This test relies on the fact that objects are emitted with sorted field
 	// names.
 	expected := `resources:
-- name: instance-1
+- name: foo
   properties:
     description: description of foo instance
     metadata:

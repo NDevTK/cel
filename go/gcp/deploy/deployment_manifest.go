@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"chromium.googlesource.com/enterprise/cel/go/common"
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -37,7 +38,15 @@ func (d *DeploymentManifest) Ref(m proto.Message) string {
 	}
 
 	t := reflect.ValueOf(m)
-	base := strings.ToLower(t.Elem().Type().Name())
+	var base string
+	var named bool
+	if nm, ok := m.(common.NamedProto); ok {
+		base = nm.GetName()
+		named = true
+	} else {
+		base = strings.ToLower(t.Elem().Type().Name())
+	}
+
 	var name string
 	if c, ok := d.counts[base]; ok {
 		c += 1
@@ -45,7 +54,11 @@ func (d *DeploymentManifest) Ref(m proto.Message) string {
 		name = fmt.Sprintf("%s-%d", base, c)
 	} else {
 		d.counts[base] = 1
-		name = fmt.Sprintf("%s-1", base)
+		if named {
+			name = fmt.Sprintf("%s", base)
+		} else {
+			name = fmt.Sprintf("%s-1", base)
+		}
 	}
 	d.refs[m] = name
 	return name
