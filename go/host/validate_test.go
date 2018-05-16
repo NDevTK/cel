@@ -6,6 +6,7 @@ package host
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	compute "chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 	"reflect"
 	"strings"
 	"testing"
@@ -46,4 +47,75 @@ func TestHostEnvironment_validateStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestMachineType_Validate(t *testing.T) {
+	t.Run("noInstanceProperties", func(t *testing.T) {
+		m := &MachineType{Name: "foo"}
+		if err := common.ValidateProto(m, common.EmptyPath); err == nil || !strings.Contains(err.Error(), "instance_properties") {
+			t.Fatal("failed to catch missing instance properties")
+		}
+	})
+
+	t.Run("hasNetworkInterfaces", func(t *testing.T) {
+		m := &MachineType{Name: "foo", Base: &MachineType_InstanceProperties{
+			InstanceProperties: &compute.InstanceProperties{
+				NetworkInterfaces: []*compute.NetworkInterface{
+					&compute.NetworkInterface{},
+				},
+				Disks: []*compute.AttachedDisk{&compute.AttachedDisk{
+					AutoDelete: true,
+					Boot:       true,
+					InitializeParams: &compute.AttachedDiskInitializeParams{
+						SourceImage: "some source image",
+					},
+				}},
+			},
+		}}
+		if err := common.ValidateProto(m, common.EmptyPath); err == nil || !strings.Contains(err.Error(), "network_interfaces") {
+			t.Fatal("failed to catch missing instance properties")
+		}
+	})
+
+	t.Run("noDisks", func(t *testing.T) {
+		m := &MachineType{Name: "foo", Base: &MachineType_InstanceProperties{
+			InstanceProperties: &compute.InstanceProperties{},
+		}}
+		if err := common.ValidateProto(m, common.EmptyPath); err == nil || !strings.Contains(err.Error(), "at least one disk") {
+			t.Fatal("failed to catch missing instance properties")
+		}
+	})
+
+	t.Run("noAutoDelete", func(t *testing.T) {
+		m := &MachineType{Name: "foo", Base: &MachineType_InstanceProperties{
+			InstanceProperties: &compute.InstanceProperties{
+				Disks: []*compute.AttachedDisk{&compute.AttachedDisk{
+					Boot: true,
+					InitializeParams: &compute.AttachedDiskInitializeParams{
+						SourceImage: "some source image",
+					},
+				}},
+			},
+		}}
+		if err := common.ValidateProto(m, common.EmptyPath); err == nil || !strings.Contains(err.Error(), "auto_delete") {
+			t.Fatal("failed to catch missing instance properties")
+		}
+	})
+
+	t.Run("isValid", func(t *testing.T) {
+		m := &MachineType{Name: "foo", Base: &MachineType_InstanceProperties{
+			InstanceProperties: &compute.InstanceProperties{
+				Disks: []*compute.AttachedDisk{&compute.AttachedDisk{
+					AutoDelete: true,
+					Boot:       true,
+					InitializeParams: &compute.AttachedDiskInitializeParams{
+						SourceImage: "some source image",
+					},
+				}},
+			},
+		}}
+		if err := common.ValidateProto(m, common.EmptyPath); err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+	})
 }

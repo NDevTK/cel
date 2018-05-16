@@ -41,6 +41,10 @@ machine_type {
 
     # Disks. We only need one disk
     disks {
+      # autoDelete must be set to true when specifying initializeParams.
+      # Otherwise the toolchain will remind you.
+      autoDelete: true
+
       # ... which is a boot disk. This can be left out since the first disk
       # will become the boot disk by default.
       boot: true
