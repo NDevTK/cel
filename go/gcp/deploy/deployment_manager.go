@@ -184,3 +184,46 @@ func cleanupFirewallRules(ctx common.Context, s *gcp.Session) error {
 	}
 	return t.Join()
 }
+
+func GetCurrentDeployment(ctx common.Context, s *gcp.Session) (d *deploymentmanager.Deployment, err error) {
+	dm, err := s.GetDeploymentManagerService()
+	if err != nil {
+		return nil, err
+	}
+
+	return dm.Deployments.Get(s.GetProject(), celDeploymentName).Context(ctx).Do()
+}
+
+func GetManifest(ctx common.Context, s *gcp.Session, mLink string) (m *deploymentmanager.Manifest, err error) {
+	dm, err := s.GetDeploymentManagerService()
+	if err != nil {
+		return nil, err
+	}
+	return dm.Manifests.Get(s.GetProject(), celDeploymentName, gcp.LastPathComponent(mLink)).Context(ctx).Do()
+}
+
+func GetResources(ctx common.Context, s *gcp.Session) (r []*deploymentmanager.Resource, err error) {
+	dm, err := s.GetDeploymentManagerService()
+	if err != nil {
+		return
+	}
+
+	for token := ""; ; {
+		rr := dm.Resources.List(s.GetProject(), celDeploymentName).Context(ctx)
+		if token != "" {
+			rr = rr.PageToken(token)
+		}
+		rl, err := rr.Do()
+		if err != nil {
+			break
+		}
+
+		r = append(r, rl.Resources...)
+		if rl.NextPageToken == "" || len(rl.Resources) == 0 {
+			break
+		}
+		token = rl.NextPageToken
+	}
+
+	return
+}
