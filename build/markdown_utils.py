@@ -180,6 +180,12 @@ def FormatMarkdown(fname, dry_run=False):
   lines = []
   with open(fname, 'r') as f:
     lines = f.readlines()
+
+  for l in lines:
+    if "-- Skip validation --" in l:
+      logging.info("Skipping %s due to skip validation directive", fname)
+      return False
+
   unmodified = lines[:]
 
   ProcessIncludesInContent(lines, fname)

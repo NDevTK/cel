@@ -251,6 +251,10 @@ func GenerateProtoFile(desc *RestDescription, args *Arguments) error {
 // Documentation : {{.DocumentationLink}}
 
 syntax="proto3";
+
+// Generated protobuf for {{.Name}}
+//
+// --- Skip validation ---
 package {{.Name}};
 option go_package="{{.GoPackage}}";
 

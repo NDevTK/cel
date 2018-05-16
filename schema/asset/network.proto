@@ -28,7 +28,7 @@ message NetworkPeer {
   // isolated by default and are only able to talk to each other if:
   //   * They are a part of a peering group, or
   //   * They are connected via a VPN gateway, or
-  //   * They are connected via a [virtual] router.
+  //   * They are connected via a virtual router.
   //
   // A single nework can participate in multiple disjoint peering groups,
   // however peering is not transitive. I.e. If {A,B} is a peering group, and

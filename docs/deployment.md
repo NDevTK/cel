@@ -140,7 +140,7 @@ windows_user {
 
 The `HOST ENVIRONMENT` is:
 
-<!-- INCLUDE ../examples/schema/ad/one-domain.host.textpb (67 lines) fenced as textpb -->
+<!-- INCLUDE ../examples/schema/ad/one-domain.host.textpb (71 lines) fenced as textpb -->
 ``` textpb
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -185,6 +185,10 @@ machine_type {
 
     # Disks. We only need one disk
     disks {
+      # autoDelete must be set to true when specifying initializeParams.
+      # Otherwise the toolchain will remind you.
+      autoDelete: true
+
       # ... which is a boot disk. This can be left out since the first disk
       # will become the boot disk by default.
       boot: true

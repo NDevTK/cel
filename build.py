@@ -611,6 +611,38 @@ missing.
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
+  gen_doc_command = _BuildCommand('gen_doc_proto', './go/tools/gen_doc_proto',
+                                  _MergeEnv(args, target_host=True))
+  gen_doc_invocation = [gen_doc_command, '-out', '{out}', '$^']
+  doc_path = os.path.join(SOURCE_PATH, 'docs', 'gen')
+  _BuildStep(
+      gen_doc_invocation,
+      inp=[os.path.join(descriptor_path, 'common.pb')],
+      out=os.path.join(doc_path, 'common.md'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
+      gen_doc_invocation,
+      inp=[os.path.join(descriptor_path, 'asset.pb')],
+      out=os.path.join(doc_path, 'asset.md'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
+      gen_doc_invocation,
+      inp=[os.path.join(descriptor_path, 'host.pb')],
+      out=os.path.join(doc_path, 'host.md'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
+      gen_doc_invocation,
+      inp=[os.path.join(descriptor_path, 'gcp_compute.pb')],
+      out=os.path.join(doc_path, 'gcp_compute.md'),
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
 
 def _GetBuildDir(build_env):
   '''\
