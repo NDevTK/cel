@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -52,6 +53,7 @@ func showStructuredError(err error, w io.Writer) {
 }
 
 func main() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	err := app.Run()
 	if err != nil {
 		showStructuredError(err, os.Stderr)

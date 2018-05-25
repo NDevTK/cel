@@ -148,26 +148,26 @@ func (l *loggerAdapter) getEntry(s logging.Severity, v fmt.Stringer) logging.Ent
 }
 
 func (l *loggerAdapter) Debug(v fmt.Stringer) {
-	log.Println(v.String())
+	log.Output(2, v.String())
 }
 
 func (l *loggerAdapter) Info(v fmt.Stringer) {
 	if l.gcpLogger != nil {
 		l.gcpLogger.Log(l.getEntry(logging.Info, v))
 	}
-	log.Println(v.String())
+	log.Output(2, v.String())
 }
 
 func (l *loggerAdapter) Warning(v fmt.Stringer) {
 	if l.gcpLogger != nil {
 		l.gcpLogger.Log(l.getEntry(logging.Warning, v))
 	}
-	log.Println(v.String())
+	log.Output(2, v.String())
 }
 
 func (l *loggerAdapter) Error(v fmt.Stringer) {
 	if l.gcpLogger != nil {
 		l.gcpLogger.Log(l.getEntry(logging.Error, v))
 	}
-	log.Println(v.String())
+	log.Output(2, v.String())
 }

@@ -55,6 +55,15 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.Win
 		np := common.Must(ctx.Indirect(ni, "network")).(*asset.Network)
 		cni = append(cni, &compute.NetworkInterface{
 			Network: fmt.Sprintf("$(ref.%s.selfLink)", d.Ref(np)),
+
+			// Enables external IP. For some reason, this is needed for instances
+			// to download start up scripts.
+			AccessConfigs: []*compute.AccessConfig{
+				{
+					Type: "ONE_TO_ONE_NAT",
+					Name: "External NAT",
+				},
+			},
 		})
 	}
 
@@ -85,8 +94,12 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.Win
 		Disks:             mt.GetInstanceProperties().Disks,
 		Metadata:          md,
 		ServiceAccounts: []*compute.ServiceAccount{
-			&compute.ServiceAccount{Email: si.Email},
-			// TODO(asanka): Figure out scopes.
+			{
+				Email: si.Email,
+				Scopes: []string{
+					"https://www.googleapis.com/auth/devstorage.read_only",
+				},
+			},
 		},
 		Scheduling: mt.GetInstanceProperties().Scheduling,
 	})

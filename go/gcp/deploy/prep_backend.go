@@ -14,6 +14,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	cloudkmspb "chromium.googlesource.com/enterprise/cel/go/gcp/cloudkms"
 	cloudkms "google.golang.org/api/cloudkms/v1"
+	"google.golang.org/api/cloudresourcemanager/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 	servicemanagement "google.golang.org/api/servicemanagement/v1"
 	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
@@ -288,6 +289,38 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 		}
 
 		err = gcp.JoinOperation(s, op, "running base asset deployment")
+		if err != nil {
+			return err
+		}
+
+		// make the service account an edit so that it can access the start-up script.
+		saEmail := gcp.ServiceAccountEmail(s.GetProject(), gcp.ServiceAccountId)
+		s.Logger.Debug(common.MakeStringer("Set IAM policy of service account '%s'", saEmail))
+		cloudResourceManagerService, err := s.GetCloudResourceManagerService()
+		if err != nil {
+			return err
+		}
+
+		policy, err := cloudResourceManagerService.Projects.GetIamPolicy(s.GetProject(),
+			&cloudresourcemanager.GetIamPolicyRequest{}).Context(ctx).Do()
+		if err != nil {
+			return err
+		}
+
+		policy, err = cloudResourceManagerService.Projects.SetIamPolicy(
+			s.GetProject(),
+			&cloudresourcemanager.SetIamPolicyRequest{
+				Policy: &cloudresourcemanager.Policy{
+					Bindings: append(policy.Bindings,
+						&cloudresourcemanager.Binding{
+							Role: "roles/viewer",
+							Members: []string{
+								fmt.Sprintf("serviceAccount:%s", saEmail),
+							},
+						}),
+				},
+			},
+		).Context(ctx).Do()
 		if err != nil {
 			return err
 		}

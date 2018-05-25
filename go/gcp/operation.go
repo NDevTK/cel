@@ -16,7 +16,7 @@ import (
 )
 
 // Amount of time to wait for next round of polling for an operation.
-const pollDuration = time.Second * 2
+const pollDuration = time.Second * 10
 
 // Maximum number of times an operation poll will be retried before giving up.
 // The amount of time before an operation times out would be (maxRetries *
@@ -129,7 +129,7 @@ func joinDeploymentOperation(s *Session, op *deploymentmanager.Operation, desc s
 	}
 
 	for retriesLeft := maxRetries; op.Status != "DONE" && retriesLeft > 0; retriesLeft-- {
-		s.Logger.Debug(common.MakeStringer("Status: (%s) %s", op.Status, op.StatusMessage))
+		s.Logger.Debug(common.MakeStringer("Status of '%s': (%s) %s", desc, op.Status, op.StatusMessage))
 
 		time.Sleep(pollDuration)
 
