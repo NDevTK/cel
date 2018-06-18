@@ -28,10 +28,9 @@ func (*windowsUser) ResolveGeneratedContent(ctx common.Context, u *asset.Windows
 	return ctx.Publish(u, "password", s)
 }
 
-// The printable characters from 0x21-0x7e rearranged to have a bias for
-// alphanums. Due to the method of password generation, the first 64 characters
-// have a 50% higher probability of being picked than others.
-const pwChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+// The list of characters that do not need escaping, i.e. they are passed as-is by cmd.exe
+// as arguments.
+const pwChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$'()*+,./:;=?@[\\]_`{}~"
 
 func generatePassword() (string, error) {
 	entropy := make([]byte, 32)
