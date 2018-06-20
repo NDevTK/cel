@@ -18,43 +18,6 @@ import (
 // should already have been configured in the DeployerSession.
 //
 // It invokes the remainder of the workflow in a pre-determined order.
-//
-// TODO(asanka): Here's what we need to do here:
-//
-// * Make sure that we are calling checkNamespaceIsReady() correctly. In
-//   particular, ensure that the checked resources are already resolved by the
-//   time we call checkNamespaceIsReady().
-//
-// * Add tests for verifying that the object store invocations are correct, at
-//   least as far as we can see.
-//
-// * Add BackendObjectGenerator resolver type that will emit a valid deployment
-//   manifest entry for each resource that we support. Need to figure out the
-//   intermediate format for this. It's likely going to be a
-//   map[string]interface{} for starters.
-//
-// * Ensure that the resulting deployment manifest is correct.
-//
-// * Start expanding the cel_agent binary to support a new on-host
-//   configuration session.
-//
-// * The on-host session should support its own workflow where it can invoke
-//   its own set of resolvers. These resolvers should be distinct from the
-//   deployment resolvers.
-//
-// * One such resolver should be a common one that listens and waits for a
-//   dependent foreign asset to be resolved. Once its resolved, the resolver
-//   can query any runtime properties to fulfil the object.
-//
-// * Have a few examples of where in the resolution process we invoke
-//   PowerShell.
-//
-// * Have a few basic examples that handle restarts correctly.
-//
-// * Think about how we should handle failures in the lab.
-//
-// * Think about how we should handle login sessions. Can cel_ctl construct and
-//   invoke RDP sessions to the VMs? What about non-Windows platforms?
 func Deploy(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "Deployment %s", d.config.Lab.GenerationId)()
 
