@@ -7,7 +7,6 @@ package common
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -225,11 +224,6 @@ func VerifyValidatableType(at reflect.Type) error {
 		return VerifyValidatableType(at.Elem())
 
 	case reflect.Ptr:
-		// Exclude external or vendored dependencies.
-		if strings.Contains(at.Elem().PkgPath(), "/vendor/") {
-			break
-		}
-
 		// |at| is a Type for *Foo. First dive down and examine Foo.
 		err_list = AppendErrorList(err_list, VerifyValidatableType(at.Elem()))
 
@@ -262,7 +256,14 @@ func VerifyValidatableType(at reflect.Type) error {
 		}
 
 	case reflect.Struct:
+		fpm := constructFieldToDescriptorMap(reflect.New(at).Elem())
 		for i := 0; i < at.NumField(); i++ {
+			if fd, ok := fpm[at.Field(i).Name]; ok {
+				v := GetValidationForField(fd)
+				if v.IsOutput() {
+					continue
+				}
+			}
 			sf := at.Field(i)
 			err_list = AppendErrorList(err_list, VerifyValidatableType(sf.Type))
 		}
