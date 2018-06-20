@@ -10,7 +10,6 @@ import (
 
 	// The following must be imported here for side-effects.
 	_ "chromium.googlesource.com/enterprise/cel/go/asset/deploy"
-	// _ "chromium.googlesource.com/enterprise/cel/go/common/deploy"
 	gcpDeploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
 )
 
@@ -216,6 +215,11 @@ func InvokePreCompleteManifestResolvers(d *Session) (err error) {
 // project's object storage.
 func VerifyCompletedAssetManifest(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "VerifyCompletedAssetManifest")()
+
+	err = d.config.Validate()
+	if err != nil {
+		return
+	}
 
 	manifest, err := d.config.GenerateCompletedManifest()
 	if err != nil {
