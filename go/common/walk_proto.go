@@ -106,7 +106,7 @@ func WalkProtoMessage(m proto.Message, p RefPath, f WalkProtoFunc) error {
 // of true will recurse, while a return value of false will skip the fields. In
 // all cases the error return value is aggregated.
 func WalkProtoValue(av reflect.Value, p RefPath, f WalkProtoFunc) error {
-	err_list := []error{}
+	var err_list []error
 
 	if !av.IsValid() {
 		return nil
@@ -161,7 +161,7 @@ func WalkProtoValue(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 		return nil
 	}
 
-	return errors.Wrapf(WrapErrorList(err_list), "\ntype \"%s\"", av.Type().Name())
+	return WrapErrorList(err_list)
 }
 
 // walkPtrToStruct invokes |f| on |av| if |av| is a proto.Message. This is

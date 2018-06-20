@@ -34,13 +34,12 @@ func showIndentedError(i int, err error, w io.Writer) {
 
 	case causer:
 		cl := strings.Split(err.Error(), ": ")
-		for _, c := range cl {
-			showIndentedLine(i, c, w)
-			i++
+		for ic, c := range cl {
+			showIndentedLine(i+ic, c, w)
 		}
 
 	default:
-		showIndentedLine(i, err.Error(), w)
+		showIndentedLine(i, fmt.Sprintf("%+v", err), w)
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/pkg/errors"
 )
 
 // Name of "Validate" method. This method must conform to the Validator
@@ -181,7 +180,7 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 			return true, nil
 		}
 
-		return true, errors.Wrapf(IsRFC1035Label(af.String()), "validating field \"%s\"", fd.GetName())
+		return true, IsRFC1035Label(af.String())
 
 	case Validation_FQDN:
 		if af.Kind() != reflect.String {
@@ -192,7 +191,7 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 			return true, nil
 		}
 
-		return true, errors.Wrapf(IsRFC1035Domain(af.String()), "validating field \"%s\"", fd.GetName())
+		return true, IsRFC1035Domain(af.String())
 
 	case Validation_ORGLABEL:
 		if af.Kind() != reflect.String {
@@ -203,7 +202,7 @@ func validateAnnotatedField(af reflect.Value, fd *descriptor.FieldDescriptorProt
 			return true, nil
 		}
 
-		return true, errors.Wrapf(IsRFC1035DomainLabel(af.String()), "validating field \"%s\"", fd.GetName())
+		return true, IsRFC1035DomainLabel(af.String())
 
 	case Validation_TOPLEVEL:
 		if af.Kind() != reflect.Slice {
