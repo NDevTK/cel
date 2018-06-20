@@ -635,39 +635,39 @@ func (r *Namespace) collectFrom(l RefPath, m proto.Message) error {
 		r.messages = make(map[proto.Message]*namespaceNode)
 	}
 
-	return WalkProtoMessage(m, l, func(av reflect.Value, p RefPath, f *pd.FieldDescriptorProto) error {
+	return WalkProtoMessage(m, l, func(av reflect.Value, p RefPath, f *pd.FieldDescriptorProto) (bool, error) {
 		node := r.newNode(p)
 
 		if f == nil { // a message
 			err := node.bind(av, nil)
 			if err != nil {
-				return err
+				return true, err
 			}
 			node.isValueAvailable = true // message types are always considered available.
 
 			if m, ok := av.Interface().(proto.Message); ok && m != nil {
 				r.messages[m] = node
 			} else {
-				return errors.Errorf("unexpected field type while parsing node at %s", p)
+				return true, errors.Errorf("unexpected field type while parsing node at %s", p)
 			}
-			return nil
+			return true, nil
 		}
 
 		v := GetValidationForField(f)
 		err := node.bind(av, &v)
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		if av.Kind() == reflect.String {
 			refs, err := extractInlineReferences(av.String())
 			if err != nil {
-				return err
+				return true, err
 			}
 
 			for _, ref := range refs {
 				if ref.Ref.Equals(p) {
-					return errors.Errorf("value at %s has a recursive reference", p.String())
+					return true, errors.Errorf("value at %s has a recursive reference", p.String())
 				}
 
 				node.addParent(r.newNode(ref.Ref))
@@ -680,12 +680,12 @@ func (r *Namespace) collectFrom(l RefPath, m proto.Message) error {
 
 		// If the field does not contain a named reference, we are done with this field.
 		if !v.IsNamedReference() {
-			return nil
+			return true, nil
 		}
 
 		node.referenceRoot, err = v.ReferenceRoot()
 		if err != nil {
-			return errors.Wrapf(err, "invalid reference in validation string %#v", v.Ref)
+			return true, errors.Wrapf(err, "invalid reference in validation string %#v", v.Ref)
 		}
 
 		// Also if the value is empty or is not a string, we are done. Here we
@@ -693,18 +693,19 @@ func (r *Namespace) collectFrom(l RefPath, m proto.Message) error {
 		// true. Thus the empty value is not indicative of an error. It's
 		// likely that the field was optional.
 		if av.Kind() != reflect.String || av.Len() == 0 {
-			return nil
+			return true, nil
 		}
 
 		// Named references cannot contain internal references.
 		if ContainsInlineReferences(av.String()) {
-			return errors.Errorf("named reference contains internal references at %s : value is \"%s\"",
+			return true, errors.Errorf(
+				"named reference contains internal references at %s : value is \"%s\"",
 				p.String(), av.String())
 		}
 
 		target := node.referenceRoot.Append(av.String())
 		node.addParent(r.newNode(target))
-		return nil
+		return true, nil
 	})
 }
 

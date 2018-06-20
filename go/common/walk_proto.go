@@ -26,9 +26,11 @@ type NamedProto interface {
 
 var NamedProtoType = reflect.TypeOf((*NamedProto)(nil)).Elem()
 
-// WalkProtoFunc is invoked for each field found in a data structure
-// representing a proto.Message. See WalkProto for more details.
-type WalkProtoFunc func(reflect.Value, RefPath, *pd.FieldDescriptorProto) error
+// WalkProtoFunc is invoked by WalkProtoValue for each field and message found
+// in a data structure representing a proto.Message.
+//
+// See documentation for WalkProtoValue for more details.
+type WalkProtoFunc func(reflect.Value, RefPath, *pd.FieldDescriptorProto) (bool, error)
 
 // WalkProtoMessage is a convenience function for invoking WalkProto using a
 // protom.Message directly. It only exists so that call sites don't need a
@@ -41,12 +43,18 @@ func WalkProtoMessage(m proto.Message, p RefPath, f WalkProtoFunc) error {
 // WalkProtoValue walks through the fields of a proto.Message recursively invoking
 // WalkProtoFunc at each field.
 //
-// For each field, the WalkProtoFunc is invoked with the following:
+// For each field and message the WalkProtoFunc is invoked with the following:
 //
-//     reflect.Value : The value of the field.
-//     RefPath       : A reference path leading up to and including the field.
-//                     See RefPath for more information on reference paths.
-//     *pd.FieldDescriptorProto : The field descriptor for the field.
+//     v reflect.Value : The value representing the field or the message. In
+//                       the case of a message, this will be a pointer to the
+//                       generated proto struct. I.e.
+//                       v.Type().Implements(ProtoMessageType) is true.
+//
+//     p RefPath       : A reference path leading up to and including the field.
+//                       See RefPath for more information on reference paths.
+//
+//     d *pd.FieldDescriptorProto : The field descriptor for the field. Will be
+//                       nil for message.
 //
 // Take care to examine the reflect.Value that's passed in since the function
 // can be invoked for pointer indirection levels in addition to per-field.
@@ -89,6 +97,14 @@ func WalkProtoMessage(m proto.Message, p RefPath, f WalkProtoFunc) error {
 // For convenience value_of(x) is assumed to mean reflect.ValueOf(x),
 // descriptor_of(x) is the descriptor.FieldDescriptorProto for the specified
 // field.
+//
+// The error values returned by the WalkProtoFunc are aggregated via
+// AppendErrorList. WalkProtoValue returns the resulting aggregated error.
+//
+// When invoked on a message, the bool return value of WalkProtoFunc determines
+// whether WalkProtoValue will recurse into the message fields. A return value
+// of true will recurse, while a return value of false will skip the fields. In
+// all cases the error return value is aggregated.
 func WalkProtoValue(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 	err_list := []error{}
 
@@ -120,10 +136,15 @@ func WalkProtoValue(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 		if av.IsNil() {
 			return nil
 		}
+		recurse := true
+		var err error
 		if av.Elem().Kind() == reflect.Struct {
-			err_list = AppendErrorList(err_list, walkPtrToStruct(av, p, f))
+			recurse, err = walkPtrToStruct(av, p, f)
+			err_list = AppendErrorList(err_list, err)
 		}
-		err_list = AppendErrorList(err_list, WalkProtoValue(av.Elem(), p, f))
+		if recurse {
+			err_list = AppendErrorList(err_list, WalkProtoValue(av.Elem(), p, f))
+		}
 
 	case reflect.Struct:
 		err_list = walkStruct(av, p, f)
@@ -146,11 +167,11 @@ func WalkProtoValue(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 // walkPtrToStruct invokes |f| on |av| if |av| is a proto.Message. This is
 // where |f| is invoked at the message level. See walkStruct() for where |f| is
 // invoked at the field level.
-func walkPtrToStruct(av reflect.Value, p RefPath, f WalkProtoFunc) error {
+func walkPtrToStruct(av reflect.Value, p RefPath, f WalkProtoFunc) (bool, error) {
 	// Ignore if *InnerType can't be converted to a proto.Message. There are
 	// additional types that are relevant, but those are handled in WalkProto().
 	if !av.Type().Implements(ProtoMessageType) {
-		return nil
+		return true, nil
 	}
 
 	return f(av, p, nil)
@@ -164,15 +185,17 @@ func walkStruct(av reflect.Value, p RefPath, f WalkProtoFunc) (err_list []error)
 	for i := 0; i < av.NumField(); i++ {
 		fp := p
 		fd, ok := fpm[av.Type().Field(i).Name]
+		recurse := true
 		if ok {
 			fp = fp.Append(fd.GetName())
-			err := f(av.Field(i), fp, fd)
-			err_list = AppendErrorList(err_list,
-				errors.Wrapf(err, "field \"%s\" (proto field \"%s\")",
-					av.Type().Field(i).Name, fd.GetName()))
+			var err error
+			recurse, err = f(av.Field(i), fp, fd)
+			err_list = AppendErrorList(err_list, errors.Wrapf(err, "%s", p))
 		}
 
-		err_list = AppendErrorList(err_list, WalkProtoValue(av.Field(i), fp, f))
+		if recurse {
+			err_list = AppendErrorList(err_list, WalkProtoValue(av.Field(i), fp, f))
+		}
 	}
 	return
 }

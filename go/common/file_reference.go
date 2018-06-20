@@ -74,17 +74,17 @@ func (c *FileReference) StoreFile(ctx Context, contents []byte) (err error) {
 }
 
 func GetPathResolver(basePath string) WalkProtoFunc {
-	return func(av reflect.Value, p RefPath, fd *pd.FieldDescriptorProto) error {
+	return func(av reflect.Value, p RefPath, fd *pd.FieldDescriptorProto) (bool, error) {
 		if av.Kind() != reflect.Ptr || av.IsNil() || av.Elem().Kind() != reflect.Struct {
-			return nil
+			return true, nil
 		}
 
 		fr, ok := av.Interface().(*FileReference)
 		if !ok {
-			return nil
+			return true, nil
 		}
 
-		return fr.ResolveRelativePath(basePath)
+		return true, fr.ResolveRelativePath(basePath)
 	}
 }
 

@@ -72,9 +72,9 @@ func TestWalkProto_Order(t *testing.T) {
 		v.Field = []*TestGoodProto{&TestGoodProto{Name: "child1"}, &TestGoodProto{Name: "child2"}}
 
 		err := WalkProtoMessage(&v, EmptyPath,
-			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) error {
+			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) (bool, error) {
 				accumulator = append(accumulator, Invocation{v, p, d})
-				return nil
+				return true, nil
 			})
 
 		if err != nil {
@@ -97,6 +97,41 @@ func TestWalkProto_Order(t *testing.T) {
 		Validate(t, expected, accumulator)
 	})
 
+	t.Run("skipSome", func(t *testing.T) {
+		var accumulator []Invocation
+
+		v := TestHasGoodSlice{}
+		v.Name = "root"
+		v.Field = []*TestGoodProto{&TestGoodProto{"child1"}, &TestGoodProto{"child2"}}
+
+		err := WalkProtoMessage(&v, EmptyPath,
+			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) (bool, error) {
+				accumulator = append(accumulator, Invocation{v, p, d})
+				if p.Equals(RefPathMust("field.child2")) {
+					return false, nil
+				}
+				return true, nil
+			})
+
+		if err != nil {
+			t.Fatalf("unexpected error: %#v", err)
+		}
+
+		if len(accumulator) == 0 {
+			t.Fatalf("no invocations recorded")
+		}
+
+		expected := []Result{
+			Result{"*TestHasGoodSlice", "", "(object)"},
+			Result{"string", "name", "name"},
+			Result{"[]*TestGoodProto", "field", "field"},
+			Result{"*TestGoodProto", "field.child1", "(object)"},
+			Result{"string", "field.child1.name", "name"},
+			Result{"*TestGoodProto", "field.child2", "(object)"},
+		}
+		Validate(t, expected, accumulator)
+	})
+
 	t.Run("complicated", func(t *testing.T) {
 		var accumulator []Invocation
 
@@ -113,9 +148,9 @@ func TestWalkProto_Order(t *testing.T) {
 
 		root := RefPath{"abc", "def"}
 		err := WalkProtoMessage(&v, root,
-			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) error {
+			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) (bool, error) {
 				accumulator = append(accumulator, Invocation{v, p, d})
-				return nil
+				return true, nil
 			})
 
 		if err != nil {
