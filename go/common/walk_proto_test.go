@@ -69,7 +69,7 @@ func TestWalkProto_Order(t *testing.T) {
 
 		v := TestHasGoodSlice{}
 		v.Name = "root"
-		v.Field = []*TestGoodProto{&TestGoodProto{"child1"}, &TestGoodProto{"child2"}}
+		v.Field = []*TestGoodProto{&TestGoodProto{Name: "child1"}, &TestGoodProto{Name: "child2"}}
 
 		err := WalkProtoMessage(&v, EmptyPath,
 			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) error {
@@ -104,11 +104,11 @@ func TestWalkProto_Order(t *testing.T) {
 			Name:      "myname",
 			BoolValue: true,
 			IntValue:  3,
-			Field:     &TestGoodProto{"field-value"},
-			RepeatedField: []*TestGoodProto{&TestGoodProto{"repeated-one"},
-				&TestGoodProto{"repeated-two"}},
-			Optional:  &TestMessageWithTypes_OptionalField{OptionalField: &TestGoodProto{"opt"}},
-			MapField:  map[string]*TestGoodProto{"map-key": &TestGoodProto{"map-value"}},
+			Field:     &TestGoodProto{Name: "field-value"},
+			RepeatedField: []*TestGoodProto{&TestGoodProto{Name: "repeated-one"},
+				&TestGoodProto{Name: "repeated-two"}},
+			Optional:  &TestMessageWithTypes_OptionalField{OptionalField: &TestGoodProto{Name: "opt"}},
+			MapField:  map[string]*TestGoodProto{"map-key": &TestGoodProto{Name: "map-value"}},
 			MapString: map[string]string{"map-string-key": "map-string-value"}}
 
 		root := RefPath{"abc", "def"}
@@ -154,10 +154,10 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 		Name:      "myname",
 		BoolValue: true,
 		IntValue:  3,
-		RepeatedField: []*TestGoodProto{&TestGoodProto{"repeated-one"},
-			&TestGoodProto{"repeated-two"}},
-		Optional:  &TestMessageWithTypes_OptionalField{OptionalField: &TestGoodProto{"opt"}},
-		MapField:  map[string]*TestGoodProto{"map-key": &TestGoodProto{"map-value"}, "map-empty": nil},
+		RepeatedField: []*TestGoodProto{&TestGoodProto{Name: "repeated-one"},
+			&TestGoodProto{Name: "repeated-two"}},
+		Optional:  &TestMessageWithTypes_OptionalField{OptionalField: &TestGoodProto{Name: "opt"}},
+		MapField:  map[string]*TestGoodProto{"map-key": &TestGoodProto{Name: "map-value"}, "map-empty": nil},
 		MapString: map[string]string{"map-string-key": "map-string-value"}}
 
 	t.Run("pod-field", func(t *testing.T) {

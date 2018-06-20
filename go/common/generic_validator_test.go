@@ -16,7 +16,7 @@ import (
 func TestInvokeValidate_Good(t *testing.T) {
 	p := RefPath{}
 	t.Run("Good", func(t *testing.T) {
-		v := TestGoodProto{"foo"}
+		v := TestGoodProto{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -26,7 +26,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 	t.Run("GoodSlice", func(t *testing.T) {
 		v := TestHasGoodSlice{Name: "foo"}
 		// If the slice is empty, the test will vavuously pass.
-		v.Field = []*TestGoodProto{&TestGoodProto{"foo"}}
+		v.Field = []*TestGoodProto{&TestGoodProto{Name: "foo"}}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -44,7 +44,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 	t.Run("GoodField", func(t *testing.T) {
 		v := TestHasGoodField{Name: "foo"}
 		// If the field is nil, the test will vavuously pass.
-		v.Field = &TestGoodProto{"foo"}
+		v.Field = &TestGoodProto{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -53,7 +53,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 
 	t.Run("GoodOneOf", func(t *testing.T) {
 		v := TestGoodOneOf{Name: "foo"}
-		v.Opt = &TestGoodOneOf_Field{&TestGoodProto{"foo"}}
+		v.Opt = &TestGoodOneOf_Field{&TestGoodProto{Name: "foo"}}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -82,7 +82,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 func TestInvokeValidate_Bad(t *testing.T) {
 	p := RefPath{}
 	t.Run("Bad", func(t *testing.T) {
-		v := TestBadProto{"foo"}
+		v := TestBadProto{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")

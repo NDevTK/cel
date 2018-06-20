@@ -40,8 +40,9 @@ The number of the guest accelerator cards exposed to this instance.
 | Field Name | `acceleratorType` |
 | Type | `string` |
 
-Full or partial URL of the accelerator type resource to expose to this
-instance.
+Full or partial URL of the accelerator type resource to attach to this
+instance. If you are creating an instance template, specify only the
+accelerator name.
 
 ## Message `AcceleratorType` {#AcceleratorType}
 
@@ -144,7 +145,8 @@ accelerator types.
 | Type | `string` |
 
 [Output Only] The name of the zone where the accelerator type resides, such
-as us-central1-a.
+as us-central1-a. You must specify this field as part of the HTTP request
+URL. It is not settable as a field in the request body.
 
 ## Message `AcceleratorTypeAggregatedList` {#AcceleratorTypeAggregatedList}
 
@@ -306,7 +308,7 @@ continue paging through the results.
 | Type | [`compute.AcceleratorType`](gcp_compute.md#AcceleratorType) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of accelerator types contained in this scope.
+[Output Only] A list of accelerator types contained in this scope.
 
 ### `warning` {#AcceleratorTypesScopedList.warning}
 
@@ -326,9 +328,10 @@ one access config per instance is supported.
 * `string` [`kind`](#AccessConfig.kind) = 1
 * `string` [`name`](#AccessConfig.name) = 2 (**Required**)
 * `string` [`natIP`](#AccessConfig.natIP) = 3
-* `string` [`publicPtrDomainName`](#AccessConfig.publicPtrDomainName) = 4
-* `bool` [`setPublicPtr`](#AccessConfig.setPublicPtr) = 5
-* `string` [`type`](#AccessConfig.type) = 6
+* `string` [`networkTier`](#AccessConfig.networkTier) = 4
+* `string` [`publicPtrDomainName`](#AccessConfig.publicPtrDomainName) = 5
+* `bool` [`setPublicPtr`](#AccessConfig.setPublicPtr) = 6
+* `string` [`type`](#AccessConfig.type) = 7
 
 ### `kind` {#AccessConfig.kind}
 
@@ -364,6 +367,26 @@ static external IP address available to the project or leave this field
 undefined to use an IP from a shared ephemeral IP address pool. If you
 specify a static external IP address, it must live in the same region as the
 zone of the instance.
+
+### `networkTier` {#AccessConfig.networkTier}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkTier` |
+| Type | `string` |
+
+This signifies the networking tier used for configuring this access
+configuration and can only take the following values: PREMIUM, STANDARD.
+
+If an AccessConfig is specified without a valid external IP address, an
+ephemeral IP will be created with this networkTier.
+
+If an AccessConfig with a valid external IP address is specified, it must
+match that of the networkTier associated with the Address resource owning
+that IP.
+Valid values:
+    PREMIUM
+    STANDARD
 
 ### `publicPtrDomainName` {#AccessConfig.publicPtrDomainName}
 
@@ -415,11 +438,15 @@ resource_for v1.globalAddresses ==)
 * `string` [`labelFingerprint`](#Address.labelFingerprint) = 8
 * `repeated` [`compute.Address.LabelsEntry`](gcp_compute.md#Address.LabelsEntry) [`labels`](#Address.labels) = 9
 * `string` [`name`](#Address.name) = 10 (**Required**)
-* `string` [`region`](#Address.region) = 11
-* `string` [`selfLink`](#Address.selfLink) = 12
-* `string` [`status`](#Address.status) = 13
-* `string` [`subnetwork`](#Address.subnetwork) = 14
-* `repeated` `string` [`users`](#Address.users) = 15
+* `string` [`network`](#Address.network) = 11
+* `string` [`networkTier`](#Address.networkTier) = 12
+* `int32` [`prefixLength`](#Address.prefixLength) = 13
+* `string` [`purpose`](#Address.purpose) = 14
+* `string` [`region`](#Address.region) = 15
+* `string` [`selfLink`](#Address.selfLink) = 16
+* `string` [`status`](#Address.status) = 17
+* `string` [`subnetwork`](#Address.subnetwork) = 18
+* `repeated` `string` [`users`](#Address.users) = 19
 
 ### `address` {#Address.address}
 
@@ -534,10 +561,58 @@ values may be empty.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
+
+### `network` {#Address.network}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `network` |
+| Type | `string` |
+
+The URL of the network in which to reserve the address. This field can only
+be used with INTERNAL type with VPC_PEERING purpose.
+
+### `networkTier` {#Address.networkTier}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkTier` |
+| Type | `string` |
+
+This signifies the networking tier used for configuring this Address and can
+only take the following values: PREMIUM , STANDARD.
+
+If this field is not specified, it is assumed to be PREMIUM.
+Valid values:
+    PREMIUM
+    STANDARD
+
+### `prefixLength` {#Address.prefixLength}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `prefixLength` |
+| Type | `int32` |
+
+The prefix length if the resource reprensents an IP range.
+
+### `purpose` {#Address.purpose}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `purpose` |
+| Type | `string` |
+
+The purpose of resource, only used with INTERNAL type.
+Valid values:
+    DNS_RESOLVER
+    GCE_ENDPOINT
+    UNSPECIFIED_PURPOSE
+    VPC_PEERING
 
 ### `region` {#Address.region}
 
@@ -547,7 +622,8 @@ dash.
 | Type | `string` |
 
 [Output Only] URL of the region where the regional address resides. This
-field is not applicable to global addresses.
+field is not applicable to global addresses. You must specify this field as
+part of the HTTP request URL. You cannot set this field in the request body.
 
 ### `selfLink` {#Address.selfLink}
 
@@ -573,6 +649,7 @@ resource and is not available.
 Valid values:
     IN_USE
     RESERVED
+    RESERVING
 
 ### `subnetwork` {#Address.subnetwork}
 
@@ -755,7 +832,7 @@ continue paging through the results.
 | Type | [`compute.Address`](gcp_compute.md#Address) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of addresses contained in this scope.
+[Output Only] A list of addresses contained in this scope.
 
 ### `warning` {#AddressesScopedList.warning}
 
@@ -847,14 +924,15 @@ An instance-attached disk resource.
 * `bool` [`boot`](#AttachedDisk.boot) = 2
 * `string` [`deviceName`](#AttachedDisk.deviceName) = 3
 * [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`diskEncryptionKey`](#AttachedDisk.diskEncryptionKey) = 4
-* `int32` [`index`](#AttachedDisk.index) = 5
-* [`compute.AttachedDiskInitializeParams`](gcp_compute.md#AttachedDiskInitializeParams) [`initializeParams`](#AttachedDisk.initializeParams) = 6
-* `string` [`interface`](#AttachedDisk.interface) = 7
-* `string` [`kind`](#AttachedDisk.kind) = 8
-* `repeated` `string` [`licenses`](#AttachedDisk.licenses) = 9
-* `string` [`mode`](#AttachedDisk.mode) = 10
-* `string` [`source`](#AttachedDisk.source) = 11
-* `string` [`type`](#AttachedDisk.type) = 12
+* `repeated` [`compute.GuestOsFeature`](gcp_compute.md#GuestOsFeature) [`guestOsFeatures`](#AttachedDisk.guestOsFeatures) = 5
+* `int32` [`index`](#AttachedDisk.index) = 6
+* [`compute.AttachedDiskInitializeParams`](gcp_compute.md#AttachedDiskInitializeParams) [`initializeParams`](#AttachedDisk.initializeParams) = 7
+* `string` [`interface`](#AttachedDisk.interface) = 8
+* `string` [`kind`](#AttachedDisk.kind) = 9
+* `repeated` `string` [`licenses`](#AttachedDisk.licenses) = 10
+* `string` [`mode`](#AttachedDisk.mode) = 11
+* `string` [`source`](#AttachedDisk.source) = 12
+* `string` [`type`](#AttachedDisk.type) = 13
 
 ### `autoDelete` {#AttachedDisk.autoDelete}
 
@@ -917,6 +995,18 @@ use the disk later.
 
 Instance templates do not store customer-supplied encryption keys, so you
 cannot use your own keys to encrypt disks in a managed instance group.
+
+### `guestOsFeatures` {#AttachedDisk.guestOsFeatures}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `guestOsFeatures` |
+| Type | [`compute.GuestOsFeature`](gcp_compute.md#GuestOsFeature) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of features to enable on the guest operating system. Applicable only
+for bootable images. Read  Enabling guest operating system features to see a
+list of available options.
 
 ### `index` {#AttachedDisk.index}
 
@@ -1038,8 +1128,9 @@ define one or the other, but not both.
 * `string` [`diskSizeGb`](#AttachedDiskInitializeParams.diskSizeGb) = 2
 * `string` [`diskStorageType`](#AttachedDiskInitializeParams.diskStorageType) = 3
 * `string` [`diskType`](#AttachedDiskInitializeParams.diskType) = 4
-* `string` [`sourceImage`](#AttachedDiskInitializeParams.sourceImage) = 5
-* [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceImageEncryptionKey`](#AttachedDiskInitializeParams.sourceImageEncryptionKey) = 6
+* `repeated` [`compute.AttachedDiskInitializeParams.LabelsEntry`](gcp_compute.md#AttachedDiskInitializeParams.LabelsEntry) [`labels`](#AttachedDiskInitializeParams.labels) = 5
+* `string` [`sourceImage`](#AttachedDiskInitializeParams.sourceImage) = 6
+* [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceImageEncryptionKey`](#AttachedDiskInitializeParams.sourceImageEncryptionKey) = 7
 
 ### `diskName` {#AttachedDiskInitializeParams.diskName}
 
@@ -1081,8 +1172,8 @@ Valid values:
 
 Specifies the disk type to use to create the instance. If not specified, the
 default is pd-standard, specified using the full URL. For example:
-
 https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/pd-standard
+
 
 Other values include pd-ssd and local-ssd. If you define this field, you can
 provide either the full or partial URL. For example, the following are valid
@@ -1092,6 +1183,17 @@ https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/disk
 - projects/project/zones/zone/diskTypes/diskType
 - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the
 name of the disk type, not URL.
+
+### `labels` {#AttachedDiskInitializeParams.labels}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `labels` |
+| Type | [`compute.AttachedDiskInitializeParams.LabelsEntry`](gcp_compute.md#AttachedDiskInitializeParams.LabelsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Labels to apply to this disk. These can be later modified by the
+disks.setLabels method. This field is only applicable for persistent disks.
 
 ### `sourceImage` {#AttachedDiskInitializeParams.sourceImage}
 
@@ -1107,23 +1209,23 @@ SSD.
 To create a disk with one of the public operating system images, specify the
 image by its family name. For example, specify family/debian-8 to use the
 latest Debian 8 image:
-
 projects/debian-cloud/global/images/family/debian-8
 
-Alternatively, use a specific version of a public operating system image:
 
+Alternatively, use a specific version of a public operating system image:
 projects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD
+
 
 To create a disk with a custom image that you created, specify the image
 name in the following format:
-
 global/images/my-custom-image
+
 
 You can also specify a custom image by its image family, which returns the
 latest version of the image in that family. Replace the image name with
 family/family-name:
-
 global/images/family/my-image-family
+
 
 If the source image is deleted later, this field will not be set.
 
@@ -1151,7 +1253,7 @@ AuditLogConfigs.
 If there are AuditConfigs for both `allServices` and a specific service, the
 union of the two AuditConfigs is used for that service: the log_types
 specified in each AuditConfig are enabled, and the exempted_members in each
-AuditConfig are exempted.
+AuditLogConfig are exempted.
 
 Example Policy with multiple AuditConfigs:
 
@@ -1356,7 +1458,7 @@ autoscalers.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -1628,7 +1730,7 @@ Valid values:
 | Type | [`compute.Autoscaler`](gcp_compute.md#Autoscaler) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of autoscalers contained in this scope.
+[Output Only] A list of autoscalers contained in this scope.
 
 ### `warning` {#AutoscalersScopedList.warning}
 
@@ -1892,10 +1994,12 @@ Message containing information of one individual backend.
 * `string` [`description`](#Backend.description) = 3
 * `string` [`group`](#Backend.group) = 4
 * `int32` [`maxConnections`](#Backend.maxConnections) = 5
-* `int32` [`maxConnectionsPerInstance`](#Backend.maxConnectionsPerInstance) = 6
-* `int32` [`maxRate`](#Backend.maxRate) = 7
-* `TYPE_DOUBLE` [`maxRatePerInstance`](#Backend.maxRatePerInstance) = 8
-* `TYPE_DOUBLE` [`maxUtilization`](#Backend.maxUtilization) = 9
+* `int32` [`maxConnectionsPerEndpoint`](#Backend.maxConnectionsPerEndpoint) = 6
+* `int32` [`maxConnectionsPerInstance`](#Backend.maxConnectionsPerInstance) = 7
+* `int32` [`maxRate`](#Backend.maxRate) = 8
+* `TYPE_DOUBLE` [`maxRatePerEndpoint`](#Backend.maxRatePerEndpoint) = 9
+* `TYPE_DOUBLE` [`maxRatePerInstance`](#Backend.maxRatePerInstance) = 10
+* `TYPE_DOUBLE` [`maxUtilization`](#Backend.maxUtilization) = 11
 
 ### `balancingMode` {#Backend.balancingMode}
 
@@ -1972,6 +2076,21 @@ either maxConnections or maxConnectionsPerInstance must be set.
 
 This cannot be used for internal load balancing.
 
+### `maxConnectionsPerEndpoint` {#Backend.maxConnectionsPerEndpoint}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `maxConnectionsPerEndpoint` |
+| Type | `int32` |
+
+The max number of simultaneous connections that a single backend network
+endpoint can handle. This is used to calculate the capacity of the group.
+Can be used in either CONNECTION or UTILIZATION balancing modes. For
+CONNECTION mode, either maxConnections or maxConnectionsPerEndpoint must be
+set.
+
+This cannot be used for internal load balancing.
+
 ### `maxConnectionsPerInstance` {#Backend.maxConnectionsPerInstance}
 
 | Property | Comments |
@@ -1996,6 +2115,20 @@ This cannot be used for internal load balancing.
 The max requests per second (RPS) of the group. Can be used with either RATE
 or UTILIZATION balancing modes, but required if RATE mode. For RATE mode,
 either maxRate or maxRatePerInstance must be set.
+
+This cannot be used for internal load balancing.
+
+### `maxRatePerEndpoint` {#Backend.maxRatePerEndpoint}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `maxRatePerEndpoint` |
+| Type | `TYPE_DOUBLE` |
+
+The max requests per second (RPS) that a single backend network endpoint can
+handle. This is used to calculate the capacity of the group. Can be used in
+either balancing mode. For RATE mode, either maxRate or maxRatePerEndpoint
+must be set.
 
 This cannot be used for internal load balancing.
 
@@ -2118,7 +2251,7 @@ Type of the resource.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -2253,23 +2386,24 @@ machines and their serving capacity. (== resource_for v1.backendService ==)
 * [`compute.BackendServiceCdnPolicy`](gcp_compute.md#BackendServiceCdnPolicy) [`cdnPolicy`](#BackendService.cdnPolicy) = 3
 * [`compute.ConnectionDraining`](gcp_compute.md#ConnectionDraining) [`connectionDraining`](#BackendService.connectionDraining) = 4
 * `string` [`creationTimestamp`](#BackendService.creationTimestamp) = 5
-* `string` [`description`](#BackendService.description) = 6
-* `bool` [`enableCDN`](#BackendService.enableCDN) = 7
-* `string` [`fingerprint`](#BackendService.fingerprint) = 8
-* `repeated` `string` [`healthChecks`](#BackendService.healthChecks) = 9
-* [`compute.BackendServiceIAP`](gcp_compute.md#BackendServiceIAP) [`iap`](#BackendService.iap) = 10
-* `string` [`id`](#BackendService.id) = 11
-* `string` [`kind`](#BackendService.kind) = 12
-* `string` [`loadBalancingScheme`](#BackendService.loadBalancingScheme) = 13
-* `string` [`name`](#BackendService.name) = 14 (**Required**)
-* `int32` [`port`](#BackendService.port) = 15
-* `string` [`portName`](#BackendService.portName) = 16
-* `string` [`protocol`](#BackendService.protocol) = 17
-* `string` [`region`](#BackendService.region) = 18
-* `string` [`securityPolicy`](#BackendService.securityPolicy) = 19
-* `string` [`selfLink`](#BackendService.selfLink) = 20
-* `string` [`sessionAffinity`](#BackendService.sessionAffinity) = 21
-* `int32` [`timeoutSec`](#BackendService.timeoutSec) = 22
+* `repeated` `string` [`customRequestHeaders`](#BackendService.customRequestHeaders) = 6
+* `string` [`description`](#BackendService.description) = 7
+* `bool` [`enableCDN`](#BackendService.enableCDN) = 8
+* `string` [`fingerprint`](#BackendService.fingerprint) = 9
+* `repeated` `string` [`healthChecks`](#BackendService.healthChecks) = 10
+* [`compute.BackendServiceIAP`](gcp_compute.md#BackendServiceIAP) [`iap`](#BackendService.iap) = 11
+* `string` [`id`](#BackendService.id) = 12
+* `string` [`kind`](#BackendService.kind) = 13
+* `string` [`loadBalancingScheme`](#BackendService.loadBalancingScheme) = 14
+* `string` [`name`](#BackendService.name) = 15 (**Required**)
+* `int32` [`port`](#BackendService.port) = 16
+* `string` [`portName`](#BackendService.portName) = 17
+* `string` [`protocol`](#BackendService.protocol) = 18
+* `string` [`region`](#BackendService.region) = 19
+* `string` [`securityPolicy`](#BackendService.securityPolicy) = 20
+* `string` [`selfLink`](#BackendService.selfLink) = 21
+* `string` [`sessionAffinity`](#BackendService.sessionAffinity) = 22
+* `int32` [`timeoutSec`](#BackendService.timeoutSec) = 23
 
 ### `affinityCookieTtlSec` {#BackendService.affinityCookieTtlSec}
 
@@ -2319,6 +2453,16 @@ Cloud CDN configuration for this BackendService.
 | Type | `string` |
 
 [Output Only] Creation timestamp in RFC3339 text format.
+
+### `customRequestHeaders` {#BackendService.customRequestHeaders}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `customRequestHeaders` |
+| Type | `string` |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Headers that the HTTP/S load balancer should add to proxied requests.
 
 ### `description` {#BackendService.description}
 
@@ -2423,7 +2567,7 @@ Valid values:
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -2468,6 +2612,7 @@ For internal load balancing, the possible values are TCP and UDP, and the
 default is TCP.
 Valid values:
     HTTP
+    HTTP2
     HTTPS
     SSL
     TCP
@@ -2481,7 +2626,9 @@ Valid values:
 | Type | `string` |
 
 [Output Only] URL of the region where the regional backend service resides.
-This field is not applicable to global backend services.
+This field is not applicable to global backend services. You must specify
+this field as part of the HTTP request URL. It is not settable as a field in
+the request body.
 
 ### `securityPolicy` {#BackendService.securityPolicy}
 
@@ -2793,6 +2940,21 @@ continue paging through the results.
 | Field Name | `warning` |
 | Type | [`compute.BackendServiceList.Warning`](gcp_compute.md#BackendServiceList.Warning) |
 
+## Message `BackendServiceReference` {#BackendServiceReference}
+
+
+
+### Inputs for `BackendServiceReference`
+
+* `string` [`backendService`](#BackendServiceReference.backendService) = 1
+
+### `backendService` {#BackendServiceReference.backendService}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `backendService` |
+| Type | `string` |
+
 ## Message `BackendServicesScopedList` {#BackendServicesScopedList}
 
 
@@ -2810,7 +2972,7 @@ continue paging through the results.
 | Type | [`compute.BackendService`](gcp_compute.md#BackendService) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of BackendServices contained in this scope.
+A list of BackendServices contained in this scope.
 
 ### `warning` {#BackendServicesScopedList.warning}
 
@@ -2840,7 +3002,7 @@ Associates `members` with a `role`.
 The condition that is associated with this binding. NOTE: an unsatisfied
 condition will not allow user access via current binding. Different
 bindings, including their conditions, are examined independently. This field
-is GOOGLE_INTERNAL.
+is only visible as GOOGLE_INTERNAL or CONDITION_TRUSTED_TESTER.
 
 ### `members` {#Binding.members}
 
@@ -2860,7 +3022,7 @@ internet; with or without a Google account.
 is authenticated with a Google account or a service account.
 
 * `user:{emailid}`: An email address that represents a specific Google
-account. For example, `alice@gmail.com` or `joe@example.com`.
+account. For example, `alice@gmail.com` .
 
 
 
@@ -3071,7 +3233,7 @@ commitments.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -3108,7 +3270,7 @@ Valid values:
 | Type | [`compute.ResourceCommitment`](gcp_compute.md#ResourceCommitment) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of commitment amounts for particular resources. Note that VCPU and
+A list of commitment amounts for particular resources. Note that VCPU and
 MEMORY resource commitments must occur together.
 
 ### `selfLink` {#Commitment.selfLink}
@@ -3314,7 +3476,7 @@ continue paging through the results.
 | Type | [`compute.Commitment`](gcp_compute.md#Commitment) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of commitments contained in this scope.
+[Output Only] A list of commitments contained in this scope.
 
 ### `warning` {#CommitmentsScopedList.warning}
 
@@ -3349,6 +3511,7 @@ Valid values:
     APPROVER
     ATTRIBUTION
     AUTHORITY
+    CREDENTIALS_TYPE
     JUSTIFICATION_TYPE
     NO_ATTR
     SECURITY_REALM
@@ -3439,9 +3602,19 @@ Represents a customer-supplied encryption key
 
 ### Inputs for `CustomerEncryptionKey`
 
-* `string` [`rawKey`](#CustomerEncryptionKey.rawKey) = 1
-* `string` [`rsaEncryptedKey`](#CustomerEncryptionKey.rsaEncryptedKey) = 2
-* `string` [`sha256`](#CustomerEncryptionKey.sha256) = 3
+* `string` [`kmsKeyName`](#CustomerEncryptionKey.kmsKeyName) = 1
+* `string` [`rawKey`](#CustomerEncryptionKey.rawKey) = 2
+* `string` [`rsaEncryptedKey`](#CustomerEncryptionKey.rsaEncryptedKey) = 3
+* `string` [`sha256`](#CustomerEncryptionKey.sha256) = 4
+
+### `kmsKeyName` {#CustomerEncryptionKey.kmsKeyName}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kmsKeyName` |
+| Type | `string` |
+
+The name of the encryption key that is stored in Google Cloud KMS.
 
 ### `rawKey` {#CustomerEncryptionKey.rawKey}
 
@@ -3467,7 +3640,7 @@ The key must meet the following requirements before you can provide it to
 Compute Engine:
 - The key is wrapped using a RSA public key certificate provided by Google.
 - After being wrapped, the key must be encoded in RFC 4648 base64 encoding. 
-Get the RSA public key certificate provided by Google at:
+Gets the RSA public key certificate provided by Google at:
 https://cloud-certs.storage.googleapis.com/google-cloud-csek-ingress.pem
 
 ### `sha256` {#CustomerEncryptionKey.sha256}
@@ -3509,7 +3682,7 @@ key.
 Specifies a valid partial or full URL to an existing Persistent Disk
 resource. This field is only applicable for persistent disks.
 
-## Message `Data` {#VpnTunnelList.Warning.Data}
+## Message `Data` {#TargetVpnGatewaysScopedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -3517,10 +3690,10 @@ resource. This field is only applicable for persistent disks.
 
 ### Inputs for `Data`
 
-* `string` [`key`](#VpnTunnelList.Warning.Data.key) = 1
-* `string` [`value`](#VpnTunnelList.Warning.Data.value) = 2
+* `string` [`key`](#TargetVpnGatewaysScopedList.Warning.Data.key) = 1
+* `string` [`value`](#TargetVpnGatewaysScopedList.Warning.Data.value) = 2
 
-### `key` {#VpnTunnelList.Warning.Data.key}
+### `key` {#TargetVpnGatewaysScopedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -3535,7 +3708,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#VpnTunnelList.Warning.Data.value}
+### `value` {#TargetVpnGatewaysScopedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -3579,7 +3752,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#TargetVpnGatewaysScopedList.Warning.Data}
+## Message `Data` {#TargetPoolList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -3587,10 +3760,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#TargetVpnGatewaysScopedList.Warning.Data.key) = 1
-* `string` [`value`](#TargetVpnGatewaysScopedList.Warning.Data.value) = 2
+* `string` [`key`](#TargetPoolList.Warning.Data.key) = 1
+* `string` [`value`](#TargetPoolList.Warning.Data.value) = 2
 
-### `key` {#TargetVpnGatewaysScopedList.Warning.Data.key}
+### `key` {#TargetPoolList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -3605,7 +3778,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#TargetVpnGatewaysScopedList.Warning.Data.value}
+### `value` {#TargetPoolList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -3614,7 +3787,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#TargetVpnGatewayList.Warning.Data}
+## Message `Data` {#TargetPoolAggregatedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -3622,10 +3795,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#TargetVpnGatewayList.Warning.Data.key) = 1
-* `string` [`value`](#TargetVpnGatewayList.Warning.Data.value) = 2
+* `string` [`key`](#TargetPoolAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#TargetPoolAggregatedList.Warning.Data.value) = 2
 
-### `key` {#TargetVpnGatewayList.Warning.Data.key}
+### `key` {#TargetPoolAggregatedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -3640,7 +3813,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#TargetVpnGatewayList.Warning.Data.value}
+### `value` {#TargetPoolAggregatedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -3684,6 +3857,41 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
+## Message `Data` {#Operation.Warnings.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#Operation.Warnings.Data.key) = 1
+* `string` [`value`](#Operation.Warnings.Data.value) = 2
+
+### `key` {#Operation.Warnings.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#Operation.Warnings.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
 ## Message `Data` {#AutoscalerList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
@@ -3719,7 +3927,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#UrlMapList.Warning.Data}
+## Message `Data` {#TargetInstancesScopedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -3727,10 +3935,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#UrlMapList.Warning.Data.key) = 1
-* `string` [`value`](#UrlMapList.Warning.Data.value) = 2
+* `string` [`key`](#TargetInstancesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#TargetInstancesScopedList.Warning.Data.value) = 2
 
-### `key` {#UrlMapList.Warning.Data.key}
+### `key` {#TargetInstancesScopedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -3745,7 +3953,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#UrlMapList.Warning.Data.value}
+### `value` {#TargetInstancesScopedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -3754,7 +3962,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#OperationList.Warning.Data}
+## Message `Data` {#TargetInstanceList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -3762,10 +3970,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#OperationList.Warning.Data.key) = 1
-* `string` [`value`](#OperationList.Warning.Data.value) = 2
+* `string` [`key`](#TargetInstanceList.Warning.Data.key) = 1
+* `string` [`value`](#TargetInstanceList.Warning.Data.value) = 2
 
-### `key` {#OperationList.Warning.Data.key}
+### `key` {#TargetInstanceList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -3780,42 +3988,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#OperationList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#TargetVpnGatewayAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#TargetVpnGatewayAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#TargetVpnGatewayAggregatedList.Warning.Data.value) = 2
-
-### `key` {#TargetVpnGatewayAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#TargetVpnGatewayAggregatedList.Warning.Data.value}
+### `value` {#TargetInstanceList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -3859,6 +4032,41 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
+## Message `Data` {#TargetPoolsScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#TargetPoolsScopedList.Warning.Data.key) = 1
+* `string` [`value`](#TargetPoolsScopedList.Warning.Data.value) = 2
+
+### `key` {#TargetPoolsScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#TargetPoolsScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
 ## Message `Data` {#AutoscalerAggregatedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
@@ -3894,7 +4102,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#SubnetworksScopedList.Warning.Data}
+## Message `Data` {#TargetSslProxyList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -3902,10 +4110,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#SubnetworksScopedList.Warning.Data.key) = 1
-* `string` [`value`](#SubnetworksScopedList.Warning.Data.value) = 2
+* `string` [`key`](#TargetSslProxyList.Warning.Data.key) = 1
+* `string` [`value`](#TargetSslProxyList.Warning.Data.value) = 2
 
-### `key` {#SubnetworksScopedList.Warning.Data.key}
+### `key` {#TargetSslProxyList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -3920,567 +4128,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#SubnetworksScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#OperationAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#OperationAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#OperationAggregatedList.Warning.Data.value) = 2
-
-### `key` {#OperationAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#OperationAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#AddressesScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#AddressesScopedList.Warning.Data.key) = 1
-* `string` [`value`](#AddressesScopedList.Warning.Data.value) = 2
-
-### `key` {#AddressesScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#AddressesScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#LicensesListResponse.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#LicensesListResponse.Warning.Data.key) = 1
-* `string` [`value`](#LicensesListResponse.Warning.Data.value) = 2
-
-### `key` {#LicensesListResponse.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#LicensesListResponse.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#BackendServiceList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#BackendServiceList.Warning.Data.key) = 1
-* `string` [`value`](#BackendServiceList.Warning.Data.value) = 2
-
-### `key` {#BackendServiceList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#BackendServiceList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#Operation.Warnings.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#Operation.Warnings.Data.key) = 1
-* `string` [`value`](#Operation.Warnings.Data.value) = 2
-
-### `key` {#Operation.Warnings.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#Operation.Warnings.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#AddressList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#AddressList.Warning.Data.key) = 1
-* `string` [`value`](#AddressList.Warning.Data.value) = 2
-
-### `key` {#AddressList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#AddressList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#BackendServicesScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#BackendServicesScopedList.Warning.Data.key) = 1
-* `string` [`value`](#BackendServicesScopedList.Warning.Data.value) = 2
-
-### `key` {#BackendServicesScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#BackendServicesScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#VpnTunnelAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#VpnTunnelAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#VpnTunnelAggregatedList.Warning.Data.value) = 2
-
-### `key` {#VpnTunnelAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#VpnTunnelAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#OperationsScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#OperationsScopedList.Warning.Data.key) = 1
-* `string` [`value`](#OperationsScopedList.Warning.Data.value) = 2
-
-### `key` {#OperationsScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#OperationsScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#AddressAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#AddressAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#AddressAggregatedList.Warning.Data.value) = 2
-
-### `key` {#AddressAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#AddressAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#NetworkList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#NetworkList.Warning.Data.key) = 1
-* `string` [`value`](#NetworkList.Warning.Data.value) = 2
-
-### `key` {#NetworkList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#NetworkList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#MachineTypeAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#MachineTypeAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#MachineTypeAggregatedList.Warning.Data.value) = 2
-
-### `key` {#MachineTypeAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#MachineTypeAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#ForwardingRuleList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#ForwardingRuleList.Warning.Data.key) = 1
-* `string` [`value`](#ForwardingRuleList.Warning.Data.value) = 2
-
-### `key` {#ForwardingRuleList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#ForwardingRuleList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InterconnectLocationList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InterconnectLocationList.Warning.Data.key) = 1
-* `string` [`value`](#InterconnectLocationList.Warning.Data.value) = 2
-
-### `key` {#InterconnectLocationList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InterconnectLocationList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#CommitmentAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#CommitmentAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#CommitmentAggregatedList.Warning.Data.value) = 2
-
-### `key` {#CommitmentAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#CommitmentAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#AcceleratorTypesScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#AcceleratorTypesScopedList.Warning.Data.key) = 1
-* `string` [`value`](#AcceleratorTypesScopedList.Warning.Data.value) = 2
-
-### `key` {#AcceleratorTypesScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#AcceleratorTypesScopedList.Warning.Data.value}
+### `value` {#TargetSslProxyList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4524,6 +4172,566 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
+## Message `Data` {#TargetInstanceAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#TargetInstanceAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#TargetInstanceAggregatedList.Warning.Data.value) = 2
+
+### `key` {#TargetInstanceAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#TargetInstanceAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#BackendServiceList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#BackendServiceList.Warning.Data.key) = 1
+* `string` [`value`](#BackendServiceList.Warning.Data.value) = 2
+
+### `key` {#BackendServiceList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#BackendServiceList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#TargetVpnGatewayAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#TargetVpnGatewayAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#TargetVpnGatewayAggregatedList.Warning.Data.value) = 2
+
+### `key` {#TargetVpnGatewayAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#TargetVpnGatewayAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#AddressesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#AddressesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#AddressesScopedList.Warning.Data.value) = 2
+
+### `key` {#AddressesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#AddressesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#TargetHttpsProxyList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#TargetHttpsProxyList.Warning.Data.key) = 1
+* `string` [`value`](#TargetHttpsProxyList.Warning.Data.value) = 2
+
+### `key` {#TargetHttpsProxyList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#TargetHttpsProxyList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#BackendServicesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#BackendServicesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#BackendServicesScopedList.Warning.Data.value) = 2
+
+### `key` {#BackendServicesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#BackendServicesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#TargetVpnGatewayList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#TargetVpnGatewayList.Warning.Data.key) = 1
+* `string` [`value`](#TargetVpnGatewayList.Warning.Data.value) = 2
+
+### `key` {#TargetVpnGatewayList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#TargetVpnGatewayList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#AddressList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#AddressList.Warning.Data.key) = 1
+* `string` [`value`](#AddressList.Warning.Data.value) = 2
+
+### `key` {#AddressList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#AddressList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#AddressAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#AddressAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#AddressAggregatedList.Warning.Data.value) = 2
+
+### `key` {#AddressAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#AddressAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#UrlMapList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#UrlMapList.Warning.Data.key) = 1
+* `string` [`value`](#UrlMapList.Warning.Data.value) = 2
+
+### `key` {#UrlMapList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#UrlMapList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#UsableSubnetworksAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#UsableSubnetworksAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#UsableSubnetworksAggregatedList.Warning.Data.value) = 2
+
+### `key` {#UsableSubnetworksAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#UsableSubnetworksAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#TargetHttpProxyList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#TargetHttpProxyList.Warning.Data.key) = 1
+* `string` [`value`](#TargetHttpProxyList.Warning.Data.value) = 2
+
+### `key` {#TargetHttpProxyList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#TargetHttpProxyList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#SubnetworksScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#SubnetworksScopedList.Warning.Data.key) = 1
+* `string` [`value`](#SubnetworksScopedList.Warning.Data.value) = 2
+
+### `key` {#SubnetworksScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#SubnetworksScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#VpnTunnelAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#VpnTunnelAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#VpnTunnelAggregatedList.Warning.Data.value) = 2
+
+### `key` {#VpnTunnelAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#VpnTunnelAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#AcceleratorTypesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#AcceleratorTypesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#AcceleratorTypesScopedList.Warning.Data.value) = 2
+
+### `key` {#AcceleratorTypesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#AcceleratorTypesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#SubnetworkList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#SubnetworkList.Warning.Data.key) = 1
+* `string` [`value`](#SubnetworkList.Warning.Data.value) = 2
+
+### `key` {#SubnetworkList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#SubnetworkList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
 ## Message `Data` {#CommitmentList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
@@ -4559,7 +4767,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#VpnTunnelsScopedList.Warning.Data}
+## Message `Data` {#VpnTunnelList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4567,10 +4775,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#VpnTunnelsScopedList.Warning.Data.key) = 1
-* `string` [`value`](#VpnTunnelsScopedList.Warning.Data.value) = 2
+* `string` [`key`](#VpnTunnelList.Warning.Data.key) = 1
+* `string` [`value`](#VpnTunnelList.Warning.Data.value) = 2
 
-### `key` {#VpnTunnelsScopedList.Warning.Data.key}
+### `key` {#VpnTunnelList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4585,7 +4793,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#VpnTunnelsScopedList.Warning.Data.value}
+### `value` {#VpnTunnelList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4594,7 +4802,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#TargetSslProxyList.Warning.Data}
+## Message `Data` {#SubnetworkAggregatedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4602,10 +4810,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#TargetSslProxyList.Warning.Data.key) = 1
-* `string` [`value`](#TargetSslProxyList.Warning.Data.value) = 2
+* `string` [`key`](#SubnetworkAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#SubnetworkAggregatedList.Warning.Data.value) = 2
 
-### `key` {#TargetSslProxyList.Warning.Data.key}
+### `key` {#SubnetworkAggregatedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4620,7 +4828,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#TargetSslProxyList.Warning.Data.value}
+### `value` {#SubnetworkAggregatedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4699,7 +4907,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#XpnHostList.Warning.Data}
+## Message `Data` {#VpnTunnelsScopedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4707,10 +4915,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#XpnHostList.Warning.Data.key) = 1
-* `string` [`value`](#XpnHostList.Warning.Data.value) = 2
+* `string` [`key`](#VpnTunnelsScopedList.Warning.Data.key) = 1
+* `string` [`value`](#VpnTunnelsScopedList.Warning.Data.value) = 2
 
-### `key` {#XpnHostList.Warning.Data.key}
+### `key` {#VpnTunnelsScopedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4725,7 +4933,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#XpnHostList.Warning.Data.value}
+### `value` {#VpnTunnelsScopedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4769,7 +4977,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#ZoneList.Warning.Data}
+## Message `Data` {#XpnHostList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4777,10 +4985,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#ZoneList.Warning.Data.key) = 1
-* `string` [`value`](#ZoneList.Warning.Data.value) = 2
+* `string` [`key`](#XpnHostList.Warning.Data.key) = 1
+* `string` [`value`](#XpnHostList.Warning.Data.value) = 2
 
-### `key` {#ZoneList.Warning.Data.key}
+### `key` {#XpnHostList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4795,7 +5003,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#ZoneList.Warning.Data.value}
+### `value` {#XpnHostList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4804,7 +5012,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#RegionAutoscalerList.Warning.Data}
+## Message `Data` {#HttpsHealthCheckList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4812,10 +5020,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#RegionAutoscalerList.Warning.Data.key) = 1
-* `string` [`value`](#RegionAutoscalerList.Warning.Data.value) = 2
+* `string` [`key`](#HttpsHealthCheckList.Warning.Data.key) = 1
+* `string` [`value`](#HttpsHealthCheckList.Warning.Data.value) = 2
 
-### `key` {#RegionAutoscalerList.Warning.Data.key}
+### `key` {#HttpsHealthCheckList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4830,7 +5038,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#RegionAutoscalerList.Warning.Data.value}
+### `value` {#HttpsHealthCheckList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4839,7 +5047,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#InterconnectList.Warning.Data}
+## Message `Data` {#OperationAggregatedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4847,10 +5055,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#InterconnectList.Warning.Data.key) = 1
-* `string` [`value`](#InterconnectList.Warning.Data.value) = 2
+* `string` [`key`](#OperationAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#OperationAggregatedList.Warning.Data.value) = 2
 
-### `key` {#InterconnectList.Warning.Data.key}
+### `key` {#OperationAggregatedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4865,7 +5073,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#InterconnectList.Warning.Data.value}
+### `value` {#OperationAggregatedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4874,7 +5082,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#RegionInstanceGroupList.Warning.Data}
+## Message `Data` {#SslPolicy.Warnings.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4882,10 +5090,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#RegionInstanceGroupList.Warning.Data.key) = 1
-* `string` [`value`](#RegionInstanceGroupList.Warning.Data.value) = 2
+* `string` [`key`](#SslPolicy.Warnings.Data.key) = 1
+* `string` [`value`](#SslPolicy.Warnings.Data.value) = 2
 
-### `key` {#RegionInstanceGroupList.Warning.Data.key}
+### `key` {#SslPolicy.Warnings.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4900,7 +5108,147 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#RegionInstanceGroupList.Warning.Data.value}
+### `value` {#SslPolicy.Warnings.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NodeTypesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NodeTypesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#NodeTypesScopedList.Warning.Data.value) = 2
+
+### `key` {#NodeTypesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NodeTypesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#SslPoliciesList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#SslPoliciesList.Warning.Data.key) = 1
+* `string` [`value`](#SslPoliciesList.Warning.Data.value) = 2
+
+### `key` {#SslPoliciesList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#SslPoliciesList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#SslCertificateList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#SslCertificateList.Warning.Data.key) = 1
+* `string` [`value`](#SslCertificateList.Warning.Data.value) = 2
+
+### `key` {#SslCertificateList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#SslCertificateList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#DiskAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#DiskAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#DiskAggregatedList.Warning.Data.value) = 2
+
+### `key` {#DiskAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#DiskAggregatedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4944,7 +5292,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#RegionInstanceGroupManagerList.Warning.Data}
+## Message `Data` {#InterconnectList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4952,10 +5300,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#RegionInstanceGroupManagerList.Warning.Data.key) = 1
-* `string` [`value`](#RegionInstanceGroupManagerList.Warning.Data.value) = 2
+* `string` [`key`](#InterconnectList.Warning.Data.key) = 1
+* `string` [`value`](#InterconnectList.Warning.Data.value) = 2
 
-### `key` {#RegionInstanceGroupManagerList.Warning.Data.key}
+### `key` {#InterconnectList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -4970,7 +5318,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#RegionInstanceGroupManagerList.Warning.Data.value}
+### `value` {#InterconnectList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -4979,7 +5327,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#TargetPoolsScopedList.Warning.Data}
+## Message `Data` {#SnapshotList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -4987,10 +5335,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#TargetPoolsScopedList.Warning.Data.key) = 1
-* `string` [`value`](#TargetPoolsScopedList.Warning.Data.value) = 2
+* `string` [`key`](#SnapshotList.Warning.Data.key) = 1
+* `string` [`value`](#SnapshotList.Warning.Data.value) = 2
 
-### `key` {#TargetPoolsScopedList.Warning.Data.key}
+### `key` {#SnapshotList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -5005,7 +5353,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#TargetPoolsScopedList.Warning.Data.value}
+### `value` {#SnapshotList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -5014,7 +5362,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#DiskAggregatedList.Warning.Data}
+## Message `Data` {#DiskList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -5022,10 +5370,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#DiskAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#DiskAggregatedList.Warning.Data.value) = 2
+* `string` [`key`](#DiskList.Warning.Data.key) = 1
+* `string` [`value`](#DiskList.Warning.Data.value) = 2
 
-### `key` {#DiskAggregatedList.Warning.Data.key}
+### `key` {#DiskList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -5040,7 +5388,987 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#DiskAggregatedList.Warning.Data.value}
+### `value` {#DiskList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InterconnectLocationList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InterconnectLocationList.Warning.Data.key) = 1
+* `string` [`value`](#InterconnectLocationList.Warning.Data.value) = 2
+
+### `key` {#InterconnectLocationList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InterconnectLocationList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#LicensesListResponse.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#LicensesListResponse.Warning.Data.key) = 1
+* `string` [`value`](#LicensesListResponse.Warning.Data.value) = 2
+
+### `key` {#LicensesListResponse.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#LicensesListResponse.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#MachineTypeAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#MachineTypeAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#MachineTypeAggregatedList.Warning.Data.value) = 2
+
+### `key` {#MachineTypeAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#MachineTypeAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#SecurityPolicyList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#SecurityPolicyList.Warning.Data.key) = 1
+* `string` [`value`](#SecurityPolicyList.Warning.Data.value) = 2
+
+### `key` {#SecurityPolicyList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#SecurityPolicyList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#RoutersScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#RoutersScopedList.Warning.Data.key) = 1
+* `string` [`value`](#RoutersScopedList.Warning.Data.value) = 2
+
+### `key` {#RoutersScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#RoutersScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#DiskTypeAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#DiskTypeAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#DiskTypeAggregatedList.Warning.Data.value) = 2
+
+### `key` {#DiskTypeAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#DiskTypeAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#MachineTypeList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#MachineTypeList.Warning.Data.key) = 1
+* `string` [`value`](#MachineTypeList.Warning.Data.value) = 2
+
+### `key` {#MachineTypeList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#MachineTypeList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#RouterList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#RouterList.Warning.Data.key) = 1
+* `string` [`value`](#RouterList.Warning.Data.value) = 2
+
+### `key` {#RouterList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#RouterList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#DiskTypeList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#DiskTypeList.Warning.Data.key) = 1
+* `string` [`value`](#DiskTypeList.Warning.Data.value) = 2
+
+### `key` {#DiskTypeList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#DiskTypeList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstancesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstancesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#InstancesScopedList.Warning.Data.value) = 2
+
+### `key` {#InstancesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstancesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#RouterAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#RouterAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#RouterAggregatedList.Warning.Data.value) = 2
+
+### `key` {#RouterAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#RouterAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#DiskTypesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#DiskTypesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#DiskTypesScopedList.Warning.Data.value) = 2
+
+### `key` {#DiskTypesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#DiskTypesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#MachineTypesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#MachineTypesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#MachineTypesScopedList.Warning.Data.value) = 2
+
+### `key` {#MachineTypesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#MachineTypesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NetworkEndpointGroupList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NetworkEndpointGroupList.Warning.Data.key) = 1
+* `string` [`value`](#NetworkEndpointGroupList.Warning.Data.value) = 2
+
+### `key` {#NetworkEndpointGroupList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NetworkEndpointGroupList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#RouteList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#RouteList.Warning.Data.key) = 1
+* `string` [`value`](#RouteList.Warning.Data.value) = 2
+
+### `key` {#RouteList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#RouteList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#DisksScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#DisksScopedList.Warning.Data.key) = 1
+* `string` [`value`](#DisksScopedList.Warning.Data.value) = 2
+
+### `key` {#DisksScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#DisksScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstanceTemplateList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstanceTemplateList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceTemplateList.Warning.Data.value) = 2
+
+### `key` {#InstanceTemplateList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstanceTemplateList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstanceListReferrers.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstanceListReferrers.Warning.Data.key) = 1
+* `string` [`value`](#InstanceListReferrers.Warning.Data.value) = 2
+
+### `key` {#InstanceListReferrers.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstanceListReferrers.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NetworkEndpointGroupAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NetworkEndpointGroupAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#NetworkEndpointGroupAggregatedList.Warning.Data.value) = 2
+
+### `key` {#NetworkEndpointGroupAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NetworkEndpointGroupAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstanceList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstanceList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceList.Warning.Data.value) = 2
+
+### `key` {#InstanceList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstanceList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#ZoneList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#ZoneList.Warning.Data.key) = 1
+* `string` [`value`](#ZoneList.Warning.Data.value) = 2
+
+### `key` {#ZoneList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#ZoneList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InterconnectAttachmentAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InterconnectAttachmentAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#InterconnectAttachmentAggregatedList.Warning.Data.value) = 2
+
+### `key` {#InterconnectAttachmentAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InterconnectAttachmentAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#CommitmentAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#CommitmentAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#CommitmentAggregatedList.Warning.Data.value) = 2
+
+### `key` {#CommitmentAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#CommitmentAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#Route.Warnings.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#Route.Warnings.Data.key) = 1
+* `string` [`value`](#Route.Warnings.Data.value) = 2
+
+### `key` {#Route.Warnings.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#Route.Warnings.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#FirewallList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#FirewallList.Warning.Data.key) = 1
+* `string` [`value`](#FirewallList.Warning.Data.value) = 2
+
+### `key` {#FirewallList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#FirewallList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstanceGroupsScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstanceGroupsScopedList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceGroupsScopedList.Warning.Data.value) = 2
+
+### `key` {#InstanceGroupsScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstanceGroupsScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NetworkEndpointGroupsListNetworkEndpoints.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NetworkEndpointGroupsListNetworkEndpoints.Warning.Data.key) = 1
+* `string` [`value`](#NetworkEndpointGroupsListNetworkEndpoints.Warning.Data.value) = 2
+
+### `key` {#NetworkEndpointGroupsListNetworkEndpoints.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NetworkEndpointGroupsListNetworkEndpoints.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#RegionList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#RegionList.Warning.Data.key) = 1
+* `string` [`value`](#RegionList.Warning.Data.value) = 2
+
+### `key` {#RegionList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#RegionList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -5119,7 +6447,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#InterconnectAttachmentAggregatedList.Warning.Data}
+## Message `Data` {#RegionInstanceGroupManagerList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -5127,10 +6455,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#InterconnectAttachmentAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#InterconnectAttachmentAggregatedList.Warning.Data.value) = 2
+* `string` [`key`](#RegionInstanceGroupManagerList.Warning.Data.key) = 1
+* `string` [`value`](#RegionInstanceGroupManagerList.Warning.Data.value) = 2
 
-### `key` {#InterconnectAttachmentAggregatedList.Warning.Data.key}
+### `key` {#RegionInstanceGroupManagerList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -5145,1127 +6473,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#InterconnectAttachmentAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#DiskList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#DiskList.Warning.Data.key) = 1
-* `string` [`value`](#DiskList.Warning.Data.value) = 2
-
-### `key` {#DiskList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#DiskList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#RegionList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#RegionList.Warning.Data.key) = 1
-* `string` [`value`](#RegionList.Warning.Data.value) = 2
-
-### `key` {#RegionList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#RegionList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstancesScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstancesScopedList.Warning.Data.key) = 1
-* `string` [`value`](#InstancesScopedList.Warning.Data.value) = 2
-
-### `key` {#InstancesScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstancesScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceTemplateList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceTemplateList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceTemplateList.Warning.Data.value) = 2
-
-### `key` {#InstanceTemplateList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceTemplateList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#Route.Warnings.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#Route.Warnings.Data.key) = 1
-* `string` [`value`](#Route.Warnings.Data.value) = 2
-
-### `key` {#Route.Warnings.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#Route.Warnings.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#TargetPoolList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#TargetPoolList.Warning.Data.key) = 1
-* `string` [`value`](#TargetPoolList.Warning.Data.value) = 2
-
-### `key` {#TargetPoolList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#TargetPoolList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#DiskTypeAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#DiskTypeAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#DiskTypeAggregatedList.Warning.Data.value) = 2
-
-### `key` {#DiskTypeAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#DiskTypeAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceListReferrers.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceListReferrers.Warning.Data.key) = 1
-* `string` [`value`](#InstanceListReferrers.Warning.Data.value) = 2
-
-### `key` {#InstanceListReferrers.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceListReferrers.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#TargetPoolAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#TargetPoolAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#TargetPoolAggregatedList.Warning.Data.value) = 2
-
-### `key` {#TargetPoolAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#TargetPoolAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#DiskTypeList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#DiskTypeList.Warning.Data.key) = 1
-* `string` [`value`](#DiskTypeList.Warning.Data.value) = 2
-
-### `key` {#DiskTypeList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#DiskTypeList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#RouteList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#RouteList.Warning.Data.key) = 1
-* `string` [`value`](#RouteList.Warning.Data.value) = 2
-
-### `key` {#RouteList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#RouteList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceList.Warning.Data.value) = 2
-
-### `key` {#InstanceList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#DiskTypesScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#DiskTypesScopedList.Warning.Data.key) = 1
-* `string` [`value`](#DiskTypesScopedList.Warning.Data.value) = 2
-
-### `key` {#DiskTypesScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#DiskTypesScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceGroupsScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceGroupsScopedList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceGroupsScopedList.Warning.Data.value) = 2
-
-### `key` {#InstanceGroupsScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceGroupsScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#RouterAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#RouterAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#RouterAggregatedList.Warning.Data.value) = 2
-
-### `key` {#RouterAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#RouterAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#TargetInstancesScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#TargetInstancesScopedList.Warning.Data.key) = 1
-* `string` [`value`](#TargetInstancesScopedList.Warning.Data.value) = 2
-
-### `key` {#TargetInstancesScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#TargetInstancesScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#DisksScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#DisksScopedList.Warning.Data.key) = 1
-* `string` [`value`](#DisksScopedList.Warning.Data.value) = 2
-
-### `key` {#DisksScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#DisksScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceGroupsListInstances.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceGroupsListInstances.Warning.Data.key) = 1
-* `string` [`value`](#InstanceGroupsListInstances.Warning.Data.value) = 2
-
-### `key` {#InstanceGroupsListInstances.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceGroupsListInstances.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#RouterList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#RouterList.Warning.Data.key) = 1
-* `string` [`value`](#RouterList.Warning.Data.value) = 2
-
-### `key` {#RouterList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#RouterList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceGroupManagersScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceGroupManagersScopedList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceGroupManagersScopedList.Warning.Data.value) = 2
-
-### `key` {#InstanceGroupManagersScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceGroupManagersScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#RoutersScopedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#RoutersScopedList.Warning.Data.key) = 1
-* `string` [`value`](#RoutersScopedList.Warning.Data.value) = 2
-
-### `key` {#RoutersScopedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#RoutersScopedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#MachineTypeList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#MachineTypeList.Warning.Data.key) = 1
-* `string` [`value`](#MachineTypeList.Warning.Data.value) = 2
-
-### `key` {#MachineTypeList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#MachineTypeList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceGroupManagerList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceGroupManagerList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceGroupManagerList.Warning.Data.value) = 2
-
-### `key` {#InstanceGroupManagerList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceGroupManagerList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#SecurityPolicyList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#SecurityPolicyList.Warning.Data.key) = 1
-* `string` [`value`](#SecurityPolicyList.Warning.Data.value) = 2
-
-### `key` {#SecurityPolicyList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#SecurityPolicyList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#TargetInstanceList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#TargetInstanceList.Warning.Data.key) = 1
-* `string` [`value`](#TargetInstanceList.Warning.Data.value) = 2
-
-### `key` {#TargetInstanceList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#TargetInstanceList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#FirewallList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#FirewallList.Warning.Data.key) = 1
-* `string` [`value`](#FirewallList.Warning.Data.value) = 2
-
-### `key` {#FirewallList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#FirewallList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceGroupManagerAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceGroupManagerAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceGroupManagerAggregatedList.Warning.Data.value) = 2
-
-### `key` {#InstanceGroupManagerAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceGroupManagerAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceGroupList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceGroupList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceGroupList.Warning.Data.value) = 2
-
-### `key` {#InstanceGroupList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceGroupList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceGroupAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceGroupAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceGroupAggregatedList.Warning.Data.value) = 2
-
-### `key` {#InstanceGroupAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceGroupAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#SslCertificateList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#SslCertificateList.Warning.Data.key) = 1
-* `string` [`value`](#SslCertificateList.Warning.Data.value) = 2
-
-### `key` {#SslCertificateList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#SslCertificateList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#InstanceAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#InstanceAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#InstanceAggregatedList.Warning.Data.value) = 2
-
-### `key` {#InstanceAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#InstanceAggregatedList.Warning.Data.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-[Output Only] A warning data value corresponding to the key.
-
-## Message `Data` {#TargetInstanceAggregatedList.Warning.Data}
-
-[Output Only] Metadata about this warning in key: value format. For example:
-"data": [ { "key": "scope", "value": "zones/us-east1-d" }
-
-
-### Inputs for `Data`
-
-* `string` [`key`](#TargetInstanceAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#TargetInstanceAggregatedList.Warning.Data.value) = 2
-
-### `key` {#TargetInstanceAggregatedList.Warning.Data.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-[Output Only] A key that provides more detail on the warning being returned.
-For example, for warnings where there are no results in a list request for a
-particular zone, this key might be scope and the key value might be the zone
-name. Other examples might be a key indicating a deprecated resource and a
-suggested replacement, or a warning about invalid network settings (for
-example, if an instance attempts to perform IP forwarding but is not enabled
-for IP forwarding).
-
-### `value` {#TargetInstanceAggregatedList.Warning.Data.value}
+### `value` {#RegionInstanceGroupManagerList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6309,7 +6517,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#SslPoliciesList.Warning.Data}
+## Message `Data` {#InstanceGroupsListInstances.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6317,10 +6525,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#SslPoliciesList.Warning.Data.key) = 1
-* `string` [`value`](#SslPoliciesList.Warning.Data.value) = 2
+* `string` [`key`](#InstanceGroupsListInstances.Warning.Data.key) = 1
+* `string` [`value`](#InstanceGroupsListInstances.Warning.Data.value) = 2
 
-### `key` {#SslPoliciesList.Warning.Data.key}
+### `key` {#InstanceGroupsListInstances.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6335,7 +6543,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#SslPoliciesList.Warning.Data.value}
+### `value` {#InstanceGroupsListInstances.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6344,7 +6552,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#ImageList.Warning.Data}
+## Message `Data` {#RegionInstanceGroupList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6352,10 +6560,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#ImageList.Warning.Data.key) = 1
-* `string` [`value`](#ImageList.Warning.Data.value) = 2
+* `string` [`key`](#RegionInstanceGroupList.Warning.Data.key) = 1
+* `string` [`value`](#RegionInstanceGroupList.Warning.Data.value) = 2
 
-### `key` {#ImageList.Warning.Data.key}
+### `key` {#RegionInstanceGroupList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6370,7 +6578,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#ImageList.Warning.Data.value}
+### `value` {#RegionInstanceGroupList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6379,7 +6587,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#TargetHttpsProxyList.Warning.Data}
+## Message `Data` {#ForwardingRuleList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6387,10 +6595,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#TargetHttpsProxyList.Warning.Data.key) = 1
-* `string` [`value`](#TargetHttpsProxyList.Warning.Data.value) = 2
+* `string` [`key`](#ForwardingRuleList.Warning.Data.key) = 1
+* `string` [`value`](#ForwardingRuleList.Warning.Data.value) = 2
 
-### `key` {#TargetHttpsProxyList.Warning.Data.key}
+### `key` {#ForwardingRuleList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6405,7 +6613,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#TargetHttpsProxyList.Warning.Data.value}
+### `value` {#ForwardingRuleList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6414,7 +6622,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#SslPolicy.Warnings.Data}
+## Message `Data` {#NetworkEndpointGroupsScopedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6422,10 +6630,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#SslPolicy.Warnings.Data.key) = 1
-* `string` [`value`](#SslPolicy.Warnings.Data.value) = 2
+* `string` [`key`](#NetworkEndpointGroupsScopedList.Warning.Data.key) = 1
+* `string` [`value`](#NetworkEndpointGroupsScopedList.Warning.Data.value) = 2
 
-### `key` {#SslPolicy.Warnings.Data.key}
+### `key` {#NetworkEndpointGroupsScopedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6440,7 +6648,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#SslPolicy.Warnings.Data.value}
+### `value` {#NetworkEndpointGroupsScopedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6449,7 +6657,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#TargetHttpProxyList.Warning.Data}
+## Message `Data` {#InstanceGroupManagersScopedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6457,10 +6665,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#TargetHttpProxyList.Warning.Data.key) = 1
-* `string` [`value`](#TargetHttpProxyList.Warning.Data.value) = 2
+* `string` [`key`](#InstanceGroupManagersScopedList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceGroupManagersScopedList.Warning.Data.value) = 2
 
-### `key` {#TargetHttpProxyList.Warning.Data.key}
+### `key` {#InstanceGroupManagersScopedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6475,7 +6683,42 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#TargetHttpProxyList.Warning.Data.value}
+### `value` {#InstanceGroupManagersScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#RegionDiskTypeList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#RegionDiskTypeList.Warning.Data.key) = 1
+* `string` [`value`](#RegionDiskTypeList.Warning.Data.value) = 2
+
+### `key` {#RegionDiskTypeList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#RegionDiskTypeList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6519,7 +6762,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#HttpsHealthCheckList.Warning.Data}
+## Message `Data` {#NetworkList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6527,10 +6770,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#HttpsHealthCheckList.Warning.Data.key) = 1
-* `string` [`value`](#HttpsHealthCheckList.Warning.Data.value) = 2
+* `string` [`key`](#NetworkList.Warning.Data.key) = 1
+* `string` [`value`](#NetworkList.Warning.Data.value) = 2
 
-### `key` {#HttpsHealthCheckList.Warning.Data.key}
+### `key` {#NetworkList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6545,7 +6788,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#HttpsHealthCheckList.Warning.Data.value}
+### `value` {#NetworkList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6554,7 +6797,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#SubnetworkAggregatedList.Warning.Data}
+## Message `Data` {#RegionAutoscalerList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6562,10 +6805,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#SubnetworkAggregatedList.Warning.Data.key) = 1
-* `string` [`value`](#SubnetworkAggregatedList.Warning.Data.value) = 2
+* `string` [`key`](#RegionAutoscalerList.Warning.Data.key) = 1
+* `string` [`value`](#RegionAutoscalerList.Warning.Data.value) = 2
 
-### `key` {#SubnetworkAggregatedList.Warning.Data.key}
+### `key` {#RegionAutoscalerList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6580,7 +6823,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#SubnetworkAggregatedList.Warning.Data.value}
+### `value` {#RegionAutoscalerList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6589,7 +6832,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#HttpHealthCheckList.Warning.Data}
+## Message `Data` {#InstanceGroupManagerList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6597,10 +6840,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#HttpHealthCheckList.Warning.Data.key) = 1
-* `string` [`value`](#HttpHealthCheckList.Warning.Data.value) = 2
+* `string` [`key`](#InstanceGroupManagerList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceGroupManagerList.Warning.Data.value) = 2
 
-### `key` {#HttpHealthCheckList.Warning.Data.key}
+### `key` {#InstanceGroupManagerList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6615,7 +6858,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#HttpHealthCheckList.Warning.Data.value}
+### `value` {#InstanceGroupManagerList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6624,7 +6867,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#SubnetworkList.Warning.Data}
+## Message `Data` {#NodeGroupAggregatedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6632,10 +6875,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#SubnetworkList.Warning.Data.key) = 1
-* `string` [`value`](#SubnetworkList.Warning.Data.value) = 2
+* `string` [`key`](#NodeGroupAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#NodeGroupAggregatedList.Warning.Data.value) = 2
 
-### `key` {#SubnetworkList.Warning.Data.key}
+### `key` {#NodeGroupAggregatedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6650,7 +6893,7 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#SubnetworkList.Warning.Data.value}
+### `value` {#NodeGroupAggregatedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6659,7 +6902,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#SnapshotList.Warning.Data}
+## Message `Data` {#InstanceGroupManagerAggregatedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6667,10 +6910,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#SnapshotList.Warning.Data.key) = 1
-* `string` [`value`](#SnapshotList.Warning.Data.value) = 2
+* `string` [`key`](#InstanceGroupManagerAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceGroupManagerAggregatedList.Warning.Data.value) = 2
 
-### `key` {#SnapshotList.Warning.Data.key}
+### `key` {#InstanceGroupManagerAggregatedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6685,7 +6928,147 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#SnapshotList.Warning.Data.value}
+### `value` {#InstanceGroupManagerAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NodeGroupList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NodeGroupList.Warning.Data.key) = 1
+* `string` [`value`](#NodeGroupList.Warning.Data.value) = 2
+
+### `key` {#NodeGroupList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NodeGroupList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NodeGroupsScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NodeGroupsScopedList.Warning.Data.key) = 1
+* `string` [`value`](#NodeGroupsScopedList.Warning.Data.value) = 2
+
+### `key` {#NodeGroupsScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NodeGroupsScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstanceGroupList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstanceGroupList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceGroupList.Warning.Data.value) = 2
+
+### `key` {#InstanceGroupList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstanceGroupList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#OperationsScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#OperationsScopedList.Warning.Data.key) = 1
+* `string` [`value`](#OperationsScopedList.Warning.Data.value) = 2
+
+### `key` {#OperationsScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#OperationsScopedList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6729,7 +7112,7 @@ for IP forwarding).
 
 [Output Only] A warning data value corresponding to the key.
 
-## Message `Data` {#MachineTypesScopedList.Warning.Data}
+## Message `Data` {#NodeTemplateAggregatedList.Warning.Data}
 
 [Output Only] Metadata about this warning in key: value format. For example:
 "data": [ { "key": "scope", "value": "zones/us-east1-d" }
@@ -6737,10 +7120,10 @@ for IP forwarding).
 
 ### Inputs for `Data`
 
-* `string` [`key`](#MachineTypesScopedList.Warning.Data.key) = 1
-* `string` [`value`](#MachineTypesScopedList.Warning.Data.value) = 2
+* `string` [`key`](#NodeTemplateAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#NodeTemplateAggregatedList.Warning.Data.value) = 2
 
-### `key` {#MachineTypesScopedList.Warning.Data.key}
+### `key` {#NodeTemplateAggregatedList.Warning.Data.key}
 
 | Property | Comments |
 |----------|----------|
@@ -6755,7 +7138,322 @@ suggested replacement, or a warning about invalid network settings (for
 example, if an instance attempts to perform IP forwarding but is not enabled
 for IP forwarding).
 
-### `value` {#MachineTypesScopedList.Warning.Data.value}
+### `value` {#NodeTemplateAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstanceGroupAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstanceGroupAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceGroupAggregatedList.Warning.Data.value) = 2
+
+### `key` {#InstanceGroupAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstanceGroupAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NodeTemplateList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NodeTemplateList.Warning.Data.key) = 1
+* `string` [`value`](#NodeTemplateList.Warning.Data.value) = 2
+
+### `key` {#NodeTemplateList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NodeTemplateList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NodeTemplatesScopedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NodeTemplatesScopedList.Warning.Data.key) = 1
+* `string` [`value`](#NodeTemplatesScopedList.Warning.Data.value) = 2
+
+### `key` {#NodeTemplatesScopedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NodeTemplatesScopedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#InstanceAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#InstanceAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#InstanceAggregatedList.Warning.Data.value) = 2
+
+### `key` {#InstanceAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#InstanceAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NodeTypeAggregatedList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NodeTypeAggregatedList.Warning.Data.key) = 1
+* `string` [`value`](#NodeTypeAggregatedList.Warning.Data.value) = 2
+
+### `key` {#NodeTypeAggregatedList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NodeTypeAggregatedList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#OperationList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#OperationList.Warning.Data.key) = 1
+* `string` [`value`](#OperationList.Warning.Data.value) = 2
+
+### `key` {#OperationList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#OperationList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#HttpHealthCheckList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#HttpHealthCheckList.Warning.Data.key) = 1
+* `string` [`value`](#HttpHealthCheckList.Warning.Data.value) = 2
+
+### `key` {#HttpHealthCheckList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#HttpHealthCheckList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#NodeTypeList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#NodeTypeList.Warning.Data.key) = 1
+* `string` [`value`](#NodeTypeList.Warning.Data.value) = 2
+
+### `key` {#NodeTypeList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#NodeTypeList.Warning.Data.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+[Output Only] A warning data value corresponding to the key.
+
+## Message `Data` {#ImageList.Warning.Data}
+
+[Output Only] Metadata about this warning in key: value format. For example:
+"data": [ { "key": "scope", "value": "zones/us-east1-d" }
+
+
+### Inputs for `Data`
+
+* `string` [`key`](#ImageList.Warning.Data.key) = 1
+* `string` [`value`](#ImageList.Warning.Data.value) = 2
+
+### `key` {#ImageList.Warning.Data.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+[Output Only] A key that provides more detail on the warning being returned.
+For example, for warnings where there are no results in a list request for a
+particular zone, this key might be scope and the key value might be the zone
+name. Other examples might be a key indicating a deprecated resource and a
+suggested replacement, or a warning about invalid network settings (for
+example, if an instance attempts to perform IP forwarding but is not enabled
+for IP forwarding).
+
+### `value` {#ImageList.Warning.Data.value}
 
 | Property | Comments |
 |----------|----------|
@@ -6767,7 +7465,7 @@ for IP forwarding).
 ## Message `Denied` {#Firewall.Denied}
 
 The list of DENY rules specified by this firewall. Each rule specifies a
-protocol and port-range tuple that describes a permitted connection.
+protocol and port-range tuple that describes a denied connection.
 
 
 ### Inputs for `Denied`
@@ -6887,29 +7585,32 @@ A Disk resource. (== resource_for beta.disks ==) (== resource_for v1.disks
 * `string` [`creationTimestamp`](#Disk.creationTimestamp) = 1
 * `string` [`description`](#Disk.description) = 2
 * [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`diskEncryptionKey`](#Disk.diskEncryptionKey) = 3
-* `string` [`id`](#Disk.id) = 4
-* `string` [`kind`](#Disk.kind) = 5
-* `string` [`labelFingerprint`](#Disk.labelFingerprint) = 6
-* `repeated` [`compute.Disk.LabelsEntry`](gcp_compute.md#Disk.LabelsEntry) [`labels`](#Disk.labels) = 7
-* `string` [`lastAttachTimestamp`](#Disk.lastAttachTimestamp) = 8
-* `string` [`lastDetachTimestamp`](#Disk.lastDetachTimestamp) = 9
-* `repeated` `string` [`licenseCodes`](#Disk.licenseCodes) = 10
-* `repeated` `string` [`licenses`](#Disk.licenses) = 11
-* `string` [`name`](#Disk.name) = 12 (**Required**)
-* `string` [`options`](#Disk.options) = 13
-* `string` [`selfLink`](#Disk.selfLink) = 14
-* `string` [`sizeGb`](#Disk.sizeGb) = 15
-* `string` [`sourceImage`](#Disk.sourceImage) = 16
-* [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceImageEncryptionKey`](#Disk.sourceImageEncryptionKey) = 17
-* `string` [`sourceImageId`](#Disk.sourceImageId) = 18
-* `string` [`sourceSnapshot`](#Disk.sourceSnapshot) = 19
-* [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceSnapshotEncryptionKey`](#Disk.sourceSnapshotEncryptionKey) = 20
-* `string` [`sourceSnapshotId`](#Disk.sourceSnapshotId) = 21
-* `string` [`status`](#Disk.status) = 22
-* `string` [`storageType`](#Disk.storageType) = 23
-* `string` [`type`](#Disk.type) = 24
-* `repeated` `string` [`users`](#Disk.users) = 25
-* `string` [`zone`](#Disk.zone) = 26
+* `repeated` [`compute.GuestOsFeature`](gcp_compute.md#GuestOsFeature) [`guestOsFeatures`](#Disk.guestOsFeatures) = 4
+* `string` [`id`](#Disk.id) = 5
+* `string` [`kind`](#Disk.kind) = 6
+* `string` [`labelFingerprint`](#Disk.labelFingerprint) = 7
+* `repeated` [`compute.Disk.LabelsEntry`](gcp_compute.md#Disk.LabelsEntry) [`labels`](#Disk.labels) = 8
+* `string` [`lastAttachTimestamp`](#Disk.lastAttachTimestamp) = 9
+* `string` [`lastDetachTimestamp`](#Disk.lastDetachTimestamp) = 10
+* `repeated` `string` [`licenseCodes`](#Disk.licenseCodes) = 11
+* `repeated` `string` [`licenses`](#Disk.licenses) = 12
+* `string` [`name`](#Disk.name) = 13 (**Required**)
+* `string` [`options`](#Disk.options) = 14
+* `string` [`region`](#Disk.region) = 15
+* `repeated` `string` [`replicaZones`](#Disk.replicaZones) = 16
+* `string` [`selfLink`](#Disk.selfLink) = 17
+* `string` [`sizeGb`](#Disk.sizeGb) = 18
+* `string` [`sourceImage`](#Disk.sourceImage) = 19
+* [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceImageEncryptionKey`](#Disk.sourceImageEncryptionKey) = 20
+* `string` [`sourceImageId`](#Disk.sourceImageId) = 21
+* `string` [`sourceSnapshot`](#Disk.sourceSnapshot) = 22
+* [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceSnapshotEncryptionKey`](#Disk.sourceSnapshotEncryptionKey) = 23
+* `string` [`sourceSnapshotId`](#Disk.sourceSnapshotId) = 24
+* `string` [`status`](#Disk.status) = 25
+* `string` [`storageType`](#Disk.storageType) = 26
+* `string` [`type`](#Disk.type) = 27
+* `repeated` `string` [`users`](#Disk.users) = 28
+* `string` [`zone`](#Disk.zone) = 29
 
 ### `creationTimestamp` {#Disk.creationTimestamp}
 
@@ -6949,6 +7650,18 @@ disk.
 If you do not provide an encryption key when creating the disk, then the
 disk will be encrypted using an automatically generated key and you do not
 need to provide a key to use the disk later.
+
+### `guestOsFeatures` {#Disk.guestOsFeatures}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `guestOsFeatures` |
+| Type | [`compute.GuestOsFeature`](gcp_compute.md#GuestOsFeature) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of features to enable on the guest operating system. Applicable only
+for bootable images. Read  Enabling guest operating system features to see a
+list of available options.
 
 ### `id` {#Disk.id}
 
@@ -7044,7 +7757,7 @@ Any applicable publicly visible licenses.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -7057,6 +7770,28 @@ dash.
 | Type | `string` |
 
 Internal use only.
+
+### `region` {#Disk.region}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `region` |
+| Type | `string` |
+
+[Output Only] URL of the region where the disk resides. Only applicable for
+regional resources. You must specify this field as part of the HTTP request
+URL. It is not settable as a field in the request body.
+
+### `replicaZones` {#Disk.replicaZones}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `replicaZones` |
+| Type | `string` |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+URLs of the zones where the disk should be replicated to. Only applicable
+for regional resources.
 
 ### `selfLink` {#Disk.selfLink}
 
@@ -7095,22 +7830,21 @@ this field will not be set.
 To create a disk with one of the public operating system images, specify the
 image by its family name. For example, specify family/debian-8 to use the
 latest Debian 8 image:
-
 projects/debian-cloud/global/images/family/debian-8
 
-Alternatively, use a specific version of a public operating system image:
 
+Alternatively, use a specific version of a public operating system image:
 projects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD
+
 
 To create a disk with a custom image that you created, specify the image
 name in the following format:
-
 global/images/my-custom-image
+
 
 You can also specify a custom image by its image family, which returns the
 latest version of the image in that family. Replace the image name with
 family/family-name:
-
 global/images/family/my-image-family
 
 ### `sourceImageEncryptionKey` {#Disk.sourceImageEncryptionKey}
@@ -7208,7 +7942,8 @@ Valid values:
 | Type | `string` |
 
 URL of the disk type resource describing which disk type to use to create
-the disk. Provide this when creating the disk.
+the disk. Provide this when creating the disk. For example:
+project/zones/zone/diskTypes/pd-standard or pd-ssd
 
 ### `users` {#Disk.users}
 
@@ -7228,7 +7963,9 @@ project/zones/zone/instances/instance
 | Field Name | `zone` |
 | Type | `string` |
 
-[Output Only] URL of the zone where the disk resides.
+[Output Only] URL of the zone where the disk resides. You must specify this
+field as part of the HTTP request URL. It is not settable as a field in the
+request body.
 
 ## Message `DiskAggregatedList` {#DiskAggregatedList}
 
@@ -7310,9 +8047,9 @@ template when its created from a source instance.
 ### Inputs for `DiskInstantiationConfig`
 
 * `bool` [`autoDelete`](#DiskInstantiationConfig.autoDelete) = 1
-* `string` [`deviceName`](#DiskInstantiationConfig.deviceName) = 2
-* `string` [`instantiateFrom`](#DiskInstantiationConfig.instantiateFrom) = 3
-* `string` [`sourceImage`](#DiskInstantiationConfig.sourceImage) = 4
+* `string` [`customImage`](#DiskInstantiationConfig.customImage) = 2
+* `string` [`deviceName`](#DiskInstantiationConfig.deviceName) = 3
+* `string` [`instantiateFrom`](#DiskInstantiationConfig.instantiateFrom) = 4
 
 ### `autoDelete` {#DiskInstantiationConfig.autoDelete}
 
@@ -7323,6 +8060,16 @@ template when its created from a source instance.
 
 Specifies whether the disk will be auto-deleted when the instance is deleted
 (but not when the disk is detached from the instance).
+
+### `customImage` {#DiskInstantiationConfig.customImage}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `customImage` |
+| Type | `string` |
+
+The custom source image to be used to restore this disk when instantiating
+this instance template.
 
 ### `deviceName` {#DiskInstantiationConfig.deviceName}
 
@@ -7340,25 +8087,28 @@ Specifies the device name of the disk to which the configurations apply to.
 | Field Name | `instantiateFrom` |
 | Type | `string` |
 
-Specifies whether to include the disk and what image to use.
+Specifies whether to include the disk and what image to use. Possible values
+are:
+- source-image: to use the same image that was used to create the source
+instance's corresponding disk. Applicable to the boot disk and additional
+read-write disks.
+- source-image-family: to use the same image family that was used to create
+the source instance's corresponding disk. Applicable to the boot disk and
+additional read-write disks.
+- custom-image: to use a user-provided image url for disk creation.
+Applicable to the boot disk and additional read-write disks.
+- attach-read-only: to attach a read-only disk. Applicable to read-only
+disks.
+- do-not-include: to exclude a disk from the template. Applicable to
+additional read-write disks, local SSDs, and read-only disks.
 Valid values:
     ATTACH_READ_ONLY
     BLANK
+    CUSTOM_IMAGE
     DEFAULT
     DO_NOT_INCLUDE
-    IMAGE_URL
     SOURCE_IMAGE
     SOURCE_IMAGE_FAMILY
-
-### `sourceImage` {#DiskInstantiationConfig.sourceImage}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `sourceImage` |
-| Type | `string` |
-
-The custom source image to be used to restore this disk when instantiating
-this instance template.
 
 ## Message `DiskList` {#DiskList}
 
@@ -7482,9 +8232,10 @@ v1.diskTypes ==)
 * `string` [`id`](#DiskType.id) = 5
 * `string` [`kind`](#DiskType.kind) = 6
 * `string` [`name`](#DiskType.name) = 7 (**Required**)
-* `string` [`selfLink`](#DiskType.selfLink) = 8
-* `string` [`validDiskSize`](#DiskType.validDiskSize) = 9
-* `string` [`zone`](#DiskType.zone) = 10
+* `string` [`region`](#DiskType.region) = 8
+* `string` [`selfLink`](#DiskType.selfLink) = 9
+* `string` [`validDiskSize`](#DiskType.validDiskSize) = 10
+* `string` [`zone`](#DiskType.zone) = 11
 
 ### `creationTimestamp` {#DiskType.creationTimestamp}
 
@@ -7551,6 +8302,17 @@ defined by the server.
 
 [Output Only] Name of the resource.
 
+### `region` {#DiskType.region}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `region` |
+| Type | `string` |
+
+[Output Only] URL of the region where the disk type resides. Only applicable
+for regional resources. You must specify this field as part of the HTTP
+request URL. It is not settable as a field in the request body.
+
 ### `selfLink` {#DiskType.selfLink}
 
 | Property | Comments |
@@ -7577,7 +8339,9 @@ as "10GB-10TB".
 | Field Name | `zone` |
 | Type | `string` |
 
-[Output Only] URL of the zone where the disk type resides.
+[Output Only] URL of the zone where the disk type resides. You must specify
+this field as part of the HTTP request URL. It is not settable as a field in
+the request body.
 
 ## Message `DiskTypeAggregatedList` {#DiskTypeAggregatedList}
 
@@ -7737,7 +8501,7 @@ continue paging through the results.
 | Type | [`compute.DiskType`](gcp_compute.md#DiskType) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of disk types contained in this scope.
+[Output Only] A list of disk types contained in this scope.
 
 ### `warning` {#DiskTypesScopedList.warning}
 
@@ -7780,7 +8544,7 @@ The new size of the persistent disk, which is specified in GB.
 | Type | [`compute.Disk`](gcp_compute.md#Disk) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of disks contained in this scope.
+[Output Only] A list of disks contained in this scope.
 
 ### `warning` {#DisksScopedList.warning}
 
@@ -7844,46 +8608,6 @@ this field will be populated.
 | Type | [`compute.Operation.Error.Errors`](gcp_compute.md#Operation.Error.Errors) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-## Message `Errors` {#ManagedInstanceLastAttempt.Errors.Errors}
-
-[Output Only] The array of errors encountered while processing this
-operation.
-
-
-### Inputs for `Errors`
-
-* `string` [`code`](#ManagedInstanceLastAttempt.Errors.Errors.code) = 1
-* `string` [`location`](#ManagedInstanceLastAttempt.Errors.Errors.location) = 2
-* `string` [`message`](#ManagedInstanceLastAttempt.Errors.Errors.message) = 3
-
-### `code` {#ManagedInstanceLastAttempt.Errors.Errors.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] The error type identifier for this error.
-
-### `location` {#ManagedInstanceLastAttempt.Errors.Errors.location}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `location` |
-| Type | `string` |
-
-[Output Only] Indicates the field in the request that caused the error. This
-property is optional.
-
-### `message` {#ManagedInstanceLastAttempt.Errors.Errors.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] An optional, human-readable error message.
-
 ## Message `Errors` {#Operation.Error.Errors}
 
 [Output Only] The array of errors encountered while processing this
@@ -7916,6 +8640,46 @@ operation.
 property is optional.
 
 ### `message` {#Operation.Error.Errors.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] An optional, human-readable error message.
+
+## Message `Errors` {#ManagedInstanceLastAttempt.Errors.Errors}
+
+[Output Only] The array of errors encountered while processing this
+operation.
+
+
+### Inputs for `Errors`
+
+* `string` [`code`](#ManagedInstanceLastAttempt.Errors.Errors.code) = 1
+* `string` [`location`](#ManagedInstanceLastAttempt.Errors.Errors.location) = 2
+* `string` [`message`](#ManagedInstanceLastAttempt.Errors.Errors.message) = 3
+
+### `code` {#ManagedInstanceLastAttempt.Errors.Errors.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] The error type identifier for this error.
+
+### `location` {#ManagedInstanceLastAttempt.Errors.Errors.location}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `location` |
+| Type | `string` |
+
+[Output Only] Indicates the field in the request that caused the error. This
+property is optional.
+
+### `message` {#ManagedInstanceLastAttempt.Errors.Errors.message}
 
 | Property | Comments |
 |----------|----------|
@@ -8015,17 +8779,19 @@ Represents a Firewall resource.
 * `string` [`description`](#Firewall.description) = 4
 * `repeated` `string` [`destinationRanges`](#Firewall.destinationRanges) = 5
 * `string` [`direction`](#Firewall.direction) = 6
-* `string` [`id`](#Firewall.id) = 7
-* `string` [`kind`](#Firewall.kind) = 8
-* `string` [`name`](#Firewall.name) = 9 (**Required**)
-* `string` [`network`](#Firewall.network) = 10
-* `int32` [`priority`](#Firewall.priority) = 11
-* `string` [`selfLink`](#Firewall.selfLink) = 12
-* `repeated` `string` [`sourceRanges`](#Firewall.sourceRanges) = 13
-* `repeated` `string` [`sourceServiceAccounts`](#Firewall.sourceServiceAccounts) = 14
-* `repeated` `string` [`sourceTags`](#Firewall.sourceTags) = 15
-* `repeated` `string` [`targetServiceAccounts`](#Firewall.targetServiceAccounts) = 16
-* `repeated` `string` [`targetTags`](#Firewall.targetTags) = 17
+* `bool` [`disabled`](#Firewall.disabled) = 7
+* `bool` [`enableLogging`](#Firewall.enableLogging) = 8
+* `string` [`id`](#Firewall.id) = 9
+* `string` [`kind`](#Firewall.kind) = 10
+* `string` [`name`](#Firewall.name) = 11 (**Required**)
+* `string` [`network`](#Firewall.network) = 12
+* `int32` [`priority`](#Firewall.priority) = 13
+* `string` [`selfLink`](#Firewall.selfLink) = 14
+* `repeated` `string` [`sourceRanges`](#Firewall.sourceRanges) = 15
+* `repeated` `string` [`sourceServiceAccounts`](#Firewall.sourceServiceAccounts) = 16
+* `repeated` `string` [`sourceTags`](#Firewall.sourceTags) = 17
+* `repeated` `string` [`targetServiceAccounts`](#Firewall.targetServiceAccounts) = 18
+* `repeated` `string` [`targetTags`](#Firewall.targetTags) = 19
 
 ### `allowed` {#Firewall.allowed}
 
@@ -8089,6 +8855,28 @@ Valid values:
     EGRESS
     INGRESS
 
+### `disabled` {#Firewall.disabled}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `disabled` |
+| Type | `bool` |
+
+Denotes whether the firewall rule is disabled, i.e not applied to the
+network it is associated with. When set to true, the firewall rule is not
+enforced and the network behaves as if it did not exist. If this is
+unspecified, the firewall rule will be enabled.
+
+### `enableLogging` {#Firewall.enableLogging}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `enableLogging` |
+| Type | `bool` |
+
+This field denotes whether to enable logging for a particular firewall rule.
+If logging is enabled, logs will be exported to Stackdriver.
+
 ### `id` {#Firewall.id}
 
 | Property | Comments |
@@ -8120,7 +8908,7 @@ rules.
 Name of the resource; provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -8394,14 +9182,15 @@ v1.regionForwardingRules ==)
 * `string` [`loadBalancingScheme`](#ForwardingRule.loadBalancingScheme) = 11
 * `string` [`name`](#ForwardingRule.name) = 12 (**Required**)
 * `string` [`network`](#ForwardingRule.network) = 13
-* `string` [`portRange`](#ForwardingRule.portRange) = 14
-* `repeated` `string` [`ports`](#ForwardingRule.ports) = 15
-* `string` [`region`](#ForwardingRule.region) = 16
-* `string` [`selfLink`](#ForwardingRule.selfLink) = 17
-* `string` [`serviceLabel`](#ForwardingRule.serviceLabel) = 18
-* `string` [`serviceName`](#ForwardingRule.serviceName) = 19
-* `string` [`subnetwork`](#ForwardingRule.subnetwork) = 20
-* `string` [`target`](#ForwardingRule.target) = 21
+* `string` [`networkTier`](#ForwardingRule.networkTier) = 14
+* `string` [`portRange`](#ForwardingRule.portRange) = 15
+* `repeated` `string` [`ports`](#ForwardingRule.ports) = 16
+* `string` [`region`](#ForwardingRule.region) = 17
+* `string` [`selfLink`](#ForwardingRule.selfLink) = 18
+* `string` [`serviceLabel`](#ForwardingRule.serviceLabel) = 19
+* `string` [`serviceName`](#ForwardingRule.serviceName) = 20
+* `string` [`subnetwork`](#ForwardingRule.subnetwork) = 21
+* `string` [`target`](#ForwardingRule.target) = 22
 
 ### `IPAddress` {#ForwardingRule.IPAddress}
 
@@ -8579,7 +9368,7 @@ Valid values:
 Name of the resource; provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -8596,6 +9385,25 @@ This field is not used for external load balancing.
 For internal load balancing, this field identifies the network that the load
 balanced IP should belong to for this Forwarding Rule. If this field is not
 specified, the default network will be used.
+
+### `networkTier` {#ForwardingRule.networkTier}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkTier` |
+| Type | `string` |
+
+This signifies the networking tier used for configuring this load balancer
+and can only take the following values: PREMIUM , STANDARD.
+
+For regional ForwardingRule, the valid values are PREMIUM and STANDARD. For
+GlobalForwardingRule, the valid value is PREMIUM.
+
+If this field is not specified, it is assumed to be PREMIUM. If IPAddress is
+specified, this value must be equal to the networkTier of the Address.
+Valid values:
+    PREMIUM
+    STANDARD
 
 ### `portRange` {#ForwardingRule.portRange}
 
@@ -8616,12 +9424,11 @@ ranges.
 Some types of forwarding target have constraints on the acceptable ports:
 - TargetHttpProxy: 80, 8080
 - TargetHttpsProxy: 443
-- TargetTcpProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1883,
-5222
-- TargetSslProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1883,
-5222
+- TargetTcpProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688,
+1883, 5222
+- TargetSslProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688,
+1883, 5222
 - TargetVpnGateway: 500, 4500
--
 
 ### `ports` {#ForwardingRule.ports}
 
@@ -8649,7 +9456,9 @@ You may specify a maximum of up to 5 ports.
 | Type | `string` |
 
 [Output Only] URL of the region where the regional forwarding rule resides.
-This field is not applicable to global forwarding rules.
+This field is not applicable to global forwarding rules. You must specify
+this field as part of the HTTP request URL. It is not settable as a field in
+the request body.
 
 ### `selfLink` {#ForwardingRule.selfLink}
 
@@ -8672,7 +9481,7 @@ specified, will be the first label of the fully qualified service name.
 
 The label must be 1-63 characters long, and comply with RFC1035.
 Specifically, the label must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -8719,8 +9528,6 @@ forwarding rules, this target must live in the same region as the forwarding
 rule. For global forwarding rules, this target must be a global load
 balancing resource. The forwarded traffic must be of a type appropriate to
 the target object.
-
-This field is not used for internal load balancing.
 
 ## Message `ForwardingRuleAggregatedList` {#ForwardingRuleAggregatedList}
 
@@ -8864,6 +9671,21 @@ continue paging through the results.
 | Field Name | `warning` |
 | Type | [`compute.ForwardingRuleList.Warning`](gcp_compute.md#ForwardingRuleList.Warning) |
 
+## Message `ForwardingRuleReference` {#ForwardingRuleReference}
+
+
+
+### Inputs for `ForwardingRuleReference`
+
+* `string` [`forwardingRule`](#ForwardingRuleReference.forwardingRule) = 1
+
+### `forwardingRule` {#ForwardingRuleReference.forwardingRule}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `forwardingRule` |
+| Type | `string` |
+
 ## Message `ForwardingRulesScopedList` {#ForwardingRulesScopedList}
 
 
@@ -8881,7 +9703,7 @@ continue paging through the results.
 | Type | [`compute.ForwardingRule`](gcp_compute.md#ForwardingRule) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of forwarding rules contained in this scope.
+A list of forwarding rules contained in this scope.
 
 ### `warning` {#ForwardingRulesScopedList.warning}
 
@@ -8922,7 +9744,7 @@ Make a get() request to the resource to get the latest fingerprint.
 
 A list of labels to apply for this resource. Each label key & value must
 comply with RFC1035. Specifically, the name must be 1-63 characters long and
-match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the
+match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the
 first character must be a lowercase letter, and all following characters
 must be a dash, lowercase letter, or digit, except the last character, which
 cannot be a dash. For example, "webserver-frontend": "images". A label value
@@ -8954,6 +9776,114 @@ Valid values:
     VIRTIO_SCSI_MULTIQUEUE
     WINDOWS
 
+## Message `HTTP2HealthCheck` {#HTTP2HealthCheck}
+
+
+
+### Inputs for `HTTP2HealthCheck`
+
+* `string` [`host`](#HTTP2HealthCheck.host) = 1
+* `int32` [`port`](#HTTP2HealthCheck.port) = 2
+* `string` [`portName`](#HTTP2HealthCheck.portName) = 3
+* `string` [`portSpecification`](#HTTP2HealthCheck.portSpecification) = 4
+* `string` [`proxyHeader`](#HTTP2HealthCheck.proxyHeader) = 5
+* `string` [`requestPath`](#HTTP2HealthCheck.requestPath) = 6
+* `string` [`response`](#HTTP2HealthCheck.response) = 7
+
+### `host` {#HTTP2HealthCheck.host}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `host` |
+| Type | `string` |
+
+The value of the host header in the HTTP/2 health check request. If left
+empty (default value), the IP on behalf of which this health check is
+performed will be used.
+
+### `port` {#HTTP2HealthCheck.port}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `port` |
+| Type | `int32` |
+
+The TCP port number for the health check request. The default value is 443.
+Valid values are 1 through 65535.
+
+### `portName` {#HTTP2HealthCheck.portName}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `portName` |
+| Type | `string` |
+
+Port name as defined in InstanceGroup#NamedPort#name. If both port and
+port_name are defined, port takes precedence.
+
+### `portSpecification` {#HTTP2HealthCheck.portSpecification}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `portSpecification` |
+| Type | `string` |
+
+Specifies how port is selected for health checking, can be one of following
+values:
+USE_FIXED_PORT: The port number in
+port
+is used for health checking.
+USE_NAMED_PORT: The
+portName
+is used for health checking.
+USE_SERVING_PORT: For NetworkEndpointGroup, the port specified for each
+network endpoint is used for health checking. For other backends, the port
+or named port specified in the Backend Service is used for health checking.
+
+
+If not specified, HTTP2 health check follows behavior specified in
+port
+and
+portName
+fields.
+Valid values:
+    USE_FIXED_PORT
+    USE_NAMED_PORT
+    USE_SERVING_PORT
+
+### `proxyHeader` {#HTTP2HealthCheck.proxyHeader}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `proxyHeader` |
+| Type | `string` |
+
+Specifies the type of proxy header to append before sending data to the
+backend, either NONE or PROXY_V1. The default is NONE.
+Valid values:
+    NONE
+    PROXY_V1
+
+### `requestPath` {#HTTP2HealthCheck.requestPath}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `requestPath` |
+| Type | `string` |
+
+The request path of the HTTP/2 health check request. The default value is /.
+
+### `response` {#HTTP2HealthCheck.response}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `response` |
+| Type | `string` |
+
+The string to match anywhere in the first 1024 bytes of the response body.
+If left empty (the default value), the status code determines health. The
+response data can only be ASCII.
+
 ## Message `HTTPHealthCheck` {#HTTPHealthCheck}
 
 
@@ -8963,9 +9893,10 @@ Valid values:
 * `string` [`host`](#HTTPHealthCheck.host) = 1
 * `int32` [`port`](#HTTPHealthCheck.port) = 2
 * `string` [`portName`](#HTTPHealthCheck.portName) = 3
-* `string` [`proxyHeader`](#HTTPHealthCheck.proxyHeader) = 4
-* `string` [`requestPath`](#HTTPHealthCheck.requestPath) = 5
-* `string` [`response`](#HTTPHealthCheck.response) = 6
+* `string` [`portSpecification`](#HTTPHealthCheck.portSpecification) = 4
+* `string` [`proxyHeader`](#HTTPHealthCheck.proxyHeader) = 5
+* `string` [`requestPath`](#HTTPHealthCheck.requestPath) = 6
+* `string` [`response`](#HTTPHealthCheck.response) = 7
 
 ### `host` {#HTTPHealthCheck.host}
 
@@ -8997,6 +9928,36 @@ Valid values are 1 through 65535.
 
 Port name as defined in InstanceGroup#NamedPort#name. If both port and
 port_name are defined, port takes precedence.
+
+### `portSpecification` {#HTTPHealthCheck.portSpecification}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `portSpecification` |
+| Type | `string` |
+
+Specifies how port is selected for health checking, can be one of following
+values:
+USE_FIXED_PORT: The port number in
+port
+is used for health checking.
+USE_NAMED_PORT: The
+portName
+is used for health checking.
+USE_SERVING_PORT: For NetworkEndpointGroup, the port specified for each
+network endpoint is used for health checking. For other backends, the port
+or named port specified in the Backend Service is used for health checking.
+
+
+If not specified, HTTP health check follows behavior specified in
+port
+and
+portName
+fields.
+Valid values:
+    USE_FIXED_PORT
+    USE_NAMED_PORT
+    USE_SERVING_PORT
 
 ### `proxyHeader` {#HTTPHealthCheck.proxyHeader}
 
@@ -9040,9 +10001,10 @@ response data can only be ASCII.
 * `string` [`host`](#HTTPSHealthCheck.host) = 1
 * `int32` [`port`](#HTTPSHealthCheck.port) = 2
 * `string` [`portName`](#HTTPSHealthCheck.portName) = 3
-* `string` [`proxyHeader`](#HTTPSHealthCheck.proxyHeader) = 4
-* `string` [`requestPath`](#HTTPSHealthCheck.requestPath) = 5
-* `string` [`response`](#HTTPSHealthCheck.response) = 6
+* `string` [`portSpecification`](#HTTPSHealthCheck.portSpecification) = 4
+* `string` [`proxyHeader`](#HTTPSHealthCheck.proxyHeader) = 5
+* `string` [`requestPath`](#HTTPSHealthCheck.requestPath) = 6
+* `string` [`response`](#HTTPSHealthCheck.response) = 7
 
 ### `host` {#HTTPSHealthCheck.host}
 
@@ -9074,6 +10036,36 @@ Valid values are 1 through 65535.
 
 Port name as defined in InstanceGroup#NamedPort#name. If both port and
 port_name are defined, port takes precedence.
+
+### `portSpecification` {#HTTPSHealthCheck.portSpecification}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `portSpecification` |
+| Type | `string` |
+
+Specifies how port is selected for health checking, can be one of following
+values:
+USE_FIXED_PORT: The port number in
+port
+is used for health checking.
+USE_NAMED_PORT: The
+portName
+is used for health checking.
+USE_SERVING_PORT: For NetworkEndpointGroup, the port specified for each
+network endpoint is used for health checking. For other backends, the port
+or named port specified in the Backend Service is used for health checking.
+
+
+If not specified, HTTPS health check follows behavior specified in
+port
+and
+portName
+fields.
+Valid values:
+    USE_FIXED_PORT
+    USE_NAMED_PORT
+    USE_SERVING_PORT
 
 ### `proxyHeader` {#HTTPSHealthCheck.proxyHeader}
 
@@ -9121,18 +10113,19 @@ protocols.
 * `string` [`creationTimestamp`](#HealthCheck.creationTimestamp) = 2
 * `string` [`description`](#HealthCheck.description) = 3
 * `int32` [`healthyThreshold`](#HealthCheck.healthyThreshold) = 4
-* [`compute.HTTPHealthCheck`](gcp_compute.md#HTTPHealthCheck) [`httpHealthCheck`](#HealthCheck.httpHealthCheck) = 5
-* [`compute.HTTPSHealthCheck`](gcp_compute.md#HTTPSHealthCheck) [`httpsHealthCheck`](#HealthCheck.httpsHealthCheck) = 6
-* `string` [`id`](#HealthCheck.id) = 7
-* `string` [`kind`](#HealthCheck.kind) = 8
-* `string` [`name`](#HealthCheck.name) = 9 (**Required**)
-* `string` [`selfLink`](#HealthCheck.selfLink) = 10
-* [`compute.SSLHealthCheck`](gcp_compute.md#SSLHealthCheck) [`sslHealthCheck`](#HealthCheck.sslHealthCheck) = 11
-* [`compute.TCPHealthCheck`](gcp_compute.md#TCPHealthCheck) [`tcpHealthCheck`](#HealthCheck.tcpHealthCheck) = 12
-* `int32` [`timeoutSec`](#HealthCheck.timeoutSec) = 13
-* `string` [`type`](#HealthCheck.type) = 14
-* [`compute.UDPHealthCheck`](gcp_compute.md#UDPHealthCheck) [`udpHealthCheck`](#HealthCheck.udpHealthCheck) = 15
-* `int32` [`unhealthyThreshold`](#HealthCheck.unhealthyThreshold) = 16
+* [`compute.HTTP2HealthCheck`](gcp_compute.md#HTTP2HealthCheck) [`http2HealthCheck`](#HealthCheck.http2HealthCheck) = 5
+* [`compute.HTTPHealthCheck`](gcp_compute.md#HTTPHealthCheck) [`httpHealthCheck`](#HealthCheck.httpHealthCheck) = 6
+* [`compute.HTTPSHealthCheck`](gcp_compute.md#HTTPSHealthCheck) [`httpsHealthCheck`](#HealthCheck.httpsHealthCheck) = 7
+* `string` [`id`](#HealthCheck.id) = 8
+* `string` [`kind`](#HealthCheck.kind) = 9
+* `string` [`name`](#HealthCheck.name) = 10 (**Required**)
+* `string` [`selfLink`](#HealthCheck.selfLink) = 11
+* [`compute.SSLHealthCheck`](gcp_compute.md#SSLHealthCheck) [`sslHealthCheck`](#HealthCheck.sslHealthCheck) = 12
+* [`compute.TCPHealthCheck`](gcp_compute.md#TCPHealthCheck) [`tcpHealthCheck`](#HealthCheck.tcpHealthCheck) = 13
+* `int32` [`timeoutSec`](#HealthCheck.timeoutSec) = 14
+* `string` [`type`](#HealthCheck.type) = 15
+* [`compute.UDPHealthCheck`](gcp_compute.md#UDPHealthCheck) [`udpHealthCheck`](#HealthCheck.udpHealthCheck) = 16
+* `int32` [`unhealthyThreshold`](#HealthCheck.unhealthyThreshold) = 17
 
 ### `checkIntervalSec` {#HealthCheck.checkIntervalSec}
 
@@ -9172,6 +10165,13 @@ create the resource.
 
 A so-far unhealthy instance will be marked healthy after this many
 consecutive successes. The default value is 2.
+
+### `http2HealthCheck` {#HealthCheck.http2HealthCheck}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `http2HealthCheck` |
+| Type | [`compute.HTTP2HealthCheck`](gcp_compute.md#HTTP2HealthCheck) |
 
 ### `httpHealthCheck` {#HealthCheck.httpHealthCheck}
 
@@ -9217,7 +10217,7 @@ Type of the resource.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -9268,6 +10268,7 @@ not specified, the default is TCP. Exactly one of the protocol-specific
 health check field must be specified, which must match type field.
 Valid values:
     HTTP
+    HTTP2
     HTTPS
     INVALID
     SSL
@@ -9433,6 +10434,62 @@ The IP address represented by this resource.
 
 The port on the instance.
 
+## Message `HealthStatusForNetworkEndpoint` {#HealthStatusForNetworkEndpoint}
+
+
+
+### Inputs for `HealthStatusForNetworkEndpoint`
+
+* [`compute.BackendServiceReference`](gcp_compute.md#BackendServiceReference) [`backendService`](#HealthStatusForNetworkEndpoint.backendService) = 1
+* [`compute.ForwardingRuleReference`](gcp_compute.md#ForwardingRuleReference) [`forwardingRule`](#HealthStatusForNetworkEndpoint.forwardingRule) = 2
+* [`compute.HealthCheckReference`](gcp_compute.md#HealthCheckReference) [`healthCheck`](#HealthStatusForNetworkEndpoint.healthCheck) = 3
+* `string` [`healthState`](#HealthStatusForNetworkEndpoint.healthState) = 4
+
+### `backendService` {#HealthStatusForNetworkEndpoint.backendService}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `backendService` |
+| Type | [`compute.BackendServiceReference`](gcp_compute.md#BackendServiceReference) |
+
+URL of the backend service associated with the health state of the network
+endpoint.
+
+### `forwardingRule` {#HealthStatusForNetworkEndpoint.forwardingRule}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `forwardingRule` |
+| Type | [`compute.ForwardingRuleReference`](gcp_compute.md#ForwardingRuleReference) |
+
+URL of the forwarding rule associated with the health state of the network
+endpoint.
+
+### `healthCheck` {#HealthStatusForNetworkEndpoint.healthCheck}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `healthCheck` |
+| Type | [`compute.HealthCheckReference`](gcp_compute.md#HealthCheckReference) |
+
+URL of the health check associated with the health state of the network
+endpoint.
+
+### `healthState` {#HealthStatusForNetworkEndpoint.healthState}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `healthState` |
+| Type | `string` |
+
+Health state of the network endpoint determined based on the health checks
+configured.
+Valid values:
+    DRAINING
+    HEALTHY
+    UNHEALTHY
+    UNKNOWN
+
 ## Message `HostRule` {#HostRule}
 
 UrlMaps A host-matching rule for a URL. If matched, will use the named
@@ -9580,7 +10637,7 @@ health checks.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -9807,7 +10864,7 @@ Type of the resource.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -9964,8 +11021,11 @@ v1.images ==)
 * `string` [`sourceImage`](#Image.sourceImage) = 21
 * [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceImageEncryptionKey`](#Image.sourceImageEncryptionKey) = 22
 * `string` [`sourceImageId`](#Image.sourceImageId) = 23
-* `string` [`sourceType`](#Image.sourceType) = 24
-* `string` [`status`](#Image.status) = 25
+* `string` [`sourceSnapshot`](#Image.sourceSnapshot) = 24
+* [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) [`sourceSnapshotEncryptionKey`](#Image.sourceSnapshotEncryptionKey) = 25
+* `string` [`sourceSnapshotId`](#Image.sourceSnapshotId) = 26
+* `string` [`sourceType`](#Image.sourceType) = 27
+* `string` [`status`](#Image.status) = 28
 
 ### `archiveSizeBytes` {#Image.archiveSizeBytes}
 
@@ -10133,7 +11193,7 @@ Any applicable license URI.
 Name of the resource; provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -10224,6 +11284,41 @@ source image is protected by a customer-supplied encryption key.
 [Output Only] The ID value of the image used to create this image. This
 value may be used to determine whether the image was taken from the current
 or a previous instance of a given image name.
+
+### `sourceSnapshot` {#Image.sourceSnapshot}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `sourceSnapshot` |
+| Type | `string` |
+
+URL of the source snapshot used to create this image. This can be a full or
+valid partial URL. You must provide exactly one of:
+- this property, or
+- the sourceImage property, or
+- the rawDisk.source property, or
+- the sourceDisk property   in order to create an image.
+
+### `sourceSnapshotEncryptionKey` {#Image.sourceSnapshotEncryptionKey}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `sourceSnapshotEncryptionKey` |
+| Type | [`compute.CustomerEncryptionKey`](gcp_compute.md#CustomerEncryptionKey) |
+
+The customer-supplied encryption key of the source snapshot. Required if the
+source snapshot is protected by a customer-supplied encryption key.
+
+### `sourceSnapshotId` {#Image.sourceSnapshotId}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `sourceSnapshotId` |
+| Type | `string` |
+
+[Output Only] The ID value of the snapshot used to create this image. This
+value may be used to determine whether the snapshot was taken from the
+current or a previous instance of a given snapshot name.
 
 ### `sourceType` {#Image.sourceType}
 
@@ -10351,11 +11446,13 @@ v1.instances ==)
 * [`compute.Scheduling`](gcp_compute.md#Scheduling) [`scheduling`](#Instance.scheduling) = 17
 * `string` [`selfLink`](#Instance.selfLink) = 18
 * `repeated` [`compute.ServiceAccount`](gcp_compute.md#ServiceAccount) [`serviceAccounts`](#Instance.serviceAccounts) = 19
-* `bool` [`startRestricted`](#Instance.startRestricted) = 20
-* `string` [`status`](#Instance.status) = 21
-* `string` [`statusMessage`](#Instance.statusMessage) = 22
-* [`compute.Tags`](gcp_compute.md#Tags) [`tags`](#Instance.tags) = 23
-* `string` [`zone`](#Instance.zone) = 24
+* [`compute.ShieldedVmConfig`](gcp_compute.md#ShieldedVmConfig) [`shieldedVmConfig`](#Instance.shieldedVmConfig) = 20
+* [`compute.ShieldedVmIntegrityPolicy`](gcp_compute.md#ShieldedVmIntegrityPolicy) [`shieldedVmIntegrityPolicy`](#Instance.shieldedVmIntegrityPolicy) = 21
+* `bool` [`startRestricted`](#Instance.startRestricted) = 22
+* `string` [`status`](#Instance.status) = 23
+* `string` [`statusMessage`](#Instance.statusMessage) = 24
+* [`compute.Tags`](gcp_compute.md#Tags) [`tags`](#Instance.tags) = 25
+* `string` [`zone`](#Instance.zone) = 26
 
 ### `canIpForward` {#Instance.canIpForward}
 
@@ -10424,7 +11521,7 @@ created before you can assign them.
 | Type | [`compute.AcceleratorConfig`](gcp_compute.md#AcceleratorConfig) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of the type and count of accelerator cards attached to the instance.
+A list of the type and count of accelerator cards attached to the instance.
 
 ### `id` {#Instance.id}
 
@@ -10452,11 +11549,11 @@ defined by the server.
 | Field Name | `labelFingerprint` |
 | Type | `string` |
 
-A fingerprint for this request, which is essentially a hash of the
-metadata's contents and used for optimistic locking. The fingerprint is
-initially generated by Compute Engine and changes after every request to
-modify or update metadata. You must always provide an up-to-date fingerprint
-hash in order to update or change metadata.
+A fingerprint for this request, which is essentially a hash of the label's
+contents and used for optimistic locking. The fingerprint is initially
+generated by Compute Engine and changes after every request to modify or
+update labels. You must always provide an up-to-date fingerprint hash in
+order to update or change labels.
 
 To see the latest fingerprint, make get() request to the instance.
 
@@ -10482,16 +11579,16 @@ Full or partial URL of the machine type resource to use for this instance,
 in the format: zones/zone/machineTypes/machine-type. This is provided by the
 client when the instance is created. For example, the following is a valid
 partial url to a predefined machine type:
-
 zones/us-central1-f/machineTypes/n1-standard-1
+
 
 To create a custom machine type, provide a URL to a machine type in the
 following format, where CPUS is 1 or an even number up to 32 (2, 4, 6, ...
 24, etc), and MEMORY is the total memory for this instance. Memory must be a
 multiple of 256 MB and must be supplied in MB (e.g. 5 GB of memory is 5120
 MB):
-
 zones/zone/machineTypes/custom-CPUS-MEMORY
+
 
 For example: zones/us-central1-f/machineTypes/custom-4-5120
 
@@ -10530,7 +11627,7 @@ or minCpuPlatform: "Intel Sandy Bridge".
 The name of the resource, provided by the client when initially creating the
 resource. The resource name must be 1-63 characters long, and comply with
 RFC1035. Specifically, the name must be 1-63 characters long and match the
-regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first
+regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first
 character must be a lowercase letter, and all following characters must be a
 dash, lowercase letter, or digit, except the last character, which cannot be
 a dash.
@@ -10579,6 +11676,20 @@ instance. Only one service account per VM instance is supported.
 Service accounts generate access tokens that can be accessed through the
 metadata server and used to authenticate applications on the instance. See
 Service Accounts for more information.
+
+### `shieldedVmConfig` {#Instance.shieldedVmConfig}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `shieldedVmConfig` |
+| Type | [`compute.ShieldedVmConfig`](gcp_compute.md#ShieldedVmConfig) |
+
+### `shieldedVmIntegrityPolicy` {#Instance.shieldedVmIntegrityPolicy}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `shieldedVmIntegrityPolicy` |
+| Type | [`compute.ShieldedVmIntegrityPolicy`](gcp_compute.md#ShieldedVmIntegrityPolicy) |
 
 ### `startRestricted` {#Instance.startRestricted}
 
@@ -10638,7 +11749,9 @@ method. Each tag within the list must comply with RFC1035.
 | Field Name | `zone` |
 | Type | `string` |
 
-[Output Only] URL of the zone where the instance resides.
+[Output Only] URL of the zone where the instance resides. You must specify
+this field as part of the HTTP request URL. It is not settable as a field in
+the request body.
 
 ## Message `InstanceAggregatedList` {#InstanceAggregatedList}
 
@@ -10828,8 +11941,8 @@ The URL of the network to which all instances in the instance group belong.
 | Field Name | `region` |
 | Type | `string` |
 
-The URL of the region where the instance group is located (for regional
-resources).
+[Output Only] The URL of the region where the instance group is located (for
+regional resources).
 
 ### `selfLink` {#InstanceGroup.selfLink}
 
@@ -10857,8 +11970,8 @@ URL.
 | Field Name | `subnetwork` |
 | Type | `string` |
 
-The URL of the subnetwork to which all instances in the instance group
-belong.
+[Output Only] The URL of the subnetwork to which all instances in the
+instance group belong.
 
 ### `zone` {#InstanceGroup.zone}
 
@@ -11129,8 +12242,9 @@ Valid values:
 | Field Name | `fingerprint` |
 | Type | `string` |
 
-[Output Only] The fingerprint of the resource data. You can use this
-optional field for optimistic locking when you update the resource.
+Fingerprint of this resource. This field may be used in optimistic locking.
+It will be ignored when inserting an InstanceGroupManager. An up-to-date
+fingerprint must be provided in order to update the InstanceGroupManager.
 
 ### `id` {#InstanceGroupManager.id}
 
@@ -11231,11 +12345,10 @@ this URL.
 | Field Name | `serviceAccount` |
 | Type | `string` |
 
-[Output Only] The service account to be used as credentials for all
-operations performed by the managed instance group on instances. The service
-accounts needs all permissions required to create and delete instances. By
-default, the service account
-{projectNumber}@cloudservices.gserviceaccount.com is used.
+The service account to be used as credentials for all operations performed
+by the managed instance group on instances. The service accounts needs all
+permissions required to create and delete instances. By default, the service
+account {projectNumber}@cloudservices.gserviceaccount.com is used.
 
 ### `targetPools` {#InstanceGroupManager.targetPools}
 
@@ -11413,8 +12526,8 @@ scheduled to be restarted or are currently being restarted.
 | Type | `int32` |
 
 [Output Only] The number of instances in the managed instance group that are
-being verified. More details regarding verification process are covered in
-the documentation of ManagedInstance.InstanceAction.VERIFYING enum field.
+being verified. See the managedInstances[].currentAction property in the
+listManagedInstances method documentation.
 
 ## Message `InstanceGroupManagerAggregatedList` {#InstanceGroupManagerAggregatedList}
 
@@ -12398,7 +13511,8 @@ https://www.googleapis.com/compute/v1/projects/project/zones/zone/instances/inst
 * `repeated` [`compute.NetworkInterface`](gcp_compute.md#NetworkInterface) [`networkInterfaces`](#InstanceProperties.networkInterfaces) = 9
 * [`compute.Scheduling`](gcp_compute.md#Scheduling) [`scheduling`](#InstanceProperties.scheduling) = 10
 * `repeated` [`compute.ServiceAccount`](gcp_compute.md#ServiceAccount) [`serviceAccounts`](#InstanceProperties.serviceAccounts) = 11
-* [`compute.Tags`](gcp_compute.md#Tags) [`tags`](#InstanceProperties.tags) = 12
+* [`compute.ShieldedVmConfig`](gcp_compute.md#ShieldedVmConfig) [`shieldedVmConfig`](#InstanceProperties.shieldedVmConfig) = 12
+* [`compute.Tags`](gcp_compute.md#Tags) [`tags`](#InstanceProperties.tags) = 13
 
 ### `canIpForward` {#InstanceProperties.canIpForward}
 
@@ -12522,6 +13636,16 @@ service accounts are available to the instances that are created from this
 template. Use metadata queries to obtain the access tokens for these
 instances.
 
+### `shieldedVmConfig` {#InstanceProperties.shieldedVmConfig}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `shieldedVmConfig` |
+| Type | [`compute.ShieldedVmConfig`](gcp_compute.md#ShieldedVmConfig) |
+
+Specifies the Shielded VM options for the instances that are created from
+this template.
+
 ### `tags` {#InstanceProperties.tags}
 
 | Property | Comments |
@@ -12620,7 +13744,7 @@ for instance templates.
 Name of the resource; provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -12803,7 +13927,7 @@ Valid values:
 | Type | [`compute.Instance`](gcp_compute.md#Instance) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of instances contained in this scope.
+[Output Only] A list of instances contained in this scope.
 
 ### `warning` {#InstancesScopedList.warning}
 
@@ -12856,7 +13980,7 @@ or change labels.
 | Type | [`compute.AcceleratorConfig`](gcp_compute.md#AcceleratorConfig) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of the type and count of accelerator cards attached to the instance.
+A list of the type and count of accelerator cards attached to the instance.
 
 ## Message `InstancesSetMachineTypeRequest` {#InstancesSetMachineTypeRequest}
 
@@ -12969,15 +14093,18 @@ v1.interconnects ==) (== resource_for beta.interconnects ==)
 * `repeated` `string` [`interconnectAttachments`](#Interconnect.interconnectAttachments) = 10
 * `string` [`interconnectType`](#Interconnect.interconnectType) = 11
 * `string` [`kind`](#Interconnect.kind) = 12
-* `string` [`linkType`](#Interconnect.linkType) = 13
-* `string` [`location`](#Interconnect.location) = 14
-* `string` [`name`](#Interconnect.name) = 15 (**Required**)
-* `string` [`nocContactEmail`](#Interconnect.nocContactEmail) = 16
-* `string` [`operationalStatus`](#Interconnect.operationalStatus) = 17
-* `string` [`peerIpAddress`](#Interconnect.peerIpAddress) = 18
-* `int32` [`provisionedLinkCount`](#Interconnect.provisionedLinkCount) = 19
-* `int32` [`requestedLinkCount`](#Interconnect.requestedLinkCount) = 20
-* `string` [`selfLink`](#Interconnect.selfLink) = 21
+* `string` [`labelFingerprint`](#Interconnect.labelFingerprint) = 13
+* `repeated` [`compute.Interconnect.LabelsEntry`](gcp_compute.md#Interconnect.LabelsEntry) [`labels`](#Interconnect.labels) = 14
+* `string` [`linkType`](#Interconnect.linkType) = 15
+* `string` [`location`](#Interconnect.location) = 16
+* `string` [`name`](#Interconnect.name) = 17 (**Required**)
+* `string` [`nocContactEmail`](#Interconnect.nocContactEmail) = 18
+* `string` [`operationalStatus`](#Interconnect.operationalStatus) = 19
+* `string` [`peerIpAddress`](#Interconnect.peerIpAddress) = 20
+* `int32` [`provisionedLinkCount`](#Interconnect.provisionedLinkCount) = 21
+* `int32` [`requestedLinkCount`](#Interconnect.requestedLinkCount) = 22
+* `string` [`selfLink`](#Interconnect.selfLink) = 23
+* `string` [`state`](#Interconnect.state) = 24
 
 ### `adminEnabled` {#Interconnect.adminEnabled}
 
@@ -12999,7 +14126,7 @@ over it. By default, the status is set to true.
 | Type | [`compute.InterconnectCircuitInfo`](gcp_compute.md#InterconnectCircuitInfo) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of CircuitInfo objects, that describe the individual
+[Output Only] A list of CircuitInfo objects, that describe the individual
 circuits in this LAG.
 
 ### `creationTimestamp` {#Interconnect.creationTimestamp}
@@ -13039,7 +14166,7 @@ create the resource.
 | Type | [`compute.InterconnectOutageNotification`](gcp_compute.md#InterconnectOutageNotification) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of outages expected for this Interconnect.
+[Output Only] A list of outages expected for this Interconnect.
 
 ### `googleIpAddress` {#Interconnect.googleIpAddress}
 
@@ -13094,6 +14221,7 @@ Type of interconnect. Note that "IT_PRIVATE" has been deprecated in favor of
 Valid values:
     DEDICATED
     IT_PRIVATE
+    PARTNER
 
 ### `kind` {#Interconnect.kind}
 
@@ -13104,6 +14232,34 @@ Valid values:
 
 [Output Only] Type of the resource. Always compute#interconnect for
 interconnects.
+
+### `labelFingerprint` {#Interconnect.labelFingerprint}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `labelFingerprint` |
+| Type | `string` |
+
+A fingerprint for the labels being applied to this Interconnect, which is
+essentially a hash of the labels set used for optimistic locking. The
+fingerprint is initially generated by Compute Engine and changes after every
+request to modify or update labels. You must always provide an up-to-date
+fingerprint hash in order to update or change labels.
+
+To see the latest fingerprint, make a get() request to retrieve an
+Interconnect.
+
+### `labels` {#Interconnect.labels}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `labels` |
+| Type | [`compute.Interconnect.LabelsEntry`](gcp_compute.md#Interconnect.LabelsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Labels to apply to this Interconnect resource. These can be later modified
+by the setLabels method. Each label key/value must comply with RFC1035.
+Label values may be empty.
 
 ### `linkType` {#Interconnect.linkType}
 
@@ -13139,7 +14295,7 @@ is to be provisioned.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -13208,6 +14364,19 @@ customer.
 
 [Output Only] Server-defined URL for the resource.
 
+### `state` {#Interconnect.state}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `state` |
+| Type | `string` |
+
+[Output Only] The current state of whether or not this Interconnect is
+functional.
+Valid values:
+    ACTIVE
+    UNPROVISIONED
+
 ## Message `InterconnectAttachment` {#InterconnectAttachment}
 
 Represents an InterconnectAttachment (VLAN attachment) resource. For more
@@ -13218,20 +14387,80 @@ beta.interconnectAttachments ==) (== resource_for v1.interconnectAttachments
 
 ### Inputs for `InterconnectAttachment`
 
-* `string` [`cloudRouterIpAddress`](#InterconnectAttachment.cloudRouterIpAddress) = 1
-* `string` [`creationTimestamp`](#InterconnectAttachment.creationTimestamp) = 2
-* `string` [`customerRouterIpAddress`](#InterconnectAttachment.customerRouterIpAddress) = 3
-* `string` [`description`](#InterconnectAttachment.description) = 4
-* `string` [`googleReferenceId`](#InterconnectAttachment.googleReferenceId) = 5
-* `string` [`id`](#InterconnectAttachment.id) = 6
-* `string` [`interconnect`](#InterconnectAttachment.interconnect) = 7
-* `string` [`kind`](#InterconnectAttachment.kind) = 8
-* `string` [`name`](#InterconnectAttachment.name) = 9 (**Required**)
-* `string` [`operationalStatus`](#InterconnectAttachment.operationalStatus) = 10
-* [`compute.InterconnectAttachmentPrivateInfo`](gcp_compute.md#InterconnectAttachmentPrivateInfo) [`privateInterconnectInfo`](#InterconnectAttachment.privateInterconnectInfo) = 11
-* `string` [`region`](#InterconnectAttachment.region) = 12
-* `string` [`router`](#InterconnectAttachment.router) = 13
-* `string` [`selfLink`](#InterconnectAttachment.selfLink) = 14
+* `bool` [`adminEnabled`](#InterconnectAttachment.adminEnabled) = 1
+* `string` [`bandwidth`](#InterconnectAttachment.bandwidth) = 2
+* `repeated` `string` [`candidateSubnets`](#InterconnectAttachment.candidateSubnets) = 3
+* `string` [`cloudRouterIpAddress`](#InterconnectAttachment.cloudRouterIpAddress) = 4
+* `string` [`creationTimestamp`](#InterconnectAttachment.creationTimestamp) = 5
+* `string` [`customerRouterIpAddress`](#InterconnectAttachment.customerRouterIpAddress) = 6
+* `string` [`description`](#InterconnectAttachment.description) = 7
+* `string` [`edgeAvailabilityDomain`](#InterconnectAttachment.edgeAvailabilityDomain) = 8
+* `string` [`googleReferenceId`](#InterconnectAttachment.googleReferenceId) = 9
+* `string` [`id`](#InterconnectAttachment.id) = 10
+* `string` [`interconnect`](#InterconnectAttachment.interconnect) = 11
+* `string` [`kind`](#InterconnectAttachment.kind) = 12
+* `string` [`labelFingerprint`](#InterconnectAttachment.labelFingerprint) = 13
+* `repeated` [`compute.InterconnectAttachment.LabelsEntry`](gcp_compute.md#InterconnectAttachment.LabelsEntry) [`labels`](#InterconnectAttachment.labels) = 14
+* `string` [`name`](#InterconnectAttachment.name) = 15 (**Required**)
+* `string` [`operationalStatus`](#InterconnectAttachment.operationalStatus) = 16
+* `string` [`pairingKey`](#InterconnectAttachment.pairingKey) = 17
+* `string` [`partnerAsn`](#InterconnectAttachment.partnerAsn) = 18
+* [`compute.InterconnectAttachmentPartnerMetadata`](gcp_compute.md#InterconnectAttachmentPartnerMetadata) [`partnerMetadata`](#InterconnectAttachment.partnerMetadata) = 19
+* [`compute.InterconnectAttachmentPrivateInfo`](gcp_compute.md#InterconnectAttachmentPrivateInfo) [`privateInterconnectInfo`](#InterconnectAttachment.privateInterconnectInfo) = 20
+* `string` [`region`](#InterconnectAttachment.region) = 21
+* `string` [`router`](#InterconnectAttachment.router) = 22
+* `string` [`selfLink`](#InterconnectAttachment.selfLink) = 23
+* `string` [`state`](#InterconnectAttachment.state) = 24
+* `string` [`type`](#InterconnectAttachment.type) = 25
+* `int32` [`vlanTag8021q`](#InterconnectAttachment.vlanTag8021q) = 26
+
+### `adminEnabled` {#InterconnectAttachment.adminEnabled}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `adminEnabled` |
+| Type | `bool` |
+
+Determines whether this Attachment will carry packets. Not present for
+PARTNER_PROVIDER.
+
+### `bandwidth` {#InterconnectAttachment.bandwidth}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `bandwidth` |
+| Type | `string` |
+
+Provisioned bandwidth capacity for the interconnectAttachment. Can be set by
+the partner to update the customer's provisioned bandwidth. Output only for
+for PARTNER type, mutable for PARTNER_PROVIDER, not available for DEDICATED.
+Valid values:
+    BPS_100M
+    BPS_10G
+    BPS_1G
+    BPS_200M
+    BPS_2G
+    BPS_300M
+    BPS_400M
+    BPS_500M
+    BPS_50M
+    BPS_5G
+
+### `candidateSubnets` {#InterconnectAttachment.candidateSubnets}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `candidateSubnets` |
+| Type | `string` |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Up to 16 candidate prefixes that can be used to restrict the allocation of
+cloudRouterIpAddress and customerRouterIpAddress for this attachment. All
+prefixes must be within link-local address space (169.254.0.0/16) and must
+be /29 or shorter (/28, /27, etc). Google will attempt to select an unused
+/29 from the supplied candidate prefix(es). The request will fail if all
+possible /29s are in use on Google?s edge. If not supplied, Google will
+randomly select an unused /29 from all of link-local space.
 
 ### `cloudRouterIpAddress` {#InterconnectAttachment.cloudRouterIpAddress}
 
@@ -13270,6 +14499,24 @@ router subinterface for this interconnect attachment.
 | Type | `string` |
 
 An optional description of this resource.
+
+### `edgeAvailabilityDomain` {#InterconnectAttachment.edgeAvailabilityDomain}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `edgeAvailabilityDomain` |
+| Type | `string` |
+
+Desired availability domain for the attachment. Only available for type
+PARTNER, at creation time. For improved reliability, customers should
+configure a pair of attachments with one per availability domain. The
+selected availability domain will be provided to the Partner via the pairing
+key so that the provisioned circuit will lie in the specified domain. If not
+specified, the value will default to AVAILABILITY_DOMAIN_ANY.
+Valid values:
+    AVAILABILITY_DOMAIN_1
+    AVAILABILITY_DOMAIN_2
+    AVAILABILITY_DOMAIN_ANY
 
 ### `googleReferenceId` {#InterconnectAttachment.googleReferenceId}
 
@@ -13311,6 +14558,34 @@ will traverse through.
 [Output Only] Type of the resource. Always compute#interconnectAttachment
 for interconnect attachments.
 
+### `labelFingerprint` {#InterconnectAttachment.labelFingerprint}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `labelFingerprint` |
+| Type | `string` |
+
+A fingerprint for the labels being applied to this InterconnectAttachment,
+which is essentially a hash of the labels set used for optimistic locking.
+The fingerprint is initially generated by Compute Engine and changes after
+every request to modify or update labels. You must always provide an
+up-to-date fingerprint hash in order to update or change labels.
+
+To see the latest fingerprint, make a get() request to retrieve an
+InterconnectAttachment.
+
+### `labels` {#InterconnectAttachment.labels}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `labels` |
+| Type | [`compute.InterconnectAttachment.LabelsEntry`](gcp_compute.md#InterconnectAttachment.LabelsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Labels to apply to this InterconnectAttachment resource. These can be later
+modified by the setLabels method. Each label key/value must comply with
+RFC1035. Label values may be empty.
+
 ### `name` {#InterconnectAttachment.name}
 
 | Property | Comments |
@@ -13322,7 +14597,7 @@ for interconnect attachments.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -13339,6 +14614,40 @@ attachment is functional.
 Valid values:
     OS_ACTIVE
     OS_UNPROVISIONED
+
+### `pairingKey` {#InterconnectAttachment.pairingKey}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `pairingKey` |
+| Type | `string` |
+
+[Output only for type PARTNER. Input only for PARTNER_PROVIDER. Not present
+for DEDICATED]. The opaque identifier of an PARTNER attachment used to
+initiate provisioning with a selected partner. Of the form
+"XXXXX/region/domain"
+
+### `partnerAsn` {#InterconnectAttachment.partnerAsn}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `partnerAsn` |
+| Type | `string` |
+
+Optional BGP ASN for the router that should be supplied by a layer 3 Partner
+if they configured BGP on behalf of the customer. Output only for PARTNER
+type, input only for PARTNER_PROVIDER, not available for DEDICATED.
+
+### `partnerMetadata` {#InterconnectAttachment.partnerMetadata}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `partnerMetadata` |
+| Type | [`compute.InterconnectAttachmentPartnerMetadata`](gcp_compute.md#InterconnectAttachmentPartnerMetadata) |
+
+Informational metadata about Partner attachments from Partners to display to
+customers. Output only for for PARTNER type, mutable for PARTNER_PROVIDER,
+not available for DEDICATED.
 
 ### `privateInterconnectInfo` {#InterconnectAttachment.privateInterconnectInfo}
 
@@ -13359,7 +14668,8 @@ type DEDICATED.
 | Type | `string` |
 
 [Output Only] URL of the region where the regional interconnect attachment
-resides.
+resides. You must specify this field as part of the HTTP request URL. It is
+not settable as a field in the request body.
 
 ### `router` {#InterconnectAttachment.router}
 
@@ -13381,6 +14691,46 @@ network & region within which the Cloud Router is configured.
 | Type | `string` |
 
 [Output Only] Server-defined URL for the resource.
+
+### `state` {#InterconnectAttachment.state}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `state` |
+| Type | `string` |
+
+[Output Only] The current state of this attachment's functionality.
+Valid values:
+    ACTIVE
+    DEFUNCT
+    PARTNER_REQUEST_RECEIVED
+    PENDING_CUSTOMER
+    PENDING_PARTNER
+    STATE_UNSPECIFIED
+    UNPROVISIONED
+
+### `type` {#InterconnectAttachment.type}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `type` |
+| Type | `string` |
+
+Valid values:
+    DEDICATED
+    PARTNER
+    PARTNER_PROVIDER
+
+### `vlanTag8021q` {#InterconnectAttachment.vlanTag8021q}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `vlanTag8021q` |
+| Type | `int32` |
+
+Available only for DEDICATED and PARTNER_PROVIDER. Desired VLAN tag for this
+attachment, in the range 2-4094. This field refers to 802.1q VLAN tag, also
+known as IEEE 802.1Q Only specified at creation time.
 
 ## Message `InterconnectAttachmentAggregatedList` {#InterconnectAttachmentAggregatedList}
 
@@ -13527,6 +14877,51 @@ continue paging through the results.
 | Field Name | `warning` |
 | Type | [`compute.InterconnectAttachmentList.Warning`](gcp_compute.md#InterconnectAttachmentList.Warning) |
 
+## Message `InterconnectAttachmentPartnerMetadata` {#InterconnectAttachmentPartnerMetadata}
+
+Informational metadata about Partner attachments from Partners to display to
+customers. These fields are propagated from PARTNER_PROVIDER attachments to
+their corresponding PARTNER attachments.
+
+
+### Inputs for `InterconnectAttachmentPartnerMetadata`
+
+* `string` [`interconnectName`](#InterconnectAttachmentPartnerMetadata.interconnectName) = 1
+* `string` [`partnerName`](#InterconnectAttachmentPartnerMetadata.partnerName) = 2
+* `string` [`portalUrl`](#InterconnectAttachmentPartnerMetadata.portalUrl) = 3
+
+### `interconnectName` {#InterconnectAttachmentPartnerMetadata.interconnectName}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `interconnectName` |
+| Type | `string` |
+
+Plain text name of the Interconnect this attachment is connected to, as
+displayed in the Partner?s portal. For instance ?Chicago 1?. This value may
+be validated to match approved Partner values.
+
+### `partnerName` {#InterconnectAttachmentPartnerMetadata.partnerName}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `partnerName` |
+| Type | `string` |
+
+Plain text name of the Partner providing this attachment. This value may be
+validated to match approved Partner values.
+
+### `portalUrl` {#InterconnectAttachmentPartnerMetadata.portalUrl}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `portalUrl` |
+| Type | `string` |
+
+URL of the Partner?s portal for this Attachment. Partners may customise this
+to be a deep-link to the specific resource on the Partner portal. This value
+may be validated to match approved Partner values.
+
 ## Message `InterconnectAttachmentPrivateInfo` {#InterconnectAttachmentPrivateInfo}
 
 Information for an interconnect attachment when this belongs to an
@@ -13564,7 +14959,7 @@ and the customer, going to and from this network and region.
 | Type | [`compute.InterconnectAttachment`](gcp_compute.md#InterconnectAttachment) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of interconnect attachments contained in this scope.
+A list of interconnect attachments contained in this scope.
 
 ### `warning` {#InterconnectAttachmentsScopedList.warning}
 
@@ -14002,7 +15397,7 @@ Description of a planned outage on this Interconnect. Next id: 9
 | Type | `string` |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-Iff issue_type is IT_PARTIAL_OUTAGE, a list of the Google-side circuit IDs
+If issue_type is IT_PARTIAL_OUTAGE, a list of the Google-side circuit IDs
 that will be affected.
 
 ### `description` {#InterconnectOutageNotification.description}
@@ -14120,28 +15515,28 @@ meaning as interpreted by the image running in the instance. The only
 restriction placed on values is that their size must be less than or equal
 to 262144 bytes (256 KiB).
 
-## Message `ItemsEntry` {#InterconnectAttachmentAggregatedList.ItemsEntry}
+## Message `ItemsEntry` {#InstanceGroupAggregatedList.ItemsEntry}
 
 
 
 ### Inputs for `ItemsEntry`
 
-* `string` [`key`](#InterconnectAttachmentAggregatedList.ItemsEntry.key) = 1
-* [`compute.InterconnectAttachmentsScopedList`](gcp_compute.md#InterconnectAttachmentsScopedList) [`value`](#InterconnectAttachmentAggregatedList.ItemsEntry.value) = 2
+* `string` [`key`](#InstanceGroupAggregatedList.ItemsEntry.key) = 1
+* [`compute.InstanceGroupsScopedList`](gcp_compute.md#InstanceGroupsScopedList) [`value`](#InstanceGroupAggregatedList.ItemsEntry.value) = 2
 
-### `key` {#InterconnectAttachmentAggregatedList.ItemsEntry.key}
+### `key` {#InstanceGroupAggregatedList.ItemsEntry.key}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `key` |
 | Type | `string` |
 
-### `value` {#InterconnectAttachmentAggregatedList.ItemsEntry.value}
+### `value` {#InstanceGroupAggregatedList.ItemsEntry.value}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `value` |
-| Type | [`compute.InterconnectAttachmentsScopedList`](gcp_compute.md#InterconnectAttachmentsScopedList) |
+| Type | [`compute.InstanceGroupsScopedList`](gcp_compute.md#InstanceGroupsScopedList) |
 
 ## Message `ItemsEntry` {#VpnTunnelAggregatedList.ItemsEntry}
 
@@ -14166,97 +15561,28 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | [`compute.VpnTunnelsScopedList`](gcp_compute.md#VpnTunnelsScopedList) |
 
-## Message `ItemsEntry` {#InstanceGroupAggregatedList.ItemsEntry}
+## Message `ItemsEntry` {#NodeTypeAggregatedList.ItemsEntry}
 
 
 
 ### Inputs for `ItemsEntry`
 
-* `string` [`key`](#InstanceGroupAggregatedList.ItemsEntry.key) = 1
-* [`compute.InstanceGroupsScopedList`](gcp_compute.md#InstanceGroupsScopedList) [`value`](#InstanceGroupAggregatedList.ItemsEntry.value) = 2
+* `string` [`key`](#NodeTypeAggregatedList.ItemsEntry.key) = 1
+* [`compute.NodeTypesScopedList`](gcp_compute.md#NodeTypesScopedList) [`value`](#NodeTypeAggregatedList.ItemsEntry.value) = 2
 
-### `key` {#InstanceGroupAggregatedList.ItemsEntry.key}
+### `key` {#NodeTypeAggregatedList.ItemsEntry.key}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `key` |
 | Type | `string` |
 
-### `value` {#InstanceGroupAggregatedList.ItemsEntry.value}
+### `value` {#NodeTypeAggregatedList.ItemsEntry.value}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `value` |
-| Type | [`compute.InstanceGroupsScopedList`](gcp_compute.md#InstanceGroupsScopedList) |
-
-## Message `ItemsEntry` {#TargetInstanceAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#TargetInstanceAggregatedList.ItemsEntry.key) = 1
-* [`compute.TargetInstancesScopedList`](gcp_compute.md#TargetInstancesScopedList) [`value`](#TargetInstanceAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#TargetInstanceAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#TargetInstanceAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.TargetInstancesScopedList`](gcp_compute.md#TargetInstancesScopedList) |
-
-## Message `ItemsEntry` {#OperationAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#OperationAggregatedList.ItemsEntry.key) = 1
-* [`compute.OperationsScopedList`](gcp_compute.md#OperationsScopedList) [`value`](#OperationAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#OperationAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#OperationAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.OperationsScopedList`](gcp_compute.md#OperationsScopedList) |
-
-## Message `ItemsEntry` {#TargetPoolAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#TargetPoolAggregatedList.ItemsEntry.key) = 1
-* [`compute.TargetPoolsScopedList`](gcp_compute.md#TargetPoolsScopedList) [`value`](#TargetPoolAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#TargetPoolAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#TargetPoolAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.TargetPoolsScopedList`](gcp_compute.md#TargetPoolsScopedList) |
+| Type | [`compute.NodeTypesScopedList`](gcp_compute.md#NodeTypesScopedList) |
 
 ## Message `ItemsEntry` {#ForwardingRuleAggregatedList.ItemsEntry}
 
@@ -14281,74 +15607,28 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | [`compute.ForwardingRulesScopedList`](gcp_compute.md#ForwardingRulesScopedList) |
 
-## Message `ItemsEntry` {#CommitmentAggregatedList.ItemsEntry}
+## Message `ItemsEntry` {#NodeGroupAggregatedList.ItemsEntry}
 
 
 
 ### Inputs for `ItemsEntry`
 
-* `string` [`key`](#CommitmentAggregatedList.ItemsEntry.key) = 1
-* [`compute.CommitmentsScopedList`](gcp_compute.md#CommitmentsScopedList) [`value`](#CommitmentAggregatedList.ItemsEntry.value) = 2
+* `string` [`key`](#NodeGroupAggregatedList.ItemsEntry.key) = 1
+* [`compute.NodeGroupsScopedList`](gcp_compute.md#NodeGroupsScopedList) [`value`](#NodeGroupAggregatedList.ItemsEntry.value) = 2
 
-### `key` {#CommitmentAggregatedList.ItemsEntry.key}
+### `key` {#NodeGroupAggregatedList.ItemsEntry.key}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `key` |
 | Type | `string` |
 
-### `value` {#CommitmentAggregatedList.ItemsEntry.value}
+### `value` {#NodeGroupAggregatedList.ItemsEntry.value}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `value` |
-| Type | [`compute.CommitmentsScopedList`](gcp_compute.md#CommitmentsScopedList) |
-
-## Message `ItemsEntry` {#RouterAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#RouterAggregatedList.ItemsEntry.key) = 1
-* [`compute.RoutersScopedList`](gcp_compute.md#RoutersScopedList) [`value`](#RouterAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#RouterAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#RouterAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.RoutersScopedList`](gcp_compute.md#RoutersScopedList) |
-
-## Message `ItemsEntry` {#AutoscalerAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#AutoscalerAggregatedList.ItemsEntry.key) = 1
-* [`compute.AutoscalersScopedList`](gcp_compute.md#AutoscalersScopedList) [`value`](#AutoscalerAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#AutoscalerAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#AutoscalerAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.AutoscalersScopedList`](gcp_compute.md#AutoscalersScopedList) |
+| Type | [`compute.NodeGroupsScopedList`](gcp_compute.md#NodeGroupsScopedList) |
 
 ## Message `ItemsEntry` {#InstanceAggregatedList.ItemsEntry}
 
@@ -14373,28 +15653,74 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | [`compute.InstancesScopedList`](gcp_compute.md#InstancesScopedList) |
 
-## Message `ItemsEntry` {#AddressAggregatedList.ItemsEntry}
+## Message `ItemsEntry` {#RouterAggregatedList.ItemsEntry}
 
 
 
 ### Inputs for `ItemsEntry`
 
-* `string` [`key`](#AddressAggregatedList.ItemsEntry.key) = 1
-* [`compute.AddressesScopedList`](gcp_compute.md#AddressesScopedList) [`value`](#AddressAggregatedList.ItemsEntry.value) = 2
+* `string` [`key`](#RouterAggregatedList.ItemsEntry.key) = 1
+* [`compute.RoutersScopedList`](gcp_compute.md#RoutersScopedList) [`value`](#RouterAggregatedList.ItemsEntry.value) = 2
 
-### `key` {#AddressAggregatedList.ItemsEntry.key}
+### `key` {#RouterAggregatedList.ItemsEntry.key}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `key` |
 | Type | `string` |
 
-### `value` {#AddressAggregatedList.ItemsEntry.value}
+### `value` {#RouterAggregatedList.ItemsEntry.value}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `value` |
-| Type | [`compute.AddressesScopedList`](gcp_compute.md#AddressesScopedList) |
+| Type | [`compute.RoutersScopedList`](gcp_compute.md#RoutersScopedList) |
+
+## Message `ItemsEntry` {#DiskTypeAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#DiskTypeAggregatedList.ItemsEntry.key) = 1
+* [`compute.DiskTypesScopedList`](gcp_compute.md#DiskTypesScopedList) [`value`](#DiskTypeAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#DiskTypeAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#DiskTypeAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.DiskTypesScopedList`](gcp_compute.md#DiskTypesScopedList) |
+
+## Message `ItemsEntry` {#OperationAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#OperationAggregatedList.ItemsEntry.key) = 1
+* [`compute.OperationsScopedList`](gcp_compute.md#OperationsScopedList) [`value`](#OperationAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#OperationAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#OperationAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.OperationsScopedList`](gcp_compute.md#OperationsScopedList) |
 
 ## Message `ItemsEntry` {#MachineTypeAggregatedList.ItemsEntry}
 
@@ -14419,51 +15745,28 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | [`compute.MachineTypesScopedList`](gcp_compute.md#MachineTypesScopedList) |
 
-## Message `ItemsEntry` {#BackendServiceAggregatedList.ItemsEntry}
+## Message `ItemsEntry` {#AddressAggregatedList.ItemsEntry}
 
 
 
 ### Inputs for `ItemsEntry`
 
-* `string` [`key`](#BackendServiceAggregatedList.ItemsEntry.key) = 1
-* [`compute.BackendServicesScopedList`](gcp_compute.md#BackendServicesScopedList) [`value`](#BackendServiceAggregatedList.ItemsEntry.value) = 2
+* `string` [`key`](#AddressAggregatedList.ItemsEntry.key) = 1
+* [`compute.AddressesScopedList`](gcp_compute.md#AddressesScopedList) [`value`](#AddressAggregatedList.ItemsEntry.value) = 2
 
-### `key` {#BackendServiceAggregatedList.ItemsEntry.key}
+### `key` {#AddressAggregatedList.ItemsEntry.key}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `key` |
 | Type | `string` |
 
-### `value` {#BackendServiceAggregatedList.ItemsEntry.value}
+### `value` {#AddressAggregatedList.ItemsEntry.value}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `value` |
-| Type | [`compute.BackendServicesScopedList`](gcp_compute.md#BackendServicesScopedList) |
-
-## Message `ItemsEntry` {#TargetVpnGatewayAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#TargetVpnGatewayAggregatedList.ItemsEntry.key) = 1
-* [`compute.TargetVpnGatewaysScopedList`](gcp_compute.md#TargetVpnGatewaysScopedList) [`value`](#TargetVpnGatewayAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#TargetVpnGatewayAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#TargetVpnGatewayAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.TargetVpnGatewaysScopedList`](gcp_compute.md#TargetVpnGatewaysScopedList) |
+| Type | [`compute.AddressesScopedList`](gcp_compute.md#AddressesScopedList) |
 
 ## Message `ItemsEntry` {#AcceleratorTypeAggregatedList.ItemsEntry}
 
@@ -14487,52 +15790,6 @@ to 262144 bytes (256 KiB).
 |----------|----------|
 | Field Name | `value` |
 | Type | [`compute.AcceleratorTypesScopedList`](gcp_compute.md#AcceleratorTypesScopedList) |
-
-## Message `ItemsEntry` {#InstanceGroupManagerAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#InstanceGroupManagerAggregatedList.ItemsEntry.key) = 1
-* [`compute.InstanceGroupManagersScopedList`](gcp_compute.md#InstanceGroupManagersScopedList) [`value`](#InstanceGroupManagerAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#InstanceGroupManagerAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#InstanceGroupManagerAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.InstanceGroupManagersScopedList`](gcp_compute.md#InstanceGroupManagersScopedList) |
-
-## Message `ItemsEntry` {#DiskTypeAggregatedList.ItemsEntry}
-
-
-
-### Inputs for `ItemsEntry`
-
-* `string` [`key`](#DiskTypeAggregatedList.ItemsEntry.key) = 1
-* [`compute.DiskTypesScopedList`](gcp_compute.md#DiskTypesScopedList) [`value`](#DiskTypeAggregatedList.ItemsEntry.value) = 2
-
-### `key` {#DiskTypeAggregatedList.ItemsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#DiskTypeAggregatedList.ItemsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | [`compute.DiskTypesScopedList`](gcp_compute.md#DiskTypesScopedList) |
 
 ## Message `ItemsEntry` {#DiskAggregatedList.ItemsEntry}
 
@@ -14580,28 +15837,235 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | [`compute.SubnetworksScopedList`](gcp_compute.md#SubnetworksScopedList) |
 
-## Message `LabelsEntry` {#ZoneSetLabelsRequest.LabelsEntry}
+## Message `ItemsEntry` {#CommitmentAggregatedList.ItemsEntry}
 
 
 
-### Inputs for `LabelsEntry`
+### Inputs for `ItemsEntry`
 
-* `string` [`key`](#ZoneSetLabelsRequest.LabelsEntry.key) = 1
-* `string` [`value`](#ZoneSetLabelsRequest.LabelsEntry.value) = 2
+* `string` [`key`](#CommitmentAggregatedList.ItemsEntry.key) = 1
+* [`compute.CommitmentsScopedList`](gcp_compute.md#CommitmentsScopedList) [`value`](#CommitmentAggregatedList.ItemsEntry.value) = 2
 
-### `key` {#ZoneSetLabelsRequest.LabelsEntry.key}
+### `key` {#CommitmentAggregatedList.ItemsEntry.key}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `key` |
 | Type | `string` |
 
-### `value` {#ZoneSetLabelsRequest.LabelsEntry.value}
+### `value` {#CommitmentAggregatedList.ItemsEntry.value}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `value` |
+| Type | [`compute.CommitmentsScopedList`](gcp_compute.md#CommitmentsScopedList) |
+
+## Message `ItemsEntry` {#TargetInstanceAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#TargetInstanceAggregatedList.ItemsEntry.key) = 1
+* [`compute.TargetInstancesScopedList`](gcp_compute.md#TargetInstancesScopedList) [`value`](#TargetInstanceAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#TargetInstanceAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
 | Type | `string` |
+
+### `value` {#TargetInstanceAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.TargetInstancesScopedList`](gcp_compute.md#TargetInstancesScopedList) |
+
+## Message `ItemsEntry` {#BackendServiceAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#BackendServiceAggregatedList.ItemsEntry.key) = 1
+* [`compute.BackendServicesScopedList`](gcp_compute.md#BackendServicesScopedList) [`value`](#BackendServiceAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#BackendServiceAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#BackendServiceAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.BackendServicesScopedList`](gcp_compute.md#BackendServicesScopedList) |
+
+## Message `ItemsEntry` {#TargetPoolAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#TargetPoolAggregatedList.ItemsEntry.key) = 1
+* [`compute.TargetPoolsScopedList`](gcp_compute.md#TargetPoolsScopedList) [`value`](#TargetPoolAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#TargetPoolAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#TargetPoolAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.TargetPoolsScopedList`](gcp_compute.md#TargetPoolsScopedList) |
+
+## Message `ItemsEntry` {#NetworkEndpointGroupAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#NetworkEndpointGroupAggregatedList.ItemsEntry.key) = 1
+* [`compute.NetworkEndpointGroupsScopedList`](gcp_compute.md#NetworkEndpointGroupsScopedList) [`value`](#NetworkEndpointGroupAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#NetworkEndpointGroupAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#NetworkEndpointGroupAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.NetworkEndpointGroupsScopedList`](gcp_compute.md#NetworkEndpointGroupsScopedList) |
+
+## Message `ItemsEntry` {#InterconnectAttachmentAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#InterconnectAttachmentAggregatedList.ItemsEntry.key) = 1
+* [`compute.InterconnectAttachmentsScopedList`](gcp_compute.md#InterconnectAttachmentsScopedList) [`value`](#InterconnectAttachmentAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#InterconnectAttachmentAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#InterconnectAttachmentAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.InterconnectAttachmentsScopedList`](gcp_compute.md#InterconnectAttachmentsScopedList) |
+
+## Message `ItemsEntry` {#AutoscalerAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#AutoscalerAggregatedList.ItemsEntry.key) = 1
+* [`compute.AutoscalersScopedList`](gcp_compute.md#AutoscalersScopedList) [`value`](#AutoscalerAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#AutoscalerAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#AutoscalerAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.AutoscalersScopedList`](gcp_compute.md#AutoscalersScopedList) |
+
+## Message `ItemsEntry` {#NodeTemplateAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#NodeTemplateAggregatedList.ItemsEntry.key) = 1
+* [`compute.NodeTemplatesScopedList`](gcp_compute.md#NodeTemplatesScopedList) [`value`](#NodeTemplateAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#NodeTemplateAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#NodeTemplateAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.NodeTemplatesScopedList`](gcp_compute.md#NodeTemplatesScopedList) |
+
+## Message `ItemsEntry` {#TargetVpnGatewayAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#TargetVpnGatewayAggregatedList.ItemsEntry.key) = 1
+* [`compute.TargetVpnGatewaysScopedList`](gcp_compute.md#TargetVpnGatewaysScopedList) [`value`](#TargetVpnGatewayAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#TargetVpnGatewayAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#TargetVpnGatewayAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.TargetVpnGatewaysScopedList`](gcp_compute.md#TargetVpnGatewaysScopedList) |
+
+## Message `ItemsEntry` {#InstanceGroupManagerAggregatedList.ItemsEntry}
+
+
+
+### Inputs for `ItemsEntry`
+
+* `string` [`key`](#InstanceGroupManagerAggregatedList.ItemsEntry.key) = 1
+* [`compute.InstanceGroupManagersScopedList`](gcp_compute.md#InstanceGroupManagersScopedList) [`value`](#InstanceGroupManagerAggregatedList.ItemsEntry.value) = 2
+
+### `key` {#InstanceGroupManagerAggregatedList.ItemsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#InstanceGroupManagerAggregatedList.ItemsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | [`compute.InstanceGroupManagersScopedList`](gcp_compute.md#InstanceGroupManagersScopedList) |
 
 ## Message `LabelsEntry` {#GlobalSetLabelsRequest.LabelsEntry}
 
@@ -14626,6 +16090,213 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | `string` |
 
+## Message `LabelsEntry` {#Snapshot.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#Snapshot.LabelsEntry.key) = 1
+* `string` [`value`](#Snapshot.LabelsEntry.value) = 2
+
+### `key` {#Snapshot.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#Snapshot.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#Interconnect.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#Interconnect.LabelsEntry.key) = 1
+* `string` [`value`](#Interconnect.LabelsEntry.value) = 2
+
+### `key` {#Interconnect.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#Interconnect.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#InterconnectAttachment.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#InterconnectAttachment.LabelsEntry.key) = 1
+* `string` [`value`](#InterconnectAttachment.LabelsEntry.value) = 2
+
+### `key` {#InterconnectAttachment.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#InterconnectAttachment.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#ForwardingRule.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#ForwardingRule.LabelsEntry.key) = 1
+* `string` [`value`](#ForwardingRule.LabelsEntry.value) = 2
+
+### `key` {#ForwardingRule.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#ForwardingRule.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#InstancesSetLabelsRequest.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#InstancesSetLabelsRequest.LabelsEntry.key) = 1
+* `string` [`value`](#InstancesSetLabelsRequest.LabelsEntry.value) = 2
+
+### `key` {#InstancesSetLabelsRequest.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#InstancesSetLabelsRequest.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#InstanceProperties.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#InstanceProperties.LabelsEntry.key) = 1
+* `string` [`value`](#InstanceProperties.LabelsEntry.value) = 2
+
+### `key` {#InstanceProperties.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#InstanceProperties.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#ZoneSetLabelsRequest.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#ZoneSetLabelsRequest.LabelsEntry.key) = 1
+* `string` [`value`](#ZoneSetLabelsRequest.LabelsEntry.value) = 2
+
+### `key` {#ZoneSetLabelsRequest.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#ZoneSetLabelsRequest.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#Address.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#Address.LabelsEntry.key) = 1
+* `string` [`value`](#Address.LabelsEntry.value) = 2
+
+### `key` {#Address.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#Address.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#AttachedDiskInitializeParams.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#AttachedDiskInitializeParams.LabelsEntry.key) = 1
+* `string` [`value`](#AttachedDiskInitializeParams.LabelsEntry.value) = 2
+
+### `key` {#AttachedDiskInitializeParams.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#AttachedDiskInitializeParams.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
 ## Message `LabelsEntry` {#VpnTunnel.LabelsEntry}
 
 
@@ -14643,6 +16314,29 @@ to 262144 bytes (256 KiB).
 | Type | `string` |
 
 ### `value` {#VpnTunnel.LabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `LabelsEntry` {#RegionSetLabelsRequest.LabelsEntry}
+
+
+
+### Inputs for `LabelsEntry`
+
+* `string` [`key`](#RegionSetLabelsRequest.LabelsEntry.key) = 1
+* `string` [`value`](#RegionSetLabelsRequest.LabelsEntry.value) = 2
+
+### `key` {#RegionSetLabelsRequest.LabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#RegionSetLabelsRequest.LabelsEntry.value}
 
 | Property | Comments |
 |----------|----------|
@@ -14695,98 +16389,6 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | `string` |
 
-## Message `LabelsEntry` {#Disk.LabelsEntry}
-
-
-
-### Inputs for `LabelsEntry`
-
-* `string` [`key`](#Disk.LabelsEntry.key) = 1
-* `string` [`value`](#Disk.LabelsEntry.value) = 2
-
-### `key` {#Disk.LabelsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#Disk.LabelsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-## Message `LabelsEntry` {#RegionSetLabelsRequest.LabelsEntry}
-
-
-
-### Inputs for `LabelsEntry`
-
-* `string` [`key`](#RegionSetLabelsRequest.LabelsEntry.key) = 1
-* `string` [`value`](#RegionSetLabelsRequest.LabelsEntry.value) = 2
-
-### `key` {#RegionSetLabelsRequest.LabelsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#RegionSetLabelsRequest.LabelsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-## Message `LabelsEntry` {#ForwardingRule.LabelsEntry}
-
-
-
-### Inputs for `LabelsEntry`
-
-* `string` [`key`](#ForwardingRule.LabelsEntry.key) = 1
-* `string` [`value`](#ForwardingRule.LabelsEntry.value) = 2
-
-### `key` {#ForwardingRule.LabelsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#ForwardingRule.LabelsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-## Message `LabelsEntry` {#InstanceProperties.LabelsEntry}
-
-
-
-### Inputs for `LabelsEntry`
-
-* `string` [`key`](#InstanceProperties.LabelsEntry.key) = 1
-* `string` [`value`](#InstanceProperties.LabelsEntry.value) = 2
-
-### `key` {#InstanceProperties.LabelsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#InstanceProperties.LabelsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
 ## Message `LabelsEntry` {#Image.LabelsEntry}
 
 
@@ -14810,69 +16412,23 @@ to 262144 bytes (256 KiB).
 | Field Name | `value` |
 | Type | `string` |
 
-## Message `LabelsEntry` {#InstancesSetLabelsRequest.LabelsEntry}
+## Message `LabelsEntry` {#Disk.LabelsEntry}
 
 
 
 ### Inputs for `LabelsEntry`
 
-* `string` [`key`](#InstancesSetLabelsRequest.LabelsEntry.key) = 1
-* `string` [`value`](#InstancesSetLabelsRequest.LabelsEntry.value) = 2
+* `string` [`key`](#Disk.LabelsEntry.key) = 1
+* `string` [`value`](#Disk.LabelsEntry.value) = 2
 
-### `key` {#InstancesSetLabelsRequest.LabelsEntry.key}
+### `key` {#Disk.LabelsEntry.key}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `key` |
 | Type | `string` |
 
-### `value` {#InstancesSetLabelsRequest.LabelsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-## Message `LabelsEntry` {#Snapshot.LabelsEntry}
-
-
-
-### Inputs for `LabelsEntry`
-
-* `string` [`key`](#Snapshot.LabelsEntry.key) = 1
-* `string` [`value`](#Snapshot.LabelsEntry.value) = 2
-
-### `key` {#Snapshot.LabelsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#Snapshot.LabelsEntry.value}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `value` |
-| Type | `string` |
-
-## Message `LabelsEntry` {#Address.LabelsEntry}
-
-
-
-### Inputs for `LabelsEntry`
-
-* `string` [`key`](#Address.LabelsEntry.key) = 1
-* `string` [`value`](#Address.LabelsEntry.value) = 2
-
-### `key` {#Address.LabelsEntry.key}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `key` |
-| Type | `string` |
-
-### `value` {#Address.LabelsEntry.value}
+### `value` {#Disk.LabelsEntry.value}
 
 | Property | Comments |
 |----------|----------|
@@ -15661,7 +17217,7 @@ continue paging through the results.
 | Type | [`compute.MachineType`](gcp_compute.md#MachineType) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of machine types contained in this scope.
+[Output Only] A list of machine types contained in this scope.
 
 ### `warning` {#MachineTypesScopedList.warning}
 
@@ -15672,6 +17228,7 @@ continue paging through the results.
 
 ## Message `ManagedInstance` {#ManagedInstance}
 
+A Managed Instance resource.
 
 
 ### Inputs for `ManagedInstance`
@@ -15709,6 +17266,8 @@ that are associated with this group.
 - REFRESHING The managed instance group is applying configuration changes to
 the instance without stopping it. For example, the group can update the
 target pool list for an instance without stopping that instance.
+- VERIFYING The managed instance group has created the instance and it is in
+the process of being verified.
 Valid values:
     ABANDONING
     CREATING
@@ -15999,7 +17558,7 @@ defined by the server.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -16012,7 +17571,7 @@ dash.
 | Type | [`compute.NetworkPeering`](gcp_compute.md#NetworkPeering) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of network peerings for the resource.
+[Output Only] A list of network peerings for the resource.
 
 ### `routingConfig` {#Network.routingConfig}
 
@@ -16043,6 +17602,550 @@ Router to determine what type of network-wide routing behavior to enforce.
 
 [Output Only] Server-defined fully-qualified URLs for all subnetworks in
 this network.
+
+## Message `NetworkEndpoint` {#NetworkEndpoint}
+
+The network endpoint.
+
+
+### Inputs for `NetworkEndpoint`
+
+* `string` [`instance`](#NetworkEndpoint.instance) = 1
+* `string` [`ipAddress`](#NetworkEndpoint.ipAddress) = 2
+* `int32` [`port`](#NetworkEndpoint.port) = 3
+
+### `instance` {#NetworkEndpoint.instance}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `instance` |
+| Type | `string` |
+
+The name for a specific VM instance that the IP address belongs to. This is
+required for network endpoints of type GCE_VM_IP and GCE_VM_IP_PORT. The
+instance must be in the same zone of network endpoint group.
+
+The name must be 1-63 characters long, and comply with RFC1035.
+
+### `ipAddress` {#NetworkEndpoint.ipAddress}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `ipAddress` |
+| Type | `string` |
+
+Optional IPv4 address of network endpoint. The IP address must belong to a
+VM in GCE (either the primary IP or as part of an aliased IP range). If the
+IP address is not specified, then the primary IP address for the VM instance
+in the network that the network endpoint group belongs to will be used.
+
+### `port` {#NetworkEndpoint.port}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `port` |
+| Type | `int32` |
+
+Optional port number of network endpoint. If not specified and the
+NetworkEndpointGroup.network_endpoint_type is GCE_IP_PORT, the defaultPort
+for the network endpoint group will be used.
+
+## Message `NetworkEndpointGroup` {#NetworkEndpointGroup}
+
+Represents a collection of network endpoints.
+
+
+### Inputs for `NetworkEndpointGroup`
+
+* `string` [`creationTimestamp`](#NetworkEndpointGroup.creationTimestamp) = 1
+* `string` [`description`](#NetworkEndpointGroup.description) = 2
+* `string` [`id`](#NetworkEndpointGroup.id) = 3
+* `string` [`kind`](#NetworkEndpointGroup.kind) = 4
+* [`compute.NetworkEndpointGroupLbNetworkEndpointGroup`](gcp_compute.md#NetworkEndpointGroupLbNetworkEndpointGroup) [`loadBalancer`](#NetworkEndpointGroup.loadBalancer) = 5
+* `string` [`name`](#NetworkEndpointGroup.name) = 6 (**Required**)
+* `string` [`networkEndpointType`](#NetworkEndpointGroup.networkEndpointType) = 7
+* `string` [`selfLink`](#NetworkEndpointGroup.selfLink) = 8
+* `int32` [`size`](#NetworkEndpointGroup.size) = 9
+* `string` [`type`](#NetworkEndpointGroup.type) = 10
+
+### `creationTimestamp` {#NetworkEndpointGroup.creationTimestamp}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `creationTimestamp` |
+| Type | `string` |
+
+[Output Only] Creation timestamp in RFC3339 text format.
+
+### `description` {#NetworkEndpointGroup.description}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `description` |
+| Type | `string` |
+
+An optional description of this resource. Provide this property when you
+create the resource.
+
+### `id` {#NetworkEndpointGroup.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] The unique identifier for the resource. This identifier is
+defined by the server.
+
+### `kind` {#NetworkEndpointGroup.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of the resource. Always compute#networkEndpointGroup for
+network endpoint group.
+
+### `loadBalancer` {#NetworkEndpointGroup.loadBalancer}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `loadBalancer` |
+| Type | [`compute.NetworkEndpointGroupLbNetworkEndpointGroup`](gcp_compute.md#NetworkEndpointGroupLbNetworkEndpointGroup) |
+
+This field is only valid when the network endpoint group type is
+LOAD_BALANCING.
+
+### `name` {#NetworkEndpointGroup.name}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `name` |
+| Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
+
+Name of the resource; provided by the client when the resource is created.
+The name must be 1-63 characters long, and comply with RFC1035.
+Specifically, the name must be 1-63 characters long and match the regular
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
+be a lowercase letter, and all following characters must be a dash,
+lowercase letter, or digit, except the last character, which cannot be a
+dash.
+
+### `networkEndpointType` {#NetworkEndpointGroup.networkEndpointType}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkEndpointType` |
+| Type | `string` |
+
+Type of network endpoints in this network endpoint group. Only supported
+values for LOAD_BALANCING are GCE_VM_IP or GCE_VM_IP_PORT.
+Valid values:
+    GCE_VM_IP_PORT
+
+### `selfLink` {#NetworkEndpointGroup.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for the resource.
+
+### `size` {#NetworkEndpointGroup.size}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `size` |
+| Type | `int32` |
+
+[Output only] Number of network endpoints in the network endpoint group.
+
+### `type` {#NetworkEndpointGroup.type}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `type` |
+| Type | `string` |
+
+Specify the type of this network endpoint group. Only LOAD_BALANCING is
+valid for now.
+Valid values:
+    LOAD_BALANCING
+
+## Message `NetworkEndpointGroupAggregatedList` {#NetworkEndpointGroupAggregatedList}
+
+
+
+### Inputs for `NetworkEndpointGroupAggregatedList`
+
+* `string` [`id`](#NetworkEndpointGroupAggregatedList.id) = 1
+* `repeated` [`compute.NetworkEndpointGroupAggregatedList.ItemsEntry`](gcp_compute.md#NetworkEndpointGroupAggregatedList.ItemsEntry) [`items`](#NetworkEndpointGroupAggregatedList.items) = 2
+* `string` [`kind`](#NetworkEndpointGroupAggregatedList.kind) = 3
+* `string` [`nextPageToken`](#NetworkEndpointGroupAggregatedList.nextPageToken) = 4
+* `string` [`selfLink`](#NetworkEndpointGroupAggregatedList.selfLink) = 5
+* [`compute.NetworkEndpointGroupAggregatedList.Warning`](gcp_compute.md#NetworkEndpointGroupAggregatedList.Warning) [`warning`](#NetworkEndpointGroupAggregatedList.warning) = 6
+
+### `id` {#NetworkEndpointGroupAggregatedList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NetworkEndpointGroupAggregatedList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NetworkEndpointGroupAggregatedList.ItemsEntry`](gcp_compute.md#NetworkEndpointGroupAggregatedList.ItemsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NetworkEndpointGroupsScopedList resources.
+
+### `kind` {#NetworkEndpointGroupAggregatedList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] The resource type, which is always
+compute#networkEndpointGroupAggregatedList for aggregated lists of network
+endpoint groups.
+
+### `nextPageToken` {#NetworkEndpointGroupAggregatedList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NetworkEndpointGroupAggregatedList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NetworkEndpointGroupAggregatedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NetworkEndpointGroupAggregatedList.Warning`](gcp_compute.md#NetworkEndpointGroupAggregatedList.Warning) |
+
+## Message `NetworkEndpointGroupLbNetworkEndpointGroup` {#NetworkEndpointGroupLbNetworkEndpointGroup}
+
+Load balancing specific fields for network endpoint group of type
+LOAD_BALANCING.
+
+
+### Inputs for `NetworkEndpointGroupLbNetworkEndpointGroup`
+
+* `int32` [`defaultPort`](#NetworkEndpointGroupLbNetworkEndpointGroup.defaultPort) = 1
+* `string` [`network`](#NetworkEndpointGroupLbNetworkEndpointGroup.network) = 2
+* `string` [`subnetwork`](#NetworkEndpointGroupLbNetworkEndpointGroup.subnetwork) = 3
+* `string` [`zone`](#NetworkEndpointGroupLbNetworkEndpointGroup.zone) = 4
+
+### `defaultPort` {#NetworkEndpointGroupLbNetworkEndpointGroup.defaultPort}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `defaultPort` |
+| Type | `int32` |
+
+The default port used if the port number is not specified in the network
+endpoint. If the network endpoint type is GCE_VM_IP, this field must not be
+specified.
+
+### `network` {#NetworkEndpointGroupLbNetworkEndpointGroup.network}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `network` |
+| Type | `string` |
+
+The URL of the network to which all network endpoints in the NEG belong.
+Uses "default" project network if unspecified.
+
+### `subnetwork` {#NetworkEndpointGroupLbNetworkEndpointGroup.subnetwork}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `subnetwork` |
+| Type | `string` |
+
+Optional URL of the subnetwork to which all network endpoints in the NEG
+belong.
+
+### `zone` {#NetworkEndpointGroupLbNetworkEndpointGroup.zone}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `zone` |
+| Type | `string` |
+
+[Output Only] The URL of the zone where the network endpoint group is
+located.
+
+## Message `NetworkEndpointGroupList` {#NetworkEndpointGroupList}
+
+
+
+### Inputs for `NetworkEndpointGroupList`
+
+* `string` [`id`](#NetworkEndpointGroupList.id) = 1
+* `repeated` [`compute.NetworkEndpointGroup`](gcp_compute.md#NetworkEndpointGroup) [`items`](#NetworkEndpointGroupList.items) = 2
+* `string` [`kind`](#NetworkEndpointGroupList.kind) = 3
+* `string` [`nextPageToken`](#NetworkEndpointGroupList.nextPageToken) = 4
+* `string` [`selfLink`](#NetworkEndpointGroupList.selfLink) = 5
+* [`compute.NetworkEndpointGroupList.Warning`](gcp_compute.md#NetworkEndpointGroupList.Warning) [`warning`](#NetworkEndpointGroupList.warning) = 6
+
+### `id` {#NetworkEndpointGroupList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NetworkEndpointGroupList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NetworkEndpointGroup`](gcp_compute.md#NetworkEndpointGroup) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NetworkEndpointGroup resources.
+
+### `kind` {#NetworkEndpointGroupList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] The resource type, which is always
+compute#networkEndpointGroupList for network endpoint group lists.
+
+### `nextPageToken` {#NetworkEndpointGroupList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NetworkEndpointGroupList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NetworkEndpointGroupList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NetworkEndpointGroupList.Warning`](gcp_compute.md#NetworkEndpointGroupList.Warning) |
+
+## Message `NetworkEndpointGroupsAttachEndpointsRequest` {#NetworkEndpointGroupsAttachEndpointsRequest}
+
+
+
+### Inputs for `NetworkEndpointGroupsAttachEndpointsRequest`
+
+* `repeated` [`compute.NetworkEndpoint`](gcp_compute.md#NetworkEndpoint) [`networkEndpoints`](#NetworkEndpointGroupsAttachEndpointsRequest.networkEndpoints) = 1
+
+### `networkEndpoints` {#NetworkEndpointGroupsAttachEndpointsRequest.networkEndpoints}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkEndpoints` |
+| Type | [`compute.NetworkEndpoint`](gcp_compute.md#NetworkEndpoint) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+The list of network endpoints to be attached.
+
+## Message `NetworkEndpointGroupsDetachEndpointsRequest` {#NetworkEndpointGroupsDetachEndpointsRequest}
+
+
+
+### Inputs for `NetworkEndpointGroupsDetachEndpointsRequest`
+
+* `repeated` [`compute.NetworkEndpoint`](gcp_compute.md#NetworkEndpoint) [`networkEndpoints`](#NetworkEndpointGroupsDetachEndpointsRequest.networkEndpoints) = 1
+
+### `networkEndpoints` {#NetworkEndpointGroupsDetachEndpointsRequest.networkEndpoints}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkEndpoints` |
+| Type | [`compute.NetworkEndpoint`](gcp_compute.md#NetworkEndpoint) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+The list of network endpoints to be detached.
+
+## Message `NetworkEndpointGroupsListEndpointsRequest` {#NetworkEndpointGroupsListEndpointsRequest}
+
+
+
+### Inputs for `NetworkEndpointGroupsListEndpointsRequest`
+
+* `string` [`healthStatus`](#NetworkEndpointGroupsListEndpointsRequest.healthStatus) = 1
+
+### `healthStatus` {#NetworkEndpointGroupsListEndpointsRequest.healthStatus}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `healthStatus` |
+| Type | `string` |
+
+Optional query parameter for showing the health status of each network
+endpoint. Valid options are SKIP or SHOW. If you don't specifiy this
+parameter, the health status of network endpoints will not be provided.
+Valid values:
+    SHOW
+    SKIP
+
+## Message `NetworkEndpointGroupsListNetworkEndpoints` {#NetworkEndpointGroupsListNetworkEndpoints}
+
+
+
+### Inputs for `NetworkEndpointGroupsListNetworkEndpoints`
+
+* `string` [`id`](#NetworkEndpointGroupsListNetworkEndpoints.id) = 1
+* `repeated` [`compute.NetworkEndpointWithHealthStatus`](gcp_compute.md#NetworkEndpointWithHealthStatus) [`items`](#NetworkEndpointGroupsListNetworkEndpoints.items) = 2
+* `string` [`kind`](#NetworkEndpointGroupsListNetworkEndpoints.kind) = 3
+* `string` [`nextPageToken`](#NetworkEndpointGroupsListNetworkEndpoints.nextPageToken) = 4
+* [`compute.NetworkEndpointGroupsListNetworkEndpoints.Warning`](gcp_compute.md#NetworkEndpointGroupsListNetworkEndpoints.Warning) [`warning`](#NetworkEndpointGroupsListNetworkEndpoints.warning) = 5
+
+### `id` {#NetworkEndpointGroupsListNetworkEndpoints.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NetworkEndpointGroupsListNetworkEndpoints.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NetworkEndpointWithHealthStatus`](gcp_compute.md#NetworkEndpointWithHealthStatus) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NetworkEndpointWithHealthStatus resources.
+
+### `kind` {#NetworkEndpointGroupsListNetworkEndpoints.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] The resource type, which is always
+compute#networkEndpointGroupsListNetworkEndpoints for the list of network
+endpoints in the specified network endpoint group.
+
+### `nextPageToken` {#NetworkEndpointGroupsListNetworkEndpoints.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `warning` {#NetworkEndpointGroupsListNetworkEndpoints.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NetworkEndpointGroupsListNetworkEndpoints.Warning`](gcp_compute.md#NetworkEndpointGroupsListNetworkEndpoints.Warning) |
+
+## Message `NetworkEndpointGroupsScopedList` {#NetworkEndpointGroupsScopedList}
+
+
+
+### Inputs for `NetworkEndpointGroupsScopedList`
+
+* `repeated` [`compute.NetworkEndpointGroup`](gcp_compute.md#NetworkEndpointGroup) [`networkEndpointGroups`](#NetworkEndpointGroupsScopedList.networkEndpointGroups) = 1
+* [`compute.NetworkEndpointGroupsScopedList.Warning`](gcp_compute.md#NetworkEndpointGroupsScopedList.Warning) [`warning`](#NetworkEndpointGroupsScopedList.warning) = 2
+
+### `networkEndpointGroups` {#NetworkEndpointGroupsScopedList.networkEndpointGroups}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkEndpointGroups` |
+| Type | [`compute.NetworkEndpointGroup`](gcp_compute.md#NetworkEndpointGroup) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+[Output Only] The list of network endpoint groups that are contained in this
+scope.
+
+### `warning` {#NetworkEndpointGroupsScopedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NetworkEndpointGroupsScopedList.Warning`](gcp_compute.md#NetworkEndpointGroupsScopedList.Warning) |
+
+## Message `NetworkEndpointWithHealthStatus` {#NetworkEndpointWithHealthStatus}
+
+
+
+### Inputs for `NetworkEndpointWithHealthStatus`
+
+* `repeated` [`compute.HealthStatusForNetworkEndpoint`](gcp_compute.md#HealthStatusForNetworkEndpoint) [`healths`](#NetworkEndpointWithHealthStatus.healths) = 1
+* [`compute.NetworkEndpoint`](gcp_compute.md#NetworkEndpoint) [`networkEndpoint`](#NetworkEndpointWithHealthStatus.networkEndpoint) = 2
+
+### `healths` {#NetworkEndpointWithHealthStatus.healths}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `healths` |
+| Type | [`compute.HealthStatusForNetworkEndpoint`](gcp_compute.md#HealthStatusForNetworkEndpoint) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+[Output only] The health status of network endpoint;
+
+### `networkEndpoint` {#NetworkEndpointWithHealthStatus.networkEndpoint}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkEndpoint` |
+| Type | [`compute.NetworkEndpoint`](gcp_compute.md#NetworkEndpoint) |
+
+[Output only] The network endpoint;
 
 ## Message `NetworkInterface` {#NetworkInterface}
 
@@ -16276,7 +18379,7 @@ needs to create routes manually to route packets to peer network.
 
 Name of this peering. Provided by the client when the peering is created.
 The name must comply with RFC1035. Specifically, the name must be 1-63
-characters long and match regular expression [a-z]([-a-z0-9]*[a-z0-9])?
+characters long and match regular expression `[a-z]([-a-z0-9]*[a-z0-9])?`
 which means the first character must be a lowercase letter, and all the
 following characters must be a dash, lowercase letter, or digit, except the
 last character, which cannot be a dash.
@@ -16400,6 +18503,1065 @@ as the current network.
 
 Name of the peering, which should conform to RFC1035.
 
+## Message `NodeAffinityLabelsEntry` {#NodeTemplate.NodeAffinityLabelsEntry}
+
+
+
+### Inputs for `NodeAffinityLabelsEntry`
+
+* `string` [`key`](#NodeTemplate.NodeAffinityLabelsEntry.key) = 1
+* `string` [`value`](#NodeTemplate.NodeAffinityLabelsEntry.value) = 2
+
+### `key` {#NodeTemplate.NodeAffinityLabelsEntry.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+### `value` {#NodeTemplate.NodeAffinityLabelsEntry.value}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `value` |
+| Type | `string` |
+
+## Message `NodeGroup` {#NodeGroup}
+
+A NodeGroup resource.
+
+
+### Inputs for `NodeGroup`
+
+* `string` [`creationTimestamp`](#NodeGroup.creationTimestamp) = 1
+* `string` [`description`](#NodeGroup.description) = 2
+* `string` [`id`](#NodeGroup.id) = 3
+* `string` [`kind`](#NodeGroup.kind) = 4
+* `string` [`name`](#NodeGroup.name) = 5 (**Required**)
+* `string` [`nodeTemplate`](#NodeGroup.nodeTemplate) = 6
+* `repeated` [`compute.NodeGroupNode`](gcp_compute.md#NodeGroupNode) [`nodes`](#NodeGroup.nodes) = 7
+* `string` [`selfLink`](#NodeGroup.selfLink) = 8
+* `string` [`status`](#NodeGroup.status) = 9
+* `string` [`zone`](#NodeGroup.zone) = 10
+
+### `creationTimestamp` {#NodeGroup.creationTimestamp}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `creationTimestamp` |
+| Type | `string` |
+
+[Output Only] Creation timestamp in RFC3339 text format.
+
+### `description` {#NodeGroup.description}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `description` |
+| Type | `string` |
+
+An optional description of this resource. Provide this property when you
+create the resource.
+
+### `id` {#NodeGroup.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] The unique identifier for the resource. This identifier is
+defined by the server.
+
+### `kind` {#NodeGroup.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] The type of the resource. Always compute#nodeGroup for node
+group.
+
+### `name` {#NodeGroup.name}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `name` |
+| Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
+
+The name of the resource, provided by the client when initially creating the
+resource. The resource name must be 1-63 characters long, and comply with
+RFC1035. Specifically, the name must be 1-63 characters long and match the
+regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first
+character must be a lowercase letter, and all following characters must be a
+dash, lowercase letter, or digit, except the last character, which cannot be
+a dash.
+
+### `nodeTemplate` {#NodeGroup.nodeTemplate}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeTemplate` |
+| Type | `string` |
+
+The URL of the node template to which this node group belongs.
+
+### `nodes` {#NodeGroup.nodes}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodes` |
+| Type | [`compute.NodeGroupNode`](gcp_compute.md#NodeGroupNode) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+[Output Only] A list of nodes in this node group.
+
+### `selfLink` {#NodeGroup.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for the resource.
+
+### `status` {#NodeGroup.status}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `status` |
+| Type | `string` |
+
+Valid values:
+    CREATING
+    DELETING
+    INVALID
+    READY
+
+### `zone` {#NodeGroup.zone}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `zone` |
+| Type | `string` |
+
+[Output Only] The name of the zone where the node group resides, such as
+us-central1-a.
+
+## Message `NodeGroupAggregatedList` {#NodeGroupAggregatedList}
+
+
+
+### Inputs for `NodeGroupAggregatedList`
+
+* `string` [`id`](#NodeGroupAggregatedList.id) = 1
+* `repeated` [`compute.NodeGroupAggregatedList.ItemsEntry`](gcp_compute.md#NodeGroupAggregatedList.ItemsEntry) [`items`](#NodeGroupAggregatedList.items) = 2
+* `string` [`kind`](#NodeGroupAggregatedList.kind) = 3
+* `string` [`nextPageToken`](#NodeGroupAggregatedList.nextPageToken) = 4
+* `string` [`selfLink`](#NodeGroupAggregatedList.selfLink) = 5
+* [`compute.NodeGroupAggregatedList.Warning`](gcp_compute.md#NodeGroupAggregatedList.Warning) [`warning`](#NodeGroupAggregatedList.warning) = 6
+
+### `id` {#NodeGroupAggregatedList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NodeGroupAggregatedList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NodeGroupAggregatedList.ItemsEntry`](gcp_compute.md#NodeGroupAggregatedList.ItemsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NodeGroupsScopedList resources.
+
+### `kind` {#NodeGroupAggregatedList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource.Always compute#nodeGroupAggregatedList for
+aggregated lists of node groups.
+
+### `nextPageToken` {#NodeGroupAggregatedList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NodeGroupAggregatedList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NodeGroupAggregatedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeGroupAggregatedList.Warning`](gcp_compute.md#NodeGroupAggregatedList.Warning) |
+
+## Message `NodeGroupList` {#NodeGroupList}
+
+Contains a list of nodeGroups.
+
+
+### Inputs for `NodeGroupList`
+
+* `string` [`id`](#NodeGroupList.id) = 1
+* `repeated` [`compute.NodeGroup`](gcp_compute.md#NodeGroup) [`items`](#NodeGroupList.items) = 2
+* `string` [`kind`](#NodeGroupList.kind) = 3
+* `string` [`nextPageToken`](#NodeGroupList.nextPageToken) = 4
+* `string` [`selfLink`](#NodeGroupList.selfLink) = 5
+* [`compute.NodeGroupList.Warning`](gcp_compute.md#NodeGroupList.Warning) [`warning`](#NodeGroupList.warning) = 6
+
+### `id` {#NodeGroupList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NodeGroupList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NodeGroup`](gcp_compute.md#NodeGroup) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NodeGroup resources.
+
+### `kind` {#NodeGroupList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource.Always compute#nodeGroupList for lists of
+node groups.
+
+### `nextPageToken` {#NodeGroupList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NodeGroupList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NodeGroupList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeGroupList.Warning`](gcp_compute.md#NodeGroupList.Warning) |
+
+## Message `NodeGroupNode` {#NodeGroupNode}
+
+
+
+### Inputs for `NodeGroupNode`
+
+* `repeated` `string` [`instances`](#NodeGroupNode.instances) = 1
+* `string` [`name`](#NodeGroupNode.name) = 2 (**Required**)
+* `string` [`nodeType`](#NodeGroupNode.nodeType) = 3
+
+### `instances` {#NodeGroupNode.instances}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `instances` |
+| Type | `string` |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Instances scheduled on this node.
+
+### `name` {#NodeGroupNode.name}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `name` |
+| Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
+
+The name of the node.
+
+### `nodeType` {#NodeGroupNode.nodeType}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeType` |
+| Type | `string` |
+
+The type of this node.
+
+## Message `NodeGroupsAddNodesRequest` {#NodeGroupsAddNodesRequest}
+
+
+
+### Inputs for `NodeGroupsAddNodesRequest`
+
+* `int32` [`additionalNodeCount`](#NodeGroupsAddNodesRequest.additionalNodeCount) = 1
+
+### `additionalNodeCount` {#NodeGroupsAddNodesRequest.additionalNodeCount}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `additionalNodeCount` |
+| Type | `int32` |
+
+Count of additional nodes to be added to the node group.
+
+## Message `NodeGroupsDeleteNodesRequest` {#NodeGroupsDeleteNodesRequest}
+
+
+
+### Inputs for `NodeGroupsDeleteNodesRequest`
+
+* `repeated` `string` [`nodes`](#NodeGroupsDeleteNodesRequest.nodes) = 1
+
+### `nodes` {#NodeGroupsDeleteNodesRequest.nodes}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodes` |
+| Type | `string` |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+## Message `NodeGroupsScopedList` {#NodeGroupsScopedList}
+
+
+
+### Inputs for `NodeGroupsScopedList`
+
+* `repeated` [`compute.NodeGroup`](gcp_compute.md#NodeGroup) [`nodeGroups`](#NodeGroupsScopedList.nodeGroups) = 1
+* [`compute.NodeGroupsScopedList.Warning`](gcp_compute.md#NodeGroupsScopedList.Warning) [`warning`](#NodeGroupsScopedList.warning) = 2
+
+### `nodeGroups` {#NodeGroupsScopedList.nodeGroups}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeGroups` |
+| Type | [`compute.NodeGroup`](gcp_compute.md#NodeGroup) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+[Output Only] A list of node groups contained in this scope.
+
+### `warning` {#NodeGroupsScopedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeGroupsScopedList.Warning`](gcp_compute.md#NodeGroupsScopedList.Warning) |
+
+## Message `NodeGroupsSetNodeTemplateRequest` {#NodeGroupsSetNodeTemplateRequest}
+
+
+
+### Inputs for `NodeGroupsSetNodeTemplateRequest`
+
+* `string` [`nodeTemplate`](#NodeGroupsSetNodeTemplateRequest.nodeTemplate) = 1
+
+### `nodeTemplate` {#NodeGroupsSetNodeTemplateRequest.nodeTemplate}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeTemplate` |
+| Type | `string` |
+
+Full or partial URL of the node template resource to be updated for this
+node group.
+
+## Message `NodeTemplate` {#NodeTemplate}
+
+A Node Template resource.
+
+
+### Inputs for `NodeTemplate`
+
+* `string` [`creationTimestamp`](#NodeTemplate.creationTimestamp) = 1
+* `string` [`description`](#NodeTemplate.description) = 2
+* `string` [`id`](#NodeTemplate.id) = 3
+* `string` [`kind`](#NodeTemplate.kind) = 4
+* `string` [`name`](#NodeTemplate.name) = 5 (**Required**)
+* `repeated` [`compute.NodeTemplate.NodeAffinityLabelsEntry`](gcp_compute.md#NodeTemplate.NodeAffinityLabelsEntry) [`nodeAffinityLabels`](#NodeTemplate.nodeAffinityLabels) = 6
+* `string` [`nodeType`](#NodeTemplate.nodeType) = 7
+* [`compute.NodeTemplateNodeTypeFlexibility`](gcp_compute.md#NodeTemplateNodeTypeFlexibility) [`nodeTypeFlexibility`](#NodeTemplate.nodeTypeFlexibility) = 8
+* `string` [`region`](#NodeTemplate.region) = 9
+* `string` [`selfLink`](#NodeTemplate.selfLink) = 10
+* `string` [`status`](#NodeTemplate.status) = 11
+* `string` [`statusMessage`](#NodeTemplate.statusMessage) = 12
+
+### `creationTimestamp` {#NodeTemplate.creationTimestamp}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `creationTimestamp` |
+| Type | `string` |
+
+[Output Only] Creation timestamp in RFC3339 text format.
+
+### `description` {#NodeTemplate.description}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `description` |
+| Type | `string` |
+
+An optional description of this resource. Provide this property when you
+create the resource.
+
+### `id` {#NodeTemplate.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] The unique identifier for the resource. This identifier is
+defined by the server.
+
+### `kind` {#NodeTemplate.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] The type of the resource. Always compute#nodeTemplate for node
+templates.
+
+### `name` {#NodeTemplate.name}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `name` |
+| Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
+
+The name of the resource, provided by the client when initially creating the
+resource. The resource name must be 1-63 characters long, and comply with
+RFC1035. Specifically, the name must be 1-63 characters long and match the
+regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first
+character must be a lowercase letter, and all following characters must be a
+dash, lowercase letter, or digit, except the last charaicter, which cannot
+be a dash.
+
+### `nodeAffinityLabels` {#NodeTemplate.nodeAffinityLabels}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeAffinityLabels` |
+| Type | [`compute.NodeTemplate.NodeAffinityLabelsEntry`](gcp_compute.md#NodeTemplate.NodeAffinityLabelsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Labels to use for node affinity, which will be used in instance scheduling.
+
+### `nodeType` {#NodeTemplate.nodeType}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeType` |
+| Type | `string` |
+
+The node type to use for nodes group that are created from this template.
+
+### `nodeTypeFlexibility` {#NodeTemplate.nodeTypeFlexibility}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeTypeFlexibility` |
+| Type | [`compute.NodeTemplateNodeTypeFlexibility`](gcp_compute.md#NodeTemplateNodeTypeFlexibility) |
+
+The flexible properties of the desired node type. Node groups that use this
+node template will create nodes of a type that matches these properties.
+
+This field is mutually exclusive with the node_type property; you can only
+define one or the other, but not both.
+
+### `region` {#NodeTemplate.region}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `region` |
+| Type | `string` |
+
+[Output Only] The name of the region where the node template resides, such
+as us-central1.
+
+### `selfLink` {#NodeTemplate.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for the resource.
+
+### `status` {#NodeTemplate.status}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `status` |
+| Type | `string` |
+
+[Output Only] The status of the node template. One of the following values:
+CREATING, READY, and DELETING.
+Valid values:
+    CREATING
+    DELETING
+    INVALID
+    READY
+
+### `statusMessage` {#NodeTemplate.statusMessage}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `statusMessage` |
+| Type | `string` |
+
+[Output Only] An optional, human-readable explanation of the status.
+
+## Message `NodeTemplateAggregatedList` {#NodeTemplateAggregatedList}
+
+
+
+### Inputs for `NodeTemplateAggregatedList`
+
+* `string` [`id`](#NodeTemplateAggregatedList.id) = 1
+* `repeated` [`compute.NodeTemplateAggregatedList.ItemsEntry`](gcp_compute.md#NodeTemplateAggregatedList.ItemsEntry) [`items`](#NodeTemplateAggregatedList.items) = 2
+* `string` [`kind`](#NodeTemplateAggregatedList.kind) = 3
+* `string` [`nextPageToken`](#NodeTemplateAggregatedList.nextPageToken) = 4
+* `string` [`selfLink`](#NodeTemplateAggregatedList.selfLink) = 5
+* [`compute.NodeTemplateAggregatedList.Warning`](gcp_compute.md#NodeTemplateAggregatedList.Warning) [`warning`](#NodeTemplateAggregatedList.warning) = 6
+
+### `id` {#NodeTemplateAggregatedList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NodeTemplateAggregatedList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NodeTemplateAggregatedList.ItemsEntry`](gcp_compute.md#NodeTemplateAggregatedList.ItemsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NodeTemplatesScopedList resources.
+
+### `kind` {#NodeTemplateAggregatedList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource.Always compute#nodeTemplateAggregatedList for
+aggregated lists of node templates.
+
+### `nextPageToken` {#NodeTemplateAggregatedList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NodeTemplateAggregatedList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NodeTemplateAggregatedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeTemplateAggregatedList.Warning`](gcp_compute.md#NodeTemplateAggregatedList.Warning) |
+
+## Message `NodeTemplateList` {#NodeTemplateList}
+
+Contains a list of node templates.
+
+
+### Inputs for `NodeTemplateList`
+
+* `string` [`id`](#NodeTemplateList.id) = 1
+* `repeated` [`compute.NodeTemplate`](gcp_compute.md#NodeTemplate) [`items`](#NodeTemplateList.items) = 2
+* `string` [`kind`](#NodeTemplateList.kind) = 3
+* `string` [`nextPageToken`](#NodeTemplateList.nextPageToken) = 4
+* `string` [`selfLink`](#NodeTemplateList.selfLink) = 5
+* [`compute.NodeTemplateList.Warning`](gcp_compute.md#NodeTemplateList.Warning) [`warning`](#NodeTemplateList.warning) = 6
+
+### `id` {#NodeTemplateList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NodeTemplateList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NodeTemplate`](gcp_compute.md#NodeTemplate) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NodeTemplate resources.
+
+### `kind` {#NodeTemplateList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource.Always compute#nodeTemplateList for lists of
+node templates.
+
+### `nextPageToken` {#NodeTemplateList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NodeTemplateList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NodeTemplateList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeTemplateList.Warning`](gcp_compute.md#NodeTemplateList.Warning) |
+
+## Message `NodeTemplateNodeTypeFlexibility` {#NodeTemplateNodeTypeFlexibility}
+
+
+
+### Inputs for `NodeTemplateNodeTypeFlexibility`
+
+* `string` [`cpus`](#NodeTemplateNodeTypeFlexibility.cpus) = 1
+* `string` [`localSsd`](#NodeTemplateNodeTypeFlexibility.localSsd) = 2
+* `string` [`memory`](#NodeTemplateNodeTypeFlexibility.memory) = 3
+
+### `cpus` {#NodeTemplateNodeTypeFlexibility.cpus}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `cpus` |
+| Type | `string` |
+
+### `localSsd` {#NodeTemplateNodeTypeFlexibility.localSsd}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `localSsd` |
+| Type | `string` |
+
+### `memory` {#NodeTemplateNodeTypeFlexibility.memory}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `memory` |
+| Type | `string` |
+
+## Message `NodeTemplatesScopedList` {#NodeTemplatesScopedList}
+
+
+
+### Inputs for `NodeTemplatesScopedList`
+
+* `repeated` [`compute.NodeTemplate`](gcp_compute.md#NodeTemplate) [`nodeTemplates`](#NodeTemplatesScopedList.nodeTemplates) = 1
+* [`compute.NodeTemplatesScopedList.Warning`](gcp_compute.md#NodeTemplatesScopedList.Warning) [`warning`](#NodeTemplatesScopedList.warning) = 2
+
+### `nodeTemplates` {#NodeTemplatesScopedList.nodeTemplates}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeTemplates` |
+| Type | [`compute.NodeTemplate`](gcp_compute.md#NodeTemplate) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+[Output Only] A list of node templates contained in this scope.
+
+### `warning` {#NodeTemplatesScopedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeTemplatesScopedList.Warning`](gcp_compute.md#NodeTemplatesScopedList.Warning) |
+
+## Message `NodeType` {#NodeType}
+
+A Node Type resource.
+
+
+### Inputs for `NodeType`
+
+* `string` [`cpuPlatform`](#NodeType.cpuPlatform) = 1
+* `string` [`creationTimestamp`](#NodeType.creationTimestamp) = 2
+* [`compute.DeprecationStatus`](gcp_compute.md#DeprecationStatus) [`deprecated`](#NodeType.deprecated) = 3
+* `string` [`description`](#NodeType.description) = 4
+* `int32` [`guestCpus`](#NodeType.guestCpus) = 5
+* `string` [`id`](#NodeType.id) = 6
+* `string` [`kind`](#NodeType.kind) = 7
+* `int32` [`localSsdGb`](#NodeType.localSsdGb) = 8
+* `int32` [`memoryMb`](#NodeType.memoryMb) = 9
+* `string` [`name`](#NodeType.name) = 10 (**Required**)
+* `string` [`selfLink`](#NodeType.selfLink) = 11
+* `string` [`zone`](#NodeType.zone) = 12
+
+### `cpuPlatform` {#NodeType.cpuPlatform}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `cpuPlatform` |
+| Type | `string` |
+
+[Output Only] The CPU platform used by this node type.
+
+### `creationTimestamp` {#NodeType.creationTimestamp}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `creationTimestamp` |
+| Type | `string` |
+
+[Output Only] Creation timestamp in RFC3339 text format.
+
+### `deprecated` {#NodeType.deprecated}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `deprecated` |
+| Type | [`compute.DeprecationStatus`](gcp_compute.md#DeprecationStatus) |
+
+[Output Only] The deprecation status associated with this node type.
+
+### `description` {#NodeType.description}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `description` |
+| Type | `string` |
+
+[Output Only] An optional textual description of the resource.
+
+### `guestCpus` {#NodeType.guestCpus}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `guestCpus` |
+| Type | `int32` |
+
+[Output Only] The number of virtual CPUs that are available to the node
+type.
+
+### `id` {#NodeType.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] The unique identifier for the resource. This identifier is
+defined by the server.
+
+### `kind` {#NodeType.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] The type of the resource. Always compute#nodeType for node
+types.
+
+### `localSsdGb` {#NodeType.localSsdGb}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `localSsdGb` |
+| Type | `int32` |
+
+[Output Only] Local SSD available to the node type, defined in GB.
+
+### `memoryMb` {#NodeType.memoryMb}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `memoryMb` |
+| Type | `int32` |
+
+[Output Only] The amount of physical memory available to the node type,
+defined in MB.
+
+### `name` {#NodeType.name}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `name` |
+| Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
+
+[Output Only] Name of the resource.
+
+### `selfLink` {#NodeType.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for the resource.
+
+### `zone` {#NodeType.zone}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `zone` |
+| Type | `string` |
+
+[Output Only] The name of the zone where the node type resides, such as
+us-central1-a.
+
+## Message `NodeTypeAggregatedList` {#NodeTypeAggregatedList}
+
+
+
+### Inputs for `NodeTypeAggregatedList`
+
+* `string` [`id`](#NodeTypeAggregatedList.id) = 1
+* `repeated` [`compute.NodeTypeAggregatedList.ItemsEntry`](gcp_compute.md#NodeTypeAggregatedList.ItemsEntry) [`items`](#NodeTypeAggregatedList.items) = 2
+* `string` [`kind`](#NodeTypeAggregatedList.kind) = 3
+* `string` [`nextPageToken`](#NodeTypeAggregatedList.nextPageToken) = 4
+* `string` [`selfLink`](#NodeTypeAggregatedList.selfLink) = 5
+* [`compute.NodeTypeAggregatedList.Warning`](gcp_compute.md#NodeTypeAggregatedList.Warning) [`warning`](#NodeTypeAggregatedList.warning) = 6
+
+### `id` {#NodeTypeAggregatedList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NodeTypeAggregatedList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NodeTypeAggregatedList.ItemsEntry`](gcp_compute.md#NodeTypeAggregatedList.ItemsEntry) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NodeTypesScopedList resources.
+
+### `kind` {#NodeTypeAggregatedList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource.Always compute#nodeTypeAggregatedList for
+aggregated lists of node types.
+
+### `nextPageToken` {#NodeTypeAggregatedList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NodeTypeAggregatedList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NodeTypeAggregatedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeTypeAggregatedList.Warning`](gcp_compute.md#NodeTypeAggregatedList.Warning) |
+
+## Message `NodeTypeList` {#NodeTypeList}
+
+Contains a list of node types.
+
+
+### Inputs for `NodeTypeList`
+
+* `string` [`id`](#NodeTypeList.id) = 1
+* `repeated` [`compute.NodeType`](gcp_compute.md#NodeType) [`items`](#NodeTypeList.items) = 2
+* `string` [`kind`](#NodeTypeList.kind) = 3
+* `string` [`nextPageToken`](#NodeTypeList.nextPageToken) = 4
+* `string` [`selfLink`](#NodeTypeList.selfLink) = 5
+* [`compute.NodeTypeList.Warning`](gcp_compute.md#NodeTypeList.Warning) [`warning`](#NodeTypeList.warning) = 6
+
+### `id` {#NodeTypeList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#NodeTypeList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.NodeType`](gcp_compute.md#NodeType) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of NodeType resources.
+
+### `kind` {#NodeTypeList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource.Always compute#nodeTypeList for lists of node
+types.
+
+### `nextPageToken` {#NodeTypeList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#NodeTypeList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#NodeTypeList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeTypeList.Warning`](gcp_compute.md#NodeTypeList.Warning) |
+
+## Message `NodeTypesScopedList` {#NodeTypesScopedList}
+
+
+
+### Inputs for `NodeTypesScopedList`
+
+* `repeated` [`compute.NodeType`](gcp_compute.md#NodeType) [`nodeTypes`](#NodeTypesScopedList.nodeTypes) = 1
+* [`compute.NodeTypesScopedList.Warning`](gcp_compute.md#NodeTypesScopedList.Warning) [`warning`](#NodeTypesScopedList.warning) = 2
+
+### `nodeTypes` {#NodeTypesScopedList.nodeTypes}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeTypes` |
+| Type | [`compute.NodeType`](gcp_compute.md#NodeType) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+[Output Only] A list of node types contained in this scope.
+
+### `warning` {#NodeTypesScopedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.NodeTypesScopedList.Warning`](gcp_compute.md#NodeTypesScopedList.Warning) |
+
 ## Message `Operation` {#Operation}
 
 An Operation resource, used to manage asynchronous API requests. (==
@@ -16442,7 +19604,8 @@ resource_for beta.zoneOperations ==)
 | Field Name | `clientOperationId` |
 | Type | `string` |
 
-[Output Only] Reserved for future use.
+[Output Only] The value of `requestId` if you provided it in the request.
+Not present otherwise.
 
 ### `creationTimestamp` {#Operation.creationTimestamp}
 
@@ -16572,7 +19735,9 @@ progresses.
 | Type | `string` |
 
 [Output Only] The URL of the region where the operation resides. Only
-available when performing regional operations.
+available when performing regional operations. You must specify this field
+as part of the HTTP request URL. It is not settable as a field in the
+request body.
 
 ### `selfLink` {#Operation.selfLink}
 
@@ -16664,7 +19829,9 @@ user@example.com.
 | Type | `string` |
 
 [Output Only] The URL of the zone where the operation resides. Only
-available when performing per-zone operations.
+available when performing per-zone operations. You must specify this field
+as part of the HTTP request URL. It is not settable as a field in the
+request body.
 
 ## Message `OperationAggregatedList` {#OperationAggregatedList}
 
@@ -16828,7 +19995,7 @@ continue paging through the results.
 | Type | [`compute.Operation`](gcp_compute.md#Operation) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of operations contained in this scope.
+[Output Only] A list of operations contained in this scope.
 
 ### `warning` {#OperationsScopedList.warning}
 
@@ -16937,20 +20104,28 @@ specify access control policies for Cloud Platform resources.
 
 
 
-A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+A `Policy` consists of a list of `bindings`. A `binding` binds a list of
 `members` to a `role`, where the members can be user accounts, Google
 groups, Google domains, and service accounts. A `role` is a named list of
 permissions defined by IAM.
 
-**Example**
+**JSON Example**
 
 { "bindings": [ { "role": "roles/owner", "members": [
 "user:mike@example.com", "group:admins@example.com", "domain:google.com",
-"serviceAccount:my-other-app@appspot.gserviceaccount.com", ] }, { "role":
+"serviceAccount:my-other-app@appspot.gserviceaccount.com" ] }, { "role":
 "roles/viewer", "members": ["user:sean@example.com"] } ] }
 
+**YAML Example**
+
+bindings: - members: - user:mike@example.com - group:admins@example.com -
+domain:google.com - serviceAccount:my-other-app@appspot.gserviceaccount.com
+role: roles/owner - members: - user:sean@example.com role: roles/viewer
+
+
+
 For a description of IAM and its features, see the [IAM developer's
-guide](https://cloud.google.com/iam).
+guide](https://cloud.google.com/iam/docs).
 
 
 ### Inputs for `Policy`
@@ -17031,30 +20206,48 @@ rule applies, permission is denied.
 | Field Name | `version` |
 | Type | `int32` |
 
-Version of the `Policy`. The default version is 0.
+Deprecated.
+
+## Message `PreconfiguredWafSet` {#PreconfiguredWafSet}
+
+
+
+### Inputs for `PreconfiguredWafSet`
+
+* `repeated` [`compute.WafExpressionSet`](gcp_compute.md#WafExpressionSet) [`expressionSets`](#PreconfiguredWafSet.expressionSets) = 1
+
+### `expressionSets` {#PreconfiguredWafSet.expressionSets}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `expressionSets` |
+| Type | [`compute.WafExpressionSet`](gcp_compute.md#WafExpressionSet) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+List of entities that are currently supported for WAF rules.
 
 ## Message `Project` {#Project}
 
-A Project resource. Projects can only be created in the Google Cloud
-Platform Console. Unless marked otherwise, values can only be modified in
-the console. (== resource_for v1.projects ==) (== resource_for beta.projects
-==)
+A Project resource. For an overview of projects, see  Cloud Platform
+Resource Hierarchy. (== resource_for v1.projects ==) (== resource_for
+beta.projects ==)
 
 
 ### Inputs for `Project`
 
 * [`compute.Metadata`](gcp_compute.md#Metadata) [`commonInstanceMetadata`](#Project.commonInstanceMetadata) = 1
 * `string` [`creationTimestamp`](#Project.creationTimestamp) = 2
-* `string` [`defaultServiceAccount`](#Project.defaultServiceAccount) = 3
-* `string` [`description`](#Project.description) = 4
-* `repeated` `string` [`enabledFeatures`](#Project.enabledFeatures) = 5
-* `string` [`id`](#Project.id) = 6
-* `string` [`kind`](#Project.kind) = 7
-* `string` [`name`](#Project.name) = 8 (**Required**)
-* `repeated` [`compute.Quota`](gcp_compute.md#Quota) [`quotas`](#Project.quotas) = 9
-* `string` [`selfLink`](#Project.selfLink) = 10
-* [`compute.UsageExportLocation`](gcp_compute.md#UsageExportLocation) [`usageExportLocation`](#Project.usageExportLocation) = 11
-* `string` [`xpnProjectStatus`](#Project.xpnProjectStatus) = 12
+* `string` [`defaultNetworkTier`](#Project.defaultNetworkTier) = 3
+* `string` [`defaultServiceAccount`](#Project.defaultServiceAccount) = 4
+* `string` [`description`](#Project.description) = 5
+* `repeated` `string` [`enabledFeatures`](#Project.enabledFeatures) = 6
+* `string` [`id`](#Project.id) = 7
+* `string` [`kind`](#Project.kind) = 8
+* `string` [`name`](#Project.name) = 9 (**Required**)
+* `repeated` [`compute.Quota`](gcp_compute.md#Quota) [`quotas`](#Project.quotas) = 10
+* `string` [`selfLink`](#Project.selfLink) = 11
+* [`compute.UsageExportLocation`](gcp_compute.md#UsageExportLocation) [`usageExportLocation`](#Project.usageExportLocation) = 12
+* `string` [`xpnProjectStatus`](#Project.xpnProjectStatus) = 13
 
 ### `commonInstanceMetadata` {#Project.commonInstanceMetadata}
 
@@ -17074,6 +20267,20 @@ project. See Custom metadata for more information.
 | Type | `string` |
 
 [Output Only] Creation timestamp in RFC3339 text format.
+
+### `defaultNetworkTier` {#Project.defaultNetworkTier}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `defaultNetworkTier` |
+| Type | `string` |
+
+This signifies the default network tier used for configuring resources of
+the project and can only take the following values: PREMIUM, STANDARD.
+Initially the default network tier is PREMIUM.
+Valid values:
+    PREMIUM
+    STANDARD
 
 ### `defaultServiceAccount` {#Project.defaultServiceAccount}
 
@@ -17273,6 +20480,26 @@ Optional organization ID managed by Cloud Resource Manager, for which to
 list shared VPC host projects. If not specified, the organization will be
 inferred from the project.
 
+## Message `ProjectsSetDefaultNetworkTierRequest` {#ProjectsSetDefaultNetworkTierRequest}
+
+
+
+### Inputs for `ProjectsSetDefaultNetworkTierRequest`
+
+* `string` [`networkTier`](#ProjectsSetDefaultNetworkTierRequest.networkTier) = 1
+
+### `networkTier` {#ProjectsSetDefaultNetworkTierRequest.networkTier}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `networkTier` |
+| Type | `string` |
+
+Default network tier to be set.
+Valid values:
+    PREMIUM
+    STANDARD
+
 ## Message `Quota` {#Quota}
 
 A quotas entry.
@@ -17318,16 +20545,21 @@ Valid values:
     INSTANCE_GROUP_MANAGERS
     INSTANCE_TEMPLATES
     INTERCONNECTS
+    INTERCONNECT_ATTACHMENTS_PER_REGION
+    INTERCONNECT_ATTACHMENTS_TOTAL_MBPS
     INTERNAL_ADDRESSES
     IN_USE_ADDRESSES
     LOCAL_SSD_TOTAL_GB
     NETWORKS
+    NETWORK_ENDPOINT_GROUPS
     NVIDIA_K80_GPUS
     NVIDIA_P100_GPUS
+    NVIDIA_V100_GPUS
     PREEMPTIBLE_CPUS
     PREEMPTIBLE_LOCAL_SSD_GB
     PREEMPTIBLE_NVIDIA_K80_GPUS
     PREEMPTIBLE_NVIDIA_P100_GPUS
+    PREEMPTIBLE_NVIDIA_V100_GPUS
     REGIONAL_AUTOSCALERS
     REGIONAL_INSTANCE_GROUP_MANAGERS
     ROUTERS
@@ -17641,6 +20873,94 @@ continue paging through the results.
 | Field Name | `warning` |
 | Type | [`compute.RegionAutoscalerList.Warning`](gcp_compute.md#RegionAutoscalerList.Warning) |
 
+## Message `RegionDiskTypeList` {#RegionDiskTypeList}
+
+
+
+### Inputs for `RegionDiskTypeList`
+
+* `string` [`id`](#RegionDiskTypeList.id) = 1
+* `repeated` [`compute.DiskType`](gcp_compute.md#DiskType) [`items`](#RegionDiskTypeList.items) = 2
+* `string` [`kind`](#RegionDiskTypeList.kind) = 3
+* `string` [`nextPageToken`](#RegionDiskTypeList.nextPageToken) = 4
+* `string` [`selfLink`](#RegionDiskTypeList.selfLink) = 5
+* [`compute.RegionDiskTypeList.Warning`](gcp_compute.md#RegionDiskTypeList.Warning) [`warning`](#RegionDiskTypeList.warning) = 6
+
+### `id` {#RegionDiskTypeList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] Unique identifier for the resource; defined by the server.
+
+### `items` {#RegionDiskTypeList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.DiskType`](gcp_compute.md#DiskType) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of DiskType resources.
+
+### `kind` {#RegionDiskTypeList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource. Always compute#regionDiskTypeList for region
+disk types.
+
+### `nextPageToken` {#RegionDiskTypeList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#RegionDiskTypeList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#RegionDiskTypeList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.RegionDiskTypeList.Warning`](gcp_compute.md#RegionDiskTypeList.Warning) |
+
+## Message `RegionDisksResizeRequest` {#RegionDisksResizeRequest}
+
+
+
+### Inputs for `RegionDisksResizeRequest`
+
+* `string` [`sizeGb`](#RegionDisksResizeRequest.sizeGb) = 1
+
+### `sizeGb` {#RegionDisksResizeRequest.sizeGb}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `sizeGb` |
+| Type | `string` |
+
+The new size of the regional persistent disk, which is specified in GB.
+
 ## Message `RegionInstanceGroupList` {#RegionInstanceGroupList}
 
 Contains a list of InstanceGroup resources.
@@ -17840,7 +21160,7 @@ partial URL, such as zones/[ZONE]/instances/[INSTANCE_NAME].
 | Type | [`compute.ManagedInstance`](gcp_compute.md#ManagedInstance) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of managed instances.
+A list of managed instances.
 
 ### `nextPageToken` {#RegionInstanceGroupManagersListInstancesResponse.nextPageToken}
 
@@ -18180,6 +21500,48 @@ Make a get() request to the resource to get the latest fingerprint.
 
 The labels to set for this resource.
 
+## Message `RegionSetPolicyRequest` {#RegionSetPolicyRequest}
+
+
+
+### Inputs for `RegionSetPolicyRequest`
+
+* `repeated` [`compute.Binding`](gcp_compute.md#Binding) [`bindings`](#RegionSetPolicyRequest.bindings) = 1
+* `string` [`etag`](#RegionSetPolicyRequest.etag) = 2
+* [`compute.Policy`](gcp_compute.md#Policy) [`policy`](#RegionSetPolicyRequest.policy) = 3
+
+### `bindings` {#RegionSetPolicyRequest.bindings}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `bindings` |
+| Type | [`compute.Binding`](gcp_compute.md#Binding) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Flatten Policy to create a backwacd compatible wire-format. Deprecated. Use
+'policy' to specify bindings.
+
+### `etag` {#RegionSetPolicyRequest.etag}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `etag` |
+| Type | `string` |
+
+Flatten Policy to create a backward compatible wire-format. Deprecated. Use
+'policy' to specify the etag.
+
+### `policy` {#RegionSetPolicyRequest.policy}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `policy` |
+| Type | [`compute.Policy`](gcp_compute.md#Policy) |
+
+REQUIRED: The complete policy to be applied to the 'resource'. The size of
+the policy is limited to a few 10s of KB. An empty policy is in general a
+valid policy but certain services (like Projects) might reject them.
+
 ## Message `ResourceCommitment` {#ResourceCommitment}
 
 Commitment for a particular resource (a Commitment is composed of one or
@@ -18334,7 +21696,7 @@ resources.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -18619,7 +21981,7 @@ both.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -18640,7 +22002,9 @@ URI of the network to which this router belongs.
 | Field Name | `region` |
 | Type | `string` |
 
-[Output Only] URI of the region where the router resides.
+[Output Only] URI of the region where the router resides. You must specify
+this field as part of the HTTP request URL. It is not settable as a field in
+the request body.
 
 ### `selfLink` {#Router.selfLink}
 
@@ -18823,9 +22187,10 @@ All VPN tunnels that link to this router will have the same local ASN.
 * `int32` [`advertisedRoutePriority`](#RouterBgpPeer.advertisedRoutePriority) = 4
 * `string` [`interfaceName`](#RouterBgpPeer.interfaceName) = 5
 * `string` [`ipAddress`](#RouterBgpPeer.ipAddress) = 6
-* `string` [`name`](#RouterBgpPeer.name) = 7 (**Required**)
-* `int32` [`peerAsn`](#RouterBgpPeer.peerAsn) = 8
-* `string` [`peerIpAddress`](#RouterBgpPeer.peerIpAddress) = 9
+* `string` [`managementType`](#RouterBgpPeer.managementType) = 7
+* `string` [`name`](#RouterBgpPeer.name) = 8 (**Required**)
+* `int32` [`peerAsn`](#RouterBgpPeer.peerAsn) = 9
+* `string` [`peerIpAddress`](#RouterBgpPeer.peerIpAddress) = 10
 
 ### `advertiseMode` {#RouterBgpPeer.advertiseMode}
 
@@ -18897,6 +22262,22 @@ Name of the interface the BGP peer is associated with.
 IP address of the interface inside Google Cloud Platform. Only IPv4 is
 supported.
 
+### `managementType` {#RouterBgpPeer.managementType}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `managementType` |
+| Type | `string` |
+
+[Output Only] Type of how the resource/configuration of the BGP peer is
+managed. MANAGED_BY_USER is the default value; MANAGED_BY_ATTACHMENT
+represents an BGP peer that is automatically created for PARTNER
+interconnectAttachment, Google will automatically create/delete this type of
+BGP peer when the PARTNER interconnectAttachment is created/deleted.
+Valid values:
+    MANAGED_BY_ATTACHMENT
+    MANAGED_BY_USER
+
 ### `name` {#RouterBgpPeer.name}
 
 | Property | Comments |
@@ -18937,7 +22318,8 @@ supported.
 * `string` [`ipRange`](#RouterInterface.ipRange) = 1
 * `string` [`linkedInterconnectAttachment`](#RouterInterface.linkedInterconnectAttachment) = 2
 * `string` [`linkedVpnTunnel`](#RouterInterface.linkedVpnTunnel) = 3
-* `string` [`name`](#RouterInterface.name) = 4 (**Required**)
+* `string` [`managementType`](#RouterInterface.managementType) = 4
+* `string` [`name`](#RouterInterface.name) = 5 (**Required**)
 
 ### `ipRange` {#RouterInterface.ipRange}
 
@@ -18972,6 +22354,23 @@ either be a VPN Tunnel or an interconnect attachment.
 URI of the linked VPN tunnel. It must be in the same region as the router.
 Each interface can have at most one linked resource and it could either be a
 VPN Tunnel or an interconnect attachment.
+
+### `managementType` {#RouterInterface.managementType}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `managementType` |
+| Type | `string` |
+
+[Output Only] Type of how the resource/configuration of the interface is
+managed. MANAGED_BY_USER is the default value; MANAGED_BY_ATTACHMENT
+represents an interface that is automatically created for PARTNER type
+interconnectAttachment, Google will automatically create/update/delete this
+type of interface when the PARTNER interconnectAttachment is
+created/provisioned/deleted.
+Valid values:
+    MANAGED_BY_ATTACHMENT
+    MANAGED_BY_USER
 
 ### `name` {#RouterInterface.name}
 
@@ -19276,7 +22675,7 @@ Preview of given router.
 | Type | [`compute.Router`](gcp_compute.md#Router) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of routers contained in this scope.
+A list of routers contained in this scope.
 
 ### `warning` {#RoutersScopedList.warning}
 
@@ -19389,9 +22788,10 @@ value of '*' matches all permissions, and a verb part of '*' (e.g.,
 
 * `int32` [`port`](#SSLHealthCheck.port) = 1
 * `string` [`portName`](#SSLHealthCheck.portName) = 2
-* `string` [`proxyHeader`](#SSLHealthCheck.proxyHeader) = 3
-* `string` [`request`](#SSLHealthCheck.request) = 4
-* `string` [`response`](#SSLHealthCheck.response) = 5
+* `string` [`portSpecification`](#SSLHealthCheck.portSpecification) = 3
+* `string` [`proxyHeader`](#SSLHealthCheck.proxyHeader) = 4
+* `string` [`request`](#SSLHealthCheck.request) = 5
+* `string` [`response`](#SSLHealthCheck.response) = 6
 
 ### `port` {#SSLHealthCheck.port}
 
@@ -19412,6 +22812,36 @@ Valid values are 1 through 65535.
 
 Port name as defined in InstanceGroup#NamedPort#name. If both port and
 port_name are defined, port takes precedence.
+
+### `portSpecification` {#SSLHealthCheck.portSpecification}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `portSpecification` |
+| Type | `string` |
+
+Specifies how port is selected for health checking, can be one of following
+values:
+USE_FIXED_PORT: The port number in
+port
+is used for health checking.
+USE_NAMED_PORT: The
+portName
+is used for health checking.
+USE_SERVING_PORT: For NetworkEndpointGroup, the port specified for each
+network endpoint is used for health checking. For other backends, the port
+or named port specified in the Backend Service is used for health checking.
+
+
+If not specified, SSL health check follows behavior specified in
+port
+and
+portName
+fields.
+Valid values:
+    USE_FIXED_PORT
+    USE_NAMED_PORT
+    USE_SERVING_PORT
 
 ### `proxyHeader` {#SSLHealthCheck.proxyHeader}
 
@@ -19457,8 +22887,9 @@ Sets the scheduling options for an Instance.
 ### Inputs for `Scheduling`
 
 * `bool` [`automaticRestart`](#Scheduling.automaticRestart) = 1
-* `string` [`onHostMaintenance`](#Scheduling.onHostMaintenance) = 2
-* `bool` [`preemptible`](#Scheduling.preemptible) = 3
+* `repeated` [`compute.SchedulingNodeAffinity`](gcp_compute.md#SchedulingNodeAffinity) [`nodeAffinities`](#Scheduling.nodeAffinities) = 2
+* `string` [`onHostMaintenance`](#Scheduling.onHostMaintenance) = 3
+* `bool` [`preemptible`](#Scheduling.preemptible) = 4
 
 ### `automaticRestart` {#Scheduling.automaticRestart}
 
@@ -19474,6 +22905,16 @@ cannot be automatically restarted.
 
 By default, this is set to true so an instance is automatically restarted if
 it is terminated by Compute Engine.
+
+### `nodeAffinities` {#Scheduling.nodeAffinities}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nodeAffinities` |
+| Type | [`compute.SchedulingNodeAffinity`](gcp_compute.md#SchedulingNodeAffinity) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A set of node affinity and anti-affinity.
 
 ### `onHostMaintenance` {#Scheduling.onHostMaintenance}
 
@@ -19501,10 +22942,84 @@ Defines whether the instance is preemptible. This can only be set during
 instance creation, it cannot be set or changed after the instance has been
 created.
 
+## Message `SchedulingNodeAffinity` {#SchedulingNodeAffinity}
+
+Node Affinity: the configuration of desired nodes onto which this Instance
+could be scheduled.
+
+
+### Inputs for `SchedulingNodeAffinity`
+
+* `string` [`key`](#SchedulingNodeAffinity.key) = 1
+* `string` [`operator`](#SchedulingNodeAffinity.operator) = 2
+* `repeated` `string` [`values`](#SchedulingNodeAffinity.values) = 3
+
+### `key` {#SchedulingNodeAffinity.key}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `key` |
+| Type | `string` |
+
+Corresponds to the label key of Node resource.
+
+### `operator` {#SchedulingNodeAffinity.operator}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `operator` |
+| Type | `string` |
+
+Defines the operation of node selection.
+Valid values:
+    IN
+    NOT_IN
+    OPERATOR_UNSPECIFIED
+
+### `values` {#SchedulingNodeAffinity.values}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `values` |
+| Type | `string` |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Corresponds to the label values of Node resource.
+
+## Message `SecurityPoliciesListPreconfiguredExpressionSetsResponse` {#SecurityPoliciesListPreconfiguredExpressionSetsResponse}
+
+
+
+### Inputs for `SecurityPoliciesListPreconfiguredExpressionSetsResponse`
+
+* [`compute.SecurityPoliciesWafConfig`](gcp_compute.md#SecurityPoliciesWafConfig) [`preconfiguredExpressionSets`](#SecurityPoliciesListPreconfiguredExpressionSetsResponse.preconfiguredExpressionSets) = 1
+
+### `preconfiguredExpressionSets` {#SecurityPoliciesListPreconfiguredExpressionSetsResponse.preconfiguredExpressionSets}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `preconfiguredExpressionSets` |
+| Type | [`compute.SecurityPoliciesWafConfig`](gcp_compute.md#SecurityPoliciesWafConfig) |
+
+## Message `SecurityPoliciesWafConfig` {#SecurityPoliciesWafConfig}
+
+
+
+### Inputs for `SecurityPoliciesWafConfig`
+
+* [`compute.PreconfiguredWafSet`](gcp_compute.md#PreconfiguredWafSet) [`wafRules`](#SecurityPoliciesWafConfig.wafRules) = 1
+
+### `wafRules` {#SecurityPoliciesWafConfig.wafRules}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `wafRules` |
+| Type | [`compute.PreconfiguredWafSet`](gcp_compute.md#PreconfiguredWafSet) |
+
 ## Message `SecurityPolicy` {#SecurityPolicy}
 
 A security policy is comprised of one or more rules. It can also be
-associated with one or more 'targets'.
+associated with one or more 'targets'. Next available tag: 11
 
 
 ### Inputs for `SecurityPolicy`
@@ -19583,7 +23098,7 @@ security policies
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -19596,7 +23111,7 @@ dash.
 | Type | [`compute.SecurityPolicyRule`](gcp_compute.md#SecurityPolicyRule) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of rules that belong to this policy. There must always be a default
+A list of rules that belong to this policy. There must always be a default
 rule (rule with priority 2147483647 and match "*"). If no rules are provided
 when creating a security policy, a default rule with action "allow" will be
 added.
@@ -19771,8 +23286,9 @@ Exactly one field must be specified.
 ### Inputs for `SecurityPolicyRuleMatcher`
 
 * [`compute.SecurityPolicyRuleMatcherConfig`](gcp_compute.md#SecurityPolicyRuleMatcherConfig) [`config`](#SecurityPolicyRuleMatcher.config) = 1
-* `repeated` `string` [`srcIpRanges`](#SecurityPolicyRuleMatcher.srcIpRanges) = 2
-* `string` [`versionedExpr`](#SecurityPolicyRuleMatcher.versionedExpr) = 3
+* [`compute.Expr`](gcp_compute.md#Expr) [`expr`](#SecurityPolicyRuleMatcher.expr) = 2
+* `repeated` `string` [`srcIpRanges`](#SecurityPolicyRuleMatcher.srcIpRanges) = 3
+* `string` [`versionedExpr`](#SecurityPolicyRuleMatcher.versionedExpr) = 4
 
 ### `config` {#SecurityPolicyRuleMatcher.config}
 
@@ -19785,6 +23301,17 @@ The configuration options available when specifying versioned_expr. This
 field must be specified if versioned_expr is specified and cannot be
 specified if versioned_expr is not specified.
 
+### `expr` {#SecurityPolicyRuleMatcher.expr}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `expr` |
+| Type | [`compute.Expr`](gcp_compute.md#Expr) |
+
+User defined CEVAL expression. A CEVAL expression is used to specify match
+criteria such as origin.ip, source.region_code and contents in the request
+header.
+
 ### `srcIpRanges` {#SecurityPolicyRuleMatcher.srcIpRanges}
 
 | Property | Comments |
@@ -19793,7 +23320,7 @@ specified if versioned_expr is not specified.
 | Type | `string` |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-CIDR IP address range. Only IPv4 is supported.
+CIDR IP address range.
 
 ### `versionedExpr` {#SecurityPolicyRuleMatcher.versionedExpr}
 
@@ -19826,7 +23353,7 @@ Valid values:
 | Type | `string` |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-CIDR IP address range. Only IPv4 is supported.
+CIDR IP address range.
 
 ## Message `SerialPortOutput` {#SerialPortOutput}
 
@@ -19920,6 +23447,63 @@ Email address of the service account.
 
 The list of scopes to be made available for this service account.
 
+## Message `ShieldedVmConfig` {#ShieldedVmConfig}
+
+A set of Shielded VM options.
+
+
+### Inputs for `ShieldedVmConfig`
+
+* `bool` [`enableIntegrityMonitoring`](#ShieldedVmConfig.enableIntegrityMonitoring) = 1
+* `bool` [`enableSecureBoot`](#ShieldedVmConfig.enableSecureBoot) = 2
+* `bool` [`enableVtpm`](#ShieldedVmConfig.enableVtpm) = 3
+
+### `enableIntegrityMonitoring` {#ShieldedVmConfig.enableIntegrityMonitoring}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `enableIntegrityMonitoring` |
+| Type | `bool` |
+
+Defines whether the instance should have integrity monitoring enabled.
+
+### `enableSecureBoot` {#ShieldedVmConfig.enableSecureBoot}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `enableSecureBoot` |
+| Type | `bool` |
+
+Defines whether the instance should have secure boot enabled.
+
+### `enableVtpm` {#ShieldedVmConfig.enableVtpm}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `enableVtpm` |
+| Type | `bool` |
+
+Defines whether the instance should have the TPM enabled.
+
+## Message `ShieldedVmIntegrityPolicy` {#ShieldedVmIntegrityPolicy}
+
+The policy describes how boot integrity measurements are evaluated.
+
+
+### Inputs for `ShieldedVmIntegrityPolicy`
+
+* `bool` [`updateAutoLearnPolicy`](#ShieldedVmIntegrityPolicy.updateAutoLearnPolicy) = 1
+
+### `updateAutoLearnPolicy` {#ShieldedVmIntegrityPolicy.updateAutoLearnPolicy}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `updateAutoLearnPolicy` |
+| Type | `bool` |
+
+Triggers an auto relearn event: the integrity monitoring module copies
+existing guest measurements to the baseline.
+
 ## Message `SignedUrlKey` {#SignedUrlKey}
 
 Represents a customer-supplied Signing Key used by Cloud CDN Signed URLs
@@ -19939,7 +23523,7 @@ Represents a customer-supplied Signing Key used by Cloud CDN Signed URLs
 
 Name of the key. The name must be 1-63 characters long, and comply with
 RFC1035. Specifically, the name must be 1-63 characters long and match the
-regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first
+regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first
 character must be a lowercase letter, and all following characters must be a
 dash, lowercase letter, or digit, except the last character, which cannot be
 a dash.
@@ -20063,8 +23647,8 @@ setLabels method. Label values may be empty.
 | Type | `string` |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-Integer license codes indicating which licenses are attached to this
-snapshot.
+[Output Only] Integer license codes indicating which licenses are attached
+to this snapshot.
 
 ### `licenses` {#Snapshot.licenses}
 
@@ -20089,7 +23673,7 @@ Windows image).
 Name of the resource; provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -20369,7 +23953,7 @@ certificates.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -20591,7 +24175,7 @@ the connection between the load balancers and the backends.
 | Type | `string` |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of features enabled when the selected profile is CUSTOM. The
+A list of features enabled when the selected profile is CUSTOM. The
 - method returns the set of features that can be specified in this list.
 This field must be empty if the profile is not CUSTOM.
 
@@ -20656,12 +24240,11 @@ policies.
 
 The minimum version of SSL protocol that can be used by the clients to
 establish a connection with the load balancer. This can be one of TLS_1_0,
-TLS_1_1, TLS_1_2, TLS_1_3.
+TLS_1_1, TLS_1_2.
 Valid values:
     TLS_1_0
     TLS_1_1
     TLS_1_2
-    TLS_1_3
 
 ### `name` {#SslPolicy.name}
 
@@ -20673,7 +24256,7 @@ Valid values:
 
 Name of the resource. The name must be 1-63 characters long, and comply with
 RFC1035. Specifically, the name must be 1-63 characters long and match the
-regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first
+regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first
 character must be a lowercase letter, and all following characters must be a
 dash, lowercase letter, or digit, except the last character, which cannot be
 a dash.
@@ -20741,17 +24324,18 @@ resource_for v1.subnetworks ==)
 * `bool` [`allowSubnetCidrRoutesOverlap`](#Subnetwork.allowSubnetCidrRoutesOverlap) = 1
 * `string` [`creationTimestamp`](#Subnetwork.creationTimestamp) = 2
 * `string` [`description`](#Subnetwork.description) = 3
-* `string` [`fingerprint`](#Subnetwork.fingerprint) = 4
-* `string` [`gatewayAddress`](#Subnetwork.gatewayAddress) = 5
-* `string` [`id`](#Subnetwork.id) = 6
-* `string` [`ipCidrRange`](#Subnetwork.ipCidrRange) = 7
-* `string` [`kind`](#Subnetwork.kind) = 8
-* `string` [`name`](#Subnetwork.name) = 9 (**Required**)
-* `string` [`network`](#Subnetwork.network) = 10
-* `bool` [`privateIpGoogleAccess`](#Subnetwork.privateIpGoogleAccess) = 11
-* `string` [`region`](#Subnetwork.region) = 12
-* `repeated` [`compute.SubnetworkSecondaryRange`](gcp_compute.md#SubnetworkSecondaryRange) [`secondaryIpRanges`](#Subnetwork.secondaryIpRanges) = 13
-* `string` [`selfLink`](#Subnetwork.selfLink) = 14
+* `bool` [`enableFlowLogs`](#Subnetwork.enableFlowLogs) = 4
+* `string` [`fingerprint`](#Subnetwork.fingerprint) = 5
+* `string` [`gatewayAddress`](#Subnetwork.gatewayAddress) = 6
+* `string` [`id`](#Subnetwork.id) = 7
+* `string` [`ipCidrRange`](#Subnetwork.ipCidrRange) = 8
+* `string` [`kind`](#Subnetwork.kind) = 9
+* `string` [`name`](#Subnetwork.name) = 10 (**Required**)
+* `string` [`network`](#Subnetwork.network) = 11
+* `bool` [`privateIpGoogleAccess`](#Subnetwork.privateIpGoogleAccess) = 12
+* `string` [`region`](#Subnetwork.region) = 13
+* `repeated` [`compute.SubnetworkSecondaryRange`](gcp_compute.md#SubnetworkSecondaryRange) [`secondaryIpRanges`](#Subnetwork.secondaryIpRanges) = 14
+* `string` [`selfLink`](#Subnetwork.selfLink) = 15
 
 ### `allowSubnetCidrRoutesOverlap` {#Subnetwork.allowSubnetCidrRoutesOverlap}
 
@@ -20794,6 +24378,15 @@ This field cannot be set to true at resource creation time.
 An optional description of this resource. Provide this property when you
 create the resource. This field can be set only at resource creation time.
 
+### `enableFlowLogs` {#Subnetwork.enableFlowLogs}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `enableFlowLogs` |
+| Type | `bool` |
+
+Whether to enable flow logging for this subnetwork.
+
 ### `fingerprint` {#Subnetwork.fingerprint}
 
 | Property | Comments |
@@ -20814,8 +24407,7 @@ to update the Subnetwork.
 | Type | `string` |
 
 [Output Only] The gateway address for default routes to reach destination
-addresses outside this subnetwork. This field can be set only at resource
-creation time.
+addresses outside this subnetwork.
 
 ### `id` {#Subnetwork.id}
 
@@ -20861,7 +24453,7 @@ resources.
 The name of the resource, provided by the client when initially creating the
 resource. The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -21134,7 +24726,7 @@ range previously defined before the update.
 | Type | [`compute.Subnetwork`](gcp_compute.md#Subnetwork) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of subnetworks contained in this scope.
+A list of subnetworks contained in this scope.
 
 ### `warning` {#SubnetworksScopedList.warning}
 
@@ -21244,10 +24836,10 @@ A set of instance tags.
 | Type | `string` |
 
 Specifies a fingerprint for this request, which is essentially a hash of the
-metadata's contents and used for optimistic locking. The fingerprint is
-initially generated by Compute Engine and changes after every request to
-modify or update metadata. You must always provide an up-to-date fingerprint
-hash in order to update or change metadata.
+tags' contents and used for optimistic locking. The fingerprint is initially
+generated by Compute Engine and changes after every request to modify or
+update tags. You must always provide an up-to-date fingerprint hash in order
+to update or change tags.
 
 To see the latest fingerprint, make get() request to the instance.
 
@@ -21329,7 +24921,7 @@ HTTP proxies.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -21535,7 +25127,7 @@ HTTPS proxies.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -21762,7 +25354,7 @@ target instances.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -21795,7 +25387,9 @@ Valid values:
 | Field Name | `zone` |
 | Type | `string` |
 
-[Output Only] URL of the zone where the target instance resides.
+[Output Only] URL of the zone where the target instance resides. You must
+specify this field as part of the HTTP request URL. It is not settable as a
+field in the request body.
 
 ## Message `TargetInstanceAggregatedList` {#TargetInstanceAggregatedList}
 
@@ -21955,7 +25549,7 @@ continue paging through the results.
 | Type | [`compute.TargetInstance`](gcp_compute.md#TargetInstance) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of target instances contained in this scope.
+A list of target instances contained in this scope.
 
 ### `warning` {#TargetInstancesScopedList.warning}
 
@@ -22103,7 +25697,7 @@ pools.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -22417,7 +26011,7 @@ URLs of the instances to be removed from target pool.
 | Type | [`compute.TargetPool`](gcp_compute.md#TargetPool) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of target pools contained in this scope.
+A list of target pools contained in this scope.
 
 ### `warning` {#TargetPoolsScopedList.warning}
 
@@ -22568,7 +26162,7 @@ SSL proxies.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -22803,7 +26397,7 @@ TCP proxies.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -23022,7 +26616,7 @@ RFC1035. Label values may be empty.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -23044,7 +26638,9 @@ client when the VPN gateway is created.
 | Field Name | `region` |
 | Type | `string` |
 
-[Output Only] URL of the region where the target VPN gateway resides.
+[Output Only] URL of the region where the target VPN gateway resides. You
+must specify this field as part of the HTTP request URL. It is not settable
+as a field in the request body.
 
 ### `selfLink` {#TargetVpnGateway.selfLink}
 
@@ -23240,7 +26836,7 @@ continue paging through the results.
 | Type | [`compute.TargetVpnGateway`](gcp_compute.md#TargetVpnGateway) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-[Output Only] List of target vpn gateways contained in this scope.
+[Output Only] A list of target vpn gateways contained in this scope.
 
 ### `warning` {#TargetVpnGatewaysScopedList.warning}
 
@@ -23477,7 +27073,7 @@ defined by the server.
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -23509,8 +27105,9 @@ The list of named PathMatchers to use against the URL.
 | Type | [`compute.UrlMapTest`](gcp_compute.md#UrlMapTest) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-The list of expected URL mappings. Request to update this UrlMap will
-succeed only if all of the test cases pass.
+The list of expected URL mapping tests. Request to update this UrlMap will
+succeed only if all of the test cases pass. You can specify a maximum of 100
+tests per UrlMap.
 
 ## Message `UrlMapList` {#UrlMapList}
 
@@ -23726,6 +27323,158 @@ Content of the UrlMap to be validated.
 | Field Name | `result` |
 | Type | [`compute.UrlMapValidationResult`](gcp_compute.md#UrlMapValidationResult) |
 
+## Message `UsableSubnetwork` {#UsableSubnetwork}
+
+Subnetwork which the current user has compute.subnetworks.use permission on.
+
+
+### Inputs for `UsableSubnetwork`
+
+* `string` [`ipCidrRange`](#UsableSubnetwork.ipCidrRange) = 1
+* `string` [`network`](#UsableSubnetwork.network) = 2
+* `repeated` [`compute.UsableSubnetworkSecondaryRange`](gcp_compute.md#UsableSubnetworkSecondaryRange) [`secondaryIpRanges`](#UsableSubnetwork.secondaryIpRanges) = 3
+* `string` [`subnetwork`](#UsableSubnetwork.subnetwork) = 4
+
+### `ipCidrRange` {#UsableSubnetwork.ipCidrRange}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `ipCidrRange` |
+| Type | `string` |
+
+The range of internal addresses that are owned by this subnetwork.
+
+### `network` {#UsableSubnetwork.network}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `network` |
+| Type | `string` |
+
+Network URL.
+
+### `secondaryIpRanges` {#UsableSubnetwork.secondaryIpRanges}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `secondaryIpRanges` |
+| Type | [`compute.UsableSubnetworkSecondaryRange`](gcp_compute.md#UsableSubnetworkSecondaryRange) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Secondary IP ranges.
+
+### `subnetwork` {#UsableSubnetwork.subnetwork}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `subnetwork` |
+| Type | `string` |
+
+Subnetwork URL.
+
+## Message `UsableSubnetworkSecondaryRange` {#UsableSubnetworkSecondaryRange}
+
+Secondary IP range of a usable subnetwork.
+
+
+### Inputs for `UsableSubnetworkSecondaryRange`
+
+* `string` [`ipCidrRange`](#UsableSubnetworkSecondaryRange.ipCidrRange) = 1
+* `string` [`rangeName`](#UsableSubnetworkSecondaryRange.rangeName) = 2
+
+### `ipCidrRange` {#UsableSubnetworkSecondaryRange.ipCidrRange}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `ipCidrRange` |
+| Type | `string` |
+
+The range of IP addresses belonging to this subnetwork secondary range.
+
+### `rangeName` {#UsableSubnetworkSecondaryRange.rangeName}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `rangeName` |
+| Type | `string` |
+
+The name associated with this subnetwork secondary range, used when adding
+an alias IP range to a VM instance. The name must be 1-63 characters long,
+and comply with RFC1035. The name must be unique within the subnetwork.
+
+## Message `UsableSubnetworksAggregatedList` {#UsableSubnetworksAggregatedList}
+
+
+
+### Inputs for `UsableSubnetworksAggregatedList`
+
+* `string` [`id`](#UsableSubnetworksAggregatedList.id) = 1
+* `repeated` [`compute.UsableSubnetwork`](gcp_compute.md#UsableSubnetwork) [`items`](#UsableSubnetworksAggregatedList.items) = 2
+* `string` [`kind`](#UsableSubnetworksAggregatedList.kind) = 3
+* `string` [`nextPageToken`](#UsableSubnetworksAggregatedList.nextPageToken) = 4
+* `string` [`selfLink`](#UsableSubnetworksAggregatedList.selfLink) = 5
+* [`compute.UsableSubnetworksAggregatedList.Warning`](gcp_compute.md#UsableSubnetworksAggregatedList.Warning) [`warning`](#UsableSubnetworksAggregatedList.warning) = 6
+
+### `id` {#UsableSubnetworksAggregatedList.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+[Output Only] The unique identifier for the resource. This identifier is
+defined by the server.
+
+### `items` {#UsableSubnetworksAggregatedList.items}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `items` |
+| Type | [`compute.UsableSubnetwork`](gcp_compute.md#UsableSubnetwork) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+[Output] A list of usable subnetwork URLs.
+
+### `kind` {#UsableSubnetworksAggregatedList.kind}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `kind` |
+| Type | `string` |
+
+[Output Only] Type of resource. Always
+compute#usableSubnetworksAggregatedList for aggregated lists of usable
+subnetworks.
+
+### `nextPageToken` {#UsableSubnetworksAggregatedList.nextPageToken}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nextPageToken` |
+| Type | `string` |
+
+[Output Only] This token allows you to get the next page of results for list
+requests. If the number of results is larger than maxResults, use the
+nextPageToken as a value for the query parameter pageToken in the next list
+request. Subsequent list requests will have their own nextPageToken to
+continue paging through the results.
+
+### `selfLink` {#UsableSubnetworksAggregatedList.selfLink}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `selfLink` |
+| Type | `string` |
+
+[Output Only] Server-defined URL for this resource.
+
+### `warning` {#UsableSubnetworksAggregatedList.warning}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `warning` |
+| Type | [`compute.UsableSubnetworksAggregatedList.Warning`](gcp_compute.md#UsableSubnetworksAggregatedList.Warning) |
+
 ## Message `UsageExportLocation` {#UsageExportLocation}
 
 The location in Cloud Storage and naming method of the daily usage report.
@@ -23898,7 +27647,7 @@ gateway. The value should be a CIDR formatted string, for example:
 Name of the resource. Provided by the client when the resource is created.
 The name must be 1-63 characters long, and comply with RFC1035.
 Specifically, the name must be 1-63 characters long and match the regular
-expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must
+expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must
 be a lowercase letter, and all following characters must be a dash,
 lowercase letter, or digit, except the last character, which cannot be a
 dash.
@@ -23919,7 +27668,9 @@ IP address of the peer VPN gateway. Only IPv4 is supported.
 | Field Name | `region` |
 | Type | `string` |
 
-[Output Only] URL of the region where the VPN tunnel resides.
+[Output Only] URL of the region where the VPN tunnel resides. You must
+specify this field as part of the HTTP request URL. It is not settable as a
+field in the request body.
 
 ### `remoteTrafficSelector` {#VpnTunnel.remoteTrafficSelector}
 
@@ -23999,8 +27750,8 @@ Valid values:
 | Field Name | `targetVpnGateway` |
 | Type | `string` |
 
-URL of the VPN gateway with which this VPN tunnel is associated. Provided by
-the client when the VPN tunnel is created.
+URL of the Target VPN gateway with which this VPN tunnel is associated.
+Provided by the client when the VPN tunnel is created.
 
 ## Message `VpnTunnelAggregatedList` {#VpnTunnelAggregatedList}
 
@@ -24160,7 +27911,7 @@ continue paging through the results.
 | Type | [`compute.VpnTunnel`](gcp_compute.md#VpnTunnel) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-List of vpn tunnels contained in this scope.
+A list of vpn tunnels contained in this scope.
 
 ### `warning` {#VpnTunnelsScopedList.warning}
 
@@ -24168,6 +27919,450 @@ List of vpn tunnels contained in this scope.
 |----------|----------|
 | Field Name | `warning` |
 | Type | [`compute.VpnTunnelsScopedList.Warning`](gcp_compute.md#VpnTunnelsScopedList.Warning) |
+
+## Message `WafExpressionSet` {#WafExpressionSet}
+
+
+
+### Inputs for `WafExpressionSet`
+
+* `repeated` `string` [`aliases`](#WafExpressionSet.aliases) = 1
+* `repeated` [`compute.WafExpressionSetExpression`](gcp_compute.md#WafExpressionSetExpression) [`expressions`](#WafExpressionSet.expressions) = 2
+* `string` [`id`](#WafExpressionSet.id) = 3
+
+### `aliases` {#WafExpressionSet.aliases}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `aliases` |
+| Type | `string` |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+A list of alternate IDs. The format should be: - E.g. XSS-stable Generic
+suffix like "stable" is particularly useful if a policy likes to avail newer
+set of expressions without having to change the policy. A given alias name
+can't be used for more than one entity set.
+
+### `expressions` {#WafExpressionSet.expressions}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `expressions` |
+| Type | [`compute.WafExpressionSetExpression`](gcp_compute.md#WafExpressionSetExpression) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+List of available expressions.
+
+### `id` {#WafExpressionSet.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+Google specified expression set ID. The format should be: - E.g.
+XSS-20170329
+
+## Message `WafExpressionSetExpression` {#WafExpressionSetExpression}
+
+
+
+### Inputs for `WafExpressionSetExpression`
+
+* `string` [`id`](#WafExpressionSetExpression.id) = 1
+
+### `id` {#WafExpressionSetExpression.id}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `id` |
+| Type | `string` |
+
+Expression ID should uniquely identify the origin of the expression. E.g.
+owasp-crs-v020901-id973337 identifies Owasp core rule set version 2.9.1 rule
+id 973337. The ID could be used to determine the individual attack
+definition that has been detected. It could also be used to exclude it from
+the policy in case of false positive.
+
+## Message `Warning` {#RegionAutoscalerList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RegionAutoscalerList.Warning.code) = 1
+* `repeated` [`compute.RegionAutoscalerList.Warning.Data`](gcp_compute.md#RegionAutoscalerList.Warning.Data) [`data`](#RegionAutoscalerList.Warning.data) = 2
+* `string` [`message`](#RegionAutoscalerList.Warning.message) = 3
+
+### `code` {#RegionAutoscalerList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RegionAutoscalerList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RegionAutoscalerList.Warning.Data`](gcp_compute.md#RegionAutoscalerList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RegionAutoscalerList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#CommitmentList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#CommitmentList.Warning.code) = 1
+* `repeated` [`compute.CommitmentList.Warning.Data`](gcp_compute.md#CommitmentList.Warning.Data) [`data`](#CommitmentList.Warning.data) = 2
+* `string` [`message`](#CommitmentList.Warning.message) = 3
+
+### `code` {#CommitmentList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#CommitmentList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.CommitmentList.Warning.Data`](gcp_compute.md#CommitmentList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#CommitmentList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#SubnetworksScopedList.Warning}
+
+An informational warning that appears when the list of addresses is empty.
+An informational warning that appears when the list of addresses is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#SubnetworksScopedList.Warning.code) = 1
+* `repeated` [`compute.SubnetworksScopedList.Warning.Data`](gcp_compute.md#SubnetworksScopedList.Warning.Data) [`data`](#SubnetworksScopedList.Warning.data) = 2
+* `string` [`message`](#SubnetworksScopedList.Warning.message) = 3
+
+### `code` {#SubnetworksScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#SubnetworksScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.SubnetworksScopedList.Warning.Data`](gcp_compute.md#SubnetworksScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#SubnetworksScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#CommitmentAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#CommitmentAggregatedList.Warning.code) = 1
+* `repeated` [`compute.CommitmentAggregatedList.Warning.Data`](gcp_compute.md#CommitmentAggregatedList.Warning.Data) [`data`](#CommitmentAggregatedList.Warning.data) = 2
+* `string` [`message`](#CommitmentAggregatedList.Warning.message) = 3
+
+### `code` {#CommitmentAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#CommitmentAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.CommitmentAggregatedList.Warning.Data`](gcp_compute.md#CommitmentAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#CommitmentAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#SubnetworkList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#SubnetworkList.Warning.code) = 1
+* `repeated` [`compute.SubnetworkList.Warning.Data`](gcp_compute.md#SubnetworkList.Warning.Data) [`data`](#SubnetworkList.Warning.data) = 2
+* `string` [`message`](#SubnetworkList.Warning.message) = 3
+
+### `code` {#SubnetworkList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#SubnetworkList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.SubnetworkList.Warning.Data`](gcp_compute.md#SubnetworkList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#SubnetworkList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#CommitmentsScopedList.Warning}
+
+[Output Only] Informational warning which replaces the list of commitments
+when the list is empty.
+[Output Only] Informational warning which replaces the list of commitments
+when the list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#CommitmentsScopedList.Warning.code) = 1
+* `repeated` [`compute.CommitmentsScopedList.Warning.Data`](gcp_compute.md#CommitmentsScopedList.Warning.Data) [`data`](#CommitmentsScopedList.Warning.data) = 2
+* `string` [`message`](#CommitmentsScopedList.Warning.message) = 3
+
+### `code` {#CommitmentsScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#CommitmentsScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.CommitmentsScopedList.Warning.Data`](gcp_compute.md#CommitmentsScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#CommitmentsScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
 
 ## Message `Warning` {#SubnetworkAggregatedList.Warning}
 
@@ -24224,6 +28419,134 @@ Valid values:
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
 ### `message` {#SubnetworkAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NetworkEndpointGroupsListNetworkEndpoints.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NetworkEndpointGroupsListNetworkEndpoints.Warning.code) = 1
+* `repeated` [`compute.NetworkEndpointGroupsListNetworkEndpoints.Warning.Data`](gcp_compute.md#NetworkEndpointGroupsListNetworkEndpoints.Warning.Data) [`data`](#NetworkEndpointGroupsListNetworkEndpoints.Warning.data) = 2
+* `string` [`message`](#NetworkEndpointGroupsListNetworkEndpoints.Warning.message) = 3
+
+### `code` {#NetworkEndpointGroupsListNetworkEndpoints.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NetworkEndpointGroupsListNetworkEndpoints.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NetworkEndpointGroupsListNetworkEndpoints.Warning.Data`](gcp_compute.md#NetworkEndpointGroupsListNetworkEndpoints.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NetworkEndpointGroupsListNetworkEndpoints.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InstanceGroupsScopedList.Warning}
+
+[Output Only] An informational warning that replaces the list of instance
+groups when the list is empty.
+[Output Only] An informational warning that replaces the list of instance
+groups when the list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InstanceGroupsScopedList.Warning.code) = 1
+* `repeated` [`compute.InstanceGroupsScopedList.Warning.Data`](gcp_compute.md#InstanceGroupsScopedList.Warning.Data) [`data`](#InstanceGroupsScopedList.Warning.data) = 2
+* `string` [`message`](#InstanceGroupsScopedList.Warning.message) = 3
+
+### `code` {#InstanceGroupsScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InstanceGroupsScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InstanceGroupsScopedList.Warning.Data`](gcp_compute.md#InstanceGroupsScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InstanceGroupsScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -24295,21 +28618,19 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#ForwardingRulesScopedList.Warning}
+## Message `Warning` {#InstanceList.Warning}
 
-Informational warning which replaces the list of forwarding rules when the
-list is empty.
-Informational warning which replaces the list of forwarding rules when the
-list is empty.
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#ForwardingRulesScopedList.Warning.code) = 1
-* `repeated` [`compute.ForwardingRulesScopedList.Warning.Data`](gcp_compute.md#ForwardingRulesScopedList.Warning.Data) [`data`](#ForwardingRulesScopedList.Warning.data) = 2
-* `string` [`message`](#ForwardingRulesScopedList.Warning.message) = 3
+* `string` [`code`](#InstanceList.Warning.code) = 1
+* `repeated` [`compute.InstanceList.Warning.Data`](gcp_compute.md#InstanceList.Warning.Data) [`data`](#InstanceList.Warning.data) = 2
+* `string` [`message`](#InstanceList.Warning.message) = 3
 
-### `code` {#ForwardingRulesScopedList.Warning.code}
+### `code` {#InstanceList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -24343,15 +28664,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#ForwardingRulesScopedList.Warning.data}
+### `data` {#InstanceList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.ForwardingRulesScopedList.Warning.Data`](gcp_compute.md#ForwardingRulesScopedList.Warning.Data) |
+| Type | [`compute.InstanceList.Warning.Data`](gcp_compute.md#InstanceList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#ForwardingRulesScopedList.Warning.message}
+### `message` {#InstanceList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -24423,19 +28744,21 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#MachineTypeAggregatedList.Warning}
+## Message `Warning` {#NetworkEndpointGroupsScopedList.Warning}
 
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
+[Output Only] An informational warning that replaces the list of network
+endpoint groups when the list is empty.
+[Output Only] An informational warning that replaces the list of network
+endpoint groups when the list is empty.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#MachineTypeAggregatedList.Warning.code) = 1
-* `repeated` [`compute.MachineTypeAggregatedList.Warning.Data`](gcp_compute.md#MachineTypeAggregatedList.Warning.Data) [`data`](#MachineTypeAggregatedList.Warning.data) = 2
-* `string` [`message`](#MachineTypeAggregatedList.Warning.message) = 3
+* `string` [`code`](#NetworkEndpointGroupsScopedList.Warning.code) = 1
+* `repeated` [`compute.NetworkEndpointGroupsScopedList.Warning.Data`](gcp_compute.md#NetworkEndpointGroupsScopedList.Warning.Data) [`data`](#NetworkEndpointGroupsScopedList.Warning.data) = 2
+* `string` [`message`](#NetworkEndpointGroupsScopedList.Warning.message) = 3
 
-### `code` {#MachineTypeAggregatedList.Warning.code}
+### `code` {#NetworkEndpointGroupsScopedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -24469,78 +28792,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#MachineTypeAggregatedList.Warning.data}
+### `data` {#NetworkEndpointGroupsScopedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.MachineTypeAggregatedList.Warning.Data`](gcp_compute.md#MachineTypeAggregatedList.Warning.Data) |
+| Type | [`compute.NetworkEndpointGroupsScopedList.Warning.Data`](gcp_compute.md#NetworkEndpointGroupsScopedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#MachineTypeAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#NetworkList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#NetworkList.Warning.code) = 1
-* `repeated` [`compute.NetworkList.Warning.Data`](gcp_compute.md#NetworkList.Warning.Data) [`data`](#NetworkList.Warning.data) = 2
-* `string` [`message`](#NetworkList.Warning.message) = 3
-
-### `code` {#NetworkList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#NetworkList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.NetworkList.Warning.Data`](gcp_compute.md#NetworkList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#NetworkList.Warning.message}
+### `message` {#NetworkEndpointGroupsScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -24604,6 +28864,69 @@ Valid values:
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
 ### `message` {#SslPoliciesList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#DiskAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#DiskAggregatedList.Warning.code) = 1
+* `repeated` [`compute.DiskAggregatedList.Warning.Data`](gcp_compute.md#DiskAggregatedList.Warning.Data) [`data`](#DiskAggregatedList.Warning.data) = 2
+* `string` [`message`](#DiskAggregatedList.Warning.message) = 3
+
+### `code` {#DiskAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#DiskAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.DiskAggregatedList.Warning.Data`](gcp_compute.md#DiskAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#DiskAggregatedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -24740,21 +29063,19 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#InterconnectAttachmentsScopedList.Warning}
+## Message `Warning` {#SslCertificateList.Warning}
 
-Informational warning which replaces the list of addresses when the list is
-empty.
-Informational warning which replaces the list of addresses when the list is
-empty.
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#InterconnectAttachmentsScopedList.Warning.code) = 1
-* `repeated` [`compute.InterconnectAttachmentsScopedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentsScopedList.Warning.Data) [`data`](#InterconnectAttachmentsScopedList.Warning.data) = 2
-* `string` [`message`](#InterconnectAttachmentsScopedList.Warning.message) = 3
+* `string` [`code`](#SslCertificateList.Warning.code) = 1
+* `repeated` [`compute.SslCertificateList.Warning.Data`](gcp_compute.md#SslCertificateList.Warning.Data) [`data`](#SslCertificateList.Warning.data) = 2
+* `string` [`message`](#SslCertificateList.Warning.message) = 3
 
-### `code` {#InterconnectAttachmentsScopedList.Warning.code}
+### `code` {#SslCertificateList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -24788,1411 +29109,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#InterconnectAttachmentsScopedList.Warning.data}
+### `data` {#SslCertificateList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.InterconnectAttachmentsScopedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentsScopedList.Warning.Data) |
+| Type | [`compute.SslCertificateList.Warning.Data`](gcp_compute.md#SslCertificateList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#InterconnectAttachmentsScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#MachineTypesScopedList.Warning}
-
-[Output Only] An informational warning that appears when the machine types
-list is empty.
-[Output Only] An informational warning that appears when the machine types
-list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#MachineTypesScopedList.Warning.code) = 1
-* `repeated` [`compute.MachineTypesScopedList.Warning.Data`](gcp_compute.md#MachineTypesScopedList.Warning.Data) [`data`](#MachineTypesScopedList.Warning.data) = 2
-* `string` [`message`](#MachineTypesScopedList.Warning.message) = 3
-
-### `code` {#MachineTypesScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#MachineTypesScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.MachineTypesScopedList.Warning.Data`](gcp_compute.md#MachineTypesScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#MachineTypesScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#ForwardingRuleList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#ForwardingRuleList.Warning.code) = 1
-* `repeated` [`compute.ForwardingRuleList.Warning.Data`](gcp_compute.md#ForwardingRuleList.Warning.Data) [`data`](#ForwardingRuleList.Warning.data) = 2
-* `string` [`message`](#ForwardingRuleList.Warning.message) = 3
-
-### `code` {#ForwardingRuleList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#ForwardingRuleList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.ForwardingRuleList.Warning.Data`](gcp_compute.md#ForwardingRuleList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#ForwardingRuleList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#TargetInstanceAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#TargetInstanceAggregatedList.Warning.code) = 1
-* `repeated` [`compute.TargetInstanceAggregatedList.Warning.Data`](gcp_compute.md#TargetInstanceAggregatedList.Warning.Data) [`data`](#TargetInstanceAggregatedList.Warning.data) = 2
-* `string` [`message`](#TargetInstanceAggregatedList.Warning.message) = 3
-
-### `code` {#TargetInstanceAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#TargetInstanceAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.TargetInstanceAggregatedList.Warning.Data`](gcp_compute.md#TargetInstanceAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#TargetInstanceAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#ForwardingRuleAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#ForwardingRuleAggregatedList.Warning.code) = 1
-* `repeated` [`compute.ForwardingRuleAggregatedList.Warning.Data`](gcp_compute.md#ForwardingRuleAggregatedList.Warning.Data) [`data`](#ForwardingRuleAggregatedList.Warning.data) = 2
-* `string` [`message`](#ForwardingRuleAggregatedList.Warning.message) = 3
-
-### `code` {#ForwardingRuleAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#ForwardingRuleAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.ForwardingRuleAggregatedList.Warning.Data`](gcp_compute.md#ForwardingRuleAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#ForwardingRuleAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#RegionInstanceGroupsListInstances.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#RegionInstanceGroupsListInstances.Warning.code) = 1
-* `repeated` [`compute.RegionInstanceGroupsListInstances.Warning.Data`](gcp_compute.md#RegionInstanceGroupsListInstances.Warning.Data) [`data`](#RegionInstanceGroupsListInstances.Warning.data) = 2
-* `string` [`message`](#RegionInstanceGroupsListInstances.Warning.message) = 3
-
-### `code` {#RegionInstanceGroupsListInstances.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#RegionInstanceGroupsListInstances.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.RegionInstanceGroupsListInstances.Warning.Data`](gcp_compute.md#RegionInstanceGroupsListInstances.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#RegionInstanceGroupsListInstances.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#TargetInstanceList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#TargetInstanceList.Warning.code) = 1
-* `repeated` [`compute.TargetInstanceList.Warning.Data`](gcp_compute.md#TargetInstanceList.Warning.Data) [`data`](#TargetInstanceList.Warning.data) = 2
-* `string` [`message`](#TargetInstanceList.Warning.message) = 3
-
-### `code` {#TargetInstanceList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#TargetInstanceList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.TargetInstanceList.Warning.Data`](gcp_compute.md#TargetInstanceList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#TargetInstanceList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#FirewallList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#FirewallList.Warning.code) = 1
-* `repeated` [`compute.FirewallList.Warning.Data`](gcp_compute.md#FirewallList.Warning.Data) [`data`](#FirewallList.Warning.data) = 2
-* `string` [`message`](#FirewallList.Warning.message) = 3
-
-### `code` {#FirewallList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#FirewallList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.FirewallList.Warning.Data`](gcp_compute.md#FirewallList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#FirewallList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InterconnectAttachmentList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InterconnectAttachmentList.Warning.code) = 1
-* `repeated` [`compute.InterconnectAttachmentList.Warning.Data`](gcp_compute.md#InterconnectAttachmentList.Warning.Data) [`data`](#InterconnectAttachmentList.Warning.data) = 2
-* `string` [`message`](#InterconnectAttachmentList.Warning.message) = 3
-
-### `code` {#InterconnectAttachmentList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InterconnectAttachmentList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InterconnectAttachmentList.Warning.Data`](gcp_compute.md#InterconnectAttachmentList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InterconnectAttachmentList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#TargetInstancesScopedList.Warning}
-
-Informational warning which replaces the list of addresses when the list is
-empty.
-Informational warning which replaces the list of addresses when the list is
-empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#TargetInstancesScopedList.Warning.code) = 1
-* `repeated` [`compute.TargetInstancesScopedList.Warning.Data`](gcp_compute.md#TargetInstancesScopedList.Warning.Data) [`data`](#TargetInstancesScopedList.Warning.data) = 2
-* `string` [`message`](#TargetInstancesScopedList.Warning.message) = 3
-
-### `code` {#TargetInstancesScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#TargetInstancesScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.TargetInstancesScopedList.Warning.Data`](gcp_compute.md#TargetInstancesScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#TargetInstancesScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#DisksScopedList.Warning}
-
-[Output Only] Informational warning which replaces the list of disks when
-the list is empty.
-[Output Only] Informational warning which replaces the list of disks when
-the list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#DisksScopedList.Warning.code) = 1
-* `repeated` [`compute.DisksScopedList.Warning.Data`](gcp_compute.md#DisksScopedList.Warning.Data) [`data`](#DisksScopedList.Warning.data) = 2
-* `string` [`message`](#DisksScopedList.Warning.message) = 3
-
-### `code` {#DisksScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#DisksScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.DisksScopedList.Warning.Data`](gcp_compute.md#DisksScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#DisksScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#ImageList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#ImageList.Warning.code) = 1
-* `repeated` [`compute.ImageList.Warning.Data`](gcp_compute.md#ImageList.Warning.Data) [`data`](#ImageList.Warning.data) = 2
-* `string` [`message`](#ImageList.Warning.message) = 3
-
-### `code` {#ImageList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#ImageList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.ImageList.Warning.Data`](gcp_compute.md#ImageList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#ImageList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#ZoneList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#ZoneList.Warning.code) = 1
-* `repeated` [`compute.ZoneList.Warning.Data`](gcp_compute.md#ZoneList.Warning.Data) [`data`](#ZoneList.Warning.data) = 2
-* `string` [`message`](#ZoneList.Warning.message) = 3
-
-### `code` {#ZoneList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#ZoneList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.ZoneList.Warning.Data`](gcp_compute.md#ZoneList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#ZoneList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#DiskTypesScopedList.Warning}
-
-[Output Only] Informational warning which replaces the list of disk types
-when the list is empty.
-[Output Only] Informational warning which replaces the list of disk types
-when the list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#DiskTypesScopedList.Warning.code) = 1
-* `repeated` [`compute.DiskTypesScopedList.Warning.Data`](gcp_compute.md#DiskTypesScopedList.Warning.Data) [`data`](#DiskTypesScopedList.Warning.data) = 2
-* `string` [`message`](#DiskTypesScopedList.Warning.message) = 3
-
-### `code` {#DiskTypesScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#DiskTypesScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.DiskTypesScopedList.Warning.Data`](gcp_compute.md#DiskTypesScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#DiskTypesScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#TargetPoolAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#TargetPoolAggregatedList.Warning.code) = 1
-* `repeated` [`compute.TargetPoolAggregatedList.Warning.Data`](gcp_compute.md#TargetPoolAggregatedList.Warning.Data) [`data`](#TargetPoolAggregatedList.Warning.data) = 2
-* `string` [`message`](#TargetPoolAggregatedList.Warning.message) = 3
-
-### `code` {#TargetPoolAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#TargetPoolAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.TargetPoolAggregatedList.Warning.Data`](gcp_compute.md#TargetPoolAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#TargetPoolAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#DiskTypeList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#DiskTypeList.Warning.code) = 1
-* `repeated` [`compute.DiskTypeList.Warning.Data`](gcp_compute.md#DiskTypeList.Warning.Data) [`data`](#DiskTypeList.Warning.data) = 2
-* `string` [`message`](#DiskTypeList.Warning.message) = 3
-
-### `code` {#DiskTypeList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#DiskTypeList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.DiskTypeList.Warning.Data`](gcp_compute.md#DiskTypeList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#DiskTypeList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#RegionList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#RegionList.Warning.code) = 1
-* `repeated` [`compute.RegionList.Warning.Data`](gcp_compute.md#RegionList.Warning.Data) [`data`](#RegionList.Warning.data) = 2
-* `string` [`message`](#RegionList.Warning.message) = 3
-
-### `code` {#RegionList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#RegionList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.RegionList.Warning.Data`](gcp_compute.md#RegionList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#RegionList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InterconnectAttachmentAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InterconnectAttachmentAggregatedList.Warning.code) = 1
-* `repeated` [`compute.InterconnectAttachmentAggregatedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentAggregatedList.Warning.Data) [`data`](#InterconnectAttachmentAggregatedList.Warning.data) = 2
-* `string` [`message`](#InterconnectAttachmentAggregatedList.Warning.message) = 3
-
-### `code` {#InterconnectAttachmentAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InterconnectAttachmentAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InterconnectAttachmentAggregatedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InterconnectAttachmentAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceAggregatedList.Warning.code) = 1
-* `repeated` [`compute.InstanceAggregatedList.Warning.Data`](gcp_compute.md#InstanceAggregatedList.Warning.Data) [`data`](#InstanceAggregatedList.Warning.data) = 2
-* `string` [`message`](#InstanceAggregatedList.Warning.message) = 3
-
-### `code` {#InstanceAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceAggregatedList.Warning.Data`](gcp_compute.md#InstanceAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#DiskTypeAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#DiskTypeAggregatedList.Warning.code) = 1
-* `repeated` [`compute.DiskTypeAggregatedList.Warning.Data`](gcp_compute.md#DiskTypeAggregatedList.Warning.Data) [`data`](#DiskTypeAggregatedList.Warning.data) = 2
-* `string` [`message`](#DiskTypeAggregatedList.Warning.message) = 3
-
-### `code` {#DiskTypeAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#DiskTypeAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.DiskTypeAggregatedList.Warning.Data`](gcp_compute.md#DiskTypeAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#DiskTypeAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstancesScopedList.Warning}
-
-[Output Only] Informational warning which replaces the list of instances
-when the list is empty.
-[Output Only] Informational warning which replaces the list of instances
-when the list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstancesScopedList.Warning.code) = 1
-* `repeated` [`compute.InstancesScopedList.Warning.Data`](gcp_compute.md#InstancesScopedList.Warning.Data) [`data`](#InstancesScopedList.Warning.data) = 2
-* `string` [`message`](#InstancesScopedList.Warning.message) = 3
-
-### `code` {#InstancesScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstancesScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstancesScopedList.Warning.Data`](gcp_compute.md#InstancesScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstancesScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#AcceleratorTypeList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#AcceleratorTypeList.Warning.code) = 1
-* `repeated` [`compute.AcceleratorTypeList.Warning.Data`](gcp_compute.md#AcceleratorTypeList.Warning.Data) [`data`](#AcceleratorTypeList.Warning.data) = 2
-* `string` [`message`](#AcceleratorTypeList.Warning.message) = 3
-
-### `code` {#AcceleratorTypeList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#AcceleratorTypeList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.AcceleratorTypeList.Warning.Data`](gcp_compute.md#AcceleratorTypeList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#AcceleratorTypeList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceGroupAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceGroupAggregatedList.Warning.code) = 1
-* `repeated` [`compute.InstanceGroupAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupAggregatedList.Warning.Data) [`data`](#InstanceGroupAggregatedList.Warning.data) = 2
-* `string` [`message`](#InstanceGroupAggregatedList.Warning.message) = 3
-
-### `code` {#InstanceGroupAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceGroupAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceGroupAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceGroupAggregatedList.Warning.message}
+### `message` {#SslCertificateList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -26264,7 +29189,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#SslCertificateList.Warning}
+## Message `Warning` {#NetworkEndpointGroupList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -26272,11 +29197,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#SslCertificateList.Warning.code) = 1
-* `repeated` [`compute.SslCertificateList.Warning.Data`](gcp_compute.md#SslCertificateList.Warning.Data) [`data`](#SslCertificateList.Warning.data) = 2
-* `string` [`message`](#SslCertificateList.Warning.message) = 3
+* `string` [`code`](#NetworkEndpointGroupList.Warning.code) = 1
+* `repeated` [`compute.NetworkEndpointGroupList.Warning.Data`](gcp_compute.md#NetworkEndpointGroupList.Warning.Data) [`data`](#NetworkEndpointGroupList.Warning.data) = 2
+* `string` [`message`](#NetworkEndpointGroupList.Warning.message) = 3
 
-### `code` {#SslCertificateList.Warning.code}
+### `code` {#NetworkEndpointGroupList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -26310,15 +29235,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#SslCertificateList.Warning.data}
+### `data` {#NetworkEndpointGroupList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.SslCertificateList.Warning.Data`](gcp_compute.md#SslCertificateList.Warning.Data) |
+| Type | [`compute.NetworkEndpointGroupList.Warning.Data`](gcp_compute.md#NetworkEndpointGroupList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#SslCertificateList.Warning.message}
+### `message` {#NetworkEndpointGroupList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -26327,21 +29252,19 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#TargetPoolsScopedList.Warning}
+## Message `Warning` {#TargetInstanceAggregatedList.Warning}
 
-Informational warning which replaces the list of addresses when the list is
-empty.
-Informational warning which replaces the list of addresses when the list is
-empty.
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#TargetPoolsScopedList.Warning.code) = 1
-* `repeated` [`compute.TargetPoolsScopedList.Warning.Data`](gcp_compute.md#TargetPoolsScopedList.Warning.Data) [`data`](#TargetPoolsScopedList.Warning.data) = 2
-* `string` [`message`](#TargetPoolsScopedList.Warning.message) = 3
+* `string` [`code`](#TargetInstanceAggregatedList.Warning.code) = 1
+* `repeated` [`compute.TargetInstanceAggregatedList.Warning.Data`](gcp_compute.md#TargetInstanceAggregatedList.Warning.Data) [`data`](#TargetInstanceAggregatedList.Warning.data) = 2
+* `string` [`message`](#TargetInstanceAggregatedList.Warning.message) = 3
 
-### `code` {#TargetPoolsScopedList.Warning.code}
+### `code` {#TargetInstanceAggregatedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -26375,1155 +29298,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#TargetPoolsScopedList.Warning.data}
+### `data` {#TargetInstanceAggregatedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.TargetPoolsScopedList.Warning.Data`](gcp_compute.md#TargetPoolsScopedList.Warning.Data) |
+| Type | [`compute.TargetInstanceAggregatedList.Warning.Data`](gcp_compute.md#TargetInstanceAggregatedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#TargetPoolsScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#DiskAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#DiskAggregatedList.Warning.code) = 1
-* `repeated` [`compute.DiskAggregatedList.Warning.Data`](gcp_compute.md#DiskAggregatedList.Warning.Data) [`data`](#DiskAggregatedList.Warning.data) = 2
-* `string` [`message`](#DiskAggregatedList.Warning.message) = 3
-
-### `code` {#DiskAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#DiskAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.DiskAggregatedList.Warning.Data`](gcp_compute.md#DiskAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#DiskAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceTemplateList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceTemplateList.Warning.code) = 1
-* `repeated` [`compute.InstanceTemplateList.Warning.Data`](gcp_compute.md#InstanceTemplateList.Warning.Data) [`data`](#InstanceTemplateList.Warning.data) = 2
-* `string` [`message`](#InstanceTemplateList.Warning.message) = 3
-
-### `code` {#InstanceTemplateList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceTemplateList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceTemplateList.Warning.Data`](gcp_compute.md#InstanceTemplateList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceTemplateList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#OperationAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#OperationAggregatedList.Warning.code) = 1
-* `repeated` [`compute.OperationAggregatedList.Warning.Data`](gcp_compute.md#OperationAggregatedList.Warning.Data) [`data`](#OperationAggregatedList.Warning.data) = 2
-* `string` [`message`](#OperationAggregatedList.Warning.message) = 3
-
-### `code` {#OperationAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#OperationAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.OperationAggregatedList.Warning.Data`](gcp_compute.md#OperationAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#OperationAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#RouteList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#RouteList.Warning.code) = 1
-* `repeated` [`compute.RouteList.Warning.Data`](gcp_compute.md#RouteList.Warning.Data) [`data`](#RouteList.Warning.data) = 2
-* `string` [`message`](#RouteList.Warning.message) = 3
-
-### `code` {#RouteList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#RouteList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.RouteList.Warning.Data`](gcp_compute.md#RouteList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#RouteList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceListReferrers.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceListReferrers.Warning.code) = 1
-* `repeated` [`compute.InstanceListReferrers.Warning.Data`](gcp_compute.md#InstanceListReferrers.Warning.Data) [`data`](#InstanceListReferrers.Warning.data) = 2
-* `string` [`message`](#InstanceListReferrers.Warning.message) = 3
-
-### `code` {#InstanceListReferrers.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceListReferrers.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceListReferrers.Warning.Data`](gcp_compute.md#InstanceListReferrers.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceListReferrers.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceGroupList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceGroupList.Warning.code) = 1
-* `repeated` [`compute.InstanceGroupList.Warning.Data`](gcp_compute.md#InstanceGroupList.Warning.Data) [`data`](#InstanceGroupList.Warning.data) = 2
-* `string` [`message`](#InstanceGroupList.Warning.message) = 3
-
-### `code` {#InstanceGroupList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceGroupList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceGroupList.Warning.Data`](gcp_compute.md#InstanceGroupList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceGroupList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#SnapshotList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#SnapshotList.Warning.code) = 1
-* `repeated` [`compute.SnapshotList.Warning.Data`](gcp_compute.md#SnapshotList.Warning.Data) [`data`](#SnapshotList.Warning.data) = 2
-* `string` [`message`](#SnapshotList.Warning.message) = 3
-
-### `code` {#SnapshotList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#SnapshotList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.SnapshotList.Warning.Data`](gcp_compute.md#SnapshotList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#SnapshotList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#AcceleratorTypesScopedList.Warning}
-
-[Output Only] An informational warning that appears when the accelerator
-types list is empty.
-[Output Only] An informational warning that appears when the accelerator
-types list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#AcceleratorTypesScopedList.Warning.code) = 1
-* `repeated` [`compute.AcceleratorTypesScopedList.Warning.Data`](gcp_compute.md#AcceleratorTypesScopedList.Warning.Data) [`data`](#AcceleratorTypesScopedList.Warning.data) = 2
-* `string` [`message`](#AcceleratorTypesScopedList.Warning.message) = 3
-
-### `code` {#AcceleratorTypesScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#AcceleratorTypesScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.AcceleratorTypesScopedList.Warning.Data`](gcp_compute.md#AcceleratorTypesScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#AcceleratorTypesScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#CommitmentsScopedList.Warning}
-
-[Output Only] Informational warning which replaces the list of commitments
-when the list is empty.
-[Output Only] Informational warning which replaces the list of commitments
-when the list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#CommitmentsScopedList.Warning.code) = 1
-* `repeated` [`compute.CommitmentsScopedList.Warning.Data`](gcp_compute.md#CommitmentsScopedList.Warning.Data) [`data`](#CommitmentsScopedList.Warning.data) = 2
-* `string` [`message`](#CommitmentsScopedList.Warning.message) = 3
-
-### `code` {#CommitmentsScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#CommitmentsScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.CommitmentsScopedList.Warning.Data`](gcp_compute.md#CommitmentsScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#CommitmentsScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#TargetPoolList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#TargetPoolList.Warning.code) = 1
-* `repeated` [`compute.TargetPoolList.Warning.Data`](gcp_compute.md#TargetPoolList.Warning.Data) [`data`](#TargetPoolList.Warning.data) = 2
-* `string` [`message`](#TargetPoolList.Warning.message) = 3
-
-### `code` {#TargetPoolList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#TargetPoolList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.TargetPoolList.Warning.Data`](gcp_compute.md#TargetPoolList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#TargetPoolList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceGroupManagerAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceGroupManagerAggregatedList.Warning.code) = 1
-* `repeated` [`compute.InstanceGroupManagerAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupManagerAggregatedList.Warning.Data) [`data`](#InstanceGroupManagerAggregatedList.Warning.data) = 2
-* `string` [`message`](#InstanceGroupManagerAggregatedList.Warning.message) = 3
-
-### `code` {#InstanceGroupManagerAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceGroupManagerAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceGroupManagerAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupManagerAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceGroupManagerAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceList.Warning.code) = 1
-* `repeated` [`compute.InstanceList.Warning.Data`](gcp_compute.md#InstanceList.Warning.Data) [`data`](#InstanceList.Warning.data) = 2
-* `string` [`message`](#InstanceList.Warning.message) = 3
-
-### `code` {#InstanceList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceList.Warning.Data`](gcp_compute.md#InstanceList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#RouterAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#RouterAggregatedList.Warning.code) = 1
-* `repeated` [`compute.RouterAggregatedList.Warning.Data`](gcp_compute.md#RouterAggregatedList.Warning.Data) [`data`](#RouterAggregatedList.Warning.data) = 2
-* `string` [`message`](#RouterAggregatedList.Warning.message) = 3
-
-### `code` {#RouterAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#RouterAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.RouterAggregatedList.Warning.Data`](gcp_compute.md#RouterAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#RouterAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#TargetTcpProxyList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#TargetTcpProxyList.Warning.code) = 1
-* `repeated` [`compute.TargetTcpProxyList.Warning.Data`](gcp_compute.md#TargetTcpProxyList.Warning.Data) [`data`](#TargetTcpProxyList.Warning.data) = 2
-* `string` [`message`](#TargetTcpProxyList.Warning.message) = 3
-
-### `code` {#TargetTcpProxyList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#TargetTcpProxyList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.TargetTcpProxyList.Warning.Data`](gcp_compute.md#TargetTcpProxyList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#TargetTcpProxyList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#CommitmentList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#CommitmentList.Warning.code) = 1
-* `repeated` [`compute.CommitmentList.Warning.Data`](gcp_compute.md#CommitmentList.Warning.Data) [`data`](#CommitmentList.Warning.data) = 2
-* `string` [`message`](#CommitmentList.Warning.message) = 3
-
-### `code` {#CommitmentList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#CommitmentList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.CommitmentList.Warning.Data`](gcp_compute.md#CommitmentList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#CommitmentList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#InstanceGroupsScopedList.Warning}
-
-[Output Only] An informational warning that replaces the list of instance
-groups when the list is empty.
-[Output Only] An informational warning that replaces the list of instance
-groups when the list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#InstanceGroupsScopedList.Warning.code) = 1
-* `repeated` [`compute.InstanceGroupsScopedList.Warning.Data`](gcp_compute.md#InstanceGroupsScopedList.Warning.Data) [`data`](#InstanceGroupsScopedList.Warning.data) = 2
-* `string` [`message`](#InstanceGroupsScopedList.Warning.message) = 3
-
-### `code` {#InstanceGroupsScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceGroupsScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceGroupsScopedList.Warning.Data`](gcp_compute.md#InstanceGroupsScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceGroupsScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#CommitmentAggregatedList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#CommitmentAggregatedList.Warning.code) = 1
-* `repeated` [`compute.CommitmentAggregatedList.Warning.Data`](gcp_compute.md#CommitmentAggregatedList.Warning.Data) [`data`](#CommitmentAggregatedList.Warning.data) = 2
-* `string` [`message`](#CommitmentAggregatedList.Warning.message) = 3
-
-### `code` {#CommitmentAggregatedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#CommitmentAggregatedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.CommitmentAggregatedList.Warning.Data`](gcp_compute.md#CommitmentAggregatedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#CommitmentAggregatedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#RouterList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#RouterList.Warning.code) = 1
-* `repeated` [`compute.RouterList.Warning.Data`](gcp_compute.md#RouterList.Warning.Data) [`data`](#RouterList.Warning.data) = 2
-* `string` [`message`](#RouterList.Warning.message) = 3
-
-### `code` {#RouterList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#RouterList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.RouterList.Warning.Data`](gcp_compute.md#RouterList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#RouterList.Warning.message}
+### `message` {#TargetInstanceAggregatedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -27595,7 +29378,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#TargetVpnGatewayAggregatedList.Warning}
+## Message `Warning` {#SnapshotList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -27603,11 +29386,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#TargetVpnGatewayAggregatedList.Warning.code) = 1
-* `repeated` [`compute.TargetVpnGatewayAggregatedList.Warning.Data`](gcp_compute.md#TargetVpnGatewayAggregatedList.Warning.Data) [`data`](#TargetVpnGatewayAggregatedList.Warning.data) = 2
-* `string` [`message`](#TargetVpnGatewayAggregatedList.Warning.message) = 3
+* `string` [`code`](#SnapshotList.Warning.code) = 1
+* `repeated` [`compute.SnapshotList.Warning.Data`](gcp_compute.md#SnapshotList.Warning.Data) [`data`](#SnapshotList.Warning.data) = 2
+* `string` [`message`](#SnapshotList.Warning.message) = 3
 
-### `code` {#TargetVpnGatewayAggregatedList.Warning.code}
+### `code` {#SnapshotList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -27641,15 +29424,78 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#TargetVpnGatewayAggregatedList.Warning.data}
+### `data` {#SnapshotList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.TargetVpnGatewayAggregatedList.Warning.Data`](gcp_compute.md#TargetVpnGatewayAggregatedList.Warning.Data) |
+| Type | [`compute.SnapshotList.Warning.Data`](gcp_compute.md#SnapshotList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#TargetVpnGatewayAggregatedList.Warning.message}
+### `message` {#SnapshotList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#TargetInstanceList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#TargetInstanceList.Warning.code) = 1
+* `repeated` [`compute.TargetInstanceList.Warning.Data`](gcp_compute.md#TargetInstanceList.Warning.Data) [`data`](#TargetInstanceList.Warning.data) = 2
+* `string` [`message`](#TargetInstanceList.Warning.message) = 3
+
+### `code` {#TargetInstanceList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#TargetInstanceList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.TargetInstanceList.Warning.Data`](gcp_compute.md#TargetInstanceList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#TargetInstanceList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -27784,19 +29630,21 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#TargetVpnGatewayList.Warning}
+## Message `Warning` {#TargetInstancesScopedList.Warning}
 
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
+Informational warning which replaces the list of addresses when the list is
+empty.
+Informational warning which replaces the list of addresses when the list is
+empty.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#TargetVpnGatewayList.Warning.code) = 1
-* `repeated` [`compute.TargetVpnGatewayList.Warning.Data`](gcp_compute.md#TargetVpnGatewayList.Warning.Data) [`data`](#TargetVpnGatewayList.Warning.data) = 2
-* `string` [`message`](#TargetVpnGatewayList.Warning.message) = 3
+* `string` [`code`](#TargetInstancesScopedList.Warning.code) = 1
+* `repeated` [`compute.TargetInstancesScopedList.Warning.Data`](gcp_compute.md#TargetInstancesScopedList.Warning.Data) [`data`](#TargetInstancesScopedList.Warning.data) = 2
+* `string` [`message`](#TargetInstancesScopedList.Warning.message) = 3
 
-### `code` {#TargetVpnGatewayList.Warning.code}
+### `code` {#TargetInstancesScopedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -27830,15 +29678,330 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#TargetVpnGatewayList.Warning.data}
+### `data` {#TargetInstancesScopedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.TargetVpnGatewayList.Warning.Data`](gcp_compute.md#TargetVpnGatewayList.Warning.Data) |
+| Type | [`compute.TargetInstancesScopedList.Warning.Data`](gcp_compute.md#TargetInstancesScopedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#TargetVpnGatewayList.Warning.message}
+### `message` {#TargetInstancesScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InstanceListReferrers.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InstanceListReferrers.Warning.code) = 1
+* `repeated` [`compute.InstanceListReferrers.Warning.Data`](gcp_compute.md#InstanceListReferrers.Warning.Data) [`data`](#InstanceListReferrers.Warning.data) = 2
+* `string` [`message`](#InstanceListReferrers.Warning.message) = 3
+
+### `code` {#InstanceListReferrers.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InstanceListReferrers.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InstanceListReferrers.Warning.Data`](gcp_compute.md#InstanceListReferrers.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InstanceListReferrers.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NetworkList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NetworkList.Warning.code) = 1
+* `repeated` [`compute.NetworkList.Warning.Data`](gcp_compute.md#NetworkList.Warning.Data) [`data`](#NetworkList.Warning.data) = 2
+* `string` [`message`](#NetworkList.Warning.message) = 3
+
+### `code` {#NetworkList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NetworkList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NetworkList.Warning.Data`](gcp_compute.md#NetworkList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NetworkList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#SecurityPolicyList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#SecurityPolicyList.Warning.code) = 1
+* `repeated` [`compute.SecurityPolicyList.Warning.Data`](gcp_compute.md#SecurityPolicyList.Warning.Data) [`data`](#SecurityPolicyList.Warning.data) = 2
+* `string` [`message`](#SecurityPolicyList.Warning.message) = 3
+
+### `code` {#SecurityPolicyList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#SecurityPolicyList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.SecurityPolicyList.Warning.Data`](gcp_compute.md#SecurityPolicyList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#SecurityPolicyList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NetworkEndpointGroupAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NetworkEndpointGroupAggregatedList.Warning.code) = 1
+* `repeated` [`compute.NetworkEndpointGroupAggregatedList.Warning.Data`](gcp_compute.md#NetworkEndpointGroupAggregatedList.Warning.Data) [`data`](#NetworkEndpointGroupAggregatedList.Warning.data) = 2
+* `string` [`message`](#NetworkEndpointGroupAggregatedList.Warning.message) = 3
+
+### `code` {#NetworkEndpointGroupAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NetworkEndpointGroupAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NetworkEndpointGroupAggregatedList.Warning.Data`](gcp_compute.md#NetworkEndpointGroupAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NetworkEndpointGroupAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#TargetPoolAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#TargetPoolAggregatedList.Warning.code) = 1
+* `repeated` [`compute.TargetPoolAggregatedList.Warning.Data`](gcp_compute.md#TargetPoolAggregatedList.Warning.Data) [`data`](#TargetPoolAggregatedList.Warning.data) = 2
+* `string` [`message`](#TargetPoolAggregatedList.Warning.message) = 3
+
+### `code` {#TargetPoolAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#TargetPoolAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.TargetPoolAggregatedList.Warning.Data`](gcp_compute.md#TargetPoolAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#TargetPoolAggregatedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -27910,21 +30073,19 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#RoutersScopedList.Warning}
+## Message `Warning` {#ZoneList.Warning}
 
-Informational warning which replaces the list of routers when the list is
-empty.
-Informational warning which replaces the list of routers when the list is
-empty.
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#RoutersScopedList.Warning.code) = 1
-* `repeated` [`compute.RoutersScopedList.Warning.Data`](gcp_compute.md#RoutersScopedList.Warning.Data) [`data`](#RoutersScopedList.Warning.data) = 2
-* `string` [`message`](#RoutersScopedList.Warning.message) = 3
+* `string` [`code`](#ZoneList.Warning.code) = 1
+* `repeated` [`compute.ZoneList.Warning.Data`](gcp_compute.md#ZoneList.Warning.Data) [`data`](#ZoneList.Warning.data) = 2
+* `string` [`message`](#ZoneList.Warning.message) = 3
 
-### `code` {#RoutersScopedList.Warning.code}
+### `code` {#ZoneList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -27958,15 +30119,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#RoutersScopedList.Warning.data}
+### `data` {#ZoneList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.RoutersScopedList.Warning.Data`](gcp_compute.md#RoutersScopedList.Warning.Data) |
+| Type | [`compute.ZoneList.Warning.Data`](gcp_compute.md#ZoneList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#RoutersScopedList.Warning.message}
+### `message` {#ZoneList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -27975,21 +30136,19 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#TargetVpnGatewaysScopedList.Warning}
+## Message `Warning` {#DiskTypeAggregatedList.Warning}
 
-[Output Only] Informational warning which replaces the list of addresses
-when the list is empty.
-[Output Only] Informational warning which replaces the list of addresses
-when the list is empty.
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#TargetVpnGatewaysScopedList.Warning.code) = 1
-* `repeated` [`compute.TargetVpnGatewaysScopedList.Warning.Data`](gcp_compute.md#TargetVpnGatewaysScopedList.Warning.Data) [`data`](#TargetVpnGatewaysScopedList.Warning.data) = 2
-* `string` [`message`](#TargetVpnGatewaysScopedList.Warning.message) = 3
+* `string` [`code`](#DiskTypeAggregatedList.Warning.code) = 1
+* `repeated` [`compute.DiskTypeAggregatedList.Warning.Data`](gcp_compute.md#DiskTypeAggregatedList.Warning.Data) [`data`](#DiskTypeAggregatedList.Warning.data) = 2
+* `string` [`message`](#DiskTypeAggregatedList.Warning.message) = 3
 
-### `code` {#TargetVpnGatewaysScopedList.Warning.code}
+### `code` {#DiskTypeAggregatedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28023,15 +30182,78 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#TargetVpnGatewaysScopedList.Warning.data}
+### `data` {#DiskTypeAggregatedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.TargetVpnGatewaysScopedList.Warning.Data`](gcp_compute.md#TargetVpnGatewaysScopedList.Warning.Data) |
+| Type | [`compute.DiskTypeAggregatedList.Warning.Data`](gcp_compute.md#DiskTypeAggregatedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#TargetVpnGatewaysScopedList.Warning.message}
+### `message` {#DiskTypeAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#TargetPoolList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#TargetPoolList.Warning.code) = 1
+* `repeated` [`compute.TargetPoolList.Warning.Data`](gcp_compute.md#TargetPoolList.Warning.Data) [`data`](#TargetPoolList.Warning.data) = 2
+* `string` [`message`](#TargetPoolList.Warning.message) = 3
+
+### `code` {#TargetPoolList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#TargetPoolList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.TargetPoolList.Warning.Data`](gcp_compute.md#TargetPoolList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#TargetPoolList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28105,21 +30327,212 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#InstanceGroupManagersScopedList.Warning}
+## Message `Warning` {#RoutersScopedList.Warning}
 
-[Output Only] The warning that replaces the list of managed instance groups
+Informational warning which replaces the list of routers when the list is
+empty.
+Informational warning which replaces the list of routers when the list is
+empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RoutersScopedList.Warning.code) = 1
+* `repeated` [`compute.RoutersScopedList.Warning.Data`](gcp_compute.md#RoutersScopedList.Warning.Data) [`data`](#RoutersScopedList.Warning.data) = 2
+* `string` [`message`](#RoutersScopedList.Warning.message) = 3
+
+### `code` {#RoutersScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RoutersScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RoutersScopedList.Warning.Data`](gcp_compute.md#RoutersScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RoutersScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#DiskTypeList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#DiskTypeList.Warning.code) = 1
+* `repeated` [`compute.DiskTypeList.Warning.Data`](gcp_compute.md#DiskTypeList.Warning.Data) [`data`](#DiskTypeList.Warning.data) = 2
+* `string` [`message`](#DiskTypeList.Warning.message) = 3
+
+### `code` {#DiskTypeList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#DiskTypeList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.DiskTypeList.Warning.Data`](gcp_compute.md#DiskTypeList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#DiskTypeList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#RouterList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RouterList.Warning.code) = 1
+* `repeated` [`compute.RouterList.Warning.Data`](gcp_compute.md#RouterList.Warning.Data) [`data`](#RouterList.Warning.data) = 2
+* `string` [`message`](#RouterList.Warning.message) = 3
+
+### `code` {#RouterList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RouterList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RouterList.Warning.Data`](gcp_compute.md#RouterList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RouterList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#DiskTypesScopedList.Warning}
+
+[Output Only] Informational warning which replaces the list of disk types
 when the list is empty.
-[Output Only] The warning that replaces the list of managed instance groups
+[Output Only] Informational warning which replaces the list of disk types
 when the list is empty.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#InstanceGroupManagersScopedList.Warning.code) = 1
-* `repeated` [`compute.InstanceGroupManagersScopedList.Warning.Data`](gcp_compute.md#InstanceGroupManagersScopedList.Warning.Data) [`data`](#InstanceGroupManagersScopedList.Warning.data) = 2
-* `string` [`message`](#InstanceGroupManagersScopedList.Warning.message) = 3
+* `string` [`code`](#DiskTypesScopedList.Warning.code) = 1
+* `repeated` [`compute.DiskTypesScopedList.Warning.Data`](gcp_compute.md#DiskTypesScopedList.Warning.Data) [`data`](#DiskTypesScopedList.Warning.data) = 2
+* `string` [`message`](#DiskTypesScopedList.Warning.message) = 3
 
-### `code` {#InstanceGroupManagersScopedList.Warning.code}
+### `code` {#DiskTypesScopedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28153,15 +30566,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#InstanceGroupManagersScopedList.Warning.data}
+### `data` {#DiskTypesScopedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.InstanceGroupManagersScopedList.Warning.Data`](gcp_compute.md#InstanceGroupManagersScopedList.Warning.Data) |
+| Type | [`compute.DiskTypesScopedList.Warning.Data`](gcp_compute.md#DiskTypesScopedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#InstanceGroupManagersScopedList.Warning.message}
+### `message` {#DiskTypesScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28170,7 +30583,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#VpnTunnelAggregatedList.Warning}
+## Message `Warning` {#RouterAggregatedList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -28178,11 +30591,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#VpnTunnelAggregatedList.Warning.code) = 1
-* `repeated` [`compute.VpnTunnelAggregatedList.Warning.Data`](gcp_compute.md#VpnTunnelAggregatedList.Warning.Data) [`data`](#VpnTunnelAggregatedList.Warning.data) = 2
-* `string` [`message`](#VpnTunnelAggregatedList.Warning.message) = 3
+* `string` [`code`](#RouterAggregatedList.Warning.code) = 1
+* `repeated` [`compute.RouterAggregatedList.Warning.Data`](gcp_compute.md#RouterAggregatedList.Warning.Data) [`data`](#RouterAggregatedList.Warning.data) = 2
+* `string` [`message`](#RouterAggregatedList.Warning.message) = 3
 
-### `code` {#VpnTunnelAggregatedList.Warning.code}
+### `code` {#RouterAggregatedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28216,15 +30629,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#VpnTunnelAggregatedList.Warning.data}
+### `data` {#RouterAggregatedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.VpnTunnelAggregatedList.Warning.Data`](gcp_compute.md#VpnTunnelAggregatedList.Warning.Data) |
+| Type | [`compute.RouterAggregatedList.Warning.Data`](gcp_compute.md#RouterAggregatedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#VpnTunnelAggregatedList.Warning.message}
+### `message` {#RouterAggregatedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28233,19 +30646,21 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#OperationList.Warning}
+## Message `Warning` {#TargetPoolsScopedList.Warning}
 
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
+Informational warning which replaces the list of addresses when the list is
+empty.
+Informational warning which replaces the list of addresses when the list is
+empty.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#OperationList.Warning.code) = 1
-* `repeated` [`compute.OperationList.Warning.Data`](gcp_compute.md#OperationList.Warning.Data) [`data`](#OperationList.Warning.data) = 2
-* `string` [`message`](#OperationList.Warning.message) = 3
+* `string` [`code`](#TargetPoolsScopedList.Warning.code) = 1
+* `repeated` [`compute.TargetPoolsScopedList.Warning.Data`](gcp_compute.md#TargetPoolsScopedList.Warning.Data) [`data`](#TargetPoolsScopedList.Warning.data) = 2
+* `string` [`message`](#TargetPoolsScopedList.Warning.message) = 3
 
-### `code` {#OperationList.Warning.code}
+### `code` {#TargetPoolsScopedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28279,269 +30694,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#OperationList.Warning.data}
+### `data` {#TargetPoolsScopedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.OperationList.Warning.Data`](gcp_compute.md#OperationList.Warning.Data) |
+| Type | [`compute.TargetPoolsScopedList.Warning.Data`](gcp_compute.md#TargetPoolsScopedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#OperationList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#OperationsScopedList.Warning}
-
-[Output Only] Informational warning which replaces the list of operations
-when the list is empty.
-[Output Only] Informational warning which replaces the list of operations
-when the list is empty.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#OperationsScopedList.Warning.code) = 1
-* `repeated` [`compute.OperationsScopedList.Warning.Data`](gcp_compute.md#OperationsScopedList.Warning.Data) [`data`](#OperationsScopedList.Warning.data) = 2
-* `string` [`message`](#OperationsScopedList.Warning.message) = 3
-
-### `code` {#OperationsScopedList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#OperationsScopedList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.OperationsScopedList.Warning.Data`](gcp_compute.md#OperationsScopedList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#OperationsScopedList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#LicensesListResponse.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#LicensesListResponse.Warning.code) = 1
-* `repeated` [`compute.LicensesListResponse.Warning.Data`](gcp_compute.md#LicensesListResponse.Warning.Data) [`data`](#LicensesListResponse.Warning.data) = 2
-* `string` [`message`](#LicensesListResponse.Warning.message) = 3
-
-### `code` {#LicensesListResponse.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#LicensesListResponse.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.LicensesListResponse.Warning.Data`](gcp_compute.md#LicensesListResponse.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#LicensesListResponse.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#MachineTypeList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#MachineTypeList.Warning.code) = 1
-* `repeated` [`compute.MachineTypeList.Warning.Data`](gcp_compute.md#MachineTypeList.Warning.Data) [`data`](#MachineTypeList.Warning.data) = 2
-* `string` [`message`](#MachineTypeList.Warning.message) = 3
-
-### `code` {#MachineTypeList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#MachineTypeList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.MachineTypeList.Warning.Data`](gcp_compute.md#MachineTypeList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#MachineTypeList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warning` {#UrlMapList.Warning}
-
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
-
-
-### Inputs for `Warning`
-
-* `string` [`code`](#UrlMapList.Warning.code) = 1
-* `repeated` [`compute.UrlMapList.Warning.Data`](gcp_compute.md#UrlMapList.Warning.Data) [`data`](#UrlMapList.Warning.data) = 2
-* `string` [`message`](#UrlMapList.Warning.message) = 3
-
-### `code` {#UrlMapList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#UrlMapList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.UrlMapList.Warning.Data`](gcp_compute.md#UrlMapList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#UrlMapList.Warning.message}
+### `message` {#TargetPoolsScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28613,19 +30774,21 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#RegionAutoscalerList.Warning}
+## Message `Warning` {#InstanceGroupManagersScopedList.Warning}
 
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
+[Output Only] The warning that replaces the list of managed instance groups
+when the list is empty.
+[Output Only] The warning that replaces the list of managed instance groups
+when the list is empty.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#RegionAutoscalerList.Warning.code) = 1
-* `repeated` [`compute.RegionAutoscalerList.Warning.Data`](gcp_compute.md#RegionAutoscalerList.Warning.Data) [`data`](#RegionAutoscalerList.Warning.data) = 2
-* `string` [`message`](#RegionAutoscalerList.Warning.message) = 3
+* `string` [`code`](#InstanceGroupManagersScopedList.Warning.code) = 1
+* `repeated` [`compute.InstanceGroupManagersScopedList.Warning.Data`](gcp_compute.md#InstanceGroupManagersScopedList.Warning.Data) [`data`](#InstanceGroupManagersScopedList.Warning.data) = 2
+* `string` [`message`](#InstanceGroupManagersScopedList.Warning.message) = 3
 
-### `code` {#RegionAutoscalerList.Warning.code}
+### `code` {#InstanceGroupManagersScopedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28659,15 +30822,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#RegionAutoscalerList.Warning.data}
+### `data` {#InstanceGroupManagersScopedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.RegionAutoscalerList.Warning.Data`](gcp_compute.md#RegionAutoscalerList.Warning.Data) |
+| Type | [`compute.InstanceGroupManagersScopedList.Warning.Data`](gcp_compute.md#InstanceGroupManagersScopedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#RegionAutoscalerList.Warning.message}
+### `message` {#InstanceGroupManagersScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28676,19 +30839,21 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#HealthCheckList.Warning}
+## Message `Warning` {#DisksScopedList.Warning}
 
-[Output Only] Informational warning message.
-[Output Only] Informational warning message.
+[Output Only] Informational warning which replaces the list of disks when
+the list is empty.
+[Output Only] Informational warning which replaces the list of disks when
+the list is empty.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#HealthCheckList.Warning.code) = 1
-* `repeated` [`compute.HealthCheckList.Warning.Data`](gcp_compute.md#HealthCheckList.Warning.Data) [`data`](#HealthCheckList.Warning.data) = 2
-* `string` [`message`](#HealthCheckList.Warning.message) = 3
+* `string` [`code`](#DisksScopedList.Warning.code) = 1
+* `repeated` [`compute.DisksScopedList.Warning.Data`](gcp_compute.md#DisksScopedList.Warning.Data) [`data`](#DisksScopedList.Warning.data) = 2
+* `string` [`message`](#DisksScopedList.Warning.message) = 3
 
-### `code` {#HealthCheckList.Warning.code}
+### `code` {#DisksScopedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28722,15 +30887,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#HealthCheckList.Warning.data}
+### `data` {#DisksScopedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.HealthCheckList.Warning.Data`](gcp_compute.md#HealthCheckList.Warning.Data) |
+| Type | [`compute.DisksScopedList.Warning.Data`](gcp_compute.md#DisksScopedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#HealthCheckList.Warning.message}
+### `message` {#DisksScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28739,19 +30904,19 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#SubnetworksScopedList.Warning}
+## Message `Warning` {#RouteList.Warning}
 
-An informational warning that appears when the list of addresses is empty.
-An informational warning that appears when the list of addresses is empty.
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
 
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#SubnetworksScopedList.Warning.code) = 1
-* `repeated` [`compute.SubnetworksScopedList.Warning.Data`](gcp_compute.md#SubnetworksScopedList.Warning.Data) [`data`](#SubnetworksScopedList.Warning.data) = 2
-* `string` [`message`](#SubnetworksScopedList.Warning.message) = 3
+* `string` [`code`](#RouteList.Warning.code) = 1
+* `repeated` [`compute.RouteList.Warning.Data`](gcp_compute.md#RouteList.Warning.Data) [`data`](#RouteList.Warning.data) = 2
+* `string` [`message`](#RouteList.Warning.message) = 3
 
-### `code` {#SubnetworksScopedList.Warning.code}
+### `code` {#RouteList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28785,15 +30950,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#SubnetworksScopedList.Warning.data}
+### `data` {#RouteList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.SubnetworksScopedList.Warning.Data`](gcp_compute.md#SubnetworksScopedList.Warning.Data) |
+| Type | [`compute.RouteList.Warning.Data`](gcp_compute.md#RouteList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#SubnetworksScopedList.Warning.message}
+### `message` {#RouteList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28802,7 +30967,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#InterconnectLocationList.Warning}
+## Message `Warning` {#FirewallList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -28810,11 +30975,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#InterconnectLocationList.Warning.code) = 1
-* `repeated` [`compute.InterconnectLocationList.Warning.Data`](gcp_compute.md#InterconnectLocationList.Warning.Data) [`data`](#InterconnectLocationList.Warning.data) = 2
-* `string` [`message`](#InterconnectLocationList.Warning.message) = 3
+* `string` [`code`](#FirewallList.Warning.code) = 1
+* `repeated` [`compute.FirewallList.Warning.Data`](gcp_compute.md#FirewallList.Warning.Data) [`data`](#FirewallList.Warning.data) = 2
+* `string` [`message`](#FirewallList.Warning.message) = 3
 
-### `code` {#InterconnectLocationList.Warning.code}
+### `code` {#FirewallList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28848,15 +31013,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#InterconnectLocationList.Warning.data}
+### `data` {#FirewallList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.InterconnectLocationList.Warning.Data`](gcp_compute.md#InterconnectLocationList.Warning.Data) |
+| Type | [`compute.FirewallList.Warning.Data`](gcp_compute.md#FirewallList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#InterconnectLocationList.Warning.message}
+### `message` {#FirewallList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28865,7 +31030,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#RegionInstanceGroupList.Warning}
+## Message `Warning` {#InterconnectAttachmentList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -28873,11 +31038,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#RegionInstanceGroupList.Warning.code) = 1
-* `repeated` [`compute.RegionInstanceGroupList.Warning.Data`](gcp_compute.md#RegionInstanceGroupList.Warning.Data) [`data`](#RegionInstanceGroupList.Warning.data) = 2
-* `string` [`message`](#RegionInstanceGroupList.Warning.message) = 3
+* `string` [`code`](#InterconnectAttachmentList.Warning.code) = 1
+* `repeated` [`compute.InterconnectAttachmentList.Warning.Data`](gcp_compute.md#InterconnectAttachmentList.Warning.Data) [`data`](#InterconnectAttachmentList.Warning.data) = 2
+* `string` [`message`](#InterconnectAttachmentList.Warning.message) = 3
 
-### `code` {#RegionInstanceGroupList.Warning.code}
+### `code` {#InterconnectAttachmentList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28911,15 +31076,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#RegionInstanceGroupList.Warning.data}
+### `data` {#InterconnectAttachmentList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.RegionInstanceGroupList.Warning.Data`](gcp_compute.md#RegionInstanceGroupList.Warning.Data) |
+| Type | [`compute.InterconnectAttachmentList.Warning.Data`](gcp_compute.md#InterconnectAttachmentList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#RegionInstanceGroupList.Warning.message}
+### `message` {#InterconnectAttachmentList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28928,7 +31093,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#InterconnectList.Warning}
+## Message `Warning` {#NodeGroupAggregatedList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -28936,11 +31101,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#InterconnectList.Warning.code) = 1
-* `repeated` [`compute.InterconnectList.Warning.Data`](gcp_compute.md#InterconnectList.Warning.Data) [`data`](#InterconnectList.Warning.data) = 2
-* `string` [`message`](#InterconnectList.Warning.message) = 3
+* `string` [`code`](#NodeGroupAggregatedList.Warning.code) = 1
+* `repeated` [`compute.NodeGroupAggregatedList.Warning.Data`](gcp_compute.md#NodeGroupAggregatedList.Warning.Data) [`data`](#NodeGroupAggregatedList.Warning.data) = 2
+* `string` [`message`](#NodeGroupAggregatedList.Warning.message) = 3
 
-### `code` {#InterconnectList.Warning.code}
+### `code` {#NodeGroupAggregatedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -28974,15 +31139,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#InterconnectList.Warning.data}
+### `data` {#NodeGroupAggregatedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.InterconnectList.Warning.Data`](gcp_compute.md#InterconnectList.Warning.Data) |
+| Type | [`compute.NodeGroupAggregatedList.Warning.Data`](gcp_compute.md#NodeGroupAggregatedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#InterconnectList.Warning.message}
+### `message` {#NodeGroupAggregatedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -28991,7 +31156,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#HttpHealthCheckList.Warning}
+## Message `Warning` {#TargetSslProxyList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -28999,11 +31164,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#HttpHealthCheckList.Warning.code) = 1
-* `repeated` [`compute.HttpHealthCheckList.Warning.Data`](gcp_compute.md#HttpHealthCheckList.Warning.Data) [`data`](#HttpHealthCheckList.Warning.data) = 2
-* `string` [`message`](#HttpHealthCheckList.Warning.message) = 3
+* `string` [`code`](#TargetSslProxyList.Warning.code) = 1
+* `repeated` [`compute.TargetSslProxyList.Warning.Data`](gcp_compute.md#TargetSslProxyList.Warning.Data) [`data`](#TargetSslProxyList.Warning.data) = 2
+* `string` [`message`](#TargetSslProxyList.Warning.message) = 3
 
-### `code` {#HttpHealthCheckList.Warning.code}
+### `code` {#TargetSslProxyList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -29037,15 +31202,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#HttpHealthCheckList.Warning.data}
+### `data` {#TargetSslProxyList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.HttpHealthCheckList.Warning.Data`](gcp_compute.md#HttpHealthCheckList.Warning.Data) |
+| Type | [`compute.TargetSslProxyList.Warning.Data`](gcp_compute.md#TargetSslProxyList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#HttpHealthCheckList.Warning.message}
+### `message` {#TargetSslProxyList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -29117,7 +31282,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#SubnetworkList.Warning}
+## Message `Warning` {#InstanceGroupManagerList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -29125,11 +31290,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#SubnetworkList.Warning.code) = 1
-* `repeated` [`compute.SubnetworkList.Warning.Data`](gcp_compute.md#SubnetworkList.Warning.Data) [`data`](#SubnetworkList.Warning.data) = 2
-* `string` [`message`](#SubnetworkList.Warning.message) = 3
+* `string` [`code`](#InstanceGroupManagerList.Warning.code) = 1
+* `repeated` [`compute.InstanceGroupManagerList.Warning.Data`](gcp_compute.md#InstanceGroupManagerList.Warning.Data) [`data`](#InstanceGroupManagerList.Warning.data) = 2
+* `string` [`message`](#InstanceGroupManagerList.Warning.message) = 3
 
-### `code` {#SubnetworkList.Warning.code}
+### `code` {#InstanceGroupManagerList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -29163,15 +31328,840 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#SubnetworkList.Warning.data}
+### `data` {#InstanceGroupManagerList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.SubnetworkList.Warning.Data`](gcp_compute.md#SubnetworkList.Warning.Data) |
+| Type | [`compute.InstanceGroupManagerList.Warning.Data`](gcp_compute.md#InstanceGroupManagerList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#SubnetworkList.Warning.message}
+### `message` {#InstanceGroupManagerList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NodeGroupList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NodeGroupList.Warning.code) = 1
+* `repeated` [`compute.NodeGroupList.Warning.Data`](gcp_compute.md#NodeGroupList.Warning.Data) [`data`](#NodeGroupList.Warning.data) = 2
+* `string` [`message`](#NodeGroupList.Warning.message) = 3
+
+### `code` {#NodeGroupList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NodeGroupList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NodeGroupList.Warning.Data`](gcp_compute.md#NodeGroupList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NodeGroupList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InstanceGroupManagerAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InstanceGroupManagerAggregatedList.Warning.code) = 1
+* `repeated` [`compute.InstanceGroupManagerAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupManagerAggregatedList.Warning.Data) [`data`](#InstanceGroupManagerAggregatedList.Warning.data) = 2
+* `string` [`message`](#InstanceGroupManagerAggregatedList.Warning.message) = 3
+
+### `code` {#InstanceGroupManagerAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InstanceGroupManagerAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InstanceGroupManagerAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupManagerAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InstanceGroupManagerAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InstancesScopedList.Warning}
+
+[Output Only] Informational warning which replaces the list of instances
+when the list is empty.
+[Output Only] Informational warning which replaces the list of instances
+when the list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InstancesScopedList.Warning.code) = 1
+* `repeated` [`compute.InstancesScopedList.Warning.Data`](gcp_compute.md#InstancesScopedList.Warning.Data) [`data`](#InstancesScopedList.Warning.data) = 2
+* `string` [`message`](#InstancesScopedList.Warning.message) = 3
+
+### `code` {#InstancesScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InstancesScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InstancesScopedList.Warning.Data`](gcp_compute.md#InstancesScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InstancesScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#TargetTcpProxyList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#TargetTcpProxyList.Warning.code) = 1
+* `repeated` [`compute.TargetTcpProxyList.Warning.Data`](gcp_compute.md#TargetTcpProxyList.Warning.Data) [`data`](#TargetTcpProxyList.Warning.data) = 2
+* `string` [`message`](#TargetTcpProxyList.Warning.message) = 3
+
+### `code` {#TargetTcpProxyList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#TargetTcpProxyList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.TargetTcpProxyList.Warning.Data`](gcp_compute.md#TargetTcpProxyList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#TargetTcpProxyList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InstanceTemplateList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InstanceTemplateList.Warning.code) = 1
+* `repeated` [`compute.InstanceTemplateList.Warning.Data`](gcp_compute.md#InstanceTemplateList.Warning.Data) [`data`](#InstanceTemplateList.Warning.data) = 2
+* `string` [`message`](#InstanceTemplateList.Warning.message) = 3
+
+### `code` {#InstanceTemplateList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InstanceTemplateList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InstanceTemplateList.Warning.Data`](gcp_compute.md#InstanceTemplateList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InstanceTemplateList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NodeGroupsScopedList.Warning}
+
+[Output Only] An informational warning that appears when the nodeGroup list
+is empty.
+[Output Only] An informational warning that appears when the nodeGroup list
+is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NodeGroupsScopedList.Warning.code) = 1
+* `repeated` [`compute.NodeGroupsScopedList.Warning.Data`](gcp_compute.md#NodeGroupsScopedList.Warning.Data) [`data`](#NodeGroupsScopedList.Warning.data) = 2
+* `string` [`message`](#NodeGroupsScopedList.Warning.message) = 3
+
+### `code` {#NodeGroupsScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NodeGroupsScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NodeGroupsScopedList.Warning.Data`](gcp_compute.md#NodeGroupsScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NodeGroupsScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#MachineTypesScopedList.Warning}
+
+[Output Only] An informational warning that appears when the machine types
+list is empty.
+[Output Only] An informational warning that appears when the machine types
+list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#MachineTypesScopedList.Warning.code) = 1
+* `repeated` [`compute.MachineTypesScopedList.Warning.Data`](gcp_compute.md#MachineTypesScopedList.Warning.Data) [`data`](#MachineTypesScopedList.Warning.data) = 2
+* `string` [`message`](#MachineTypesScopedList.Warning.message) = 3
+
+### `code` {#MachineTypesScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#MachineTypesScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.MachineTypesScopedList.Warning.Data`](gcp_compute.md#MachineTypesScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#MachineTypesScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NodeTemplateAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NodeTemplateAggregatedList.Warning.code) = 1
+* `repeated` [`compute.NodeTemplateAggregatedList.Warning.Data`](gcp_compute.md#NodeTemplateAggregatedList.Warning.Data) [`data`](#NodeTemplateAggregatedList.Warning.data) = 2
+* `string` [`message`](#NodeTemplateAggregatedList.Warning.message) = 3
+
+### `code` {#NodeTemplateAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NodeTemplateAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NodeTemplateAggregatedList.Warning.Data`](gcp_compute.md#NodeTemplateAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NodeTemplateAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#MachineTypeList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#MachineTypeList.Warning.code) = 1
+* `repeated` [`compute.MachineTypeList.Warning.Data`](gcp_compute.md#MachineTypeList.Warning.Data) [`data`](#MachineTypeList.Warning.data) = 2
+* `string` [`message`](#MachineTypeList.Warning.message) = 3
+
+### `code` {#MachineTypeList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#MachineTypeList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.MachineTypeList.Warning.Data`](gcp_compute.md#MachineTypeList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#MachineTypeList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#TargetVpnGatewayAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#TargetVpnGatewayAggregatedList.Warning.code) = 1
+* `repeated` [`compute.TargetVpnGatewayAggregatedList.Warning.Data`](gcp_compute.md#TargetVpnGatewayAggregatedList.Warning.Data) [`data`](#TargetVpnGatewayAggregatedList.Warning.data) = 2
+* `string` [`message`](#TargetVpnGatewayAggregatedList.Warning.message) = 3
+
+### `code` {#TargetVpnGatewayAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#TargetVpnGatewayAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.TargetVpnGatewayAggregatedList.Warning.Data`](gcp_compute.md#TargetVpnGatewayAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#TargetVpnGatewayAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#MachineTypeAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#MachineTypeAggregatedList.Warning.code) = 1
+* `repeated` [`compute.MachineTypeAggregatedList.Warning.Data`](gcp_compute.md#MachineTypeAggregatedList.Warning.Data) [`data`](#MachineTypeAggregatedList.Warning.data) = 2
+* `string` [`message`](#MachineTypeAggregatedList.Warning.message) = 3
+
+### `code` {#MachineTypeAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#MachineTypeAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.MachineTypeAggregatedList.Warning.Data`](gcp_compute.md#MachineTypeAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#MachineTypeAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#RegionList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RegionList.Warning.code) = 1
+* `repeated` [`compute.RegionList.Warning.Data`](gcp_compute.md#RegionList.Warning.Data) [`data`](#RegionList.Warning.data) = 2
+* `string` [`message`](#RegionList.Warning.message) = 3
+
+### `code` {#RegionList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RegionList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RegionList.Warning.Data`](gcp_compute.md#RegionList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RegionList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#TargetVpnGatewayList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#TargetVpnGatewayList.Warning.code) = 1
+* `repeated` [`compute.TargetVpnGatewayList.Warning.Data`](gcp_compute.md#TargetVpnGatewayList.Warning.Data) [`data`](#TargetVpnGatewayList.Warning.data) = 2
+* `string` [`message`](#TargetVpnGatewayList.Warning.message) = 3
+
+### `code` {#TargetVpnGatewayList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#TargetVpnGatewayList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.TargetVpnGatewayList.Warning.Data`](gcp_compute.md#TargetVpnGatewayList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#TargetVpnGatewayList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -29245,7 +32235,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#SecurityPolicyList.Warning}
+## Message `Warning` {#InstanceGroupList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -29253,11 +32243,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#SecurityPolicyList.Warning.code) = 1
-* `repeated` [`compute.SecurityPolicyList.Warning.Data`](gcp_compute.md#SecurityPolicyList.Warning.Data) [`data`](#SecurityPolicyList.Warning.data) = 2
-* `string` [`message`](#SecurityPolicyList.Warning.message) = 3
+* `string` [`code`](#InstanceGroupList.Warning.code) = 1
+* `repeated` [`compute.InstanceGroupList.Warning.Data`](gcp_compute.md#InstanceGroupList.Warning.Data) [`data`](#InstanceGroupList.Warning.data) = 2
+* `string` [`message`](#InstanceGroupList.Warning.message) = 3
 
-### `code` {#SecurityPolicyList.Warning.code}
+### `code` {#InstanceGroupList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -29291,15 +32281,80 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#SecurityPolicyList.Warning.data}
+### `data` {#InstanceGroupList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.SecurityPolicyList.Warning.Data`](gcp_compute.md#SecurityPolicyList.Warning.Data) |
+| Type | [`compute.InstanceGroupList.Warning.Data`](gcp_compute.md#InstanceGroupList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#SecurityPolicyList.Warning.message}
+### `message` {#InstanceGroupList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#TargetVpnGatewaysScopedList.Warning}
+
+[Output Only] Informational warning which replaces the list of addresses
+when the list is empty.
+[Output Only] Informational warning which replaces the list of addresses
+when the list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#TargetVpnGatewaysScopedList.Warning.code) = 1
+* `repeated` [`compute.TargetVpnGatewaysScopedList.Warning.Data`](gcp_compute.md#TargetVpnGatewaysScopedList.Warning.Data) [`data`](#TargetVpnGatewaysScopedList.Warning.data) = 2
+* `string` [`message`](#TargetVpnGatewaysScopedList.Warning.message) = 3
+
+### `code` {#TargetVpnGatewaysScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#TargetVpnGatewaysScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.TargetVpnGatewaysScopedList.Warning.Data`](gcp_compute.md#TargetVpnGatewaysScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#TargetVpnGatewaysScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -29371,7 +32426,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#RegionInstanceGroupManagerList.Warning}
+## Message `Warning` {#NodeTemplateList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -29379,11 +32434,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#RegionInstanceGroupManagerList.Warning.code) = 1
-* `repeated` [`compute.RegionInstanceGroupManagerList.Warning.Data`](gcp_compute.md#RegionInstanceGroupManagerList.Warning.Data) [`data`](#RegionInstanceGroupManagerList.Warning.data) = 2
-* `string` [`message`](#RegionInstanceGroupManagerList.Warning.message) = 3
+* `string` [`code`](#NodeTemplateList.Warning.code) = 1
+* `repeated` [`compute.NodeTemplateList.Warning.Data`](gcp_compute.md#NodeTemplateList.Warning.Data) [`data`](#NodeTemplateList.Warning.data) = 2
+* `string` [`message`](#NodeTemplateList.Warning.message) = 3
 
-### `code` {#RegionInstanceGroupManagerList.Warning.code}
+### `code` {#NodeTemplateList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -29417,15 +32472,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#RegionInstanceGroupManagerList.Warning.data}
+### `data` {#NodeTemplateList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.RegionInstanceGroupManagerList.Warning.Data`](gcp_compute.md#RegionInstanceGroupManagerList.Warning.Data) |
+| Type | [`compute.NodeTemplateList.Warning.Data`](gcp_compute.md#NodeTemplateList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#RegionInstanceGroupManagerList.Warning.message}
+### `message` {#NodeTemplateList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -29434,7 +32489,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#VpnTunnelList.Warning}
+## Message `Warning` {#InstanceGroupAggregatedList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -29442,11 +32497,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#VpnTunnelList.Warning.code) = 1
-* `repeated` [`compute.VpnTunnelList.Warning.Data`](gcp_compute.md#VpnTunnelList.Warning.Data) [`data`](#VpnTunnelList.Warning.data) = 2
-* `string` [`message`](#VpnTunnelList.Warning.message) = 3
+* `string` [`code`](#InstanceGroupAggregatedList.Warning.code) = 1
+* `repeated` [`compute.InstanceGroupAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupAggregatedList.Warning.Data) [`data`](#InstanceGroupAggregatedList.Warning.data) = 2
+* `string` [`message`](#InstanceGroupAggregatedList.Warning.message) = 3
 
-### `code` {#VpnTunnelList.Warning.code}
+### `code` {#InstanceGroupAggregatedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -29480,15 +32535,332 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#VpnTunnelList.Warning.data}
+### `data` {#InstanceGroupAggregatedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.VpnTunnelList.Warning.Data`](gcp_compute.md#VpnTunnelList.Warning.Data) |
+| Type | [`compute.InstanceGroupAggregatedList.Warning.Data`](gcp_compute.md#InstanceGroupAggregatedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#VpnTunnelList.Warning.message}
+### `message` {#InstanceGroupAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NodeTemplatesScopedList.Warning}
+
+[Output Only] An informational warning that appears when the node templates
+list is empty.
+[Output Only] An informational warning that appears when the node templates
+list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NodeTemplatesScopedList.Warning.code) = 1
+* `repeated` [`compute.NodeTemplatesScopedList.Warning.Data`](gcp_compute.md#NodeTemplatesScopedList.Warning.Data) [`data`](#NodeTemplatesScopedList.Warning.data) = 2
+* `string` [`message`](#NodeTemplatesScopedList.Warning.message) = 3
+
+### `code` {#NodeTemplatesScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NodeTemplatesScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NodeTemplatesScopedList.Warning.Data`](gcp_compute.md#NodeTemplatesScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NodeTemplatesScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#RegionInstanceGroupsListInstances.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RegionInstanceGroupsListInstances.Warning.code) = 1
+* `repeated` [`compute.RegionInstanceGroupsListInstances.Warning.Data`](gcp_compute.md#RegionInstanceGroupsListInstances.Warning.Data) [`data`](#RegionInstanceGroupsListInstances.Warning.data) = 2
+* `string` [`message`](#RegionInstanceGroupsListInstances.Warning.message) = 3
+
+### `code` {#RegionInstanceGroupsListInstances.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RegionInstanceGroupsListInstances.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RegionInstanceGroupsListInstances.Warning.Data`](gcp_compute.md#RegionInstanceGroupsListInstances.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RegionInstanceGroupsListInstances.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NodeTypeAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NodeTypeAggregatedList.Warning.code) = 1
+* `repeated` [`compute.NodeTypeAggregatedList.Warning.Data`](gcp_compute.md#NodeTypeAggregatedList.Warning.Data) [`data`](#NodeTypeAggregatedList.Warning.data) = 2
+* `string` [`message`](#NodeTypeAggregatedList.Warning.message) = 3
+
+### `code` {#NodeTypeAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NodeTypeAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NodeTypeAggregatedList.Warning.Data`](gcp_compute.md#NodeTypeAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NodeTypeAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InstanceAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InstanceAggregatedList.Warning.code) = 1
+* `repeated` [`compute.InstanceAggregatedList.Warning.Data`](gcp_compute.md#InstanceAggregatedList.Warning.Data) [`data`](#InstanceAggregatedList.Warning.data) = 2
+* `string` [`message`](#InstanceAggregatedList.Warning.message) = 3
+
+### `code` {#InstanceAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InstanceAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InstanceAggregatedList.Warning.Data`](gcp_compute.md#InstanceAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InstanceAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#UrlMapList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#UrlMapList.Warning.code) = 1
+* `repeated` [`compute.UrlMapList.Warning.Data`](gcp_compute.md#UrlMapList.Warning.Data) [`data`](#UrlMapList.Warning.data) = 2
+* `string` [`message`](#UrlMapList.Warning.message) = 3
+
+### `code` {#UrlMapList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#UrlMapList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.UrlMapList.Warning.Data`](gcp_compute.md#UrlMapList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#UrlMapList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -29560,6 +32932,323 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
+## Message `Warning` {#NodeTypeList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NodeTypeList.Warning.code) = 1
+* `repeated` [`compute.NodeTypeList.Warning.Data`](gcp_compute.md#NodeTypeList.Warning.Data) [`data`](#NodeTypeList.Warning.data) = 2
+* `string` [`message`](#NodeTypeList.Warning.message) = 3
+
+### `code` {#NodeTypeList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NodeTypeList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NodeTypeList.Warning.Data`](gcp_compute.md#NodeTypeList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NodeTypeList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#NodeTypesScopedList.Warning}
+
+[Output Only] An informational warning that appears when the node types list
+is empty.
+[Output Only] An informational warning that appears when the node types list
+is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#NodeTypesScopedList.Warning.code) = 1
+* `repeated` [`compute.NodeTypesScopedList.Warning.Data`](gcp_compute.md#NodeTypesScopedList.Warning.Data) [`data`](#NodeTypesScopedList.Warning.data) = 2
+* `string` [`message`](#NodeTypesScopedList.Warning.message) = 3
+
+### `code` {#NodeTypesScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#NodeTypesScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.NodeTypesScopedList.Warning.Data`](gcp_compute.md#NodeTypesScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#NodeTypesScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#ImageList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#ImageList.Warning.code) = 1
+* `repeated` [`compute.ImageList.Warning.Data`](gcp_compute.md#ImageList.Warning.Data) [`data`](#ImageList.Warning.data) = 2
+* `string` [`message`](#ImageList.Warning.message) = 3
+
+### `code` {#ImageList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#ImageList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.ImageList.Warning.Data`](gcp_compute.md#ImageList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#ImageList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InterconnectAttachmentAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InterconnectAttachmentAggregatedList.Warning.code) = 1
+* `repeated` [`compute.InterconnectAttachmentAggregatedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentAggregatedList.Warning.Data) [`data`](#InterconnectAttachmentAggregatedList.Warning.data) = 2
+* `string` [`message`](#InterconnectAttachmentAggregatedList.Warning.message) = 3
+
+### `code` {#InterconnectAttachmentAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InterconnectAttachmentAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InterconnectAttachmentAggregatedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InterconnectAttachmentAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#OperationAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#OperationAggregatedList.Warning.code) = 1
+* `repeated` [`compute.OperationAggregatedList.Warning.Data`](gcp_compute.md#OperationAggregatedList.Warning.Data) [`data`](#OperationAggregatedList.Warning.data) = 2
+* `string` [`message`](#OperationAggregatedList.Warning.message) = 3
+
+### `code` {#OperationAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#OperationAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.OperationAggregatedList.Warning.Data`](gcp_compute.md#OperationAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#OperationAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
 ## Message `Warning` {#HttpsHealthCheckList.Warning}
 
 [Output Only] Informational warning message.
@@ -29615,6 +33304,959 @@ Valid values:
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
 ### `message` {#HttpsHealthCheckList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#ForwardingRuleAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#ForwardingRuleAggregatedList.Warning.code) = 1
+* `repeated` [`compute.ForwardingRuleAggregatedList.Warning.Data`](gcp_compute.md#ForwardingRuleAggregatedList.Warning.Data) [`data`](#ForwardingRuleAggregatedList.Warning.data) = 2
+* `string` [`message`](#ForwardingRuleAggregatedList.Warning.message) = 3
+
+### `code` {#ForwardingRuleAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#ForwardingRuleAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.ForwardingRuleAggregatedList.Warning.Data`](gcp_compute.md#ForwardingRuleAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#ForwardingRuleAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#RegionInstanceGroupManagerList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RegionInstanceGroupManagerList.Warning.code) = 1
+* `repeated` [`compute.RegionInstanceGroupManagerList.Warning.Data`](gcp_compute.md#RegionInstanceGroupManagerList.Warning.Data) [`data`](#RegionInstanceGroupManagerList.Warning.data) = 2
+* `string` [`message`](#RegionInstanceGroupManagerList.Warning.message) = 3
+
+### `code` {#RegionInstanceGroupManagerList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RegionInstanceGroupManagerList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RegionInstanceGroupManagerList.Warning.Data`](gcp_compute.md#RegionInstanceGroupManagerList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RegionInstanceGroupManagerList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#OperationList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#OperationList.Warning.code) = 1
+* `repeated` [`compute.OperationList.Warning.Data`](gcp_compute.md#OperationList.Warning.Data) [`data`](#OperationList.Warning.data) = 2
+* `string` [`message`](#OperationList.Warning.message) = 3
+
+### `code` {#OperationList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#OperationList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.OperationList.Warning.Data`](gcp_compute.md#OperationList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#OperationList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#LicensesListResponse.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#LicensesListResponse.Warning.code) = 1
+* `repeated` [`compute.LicensesListResponse.Warning.Data`](gcp_compute.md#LicensesListResponse.Warning.Data) [`data`](#LicensesListResponse.Warning.data) = 2
+* `string` [`message`](#LicensesListResponse.Warning.message) = 3
+
+### `code` {#LicensesListResponse.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#LicensesListResponse.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.LicensesListResponse.Warning.Data`](gcp_compute.md#LicensesListResponse.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#LicensesListResponse.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#ForwardingRuleList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#ForwardingRuleList.Warning.code) = 1
+* `repeated` [`compute.ForwardingRuleList.Warning.Data`](gcp_compute.md#ForwardingRuleList.Warning.Data) [`data`](#ForwardingRuleList.Warning.data) = 2
+* `string` [`message`](#ForwardingRuleList.Warning.message) = 3
+
+### `code` {#ForwardingRuleList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#ForwardingRuleList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.ForwardingRuleList.Warning.Data`](gcp_compute.md#ForwardingRuleList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#ForwardingRuleList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#RegionInstanceGroupList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RegionInstanceGroupList.Warning.code) = 1
+* `repeated` [`compute.RegionInstanceGroupList.Warning.Data`](gcp_compute.md#RegionInstanceGroupList.Warning.Data) [`data`](#RegionInstanceGroupList.Warning.data) = 2
+* `string` [`message`](#RegionInstanceGroupList.Warning.message) = 3
+
+### `code` {#RegionInstanceGroupList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RegionInstanceGroupList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RegionInstanceGroupList.Warning.Data`](gcp_compute.md#RegionInstanceGroupList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RegionInstanceGroupList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InterconnectLocationList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InterconnectLocationList.Warning.code) = 1
+* `repeated` [`compute.InterconnectLocationList.Warning.Data`](gcp_compute.md#InterconnectLocationList.Warning.Data) [`data`](#InterconnectLocationList.Warning.data) = 2
+* `string` [`message`](#InterconnectLocationList.Warning.message) = 3
+
+### `code` {#InterconnectLocationList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InterconnectLocationList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InterconnectLocationList.Warning.Data`](gcp_compute.md#InterconnectLocationList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InterconnectLocationList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#HttpHealthCheckList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#HttpHealthCheckList.Warning.code) = 1
+* `repeated` [`compute.HttpHealthCheckList.Warning.Data`](gcp_compute.md#HttpHealthCheckList.Warning.Data) [`data`](#HttpHealthCheckList.Warning.data) = 2
+* `string` [`message`](#HttpHealthCheckList.Warning.message) = 3
+
+### `code` {#HttpHealthCheckList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#HttpHealthCheckList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.HttpHealthCheckList.Warning.Data`](gcp_compute.md#HttpHealthCheckList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#HttpHealthCheckList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InterconnectList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InterconnectList.Warning.code) = 1
+* `repeated` [`compute.InterconnectList.Warning.Data`](gcp_compute.md#InterconnectList.Warning.Data) [`data`](#InterconnectList.Warning.data) = 2
+* `string` [`message`](#InterconnectList.Warning.message) = 3
+
+### `code` {#InterconnectList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InterconnectList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InterconnectList.Warning.Data`](gcp_compute.md#InterconnectList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InterconnectList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#VpnTunnelAggregatedList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#VpnTunnelAggregatedList.Warning.code) = 1
+* `repeated` [`compute.VpnTunnelAggregatedList.Warning.Data`](gcp_compute.md#VpnTunnelAggregatedList.Warning.Data) [`data`](#VpnTunnelAggregatedList.Warning.data) = 2
+* `string` [`message`](#VpnTunnelAggregatedList.Warning.message) = 3
+
+### `code` {#VpnTunnelAggregatedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#VpnTunnelAggregatedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.VpnTunnelAggregatedList.Warning.Data`](gcp_compute.md#VpnTunnelAggregatedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#VpnTunnelAggregatedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#InterconnectAttachmentsScopedList.Warning}
+
+Informational warning which replaces the list of addresses when the list is
+empty.
+Informational warning which replaces the list of addresses when the list is
+empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#InterconnectAttachmentsScopedList.Warning.code) = 1
+* `repeated` [`compute.InterconnectAttachmentsScopedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentsScopedList.Warning.Data) [`data`](#InterconnectAttachmentsScopedList.Warning.data) = 2
+* `string` [`message`](#InterconnectAttachmentsScopedList.Warning.message) = 3
+
+### `code` {#InterconnectAttachmentsScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#InterconnectAttachmentsScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.InterconnectAttachmentsScopedList.Warning.Data`](gcp_compute.md#InterconnectAttachmentsScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#InterconnectAttachmentsScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#OperationsScopedList.Warning}
+
+[Output Only] Informational warning which replaces the list of operations
+when the list is empty.
+[Output Only] Informational warning which replaces the list of operations
+when the list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#OperationsScopedList.Warning.code) = 1
+* `repeated` [`compute.OperationsScopedList.Warning.Data`](gcp_compute.md#OperationsScopedList.Warning.Data) [`data`](#OperationsScopedList.Warning.data) = 2
+* `string` [`message`](#OperationsScopedList.Warning.message) = 3
+
+### `code` {#OperationsScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#OperationsScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.OperationsScopedList.Warning.Data`](gcp_compute.md#OperationsScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#OperationsScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#VpnTunnelList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#VpnTunnelList.Warning.code) = 1
+* `repeated` [`compute.VpnTunnelList.Warning.Data`](gcp_compute.md#VpnTunnelList.Warning.Data) [`data`](#VpnTunnelList.Warning.data) = 2
+* `string` [`message`](#VpnTunnelList.Warning.message) = 3
+
+### `code` {#VpnTunnelList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#VpnTunnelList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.VpnTunnelList.Warning.Data`](gcp_compute.md#VpnTunnelList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#VpnTunnelList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#AcceleratorTypesScopedList.Warning}
+
+[Output Only] An informational warning that appears when the accelerator
+types list is empty.
+[Output Only] An informational warning that appears when the accelerator
+types list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#AcceleratorTypesScopedList.Warning.code) = 1
+* `repeated` [`compute.AcceleratorTypesScopedList.Warning.Data`](gcp_compute.md#AcceleratorTypesScopedList.Warning.Data) [`data`](#AcceleratorTypesScopedList.Warning.data) = 2
+* `string` [`message`](#AcceleratorTypesScopedList.Warning.message) = 3
+
+### `code` {#AcceleratorTypesScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#AcceleratorTypesScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.AcceleratorTypesScopedList.Warning.Data`](gcp_compute.md#AcceleratorTypesScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#AcceleratorTypesScopedList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#ForwardingRulesScopedList.Warning}
+
+Informational warning which replaces the list of forwarding rules when the
+list is empty.
+Informational warning which replaces the list of forwarding rules when the
+list is empty.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#ForwardingRulesScopedList.Warning.code) = 1
+* `repeated` [`compute.ForwardingRulesScopedList.Warning.Data`](gcp_compute.md#ForwardingRulesScopedList.Warning.Data) [`data`](#ForwardingRulesScopedList.Warning.data) = 2
+* `string` [`message`](#ForwardingRulesScopedList.Warning.message) = 3
+
+### `code` {#ForwardingRulesScopedList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#ForwardingRulesScopedList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.ForwardingRulesScopedList.Warning.Data`](gcp_compute.md#ForwardingRulesScopedList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#ForwardingRulesScopedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -29688,7 +34330,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#TargetSslProxyList.Warning}
+## Message `Warning` {#AcceleratorTypeList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -29696,11 +34338,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#TargetSslProxyList.Warning.code) = 1
-* `repeated` [`compute.TargetSslProxyList.Warning.Data`](gcp_compute.md#TargetSslProxyList.Warning.Data) [`data`](#TargetSslProxyList.Warning.data) = 2
-* `string` [`message`](#TargetSslProxyList.Warning.message) = 3
+* `string` [`code`](#AcceleratorTypeList.Warning.code) = 1
+* `repeated` [`compute.AcceleratorTypeList.Warning.Data`](gcp_compute.md#AcceleratorTypeList.Warning.Data) [`data`](#AcceleratorTypeList.Warning.data) = 2
+* `string` [`message`](#AcceleratorTypeList.Warning.message) = 3
 
-### `code` {#TargetSslProxyList.Warning.code}
+### `code` {#AcceleratorTypeList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -29734,15 +34376,141 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#TargetSslProxyList.Warning.data}
+### `data` {#AcceleratorTypeList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.TargetSslProxyList.Warning.Data`](gcp_compute.md#TargetSslProxyList.Warning.Data) |
+| Type | [`compute.AcceleratorTypeList.Warning.Data`](gcp_compute.md#AcceleratorTypeList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#TargetSslProxyList.Warning.message}
+### `message` {#AcceleratorTypeList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#RegionDiskTypeList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#RegionDiskTypeList.Warning.code) = 1
+* `repeated` [`compute.RegionDiskTypeList.Warning.Data`](gcp_compute.md#RegionDiskTypeList.Warning.Data) [`data`](#RegionDiskTypeList.Warning.data) = 2
+* `string` [`message`](#RegionDiskTypeList.Warning.message) = 3
+
+### `code` {#RegionDiskTypeList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#RegionDiskTypeList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.RegionDiskTypeList.Warning.Data`](gcp_compute.md#RegionDiskTypeList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#RegionDiskTypeList.Warning.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warning` {#HealthCheckList.Warning}
+
+[Output Only] Informational warning message.
+[Output Only] Informational warning message.
+
+
+### Inputs for `Warning`
+
+* `string` [`code`](#HealthCheckList.Warning.code) = 1
+* `repeated` [`compute.HealthCheckList.Warning.Data`](gcp_compute.md#HealthCheckList.Warning.Data) [`data`](#HealthCheckList.Warning.data) = 2
+* `string` [`message`](#HealthCheckList.Warning.message) = 3
+
+### `code` {#HealthCheckList.Warning.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#HealthCheckList.Warning.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.HealthCheckList.Warning.Data`](gcp_compute.md#HealthCheckList.Warning.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#HealthCheckList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -29814,7 +34582,7 @@ Valid values:
 
 [Output Only] A human-readable description of the warning code.
 
-## Message `Warning` {#InstanceGroupManagerList.Warning}
+## Message `Warning` {#UsableSubnetworksAggregatedList.Warning}
 
 [Output Only] Informational warning message.
 [Output Only] Informational warning message.
@@ -29822,74 +34590,11 @@ Valid values:
 
 ### Inputs for `Warning`
 
-* `string` [`code`](#InstanceGroupManagerList.Warning.code) = 1
-* `repeated` [`compute.InstanceGroupManagerList.Warning.Data`](gcp_compute.md#InstanceGroupManagerList.Warning.Data) [`data`](#InstanceGroupManagerList.Warning.data) = 2
-* `string` [`message`](#InstanceGroupManagerList.Warning.message) = 3
+* `string` [`code`](#UsableSubnetworksAggregatedList.Warning.code) = 1
+* `repeated` [`compute.UsableSubnetworksAggregatedList.Warning.Data`](gcp_compute.md#UsableSubnetworksAggregatedList.Warning.Data) [`data`](#UsableSubnetworksAggregatedList.Warning.data) = 2
+* `string` [`message`](#UsableSubnetworksAggregatedList.Warning.message) = 3
 
-### `code` {#InstanceGroupManagerList.Warning.code}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `code` |
-| Type | `string` |
-
-[Output Only] A warning code, if applicable. For example, Compute Engine
-returns NO_RESULTS_ON_PAGE if there are no results in the response.
-Valid values:
-    CLEANUP_FAILED
-    DEPRECATED_RESOURCE_USED
-    DEPRECATED_TYPE_USED
-    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
-    EXPERIMENTAL_TYPE_USED
-    EXTERNAL_API_WARNING
-    FIELD_VALUE_OVERRIDEN
-    INJECTED_KERNELS_DEPRECATED
-    MISSING_TYPE_DEPENDENCY
-    NEXT_HOP_ADDRESS_NOT_ASSIGNED
-    NEXT_HOP_CANNOT_IP_FORWARD
-    NEXT_HOP_INSTANCE_NOT_FOUND
-    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
-    NEXT_HOP_NOT_RUNNING
-    NOT_CRITICAL_ERROR
-    NO_RESULTS_ON_PAGE
-    REQUIRED_TOS_AGREEMENT
-    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
-    RESOURCE_NOT_DELETED
-    SCHEMA_VALIDATION_IGNORED
-    SINGLE_INSTANCE_PROPERTY_TEMPLATE
-    UNDECLARED_PROPERTIES
-    UNREACHABLE
-
-### `data` {#InstanceGroupManagerList.Warning.data}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `data` |
-| Type | [`compute.InstanceGroupManagerList.Warning.Data`](gcp_compute.md#InstanceGroupManagerList.Warning.Data) |
-| Repeated | Any number of instances of this type is allowed in the schema. |
-
-### `message` {#InstanceGroupManagerList.Warning.message}
-
-| Property | Comments |
-|----------|----------|
-| Field Name | `message` |
-| Type | `string` |
-
-[Output Only] A human-readable description of the warning code.
-
-## Message `Warnings` {#Route.Warnings}
-
-[Output Only] If potential misconfigurations are detected for this route,
-this field will be populated with warning messages.
-
-
-### Inputs for `Warnings`
-
-* `string` [`code`](#Route.Warnings.code) = 1
-* `repeated` [`compute.Route.Warnings.Data`](gcp_compute.md#Route.Warnings.Data) [`data`](#Route.Warnings.data) = 2
-* `string` [`message`](#Route.Warnings.message) = 3
-
-### `code` {#Route.Warnings.code}
+### `code` {#UsableSubnetworksAggregatedList.Warning.code}
 
 | Property | Comments |
 |----------|----------|
@@ -29923,15 +34628,15 @@ Valid values:
     UNDECLARED_PROPERTIES
     UNREACHABLE
 
-### `data` {#Route.Warnings.data}
+### `data` {#UsableSubnetworksAggregatedList.Warning.data}
 
 | Property | Comments |
 |----------|----------|
 | Field Name | `data` |
-| Type | [`compute.Route.Warnings.Data`](gcp_compute.md#Route.Warnings.Data) |
+| Type | [`compute.UsableSubnetworksAggregatedList.Warning.Data`](gcp_compute.md#UsableSubnetworksAggregatedList.Warning.Data) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
-### `message` {#Route.Warnings.message}
+### `message` {#UsableSubnetworksAggregatedList.Warning.message}
 
 | Property | Comments |
 |----------|----------|
@@ -30058,6 +34763,69 @@ Valid values:
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
 ### `message` {#Operation.Warnings.message}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `message` |
+| Type | `string` |
+
+[Output Only] A human-readable description of the warning code.
+
+## Message `Warnings` {#Route.Warnings}
+
+[Output Only] If potential misconfigurations are detected for this route,
+this field will be populated with warning messages.
+
+
+### Inputs for `Warnings`
+
+* `string` [`code`](#Route.Warnings.code) = 1
+* `repeated` [`compute.Route.Warnings.Data`](gcp_compute.md#Route.Warnings.Data) [`data`](#Route.Warnings.data) = 2
+* `string` [`message`](#Route.Warnings.message) = 3
+
+### `code` {#Route.Warnings.code}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `code` |
+| Type | `string` |
+
+[Output Only] A warning code, if applicable. For example, Compute Engine
+returns NO_RESULTS_ON_PAGE if there are no results in the response.
+Valid values:
+    CLEANUP_FAILED
+    DEPRECATED_RESOURCE_USED
+    DEPRECATED_TYPE_USED
+    DISK_SIZE_LARGER_THAN_IMAGE_SIZE
+    EXPERIMENTAL_TYPE_USED
+    EXTERNAL_API_WARNING
+    FIELD_VALUE_OVERRIDEN
+    INJECTED_KERNELS_DEPRECATED
+    MISSING_TYPE_DEPENDENCY
+    NEXT_HOP_ADDRESS_NOT_ASSIGNED
+    NEXT_HOP_CANNOT_IP_FORWARD
+    NEXT_HOP_INSTANCE_NOT_FOUND
+    NEXT_HOP_INSTANCE_NOT_ON_NETWORK
+    NEXT_HOP_NOT_RUNNING
+    NOT_CRITICAL_ERROR
+    NO_RESULTS_ON_PAGE
+    REQUIRED_TOS_AGREEMENT
+    RESOURCE_IN_USE_BY_OTHER_RESOURCE_WARNING
+    RESOURCE_NOT_DELETED
+    SCHEMA_VALIDATION_IGNORED
+    SINGLE_INSTANCE_PROPERTY_TEMPLATE
+    UNDECLARED_PROPERTIES
+    UNREACHABLE
+
+### `data` {#Route.Warnings.data}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `data` |
+| Type | [`compute.Route.Warnings.Data`](gcp_compute.md#Route.Warnings.Data) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `message` {#Route.Warnings.message}
 
 | Property | Comments |
 |----------|----------|
@@ -30386,6 +35154,48 @@ Make a get() request to the resource to get the latest fingerprint.
 | Repeated | Any number of instances of this type is allowed in the schema. |
 
 The labels to set for this resource.
+
+## Message `ZoneSetPolicyRequest` {#ZoneSetPolicyRequest}
+
+
+
+### Inputs for `ZoneSetPolicyRequest`
+
+* `repeated` [`compute.Binding`](gcp_compute.md#Binding) [`bindings`](#ZoneSetPolicyRequest.bindings) = 1
+* `string` [`etag`](#ZoneSetPolicyRequest.etag) = 2
+* [`compute.Policy`](gcp_compute.md#Policy) [`policy`](#ZoneSetPolicyRequest.policy) = 3
+
+### `bindings` {#ZoneSetPolicyRequest.bindings}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `bindings` |
+| Type | [`compute.Binding`](gcp_compute.md#Binding) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Flatten Policy to create a backwacd compatible wire-format. Deprecated. Use
+'policy' to specify bindings.
+
+### `etag` {#ZoneSetPolicyRequest.etag}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `etag` |
+| Type | `string` |
+
+Flatten Policy to create a backward compatible wire-format. Deprecated. Use
+'policy' to specify the etag.
+
+### `policy` {#ZoneSetPolicyRequest.policy}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `policy` |
+| Type | [`compute.Policy`](gcp_compute.md#Policy) |
+
+REQUIRED: The complete policy to be applied to the 'resource'. The size of
+the policy is limited to a few 10s of KB. An empty policy is in general a
+valid policy but certain services (like Projects) might reject them.
 
 
 

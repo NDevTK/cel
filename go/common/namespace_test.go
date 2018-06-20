@@ -88,9 +88,9 @@ func TestNamespace_ExpandString_basic(t *testing.T) {
 	w := TestMessageWithTypes{
 		Name: "to",
 		RepeatedField: []*TestGoodProto{
-			&TestGoodProto{"a"},
-			&TestGoodProto{"b"},
-			&TestGoodProto{"c"},
+			&TestGoodProto{Name: "a"},
+			&TestGoodProto{Name: "b"},
+			&TestGoodProto{Name: "c"},
 		}}
 
 	var r Namespace
@@ -458,16 +458,16 @@ func TestNamespace_asAssetGraph_sanityCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !g.Has(xNode) || !g.Has(yNode) || !g.Has(zNode) || !g.Has(nNode) {
+	if !g.Has(xNode.ID()) || !g.Has(yNode.ID()) || !g.Has(zNode.ID()) || !g.Has(nNode.ID()) {
 		t.Errorf("nodes missing from graph: x(%v), y(%v), z(%v), n(%v)",
-			g.Has(xNode), g.Has(yNode), g.Has(zNode), g.Has(nNode))
+			g.Has(xNode.ID()), g.Has(yNode.ID()), g.Has(zNode.ID()), g.Has(nNode.ID()))
 	}
 
-	if !g.HasEdgeFromTo(xNode, yNode) {
+	if !g.HasEdgeFromTo(xNode.ID(), yNode.ID()) {
 		t.Fatal("dependency edge missing for inner reference")
 	}
 
-	if !g.HasEdgeFromTo(zNode, nNode) {
+	if !g.HasEdgeFromTo(zNode.ID(), nNode.ID()) {
 		t.Fatal("parent->child edge missing")
 	}
 }

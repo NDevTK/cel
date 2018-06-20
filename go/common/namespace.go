@@ -809,7 +809,7 @@ func (r *Namespace) asAssetGraph() (graph.Directed, error) {
 			})
 		}
 
-		if !g.Has(from) {
+		if !g.Has(from.ID()) {
 			g.AddNode(from)
 		}
 
