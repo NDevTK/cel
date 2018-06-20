@@ -161,7 +161,7 @@ func WalkProtoValue(av reflect.Value, p RefPath, f WalkProtoFunc) error {
 		return nil
 	}
 
-	return errors.Wrapf(WrapErrorList(err_list), "\ntype \"%s\"", getGoTypeString(av.Type()))
+	return errors.Wrapf(WrapErrorList(err_list), "\ntype \"%s\"", av.Type().Name())
 }
 
 // walkPtrToStruct invokes |f| on |av| if |av| is a proto.Message. This is
@@ -332,35 +332,6 @@ func getNamedProtoField(av reflect.Value, name string) (reflect.Value, bool) {
 	}
 	return av, false
 }
-
-// getGoTypeString returns a string identifying the underlying Go type of |ty|.
-func getGoTypeString(ty reflect.Type) string {
-	s := ty.Name()
-	if s != "" {
-		return s
-	}
-	switch ty.Kind() {
-	case reflect.Array:
-		return "[" + string(ty.Len()) + "]" + getGoTypeString(ty.Elem())
-
-	case reflect.Ptr:
-		return "*" + getGoTypeString(ty.Elem())
-
-	case reflect.Slice:
-		return "[]" + getGoTypeString(ty.Elem())
-
-	case reflect.Map:
-		return "map[" + getGoTypeString(ty.Key()) + "]" + getGoTypeString(ty.Elem())
-	}
-	return "(unknown)"
-}
-
-type ResolutionMode int
-
-const (
-	ResolutionIncludeOutputs ResolutionMode = iota
-	ResolutionSkipOutputs
-)
 
 // Dereference descends into a proto.Message and attempts to resolve a propery
 // reference chain. See RefPath for more details.

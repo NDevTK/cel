@@ -31,7 +31,7 @@ func TestWalkProto_Order(t *testing.T) {
 		if len(accumulator) != len(expected) {
 			s := ""
 			for i := 0; i < len(accumulator); i++ {
-				type_name := getGoTypeString(accumulator[i].V.Type())
+				type_name := accumulator[i].V.Type().Name()
 				field_name := "(object)"
 				if accumulator[i].D != nil {
 					field_name = accumulator[i].D.GetName()
@@ -43,7 +43,7 @@ func TestWalkProto_Order(t *testing.T) {
 		}
 
 		for i := 0; i < len(accumulator); i++ {
-			type_name := getGoTypeString(accumulator[i].V.Type())
+			type_name := accumulator[i].V.Type().Name()
 			field_name := "(object)"
 			if accumulator[i].D != nil {
 				field_name = accumulator[i].D.GetName()
