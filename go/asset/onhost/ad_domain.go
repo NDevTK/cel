@@ -5,10 +5,11 @@
 package onhost
 
 import (
+	"errors"
+
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
-	"errors"
-	"fmt"
+	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
 )
 
 type AdDomainResolver struct{}
@@ -29,7 +30,7 @@ func (*AdDomainResolver) ResolveOnHost(ctx common.Context, ad *asset.ActiveDirec
 func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	d.Logf("Configuring Ad Domain: %+v\n", *ad)
 
-	configVar := fmt.Sprintf("asset/ad_domain/%s/status", ad.Name)
+	configVar := onhost.GetActiveDirectoryRuntimeConfigVariableName(ad.Name)
 	status := d.getRuntimeConfigVariableValue(configVar)
 	d.Logf("Status of asset %s is [%s]", configVar, status)
 	if status == statusReady {
@@ -55,7 +56,7 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 }
 
 func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
-	configVar := fmt.Sprintf("asset/ad_domain/%s/status", ad.Name)
+	configVar := onhost.GetActiveDirectoryRuntimeConfigVariableName(ad.Name)
 	fileToRun := ""
 	if d.IsWindows2012() || d.IsWindows2016() {
 		fileToRun = d.GetSupportingFilePath("create_ad_win2012.ps1")

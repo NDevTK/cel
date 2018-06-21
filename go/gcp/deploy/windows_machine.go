@@ -9,6 +9,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
+	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 	"fmt"
 	google_iam_admin_v1 "google.golang.org/genproto/googleapis/iam/admin/v1"
@@ -42,6 +43,17 @@ func (*windowsMachine) ResolveAdditionalDependencies(ctx common.Context, m *asse
 
 func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.WindowsMachine) error {
 	d := GetDeploymentManifest()
+
+	// add runtime config variable for this windows machine
+	variableName := onhost.GetActiveDirectoryRuntimeConfigVariableName(m.Name)
+	if err := d.Emit(nil, &onhost.RuntimeConfigConfigVariable{
+		Name:     "runtimeconfigVariable_" + variableName,
+		Parent:   onhost.RuntimeconfigVariableParent,
+		Variable: variableName,
+		Text:     "",
+	}); err != nil {
+		return err
+	}
 
 	p := common.Must(ctx.Get(projectPath)).(*host.Project)
 	mt := common.Must(ctx.Indirect(m, "machine_type")).(*host.MachineType)

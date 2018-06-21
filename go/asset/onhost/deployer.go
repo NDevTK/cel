@@ -6,6 +6,8 @@ package onhost
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -19,11 +21,10 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
 	"chromium.googlesource.com/enterprise/cel/go/lab"
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
-	"context"
-	"errors"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
@@ -231,7 +232,7 @@ func getWindowsVersion() (string, error) {
 func (d *deployer) Deploy(manifestFile string) {
 	log.Printf("Start on-host deployment")
 
-	machineConfigVar := fmt.Sprintf("asset/windows_machine/%s/status", d.instanceName)
+	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
 	status := d.getRuntimeConfigVariableValue(machineConfigVar)
 	if status == statusReady || status == statusError {
 		d.Logf("Status of %s is %s. Nothing needs to be done.", machineConfigVar, status)
