@@ -12,9 +12,15 @@ function install-module-if-not-installed {
     else {
         Install-Module -Name $name -Force -Verbose
     }
-  }
+}
 
-# install PackageManagement_x64.msi if we're running on Win2008R2.
+# Download PackageManagement_x64.msi
+$downloadUrl = 'https://download.microsoft.com/download/C/4/1/C41378D4-7F41-4BBE-9D0D-0E4F98585C61/PackageManagement_x64.msi'
+$WC = New-Object System.Net.WebClient
+$WC.DownloadFile($downloadUrl,"c:\cel\PackageManagement_x64.msi")
+$WC.Dispose()
+
+# Install PackageManagement_x64.msi.
 $arguments = @(
     "/i"
     "c:\cel\PackageManagement_x64.msi"
@@ -32,9 +38,17 @@ if ($process.ExitCode -eq 0) {
 
 # Somehow this is needed on Win2008. There will be a warning message
 # that can be safely ignored.
+Write-Host "The warning message from Set-ExecutionPolicy can be safely ignored."
 Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
 
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -force
 
-# install the module that contains Expand-Archive cmdlet
-install-module-if-not-installed -Name Microsoft.PowerShell.Archive
+# WinRM, which is needed by DSC, is not enabled by default on Win 2008 R2.
+# Enable it.
+Enable-PSRemoting -SkipNetworkProfileCheck -Force
+
+# Install modules
+install-module-if-not-installed -Name xComputerManagement
+install-module-if-not-installed -Name xNetworking
+install-module-if-not-installed -Name xRemoteDesktopSessionHost
+install-module-if-not-installed -Name xWebAdministration

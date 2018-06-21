@@ -20,8 +20,6 @@ configuration InstallFeatures
     (
     )
 
-    Import-DscResource -ModuleName xActiveDirectory
-
     Node localhost
     {
         LocalConfigurationManager
@@ -44,23 +42,6 @@ configuration InstallFeatures
     }
 }
 
-# Configuration Data for AD
-$ConfigData = @{
-    AllNodes = @(
-        @{
-            Nodename = "localhost"
-            Role = "dc"
-            DomainName = $domainName
-            RetryCount = 20
-            RetryIntervalSec = 30
-            PsDscAllowPlainTextPassword = $true
-        }
-    )
-}
-
-# This is needed on Win 2008 R2
-Enable-PSRemoting -SkipNetworkProfileCheck -Force
-
 # first check if the domain is already created
 $domain = Get-ADDomain -Identity $domainName -ErrorAction Stop
 if ($domain.DnsRoot -eq $domainName)
@@ -68,11 +49,10 @@ if ($domain.DnsRoot -eq $domainName)
     Exit 0
 }
 
-InstallFeatures -ConfigurationData $ConfigData
-
+# Install needed features
+InstallFeatures
 Set-DSCLocalConfigurationManager -Path .\InstallFeatures -Verbose
 
-# Install needed features
 $errorCount = $error.Count
 Start-DscConfiguration -Wait -Force -Path .\InstallFeatures -Verbose
 
