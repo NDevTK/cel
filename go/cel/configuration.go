@@ -92,11 +92,11 @@ type Configuration struct {
 
 // GetNamespace returns the loaded and validated namespace for this
 // Configuration. Should only be called after Validate() has been called.
-func (l *Configuration) GetNamespace() *common.Namespace {
-	if !l.sealed {
+func (c *Configuration) GetNamespace() *common.Namespace {
+	if !c.sealed {
 		panic("GetNamespace() called without calling Validate() first")
 	}
-	return &l.references
+	return &c.references
 }
 
 // mergeAssets merges a text format AssetManifest into this Configuration.
@@ -104,12 +104,12 @@ func (l *Configuration) GetNamespace() *common.Namespace {
 // name of the configuration file that generated the error.
 //
 // See /schema/asset/asset_manifest.proto
-func (l *Configuration) mergeAssets(filename string, data []byte) error {
-	if l.assetSources == nil {
-		l.assetSources = make(map[string]*asset.AssetManifest)
+func (c *Configuration) mergeAssets(filename string, data []byte) error {
+	if c.assetSources == nil {
+		c.assetSources = make(map[string]*asset.AssetManifest)
 	}
 
-	if _, ok := l.assetSources[filename]; ok {
+	if _, ok := c.assetSources[filename]; ok {
 		return ConfigurationAlreadyLoadedError
 	}
 
@@ -119,8 +119,8 @@ func (l *Configuration) mergeAssets(filename string, data []byte) error {
 		return err
 	}
 
-	proto.Merge(&l.AssetManifest, &a)
-	l.assetSources[filename] = &a
+	proto.Merge(&c.AssetManifest, &a)
+	c.assetSources[filename] = &a
 
 	return nil
 }
@@ -130,12 +130,12 @@ func (l *Configuration) mergeAssets(filename string, data []byte) error {
 // name of the configuration file that generated the error.
 //
 // See /schema/host/host_environment.proto
-func (l *Configuration) mergeHost(filename string, data []byte) error {
-	if l.hostSources == nil {
-		l.hostSources = make(map[string]*host.HostEnvironment)
+func (c *Configuration) mergeHost(filename string, data []byte) error {
+	if c.hostSources == nil {
+		c.hostSources = make(map[string]*host.HostEnvironment)
 	}
 
-	if _, ok := l.hostSources[filename]; ok {
+	if _, ok := c.hostSources[filename]; ok {
 		return ConfigurationAlreadyLoadedError
 	}
 
@@ -145,14 +145,14 @@ func (l *Configuration) mergeHost(filename string, data []byte) error {
 		return err
 	}
 
-	proto.Merge(&l.HostEnvironment, &h)
-	l.hostSources[filename] = &h
+	proto.Merge(&c.HostEnvironment, &h)
+	c.hostSources[filename] = &h
 	return nil
 }
 
 // Merge attempts to parse |filename| as an asset manifest, and failing that, a
 // host environment.
-func (l *Configuration) Merge(filename string) (err error) {
+func (c *Configuration) Merge(filename string) (err error) {
 	filename, err = filepath.Abs(filename)
 	if err != nil {
 		return errors.Wrapf(err, "can't determine absolute path for %s", filename)
@@ -163,16 +163,16 @@ func (l *Configuration) Merge(filename string) (err error) {
 		return errors.Wrapf(err, "reading \"%s\"", filename)
 	}
 
-	return l.MergeContents(filename, data)
+	return c.MergeContents(filename, data)
 }
 
-func (l *Configuration) MergeContents(name string, data []byte) (err error) {
+func (c *Configuration) MergeContents(name string, data []byte) (err error) {
 	defer common.Action(&err, "looking at \"%s\"", name)
 
 	// If you see this error, it means that an attempt was made to load another
 	// configuration file after it was sealed. Sealing happens when Validate()
 	// is called.
-	if l.sealed {
+	if c.sealed {
 		return ConfigurationSealedError
 	}
 
@@ -184,46 +184,46 @@ func (l *Configuration) MergeContents(name string, data []byte) (err error) {
 
 	switch schema {
 	case ".asset":
-		return l.mergeAssets(name, data)
+		return c.mergeAssets(name, data)
 
 	case ".host":
-		return l.mergeHost(name, data)
+		return c.mergeHost(name, data)
 	}
 
 	return IncorrectFilenameFormatError
 }
 
-func (l *Configuration) GenerateCompletedManifest() (data []byte, err error) {
+func (c *Configuration) GenerateCompletedManifest() (data []byte, err error) {
 	defer common.Action(&err, "generating completed asset manifest")
 
-	l.Lab.HostEnvironment = &l.HostEnvironment
-	l.Lab.AssetManifest = &l.AssetManifest
+	c.Lab.HostEnvironment = &c.HostEnvironment
+	c.Lab.AssetManifest = &c.AssetManifest
 
 	// TODO(asanka): Remove elements from the tree that are no longer part of
 	// the namespace.
-	m := proto.MarshalTextString(&l.Lab)
+	m := proto.MarshalTextString(&c.Lab)
 	return []byte(m), nil
 }
 
 // Validate ensures that the cross references between assets and the host
 // environment are sound.
-func (l *Configuration) Validate() error {
+func (c *Configuration) Validate() error {
 	// Validate() is idempotent and should be albe to be called multiple times.
 	// Hence not checking whether sealed is already true.
-	l.sealed = true
+	c.sealed = true
 
-	l.Resources.Startup = &host.Startup{}
-	l.HostEnvironment.Resources = &l.Resources
-	l.references.Graft(&l.AssetManifest, AssetRootPath)
-	l.references.Graft(&l.HostEnvironment, HostRootPath)
-	l.references.Graft(&l.Lab, LabRootPath)
+	c.Resources.Startup = &host.Startup{}
+	c.HostEnvironment.Resources = &c.Resources
+	c.references.Graft(&c.AssetManifest, AssetRootPath)
+	c.references.Graft(&c.HostEnvironment, HostRootPath)
+	c.references.Graft(&c.Lab, LabRootPath)
 
 	errList := []error{
-		common.ValidateProto(&l.AssetManifest, AssetRootPath),
-		common.ValidateProto(&l.HostEnvironment, HostRootPath),
+		common.ValidateProto(&c.AssetManifest, AssetRootPath),
+		common.ValidateProto(&c.HostEnvironment, HostRootPath),
 	}
 
-	l.references.VisitUnresolved(common.EmptyPath, func(v common.UnresolvedValue) bool {
+	c.references.VisitUnresolved(common.EmptyPath, func(v common.UnresolvedValue) bool {
 		if _, ok := v.Value.(common.UnresolvedValue_Placeholder); ok {
 			errList = append(errList, errors.New(v.String()))
 		}
