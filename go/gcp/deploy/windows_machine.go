@@ -98,6 +98,9 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.Win
 				Email: si.Email,
 				Scopes: []string{
 					"https://www.googleapis.com/auth/devstorage.read_only",
+					"https://www.googleapis.com/auth/logging.write",
+					"https://www.googleapis.com/auth/compute.readonly",
+					"https://www.googleapis.com/auth/cloudruntimeconfig",
 				},
 			},
 		},

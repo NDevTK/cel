@@ -17,6 +17,9 @@ go/tools/gen_doc_proto/testdata/test.pb
 schema/gcp/cloudkms/cloudkms-api.proto
 schema/gcp/compute/compute-api.proto
 
+# This is the generated file containging all resources used by cel_agent.exe
+go/asset/onhost/static.go
+
 # Vendored dependencies. Use `dep` to manage.
 vendor/
 

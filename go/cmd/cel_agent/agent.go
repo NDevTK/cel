@@ -4,6 +4,31 @@
 
 package main
 
+import (
+	"chromium.googlesource.com/enterprise/cel/go/asset/onhost"
+
+	"flag"
+	"fmt"
+	"log"
+	"os"
+)
+
 func main() {
-	// TODO(feiling): Fill in here
+	if len(os.Args) != 2 {
+		fmt.Printf("Usage: cel_agent manifest_file")
+		return
+	}
+
+	flag.Parse()
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	log.Printf("Start of cel_agent")
+	d, err := onhost.CreateDeployer()
+	if err != nil {
+		log.Printf("Deployer creation failed. error: %s", err)
+		return
+	}
+
+	defer d.Close()
+	d.Deploy(os.Args[1])
 }

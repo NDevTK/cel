@@ -122,8 +122,8 @@ message ActiveDirectoryDomain {
   // root domain of a new forest. I.e. Whenever the `forest` field is empty.
   FunctionalLevel forest_mode = 5;
 
-  // NetBIOS name. Required if |name| is longer than 15 characters.
-  string netbios_name = 6;
+  // NetBIOS name.
+  string netbios_name = 6 [(common.v).type = REQUIRED];
 
   // Domain controllers for this domain. At least one is required.
   repeated ActiveDirectoryDomainController domain_controller = 100
@@ -578,7 +578,7 @@ message WindowsMachine {
 
   // The name of a host.MachineType entry that describes the host machine.
   string machine_type = 2
-      [(common.v) = {ref: "host.machine_type", type: REQUIRED}];
+      [(common.v) = { ref: "host.machine_type", type: REQUIRED }];
 
   // Network interfaces. There can be more than one for multihomed machines.
   // There must be at least one of these.

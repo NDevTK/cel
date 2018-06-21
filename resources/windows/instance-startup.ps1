@@ -143,13 +143,17 @@ function Get-GcpMetadata {
   }
 }
 
-<#
+$metadata = Get-GcpMetadata -Name "cel-agent" -ProjectScoped
+Write-Host "metadata cel-agent is $metadata"
 
-TODO(feiling): Update script to fetch agent binary from GCS and execute it. The
-startup script should not attempt to do anything else.
+$cel_agent = $metadata | ConvertFrom-Json
+$cel_agent_path = $cel_agent.win_agent_x64.abs_path
 
-See
-https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/deployment.md#gcp-prep-phase
-for details on how the agent binary should be located.
+$cel_manifest = Get-GcpMetadata -Name "cel-manifest" -ProjectScoped
+Write-Host "metadata cel-manifest is $cel_manifest"
 
-#>
+Assert-Directory c:\cel
+cd c:\cel
+gsutil cp $cel_agent_path cel_agent.exe
+gsutil cp $cel_manifest cel_manifest.textpb
+c:\cel\cel_agent.exe cel_manifest.textpb

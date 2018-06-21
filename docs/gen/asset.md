@@ -88,7 +88,7 @@ ad_domain {
 * `string` [`forest`](#ActiveDirectoryDomain.forest) = 3 (**Required**)
 * [`asset.ActiveDirectoryDomain.FunctionalLevel`](asset.md#ActiveDirectoryDomain.FunctionalLevel) [`domain_mode`](#ActiveDirectoryDomain.domain_mode) = 4
 * [`asset.ActiveDirectoryDomain.FunctionalLevel`](asset.md#ActiveDirectoryDomain.FunctionalLevel) [`forest_mode`](#ActiveDirectoryDomain.forest_mode) = 5
-* `string` [`netbios_name`](#ActiveDirectoryDomain.netbios_name) = 6
+* `string` [`netbios_name`](#ActiveDirectoryDomain.netbios_name) = 6 (**Required**)
 * `repeated` [`asset.ActiveDirectoryDomainController`](asset.md#ActiveDirectoryDomainController) [`domain_controller`](#ActiveDirectoryDomain.domain_controller) = 100 (**Required**)
 
 ### Outputs for `ActiveDirectoryDomain`
@@ -158,8 +158,9 @@ root domain of a new forest. I.e. Whenever the `forest` field is empty.
 |----------|----------|
 | Field Name | `netbios_name` |
 | Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
 
-NetBIOS name. Required if |name| is longer than 15 characters.
+NetBIOS name.
 
 ### `domain_controller` {#ActiveDirectoryDomain.domain_controller}
 

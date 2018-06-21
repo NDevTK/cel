@@ -585,7 +585,13 @@ missing.
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
+  esc_command = _BuildCommand('esc', './vendor/github.com/mjibson/esc',
+                              _MergeEnv(args, target_host=True))
   agent_bins = []
+  _BuildStep([
+      esc_command, '-pkg', 'onhost', '-prefix', 'go/asset/onhost/', '-o',
+      'go/asset/onhost/static.go', 'go/asset/onhost/supporting_files/'
+  ])
   for goos, goarch in TARGET_ARCHS:
     agent_dir = 'resources/windows/gen/{}_{}'.format(goos, goarch)
     env = _MergeEnv(args)
@@ -593,9 +599,6 @@ missing.
     env['GOARCH'] = goarch
     _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=agent_dir)
     agent_bins.append(agent_dir + "/cel_agent.exe")
-
-  esc_command = _BuildCommand('esc', './vendor/github.com/mjibson/esc',
-                              _MergeEnv(args, target_host=True))
 
   _BuildStep(
       [

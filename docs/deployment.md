@@ -85,7 +85,7 @@ server and a Windows client into a newly minted GCP Project.
 
 Our `ASSET MANIFEST` looks like this:
 
-<!-- INCLUDE ../examples/schema/ad/one-domain.asset.textpb (51 lines) fenced as textpb -->
+<!-- INCLUDE ../examples/schema/ad/one-domain.asset.textpb (52 lines) fenced as textpb -->
 ``` textpb
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -100,6 +100,7 @@ network {
 # An ActiveDirectory domain.
 ad_domain {
   name: 'foo.example'
+  netbios_name: 'example'
 
   # AD Domain Controller. This is regarded as a service that runs on a specific
   # machine. This definition just anchors the AD DS to the machine named 'dc'.

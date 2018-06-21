@@ -14,6 +14,7 @@ const (
 	MonitoringServiceName           = "monitoring.googleapis.com"
 	ServiceManagementServiceName    = "servicemanagement.googleapis.com"
 	CloudResourceManagerServiceName = "cloudresourcemanager.googleapis.com"
+	RuntimeConfigServiceName        = "runtimeconfig.googleapis.com"
 )
 
 // These are the APIs that are required by the CEL toolchain. During deployment
@@ -26,6 +27,7 @@ var RequiredGcpServices = []string{
 	LoggingServiceName,
 	MonitoringServiceName,
 	CloudResourceManagerServiceName,
+	RuntimeConfigServiceName,
 }
 
 // The name of the GCP Deployment Manager Deployment that is used to create

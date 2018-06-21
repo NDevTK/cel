@@ -313,7 +313,7 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 				Policy: &cloudresourcemanager.Policy{
 					Bindings: append(policy.Bindings,
 						&cloudresourcemanager.Binding{
-							Role: "roles/viewer",
+							Role: "roles/editor",
 							Members: []string{
 								fmt.Sprintf("serviceAccount:%s", saEmail),
 							},
