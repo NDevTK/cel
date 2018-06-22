@@ -7,7 +7,6 @@ package onhost
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,6 +25,7 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
@@ -133,51 +133,43 @@ func CreateDeployer() (*deployer, error) {
 
 	projectId, err := metadata.ProjectID()
 	if err != nil {
-		log.Printf("Error occured when getting project id")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	ctx := context.Background()
 	c, err := google.DefaultClient(ctx, compute.ComputeScope)
 	if err != nil {
-		log.Printf("Error occured when creating client")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	computeService, err := compute.New(c)
 	if err != nil {
-		log.Printf("Error occured when creating compute service")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	project, err := computeService.Projects.Get(projectId).Context(ctx).Do()
 	if err != nil {
-		log.Printf("Error occured when getting project")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	hostname, err := metadata.InstanceName()
 	if err != nil {
-		log.Printf("Error occured when getting instance name")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	loggingClient, err := logging.NewClient(ctx, projectId)
 	if err != nil {
-		log.Printf("Error occured when creating logging client")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	runtimeConfigService, err := runtimeconfig.New(c)
 	if err != nil {
-		log.Printf("Error occured when creating runtime config service")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	verString, err := getWindowsVersion()
 	if err != nil {
-		log.Printf("Error occured when getting windows version")
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	ver := other
@@ -295,8 +287,7 @@ func (d *deployer) CommonSetup() error {
 			fileContent := FSMustByte(false, filename)
 			os.Mkdir(path.Dir(outputFileName), os.ModePerm)
 			if err := ioutil.WriteFile(outputFileName, fileContent, os.ModePerm); err != nil {
-				d.Logf("Error saving file %s: %s", outputFileName, err)
-				return err
+				return errors.Wrapf(err, "error saving file %s", outputFileName)
 			}
 		}
 	}
@@ -350,8 +341,7 @@ func (d *deployer) getCelConfiguration(manifestFilePath string) error {
 	d.configuration = &cel.Configuration{}
 	err = proto.UnmarshalText(string(content), &d.configuration.Lab)
 	if err != nil {
-		log.Printf("Error when parsing the configuration: %s\nError:%s", string(content), err)
-		return err
+		return errors.Wrapf(err, "error when parsing the configuration: %s", string(content))
 	}
 
 	return nil

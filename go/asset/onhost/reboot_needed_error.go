@@ -4,7 +4,7 @@
 
 package onhost
 
-import "errors"
+import "github.com/pkg/errors"
 
 // The error returned by on-host resolvers to indicate that reboot is needed.
 var ErrRebootNeeded = errors.New("reboot needed")

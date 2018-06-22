@@ -5,11 +5,10 @@
 package onhost
 
 import (
-	"errors"
-
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
+	"github.com/pkg/errors"
 )
 
 type AdDomainResolver struct{}
