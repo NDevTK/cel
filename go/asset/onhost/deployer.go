@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
@@ -446,6 +447,45 @@ func (d *deployer) RunConfigCommand(name string, arg ...string) error {
 		}
 
 		return err
+	}
+
+	return nil
+}
+
+// getAdDomainAsset returns the ActiveDirectoryDomain asset of the given domain.
+func (d *deployer) getAdDomainAsset(domainName string) (*asset.ActiveDirectoryDomain, error) {
+	for _, ad := range d.configuration.AssetManifest.AdDomain {
+		if ad.Name == domainName {
+			return ad, nil
+		}
+	}
+
+	return nil, errors.Errorf("cannot find asset for domain: %s", domainName)
+}
+
+// waitForDependency waits for the dependency to be ready.
+// depVar is the runtime configuration variable of the dependency.
+func (d *deployer) waitForDependency(depVar string, timeOut time.Duration) error {
+	t := time.Now()
+	sleepDuration := 60 * time.Second
+	for {
+		if time.Now().Sub(t) > timeOut {
+			d.Logf("Time out reached waiting for %s", depVar)
+			return errors.Errorf("time out waiting for dependency")
+		}
+
+		status := d.getRuntimeConfigVariableValue(depVar)
+		d.Logf("Status of %s is [%s]", depVar, status)
+
+		if status == statusReady {
+			break
+		} else if status == statusError {
+			d.Logf("Cannot continue because the dependency status is error")
+			return errors.Errorf("cannot continue because the dependency status is error")
+		} else {
+			d.Logf("Sleep for %s", sleepDuration.String())
+			time.Sleep(sleepDuration)
+		}
 	}
 
 	return nil
