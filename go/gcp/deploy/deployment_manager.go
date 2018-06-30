@@ -5,11 +5,12 @@
 package deploy
 
 import (
+	"fmt"
+
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
-	"fmt"
 	"github.com/pkg/errors"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 )
