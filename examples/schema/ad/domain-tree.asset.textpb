@@ -1,0 +1,64 @@
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The network. There should be at least one. Hosts in the same network can talk
+# to each other without any restrictions.
+network {
+  name: 'primary'
+}
+
+
+# an AD Tree
+#      a1.com
+#         |
+#     b1.a1.com
+#         |
+#    c1.b1.a1.com
+
+ad_domain {
+  name: 'a1.com'
+  netbios_name: 'a1'
+
+  domain_controller {
+    windows_machine: 'a1dc'
+  }
+}
+
+ad_domain {
+  name: 'b1.a1.com'
+  netbios_name: 'b1'
+  parent_name: 'a1.com'
+
+  domain_controller {
+    windows_machine: 'b1dc'
+  }
+}
+
+ad_domain {
+  name: 'c1.b1.a1.com'
+  netbios_name: 'c1'
+  parent_name: 'b1.a1.com'
+  
+  domain_controller {
+    windows_machine: 'c1dc'
+  }
+}
+
+windows_machine {
+  name: 'a1dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'b1dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'c1dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
