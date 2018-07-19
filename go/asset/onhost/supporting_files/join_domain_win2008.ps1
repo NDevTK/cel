@@ -2,9 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Create a user in a domain.
 param(
+    # the FQDN name of the domain.    
     [Parameter(Mandatory=$true)] [String] $domainName,
+
+    # the password of the domain administrator.    
     [Parameter(Mandatory=$true)] [String] $adminName,
+
+    # the name of the user to be created.    
     [Parameter(Mandatory=$true)] [String] $adminPassword,
 
     # the name of the dns server

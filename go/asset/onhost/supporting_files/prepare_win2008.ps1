@@ -48,6 +48,7 @@ Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -force
 Enable-PSRemoting -SkipNetworkProfileCheck -Force
 
 # Install modules
+install-module-if-not-installed -Name xActiveDirectory
 install-module-if-not-installed -Name xComputerManagement
 install-module-if-not-installed -Name xNetworking
 install-module-if-not-installed -Name xRemoteDesktopSessionHost

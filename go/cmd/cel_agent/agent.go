@@ -5,12 +5,12 @@
 package main
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/asset/onhost"
-
 	"flag"
 	"fmt"
 	"log"
 	"os"
+
+	"chromium.googlesource.com/enterprise/cel/go/asset/onhost"
 )
 
 func main() {
@@ -23,6 +23,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	log.Printf("Start of cel_agent")
+
 	d, err := onhost.CreateDeployer()
 	if err != nil {
 		log.Printf("Deployer creation failed. error: %s", err)

@@ -5,16 +5,17 @@
 package cel
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"path/filepath"
+
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/host"
 	"chromium.googlesource.com/enterprise/cel/go/lab"
-	"encoding/json"
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"path/filepath"
 )
 
 var (

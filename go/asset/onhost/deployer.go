@@ -88,7 +88,7 @@ func (d *deployer) Publish(m proto.Message, field string, value interface{}) err
 }
 
 func (d *deployer) PublishDependency(m proto.Message, dependsOn common.RefPath) error {
-	return nil
+	return d.configuration.GetNamespace().PublishDependency(m, dependsOn)
 }
 
 func (d *deployer) GetObjectStore() common.ObjectStore {
@@ -250,8 +250,20 @@ func (d *deployer) Deploy(manifestFile string) {
 	d.configuration.AssetManifest = *d.configuration.Lab.AssetManifest
 	d.configuration.HostEnvironment = *d.configuration.Lab.HostEnvironment
 	d.configuration.Lab = lab.Lab{}
+
 	if err := d.configuration.Validate(); err != nil {
 		d.Logf("Error validating configuration : %s", err)
+		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+		return
+	}
+
+	// Add additional dependency
+	if err := common.ApplyResolvers(d, d.configuration.GetNamespace(), common.AdditionalDependencyResolverKind); err != nil {
+		d.Logf("Error adding additonal dependency : %s", err)
+		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+	}
+	if err := d.configuration.Validate(); err != nil {
+		d.Logf("Error validating configuration after adding additional dependency : %s", err)
 		d.setRuntimeConfigVariable(machineConfigVar, statusError)
 		return
 	}

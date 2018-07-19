@@ -5,6 +5,8 @@
 package common
 
 import (
+	"reflect"
+
 	"github.com/golang/protobuf/proto"
 	pd "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/pkg/errors"
@@ -13,7 +15,6 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
 	"gonum.org/v1/gonum/graph/traverse"
-	"reflect"
 )
 
 // Namespace represents a hierarchy of proto.Message objects possibly with
