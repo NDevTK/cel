@@ -18,4 +18,6 @@ message CelAgentMetadata {
 
   // Object containing Windows x64 cel_agent binary
   GCSObject win_agent_x64 = 1;
+
+  GCSObject linux_agent_x64 = 2;
 }

@@ -285,6 +285,7 @@ These are not https://cloud.google.com/compute/docs/machine-types
 * `string` [`name`](#MachineType.name) = 1 (**Required**)
 * [`compute.InstanceProperties`](gcp_compute.md#InstanceProperties) [`instance_properties`](#MachineType.instance_properties) = 5
 * `string` [`instance_template`](#MachineType.instance_template) = 6 (**Required**)
+* [`host.NestedVM`](host.md#NestedVM) [`nested_vm`](#MachineType.nested_vm) = 7
 
 ### `name` {#MachineType.name}
 
@@ -319,6 +320,30 @@ the name of an Image object in the enclosing HostEnvironment.
 
 An instance template to use for constructing a new GCE instance. Should
 be a full or a partial URL.
+
+### `nested_vm` {#MachineType.nested_vm}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `nested_vm` |
+| Type | [`host.NestedVM`](host.md#NestedVM) |
+
+## Message `NestedVM` {#NestedVM}
+
+
+
+### Inputs for `NestedVM`
+
+* `string` [`image`](#NestedVM.image) = 1
+
+### `image` {#NestedVM.image}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `image` |
+| Type | `string` |
+
+The image to use. It's a gs://path.
 
 ## Message `Project` {#Project}
 
@@ -426,6 +451,8 @@ Startup dependencies.
 
 * [`common.FileReference`](common.md#FileReference) [`win_startup`](#Startup.win_startup) = 100
 * [`common.FileReference`](common.md#FileReference) [`win_agent_x64`](#Startup.win_agent_x64) = 101
+* [`common.FileReference`](common.md#FileReference) [`linux_startup`](#Startup.linux_startup) = 102
+* [`common.FileReference`](common.md#FileReference) [`linux_agent_x64`](#Startup.linux_agent_x64) = 103
 
 ### `win_startup` {#Startup.win_startup}
 
@@ -444,6 +471,24 @@ Windows startup file. Must be a Powershell ps1 file.
 | Type | [`common.FileReference`](common.md#FileReference) |
 
 Windows CEL Agent executable.
+
+### `linux_startup` {#Startup.linux_startup}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `linux_startup` |
+| Type | [`common.FileReference`](common.md#FileReference) |
+
+Linux startup file.
+
+### `linux_agent_x64` {#Startup.linux_agent_x64}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `linux_agent_x64` |
+| Type | [`common.FileReference`](common.md#FileReference) |
+
+Linux CEL Agent executable.
 
 ## Message `Storage` {#Storage}
 

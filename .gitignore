@@ -31,3 +31,4 @@ out/
 
 # Generated agent binaries
 resources/windows/gen/
+resources/linux/gen/

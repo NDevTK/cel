@@ -5,8 +5,9 @@
 package host
 
 import (
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 func (*AddressPool) Validate() error     { return nil }
@@ -63,5 +64,10 @@ func (t *MachineType) Validate() error {
 			}
 		}
 	}
+	return nil
+}
+
+func (n *NestedVM) Validate() error {
+	// !!!
 	return nil
 }

@@ -365,7 +365,17 @@ func uploadStartupDependencies(ctx common.Context, s *gcp.Session) error {
 		return err
 	}
 
-	return uploadNamedResource(ctx, s, "/windows/gen/windows_amd64/cel_agent.exe", "win_agent_x64")
+	err = uploadNamedResource(ctx, s, "/windows/gen/windows_amd64/cel_agent.exe", "win_agent_x64")
+	if err != nil {
+		return err
+	}
+
+	err = uploadNamedResource(ctx, s, "/linux/instance-startup.py", "linux_startup")
+	if err != nil {
+		return err
+	}
+
+	return uploadNamedResource(ctx, s, "/linux/gen/linux_amd64/cel_agent", "linux_agent_x64")
 }
 
 // PrepBackend prepares the backend for hosting a lab. The resources deployed

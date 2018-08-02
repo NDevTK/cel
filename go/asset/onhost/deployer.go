@@ -14,9 +14,12 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
+
+	"chromium.googlesource.com/enterprise/cel/go/host"
 
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/cel"
@@ -168,18 +171,20 @@ func CreateDeployer() (*deployer, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	verString, err := getWindowsVersion()
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
 	ver := other
-	if strings.HasPrefix(verString, "10.0.") {
-		ver = win2016
-	} else if strings.HasPrefix(verString, "6.3.") {
-		ver = win2012
-	} else if strings.HasPrefix(verString, "6.1.") {
-		ver = win2008
+	if runtime.GOOS == "windows" {
+		verString, err := getWindowsVersion()
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		if strings.HasPrefix(verString, "10.0.") {
+			ver = win2016
+		} else if strings.HasPrefix(verString, "6.3.") {
+			ver = win2012
+		} else if strings.HasPrefix(verString, "6.1.") {
+			ver = win2008
+		}
 	}
 
 	return &deployer{
@@ -223,6 +228,15 @@ func getWindowsVersion() (string, error) {
 // Deploy assets on the current instance. manifestFilePath is the path
 // to the CEL manifest file.
 func (d *deployer) Deploy(manifestFile string) {
+	if runtime.GOOS == "windows" {
+		d.DeployOnNormalInstance(manifestFile)
+	} else {
+		d.DeployOnHostInstance(manifestFile)
+	}
+}
+
+// Deploy assets on a normal, i.e. not a nested VM host, instance.
+func (d *deployer) DeployOnNormalInstance(manifestFile string) {
 	log.Printf("Start on-host deployment")
 
 	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
@@ -291,6 +305,131 @@ func (d *deployer) Deploy(manifestFile string) {
 	}
 }
 
+// Deploy on an instance hosting a nested VM.
+func (d *deployer) DeployOnHostInstance(manifestFile string) {
+	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
+	status := d.getRuntimeConfigVariableValue(machineConfigVar)
+	if status == statusError {
+		d.Logf("Status of %s is %s. Nothing needs to be done.", machineConfigVar, status)
+		return
+	}
+
+	// common setup
+	if err := d.CommonSetup(); err != nil {
+		d.Logf("Common setup failed: %s", err)
+		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+		return
+	}
+
+	if err := d.setupNestedVM(manifestFile); err != nil {
+		d.Logf("Error: %s.", err)
+		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+		return
+	}
+
+	d.setRuntimeConfigVariable(machineConfigVar, statusReady)
+}
+
+func (d *deployer) setupNestedVM(manifestFile string) error {
+	if err := d.getCelConfiguration(manifestFile); err != nil {
+		return errors.Errorf("Error getting CEL configuration: %s", err)
+	}
+
+	d.configuration.AssetManifest = *d.configuration.Lab.AssetManifest
+	d.configuration.HostEnvironment = *d.configuration.Lab.HostEnvironment
+	d.configuration.Lab = lab.Lab{}
+
+	if err := d.configuration.Validate(); err != nil {
+		return errors.Errorf("Error validating configuration : %s", err)
+	}
+
+	m := d.getWindowsMachine()
+	mt := d.getMachineType(m.MachineType).Base.(*host.MachineType_NestedVm)
+
+	imageFile := path.Join(d.directory, path.Base(mt.NestedVm.Image))
+
+	// download the image file if it does not exist
+	if _, err := os.Stat(imageFile); os.IsNotExist(err) {
+		if err := d.RunCommand("gsutil", "cp", mt.NestedVm.Image, d.directory); err != nil {
+			return err
+		}
+	}
+
+	fileToRun := d.GetSupportingFilePath("setup_vm_host.sh")
+	if err := d.RunCommand("bash", fileToRun); err != nil {
+		return err
+	}
+
+	// start the VM
+	d.RunCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
+		"-net", "tap,ifname=tap0,script=no", "-usbdevice", "tablet",
+		// the default CPU is qemu64, which cannot run Win10. So we need to
+		// change it to "host"
+		"-cpu", "host",
+		"-vnc", ":20100", imageFile)
+
+	internalIP, err := d.waitForVMToStart()
+	if err != nil {
+		return err
+	}
+
+	aliasIP, err := metadata.Get("instance/network-interfaces/0/ip-aliases/0")
+	if err != nil {
+		return errors.Errorf("Error getting ip alias: %s", err)
+	}
+
+	// aliasIP is CIDR such as 10.128.0.3/32 . We need to get the IP address.
+	externalIP := strings.Split(aliasIP, "/")[0]
+	return d.RunCommand("bash", d.GetSupportingFilePath("setup_iptables.sh"), externalIP, internalIP)
+}
+
+// The output will look like this:
+// Expiry Time          MAC address        Protocol  IP address                Hostname        Client ID or DUID
+// -------------------------------------------------------------------------------------------------------------------
+// 2018-07-27 19:26:29  52:54:00:12:34:56  ipv4      192.168.122.89/24         win7            01:52:54:00:12:34:56
+// returns internalIp
+func (d *deployer) waitForVMToStart() (string, error) {
+	// wait until the VM gets its IP address
+	for i := 0; i < 10; i++ {
+		output, err := d.RunCommandWithOutput("sudo", "virsh", "net-dhcp-leases", "default")
+		if err != nil {
+			return "", err
+		}
+
+		lines := strings.Split(output, "\n")
+		if len(lines) == 5 {
+			fields := strings.Fields(lines[2])
+
+			// the format of field 4 is 192.168.122.89/24, so we need another split
+			// to get the IP address.
+			return strings.Split(fields[4], "/")[0], nil
+		}
+
+		time.Sleep(1 * time.Minute)
+	}
+
+	return "", errors.New("Time out")
+}
+
+func (d *deployer) getWindowsMachine() *asset.WindowsMachine {
+	// find the instance
+	for _, m := range d.configuration.AssetManifest.WindowsMachine {
+		if m.Name == d.instanceName {
+			return m
+		}
+	}
+	return nil
+}
+
+func (d *deployer) getMachineType(machineType string) *host.MachineType {
+	for _, mt := range d.configuration.HostEnvironment.MachineType {
+		if mt.Name == machineType {
+			return mt
+		}
+	}
+	return nil
+}
+
 func (d *deployer) CommonSetup() error {
 	// save supporting files on disk
 	for filename, file := range _escData {
@@ -305,15 +444,19 @@ func (d *deployer) CommonSetup() error {
 		}
 	}
 
-	if d.IsWindows2008() {
-		return d.RunCommand("powershell.exe", "-File",
-			d.GetSupportingFilePath("prepare_win2008.ps1"))
-	} else if d.IsWindows2016() || d.IsWindows2012() {
-		return d.RunCommand("powershell.exe", "-File",
-			d.GetSupportingFilePath("prepare_win2012.ps1"))
-	} else {
-		return errors.New("unsupported windows version")
+	if runtime.GOOS == "windows" {
+		if d.IsWindows2008() {
+			return d.RunCommand("powershell.exe", "-File",
+				d.GetSupportingFilePath("prepare_win2008.ps1"))
+		} else if d.IsWindows2016() || d.IsWindows2012() {
+			return d.RunCommand("powershell.exe", "-File",
+				d.GetSupportingFilePath("prepare_win2012.ps1"))
+		} else {
+			return errors.New("unsupported windows version")
+		}
 	}
+
+	return nil
 }
 
 // Reboot the instance.
@@ -443,6 +586,22 @@ func (d *deployer) RunCommand(name string, arg ...string) error {
 	}
 
 	return err
+}
+
+func (d *deployer) RunCommandWithOutput(name string, arg ...string) (string, error) {
+	d.Logf("Run command: %s, args: %s", name, arg)
+	output, err := exec.Command(name, arg...).CombinedOutput()
+	if output != nil {
+		d.Logf("Output of command %s, args %s is: %s", name, arg, output)
+	}
+
+	return string(output), err
+}
+
+func (d *deployer) RunCommandWithoutWait(name string, arg ...string) error {
+	d.Logf("Run command: %s, args: %s", name, arg)
+	err := exec.Command(name, arg...).Start()
+	return errors.Wrap(err, "run command")
 }
 
 // Requirement for ConfigCommand:

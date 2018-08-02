@@ -119,6 +119,11 @@ message Image {
   string url = 5 [(common.v).type = OUTPUT];
 }
 
+message NestedVM {
+  // The image to use. It's a gs://path.
+  string image = 1;
+}
+
 // Describes a type of machine (virtual or otherwise).
 //
 // Not to be confused with GCE machine type. I.e.
@@ -139,6 +144,8 @@ message MachineType {
     // An instance template to use for constructing a new GCE instance. Should
     // be a full or a partial URL.
     string instance_template = 6 [(common.v).type = REQUIRED];
+
+    NestedVM nested_vm = 7;
   }
 }
 
@@ -170,6 +177,12 @@ message Startup {
 
   // Windows CEL Agent executable.
   common.FileReference win_agent_x64 = 101 [(common.v).type = OUTPUT];
+
+  // Linux startup file.
+  common.FileReference linux_startup = 102 [(common.v).type = OUTPUT];
+
+  // Linux CEL Agent executable.
+  common.FileReference linux_agent_x64 = 103 [(common.v).type = OUTPUT];
 }
 
 // Base support resources that must exist at the time the lab assets are

@@ -14,6 +14,7 @@ import (
 
 var typeToResourceName = map[reflect.Type]string{
 	reflect.TypeOf(&compute.Network{}):                    "compute.beta.network",
+	reflect.TypeOf(&compute.Disk{}):                       "compute.beta.disk",
 	reflect.TypeOf(&compute.Firewall{}):                   "compute.beta.firewall",
 	reflect.TypeOf(&compute.Instance{}):                   "compute.beta.instance",
 	reflect.TypeOf(&onhost.RuntimeConfigConfigVariable{}): "runtimeconfig.v1beta1.variable",

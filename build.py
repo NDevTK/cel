@@ -93,6 +93,7 @@ TARGET_ARCHS = [
     # include all the platforms.
     #   ("windows", "386"),
     ("windows", "amd64"),
+    ("linux", "amd64"),
 ]
 
 
@@ -593,12 +594,16 @@ missing.
       'go/asset/onhost/static.go', 'go/asset/onhost/supporting_files/'
   ])
   for goos, goarch in TARGET_ARCHS:
-    agent_dir = 'resources/windows/gen/{}_{}'.format(goos, goarch)
+    agent_dir = 'resources/{0}/gen/{0}_{1}'.format(goos, goarch)
     env = _MergeEnv(args)
     env['GOOS'] = goos
     env['GOARCH'] = goarch
     _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=agent_dir)
-    agent_bins.append(agent_dir + "/cel_agent.exe")
+
+    if goos == 'windows':
+      agent_bins.append(agent_dir + "/cel_agent.exe")
+    else:
+      agent_bins.append(agent_dir + "/cel_agent")
 
   _BuildStep(
       [
@@ -608,7 +613,8 @@ missing.
       inp=[
           'resources/deployment/cel-base.yaml',
           'resources/deployment/gcp-builtins.host.textpb',
-          'resources/windows/instance-startup.ps1'
+          'resources/windows/instance-startup.ps1',
+          'resources/linux/instance-startup.py'
       ] + agent_bins,
       out=os.path.join(SOURCE_PATH, 'go', 'gcp', 'deploy', 'resources.gen.go'),
       env=_MergeEnv(args, target_host=True),

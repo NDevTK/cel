@@ -22,13 +22,13 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) e
 	}
 
 	if err := d.Emit(nil, &compute.Firewall{
-		Name:      n.Name + "-allow-rdp",
+		Name:      n.Name + "-allow-rdp-ssh",
 		Network:   fmt.Sprintf("$(ref.%s.selfLink)", n.Name),
 		Direction: "INGRESS",
 		Allowed: []*compute.Firewall_Allowed{
 			&compute.Firewall_Allowed{
 				IPProtocol: "tcp",
-				Ports:      []string{"3389"},
+				Ports:      []string{"3389", "22"},
 			},
 		},
 	}); err != nil {
@@ -40,7 +40,7 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) e
 		Description:  "Allow internal traffic on the network",
 		Network:      fmt.Sprintf("$(ref.%s.selfLink)", n.Name),
 		Direction:    "INGRESS",
-		SourceRanges: []string{fmt.Sprintf("$(ref.%s.IPv4Range)", n.Name)},
+		SourceRanges: []string{"10.128.0.0/9"},
 		Allowed: []*compute.Firewall_Allowed{
 			&compute.Firewall_Allowed{
 				IPProtocol: "tcp",
@@ -57,8 +57,9 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) e
 	}
 
 	return d.Emit(n, &compute.Network{
-		Name:        n.Name,
-		Description: "",
+		Name:                  n.Name,
+		Description:           "",
+		AutoCreateSubnetworks: true,
 	})
 }
 
