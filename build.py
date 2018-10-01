@@ -310,7 +310,7 @@ def _InstallGoProtoc(args):
                 go get -u github.com/golang/protobuf/protoc-gen-go
 
             Rerun this script as 'build.py deps --install' to install "protoc-gen-go"
-            automatically. You you've already done so, it may be that the GOBIN path is not
+            automatically. If you've already done so, it may be that the GOBIN path is not
             in the system.
             '''))
 
@@ -345,7 +345,7 @@ def _InstallProtoc(args):
 
 def _IsTimestampNewer(sentinel_path, *sources):
   '''\
-Returns true if any of the `sources` has a timestamp that's nevwer than
+Returns true if any of the `sources` has a timestamp that's newer than
 `sentinel_path`.
 
 All of `sources` and `sentinel_path` are full paths to files.
@@ -367,6 +367,7 @@ def _Deps(args):
   MAX_RETRY_COUNT = 3
 
   def _CheckAndInstall(command, installer, **kwargs):
+    succeeded = False
     for x in range(MAX_RETRY_COUNT):
       try:
         _RunCommand(command, **kwargs)
@@ -376,8 +377,18 @@ def _Deps(args):
           continue
         raise e
       except subprocess.CalledProcessError:
-        break
+        # protoc-gen-go can fail with 'error:no files to generate' which we
+        # consider a success
+        pass
+      succeeded = True
       break
+
+    if not succeeded:
+      raise Exception(
+          textwrap.dedent('''\
+              Failed _CheckAndInstall for `{}`.
+              It may be that the GOBIN path is not in the system PATH.
+              '''.format(command)))
 
   verbose_flag = []
   if hasattr(args, 'verbose') and args.verbose:
