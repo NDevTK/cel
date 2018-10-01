@@ -54,7 +54,7 @@ func homomorphicCopy(from reflect.Value, to reflect.Value) (err error) {
 			case string:
 				err = errors.Errorf("copying %v to %v: %s", from, to, e)
 			default:
-				err = errors.Errorf("failed to copy %v to %v")
+				err = errors.Errorf("failed to copy %v to %v", from, to)
 			}
 		}
 	}()

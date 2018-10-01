@@ -315,7 +315,7 @@ func (v *namespaceNode) MarshalJSON() ([]byte, error) {
 		}
 		return json.Marshal(v.value.Interface())
 	}
-	return nil, errors.Errorf("value at %s is not available")
+	return nil, errors.Errorf("value at %s is not available", v.location)
 }
 
 // nodeSetToRefPathList takes a set of namespace nodes and returns the

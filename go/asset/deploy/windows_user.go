@@ -73,7 +73,7 @@ func validatePassword(password string) error {
 
 	for _, ch := range password {
 		if !strings.Contains(pwChars, string(ch)) {
-			return errors.Errorf(`password cannot contain character "%s"`, ch)
+			return errors.Errorf(`password cannot contain character "%s"`, string(ch))
 		}
 	}
 	return nil

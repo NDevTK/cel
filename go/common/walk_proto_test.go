@@ -102,7 +102,7 @@ func TestWalkProto_Order(t *testing.T) {
 
 		v := TestHasGoodSlice{}
 		v.Name = "root"
-		v.Field = []*TestGoodProto{&TestGoodProto{"child1"}, &TestGoodProto{"child2"}}
+		v.Field = []*TestGoodProto{&TestGoodProto{Name: "child1"}, &TestGoodProto{Name: "child2"}}
 
 		err := WalkProtoMessage(&v, EmptyPath,
 			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) (bool, error) {

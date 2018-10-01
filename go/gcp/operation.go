@@ -204,6 +204,6 @@ func joinServiceManagementOperation(s *Session, op *servicemanagement.Operation,
 	if m, err := json.Marshal(op.Error.Details); err == nil {
 		return errors.Errorf("operation failed: %s. Details: %s", op.Error.Message, string(m))
 	} else {
-		return errors.Errorf("operation failed (%s, %s)", op.Error.Code, op.Error.Message)
+		return errors.Errorf("operation failed (%d, %s)", op.Error.Code, op.Error.Message)
 	}
 }

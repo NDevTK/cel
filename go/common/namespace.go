@@ -483,7 +483,7 @@ func (r *Namespace) TopLevel(p RefPath) (RefPath, error) {
 		p = pp
 		pp = p.Parent()
 	}
-	return nil, errors.Errorf("\"%s\" has no top level ancestors")
+	return nil, errors.Errorf("\"%s\" has no top level ancestors", p)
 }
 
 // IsTopLevel returns true if a given path refers to a top level node.
