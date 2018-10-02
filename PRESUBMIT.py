@@ -48,21 +48,19 @@ def RunGoTests(input_api, output_api):
   failures = []
 
   for o in output.splitlines():
-    d = input_api.json.loads(o)
-    if "Action" not in d or "Test" not in d:
-      continue
-    if d["Action"] != "fail":
-      continue
-    failures.append(d)
+    try:
+      d = input_api.json.loads(o)
+      if "Action" not in d or "Test" not in d:
+        continue
+      if d["Action"] != "fail":
+        continue
+      failures.append('Test {} in {}'.format(d["Test"], d["Package"]))
+    except ValueError:
+      failures.append(o)
 
   if len(failures) != 0:
     results.append(
-        output_api.PresubmitError(
-            message="Go tests failed",
-            items=[
-                'Test {} in {}'.format(d["Test"], d["Package"])
-                for d in failures
-            ]))
+        output_api.PresubmitError(message="Go tests failed", items=failures))
 
   return results
 
