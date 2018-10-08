@@ -5,9 +5,10 @@
 package asset
 
 import (
-	"github.com/pkg/errors"
 	"net"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Fields which are properly annotated and have no additional validation
@@ -171,5 +172,9 @@ func (v *RegistryValue_MultiString) Validate() error {
 			return errors.New("registry MultiString value cannot contain \\0")
 		}
 	}
+	return nil
+}
+
+func (rd *RemoteDesktopHost) Validate() error {
 	return nil
 }

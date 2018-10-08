@@ -15,6 +15,7 @@ import "schema/asset/cert.proto";
 import "schema/asset/dns.proto";
 import "schema/asset/iis.proto";
 import "schema/asset/network.proto";
+import "schema/asset/remote_desktop.proto";
 import "schema/common/validation.proto";
 
 // AssetManifest is the main container for all top level assets that go into an
@@ -72,4 +73,7 @@ message AssetManifest {
   repeated IISApplication iis_application = 300 [(common.v).type = TOPLEVEL];
   repeated IISServer iis_server = 301 [(common.v).type = TOPLEVEL];
   repeated IISSite iis_site = 302 [(common.v).type = TOPLEVEL];
+
+  // Remote Desktop
+  repeated RemoteDesktopHost remote_desktop_host = 400;
 }

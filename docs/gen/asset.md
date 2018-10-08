@@ -724,6 +724,7 @@ fields.
 * `repeated` [`asset.IISApplication`](asset.md#IISApplication) [`iis_application`](#AssetManifest.iis_application) = 300
 * `repeated` [`asset.IISServer`](asset.md#IISServer) [`iis_server`](#AssetManifest.iis_server) = 301
 * `repeated` [`asset.IISSite`](asset.md#IISSite) [`iis_site`](#AssetManifest.iis_site) = 302
+* `repeated` [`asset.RemoteDesktopHost`](asset.md#RemoteDesktopHost) [`remote_desktop_host`](#AssetManifest.remote_desktop_host) = 400
 
 ### `network` {#AssetManifest.network}
 
@@ -844,6 +845,16 @@ IIS. Use field numbers 300-399
 | Field Name | `iis_site` |
 | Type | [`asset.IISSite`](asset.md#IISSite) |
 | Repeated | Any number of instances of this type is allowed in the schema. |
+
+### `remote_desktop_host` {#AssetManifest.remote_desktop_host}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `remote_desktop_host` |
+| Type | [`asset.RemoteDesktopHost`](asset.md#RemoteDesktopHost) |
+| Repeated | Any number of instances of this type is allowed in the schema. |
+
+Remote Desktop
 
 ## Message `AttributeEntry` {#ActiveDirectoryOrganizationalUnit.AttributeEntry}
 
@@ -1675,6 +1686,43 @@ REG_QWORD
 
 REG_MULTI_SZ
 
+## Message `RemoteDesktopHost` {#RemoteDesktopHost}
+
+
+
+### Inputs for `RemoteDesktopHost`
+
+* `string` [`windows_machine`](#RemoteDesktopHost.windows_machine) = 1 (**Required**)
+* `string` [`collection_name`](#RemoteDesktopHost.collection_name) = 2 (**Required**)
+* `string` [`collection_description`](#RemoteDesktopHost.collection_description) = 3
+
+### `windows_machine` {#RemoteDesktopHost.windows_machine}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `windows_machine` |
+| Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
+| Reference | The value of this field is a named reference to a `asset.windows_machine` |
+
+Machine hosting the remote desktop . Must match the `name` of a
+WindowsMachine entry.
+
+### `collection_name` {#RemoteDesktopHost.collection_name}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `collection_name` |
+| Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
+
+### `collection_description` {#RemoteDesktopHost.collection_description}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `collection_description` |
+| Type | `string` |
+
 ## Message `UserOrGroupReference` {#UserOrGroupReference}
 
 A reference to a user or a group. Provided as a convenience for cases where
@@ -2211,4 +2259,4 @@ Values:
 
 
 ---
-Generated from `schema/asset/network.proto`, `schema/asset/machine.proto`, `schema/asset/active_directory.proto`, `schema/asset/cert.proto`, `schema/asset/dns.proto`, `schema/asset/iis.proto`, `schema/asset/asset_manifest.proto`.
+Generated from `schema/asset/network.proto`, `schema/asset/machine.proto`, `schema/asset/active_directory.proto`, `schema/asset/cert.proto`, `schema/asset/dns.proto`, `schema/asset/iis.proto`, `schema/asset/remote_desktop.proto`, `schema/asset/asset_manifest.proto`.

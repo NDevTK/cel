@@ -548,7 +548,7 @@ missing.
           'schema/asset/active_directory.proto', 'schema/asset/cert.proto',
           'schema/asset/dns.proto', 'schema/asset/iis.proto',
           'schema/asset/network.proto', 'schema/asset/asset_manifest.proto',
-          'schema/asset/machine.proto'
+          'schema/asset/machine.proto', 'schema/asset/remote_desktop.proto'
       ],
       out=os.path.join(descriptor_path, 'asset.pb'),
       env=_MergeEnv(args, target_host=True),

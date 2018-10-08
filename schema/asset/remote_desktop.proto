@@ -1,0 +1,20 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+package asset;
+
+option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
+
+import "schema/asset/machine.proto";
+import "schema/common/validation.proto";
+
+message RemoteDesktopHost {
+  // Machine hosting the remote desktop . Must match the `name` of a
+  // WindowsMachine entry.
+  string windows_machine = 1 [(common.v).ref = "asset.windows_machine"];
+
+  string collection_name = 2 [(common.v).type = REQUIRED];
+  string collection_description = 3;
+}
