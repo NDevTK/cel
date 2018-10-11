@@ -629,13 +629,18 @@ func (d *deployer) RunCommandWithoutWait(name string, arg ...string) error {
 }
 
 // Requirement for ConfigCommand:
+// exit code 100 indicating that the failure is fatal
+// exit code 150 indicating that the failure is transient/retryable
 // exit code 200 indicating that reboot is needed
 func (d *deployer) RunConfigCommand(name string, arg ...string) error {
 	if err := d.RunCommand(name, arg...); err != nil {
 		exitError, ok := err.(*exec.ExitError)
 		if ok {
-			waitStaus, ok := exitError.Sys().(syscall.WaitStatus)
-			if ok && waitStaus.ExitStatus() == 200 {
+			waitStatus, ok := exitError.Sys().(syscall.WaitStatus)
+			if ok && waitStatus.ExitStatus() == 150 {
+				// Exit code 150 means "failure is retryable."
+				return ErrTransient
+			} else if ok && waitStatus.ExitStatus() == 200 {
 				// Exit code 200 means "reboot is needed."
 				return ErrRebootNeeded
 			}

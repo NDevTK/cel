@@ -52,7 +52,6 @@ $ConfigData = @{
     )
 }
 
-				  
 $domainCred = New-Object System.Management.Automation.PSCredential ($adminName, (ConvertTo-SecureString $adminPassword -AsPlainText -Force))
 
 $dnsServerAddress = [Net.DNS]::GetHostEntry($dnsServer).AddressList.IPAddressToString
@@ -66,9 +65,20 @@ Start-DscConfiguration -Wait -Force -Path .\JoinDomain -Verbose
 
 if ($error.Count -gt $errorCount)
 {
+    $errorCode = 100
+
+    foreach ($err in $error[$errorCount..($error.Count-1)])
+    {
+        # Look for retryable errors
+        if ($err.FullyQualifiedErrorId -match "FailToJoinDomainFromWorkgroup")
+        {
+                $errorCode = 150
+        }
+    }
+
     # Exit with error code
-    Write-Host "Error Occurred"
-    Exit 100
+    Write-Host "Error Occurred, returning $errorCode"
+    Exit $errorCode
 }
 
 $m = Get-DscLocalConfigurationManager

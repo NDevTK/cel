@@ -6,5 +6,8 @@ package onhost
 
 import "github.com/pkg/errors"
 
+// The error returned by on-host resolvers to indicate that the failure is retryable.
+var ErrTransient = errors.New("transient error")
+
 // The error returned by on-host resolvers to indicate that reboot is needed.
 var ErrRebootNeeded = errors.New("reboot needed")

@@ -37,6 +37,8 @@ func (*DomainJoinResolver) ResolveOnHost(ctx common.Context, m *asset.WindowsMac
 	}
 }
 
+const maxRetries = 5
+
 func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	depVar := onhost.GetActiveDirectoryRuntimeConfigVariableName(ad.Name)
 
@@ -54,12 +56,22 @@ func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 		return errors.New("unsupported windows version")
 	}
 
-	if err := d.RunConfigCommand("powershell.exe", "-File", fileToRun,
-		"-domainName", ad.Name,
-		"-dnsServer", ad.DomainController[0].WindowsMachine,
-		"-adminName", ad.Name+"\\administrator", "-adminPassword",
-		string(ad.SafeModeAdminPassword.Final)); err != nil {
-		return err
+	retries := 0
+	for {
+		if err := d.RunConfigCommand("powershell.exe", "-File", fileToRun,
+			"-domainName", ad.Name,
+			"-dnsServer", ad.DomainController[0].WindowsMachine,
+			"-adminName", ad.Name+"\\administrator", "-adminPassword",
+			string(ad.SafeModeAdminPassword.Final)); err != nil {
+			if err == ErrTransient && retries <= maxRetries {
+				retries++
+				d.Logf("Script returned a transient error. Will wait a minute and try again.")
+				time.Sleep(1 * time.Minute)
+				continue
+			}
+			return err
+		}
+		break
 	}
 
 	d.Logf("Domain join finished")
