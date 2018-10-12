@@ -421,6 +421,30 @@ func (d *deployer) getWindowsMachine() *asset.WindowsMachine {
 	return nil
 }
 
+func (d *deployer) getActiveDirectoryDomain() *asset.ActiveDirectoryDomain {
+	m := d.getWindowsMachine()
+
+	if m != nil {
+		if m.Container != nil {
+			// machine joining a domain
+			ad, err := d.getAdDomainAsset(m.Container.GetAdDomain())
+			if err == nil {
+				return ad
+			}
+		} else {
+			// machine could be the Domain Controller
+			for _, ad := range d.configuration.AssetManifest.AdDomain {
+				if ad.DomainController[0].WindowsMachine == d.instanceName {
+					return ad
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
 func (d *deployer) getMachineType(machineType string) *host.MachineType {
 	for _, mt := range d.configuration.HostEnvironment.MachineType {
 		if mt.Name == machineType {

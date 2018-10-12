@@ -19,13 +19,18 @@ func (*RemoteDesktopHostResolver) ResolveOnHost(ctx common.Context, rd *asset.Re
 	}
 
 	if rd.WindowsMachine == d.instanceName {
-		return setupRemoteDesktopHost(d, rd)
+		ad := d.getActiveDirectoryDomain()
+		if ad == nil {
+			return errors.New("RDS only supports domain-joined servers.")
+		}
+
+		return setupRemoteDesktopHost(d, ad, rd)
 	} else {
 		return nil
 	}
 }
 
-func setupRemoteDesktopHost(d *deployer, rd *asset.RemoteDesktopHost) error {
+func setupRemoteDesktopHost(d *deployer, ad *asset.ActiveDirectoryDomain, rd *asset.RemoteDesktopHost) error {
 	fileToRun := ""
 	if d.IsWindows2012() || d.IsWindows2016() {
 		fileToRun = d.GetSupportingFilePath("create_remote_desktop_win2012.ps1")
@@ -40,6 +45,8 @@ func setupRemoteDesktopHost(d *deployer, rd *asset.RemoteDesktopHost) error {
 	}
 
 	if err := d.RunConfigCommand("powershell.exe", "-File", fileToRun,
+		"-adminName", ad.Name+"\\administrator",
+		"-adminPassword", string(ad.SafeModeAdminPassword.Final),
 		"-collectionName", rd.CollectionName,
 		"-collectionDescription", rd.CollectionDescription); err != nil {
 		return err
