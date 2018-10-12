@@ -4,19 +4,19 @@
 
 # Create a user in a domain.
 param(
-    # the FQDN name of the domain.    
+    # the FQDN name of the domain.
     [Parameter(Mandatory=$true)] [String] $domainName,
 
-    # the password of the domain administrator.    
+    # the password of the domain administrator.
     [Parameter(Mandatory=$true)] [String] $adminName,
 
-    # the name of the user to be created.    
+    # the name of the user to be created.
     [Parameter(Mandatory=$true)] [String] $adminPassword,
 
     # the name of the dns server
     [Parameter(Mandatory=$true)] [String] $dnsServer
-  )  
-  
+  )
+
 Configuration JoinDomain
 {
     param
@@ -32,7 +32,7 @@ Configuration JoinDomain
 
     Node localhost
     {
-        xComputer JoinDomain        
+        xComputer JoinDomain
         {
             Name       = $env:COMPUTERNAME
             DomainName = $domainName
@@ -81,10 +81,10 @@ if ($error.Count -gt $errorCount)
     Exit $errorCode
 }
 
-$m = Get-DscLocalConfigurationManager
-Write-Host "LCMState : $($m.LCMState)"
-if ($m.LCMState -eq "PendingReboot")
+$pendingReboot = Test-Path "HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\JoinDomain"
+Write-Host "PendingReboot : $pendingReboot"
+if ($pendingReboot)
 {
     # Exit with code 200 to indicate reboot is needed
-    Exit 200 
+    Exit 200
 }
