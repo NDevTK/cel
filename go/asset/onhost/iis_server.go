@@ -50,11 +50,8 @@ func (*IisServerResolver) ResolveOnHost(ctx common.Context, iis *asset.IISServer
 
 func createIisServer(d *deployer, iis *asset.IISServer) error {
 	fileToRun := ""
-	if d.IsWindows2012() || d.IsWindows2016() {
-		fileToRun = d.GetSupportingFilePath("create_iis_server_win2012.ps1")
-	} else if d.IsWindows2008() {
-		// TODO: add win2008 support
-		return errors.New("unsupported windows version")
+	if d.IsWindows2008() || d.IsWindows2012() || d.IsWindows2016() {
+		fileToRun = d.GetSupportingFilePath("create_iis_server.ps1")
 	} else {
 		return errors.New("unsupported windows version")
 	}
@@ -69,11 +66,8 @@ func createIisServer(d *deployer, iis *asset.IISServer) error {
 
 func createIisSite(d *deployer, iisSite *asset.IISSite) error {
 	fileToRun := ""
-	if d.IsWindows2012() || d.IsWindows2016() {
-		fileToRun = d.GetSupportingFilePath("create_iis_site_win2012.ps1")
-	} else if d.IsWindows2008() {
-		// TODO: add win2008 support
-		return errors.New("unsupported windows version")
+	if d.IsWindows2008() || d.IsWindows2012() || d.IsWindows2016() {
+		fileToRun = d.GetSupportingFilePath("create_iis_site.ps1")
 	} else {
 		return errors.New("unsupported windows version")
 	}
