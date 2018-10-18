@@ -49,10 +49,14 @@ func generatePassword() (string, error) {
 		return "", errors.Errorf("Unexpected failure reading random bytes. Got length %d. Want %d", c, len(entropy))
 	}
 
+	// Don't start with a hyphen (powershell will think it's a flag)
+	allowedPwChars := strings.Replace(pwChars, "-", "", 1)
+
 	pwd := ""
 	for _, b := range entropy {
-		idx := int(b) % len(pwChars)
-		pwd = pwd + string(pwChars[idx])
+		idx := int(b) % len(allowedPwChars)
+		pwd = pwd + string(allowedPwChars[idx])
+		allowedPwChars = pwChars
 	}
 
 	return pwd, nil
@@ -68,7 +72,7 @@ func validatePassword(password string) error {
 
 	// Strings starting with dash will be interpreted as flags by powershell
 	if strings.HasPrefix(password, "-") {
-		return errors.Errorf(`passowrd cannot start with dash`)
+		return errors.Errorf(`password cannot start with dash`)
 	}
 
 	for _, ch := range password {

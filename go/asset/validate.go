@@ -37,7 +37,14 @@ func (*Network) Validate() error                           { return nil }
 func (*NetworkInterface) Validate() error                  { return nil }
 func (*UserReference) Validate() error                     { return nil }
 func (*WindowsGroup) Validate() error                      { return nil }
-func (*WindowsUser) Validate() error                       { return nil }
+
+func (u *WindowsUser) Validate() error {
+	// Strings starting with a hyphen will be interpreted as flags by powershell
+	if strings.HasPrefix(u.Description, "-") {
+		return errors.Errorf("description '%s' cannot start with a '-'", u.Description)
+	}
+	return nil
+}
 
 func (u *UserOrGroupReference) Validate() error {
 	if u.Entity == nil {
@@ -91,6 +98,12 @@ func (a *ActiveDirectoryDomain) Validate() error {
 	if len(a.Name) > 15 && a.NetbiosName == "" {
 		return errors.New("'netbios_name' is required if 'name' is longer than 15 characters")
 	}
+
+	// Strings starting with a hyphen will be interpreted as flags by powershell
+	if strings.HasPrefix(a.NetbiosName, "-") {
+		return errors.Errorf("netbios_name '%s' cannot start with a '-'", a.NetbiosName)
+	}
+
 	return nil
 }
 
@@ -176,5 +189,12 @@ func (v *RegistryValue_MultiString) Validate() error {
 }
 
 func (rd *RemoteDesktopHost) Validate() error {
+	// Strings starting with a hyphen will be interpreted as flags by powershell
+	if strings.HasPrefix(rd.CollectionName, "-") {
+		return errors.Errorf("collection_name '%s' cannot start with a '-'", rd.CollectionName)
+	} else if strings.HasPrefix(rd.CollectionDescription, "-") {
+		return errors.Errorf("collection_description '%s' cannot start with a '-'", rd.CollectionDescription)
+	}
+
 	return nil
 }
