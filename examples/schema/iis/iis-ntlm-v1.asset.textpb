@@ -1,0 +1,102 @@
+network {
+  name: 'primary'
+}
+
+ad_domain {
+  name: 'test.com'
+  netbios_name: 'test'
+
+  domain_controller {
+    windows_machine: 'website'
+  }
+}
+
+windows_user {
+  name: 'joe'
+  description: 'A user that can authenticate on website.test.com'
+  hardcoded_password: 'AAAaaa111!!!'
+  container { ad_domain: 'test.com' }
+}
+
+# The machine where the IIS Site is hosted. Supports NTLMv1 & NTLMv2.
+windows_machine {
+  name: 'website'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+iis_server {
+  name: 'iis-server'
+  windows_machine: 'website'
+}
+
+iis_site {
+  name: 'iis-site-ntlm'
+  iis_server: 'iis-server'
+  bindings: {
+    protocol: HTTP
+  }
+  auth_type: NTLM
+}
+
+#######################################
+# Windows Server 2012 clients
+
+# A client to access the website. Will use NTLMv1 (via policy).
+windows_machine {
+  name: 'win2012-ntlm1'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+  container { ad_domain: 'test.com' }
+
+  # Set the security policy setting that will force clients to use NTLMv1.
+  # https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/network-security-lan-manager-authentication-level
+  registry_key {
+    path: 'HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Lsa'
+    value: {
+      # 0: Send LM & NTLM responses
+      #    Client devices use LM and NTLM authentication, and they never use NTLMv2 session security.
+      name: 'LmCompatibilityLevel'
+      dword_value: 0
+    }
+  }
+}
+
+# A client to access the website. Will use NTLMv2 (default).
+windows_machine {
+  name: 'win2012-ntlm2'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+  container { ad_domain: 'test.com' }
+}
+
+#######################################
+# Windows Server 2008 clients
+
+# A client to access the website. Will use NTLMv1 (via policy).
+windows_machine {
+  name: 'win2008-ntlm1'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+  container { ad_domain: 'test.com' }
+
+  # Set the security policy setting that will force clients to use NTLMv1.
+  # https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/network-security-lan-manager-authentication-level
+  registry_key {
+    path: 'HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Lsa'
+    value: {
+      # 0: Send LM & NTLM responses
+      #    Client devices use LM and NTLM authentication, and they never use NTLMv2 session security.
+      name: 'LmCompatibilityLevel'
+      dword_value: 0
+    }
+  }
+}
+
+# A client to access the website. Will use NTLMv2 (default).
+windows_machine {
+  name: 'win2008-ntlm2'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+  container { ad_domain: 'test.com' }
+}

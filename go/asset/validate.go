@@ -161,7 +161,7 @@ var validRegistryHives = [...]string{
 	"HKEY_USERS", "HKU",
 	"HKEY_CURRENT_CONFIG", "HKCC"}
 
-const registryKeyPathSeparator = "/"
+const registryKeyPathSeparator = "\\"
 
 func (r *RegistryKey) Validate() error {
 	if !strings.Contains(r.Path, registryKeyPathSeparator) {

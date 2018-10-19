@@ -1586,10 +1586,9 @@ A registry key.
 | Type | `string` |
 | Required | This field is required. It is an error to omit this field. |
 
-Path to registry key. Either backslashes or forwardslashes can be used as
-separators. The first component of the path selects the hive. The
-following values and aliases are accepted fas the first component of the
-path:
+Path to registry key. Only backslashes can be used as separators. The
+first component of the path selects the hive. The following values and
+aliases are accepted as the first component of the path:
 
     HKEY_CLASSES_ROOT, HKCR
     HKEY_CURRENT_USER, HKCU
@@ -1602,8 +1601,7 @@ E.g.:
       path: 'HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Foo\\bar'
       value: {
         name: 'x'
-        type: STRING
-        value: 'y'
+        string_value: 'y'
       }
     }
 

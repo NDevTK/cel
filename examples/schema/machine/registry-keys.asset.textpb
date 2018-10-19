@@ -1,0 +1,57 @@
+network {
+  name: 'primary'
+}
+
+# A client with a few registry_key examples
+windows_machine {
+  name: 'client2008-registry-keys'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+
+  registry_key {
+    path: 'HKEY_LOCAL_MACHINE\\System\\Foo'
+
+    value: {
+      name: 'SomeStringKey'
+      string_value: 'Some string value'
+    }
+
+    value: {
+      name: 'SomeExpandStringKey'
+      expand_string_value: 'Another string value'
+    }
+
+    value: {
+      name: 'SomeBinaryKey'
+      binary_value: '\x01\x02\x03'
+    }
+
+    value: {
+      name: 'SomeDwordKey'
+      dword_value: 123
+    }
+
+    value: {
+      name: 'SomeQwordKey'
+      qword_value: 456
+    }
+
+    value: {
+      name: 'SomeMultiStringKey'
+      multi_string_value: {
+        value: "First"
+        value: "Second"
+        value: "Third"
+      }
+    }
+  }
+
+  registry_key {
+    path: 'HKEY_LOCAL_MACHINE\\System\\Bar'
+
+    value: {
+      name: 'FooBar'
+      dword_value: 1
+    }
+  }
+}
