@@ -3,14 +3,16 @@
 # found in the LICENSE file.
 
 param (
-    [Parameter(Mandatory=$true)][String] $collectionName,
-    [Parameter(Mandatory=$true)][String] $collectionDescription
+    [Parameter(Mandatory=$true)][String] $adminName,
+    [Parameter(Mandatory=$true)][String] $adminPassword,
+
+    # ExtraArgs catches extra RDS arguments that aren't used in this script.
+    # e.g. RDS Collection name/description (unsupported in Windows Server 2008)
+    [Parameter(ValueFromRemainingArguments = $true)]$extraArgs
 )
 
 Configuration RemoteDesktopSessionHost
 {
-    Import-DscResource -Module xRemoteDesktopSessionHost
-
     Node "localhost"
     {
         LocalConfigurationManager
@@ -28,13 +30,6 @@ Configuration RemoteDesktopSessionHost
         {
             Ensure = "Present"
             Name = "Desktop-Experience"
-        }
-
-        WindowsFeature RSAT-RDS-Tools
-        {
-            Ensure = "Present"
-            Name = "RSAT-RDS-Tools"
-            IncludeAllSubFeature = $true
         }
 
         WindowsFeature RDS-Connection-Broker
@@ -62,71 +57,55 @@ RemoteDesktopSessionHost
 Set-DSCLocalConfigurationManager -Path .\RemoteDesktopSessionHost -Verbose
 
 $errorCount = $error.Count
-Start-DscConfiguration -wait -force -verbose -path .\RemoteDesktopSessionHost
-if ($error.Count -gt $errorCount)
-{
-  # Exit with error code
-  Write-Host "Error Occurred"
-  Exit 100
-}
+Start-DscConfiguration -Wait -Force -Path .\RemoteDesktopSessionHost -Verbose
 
-$m = Get-DscLocalConfigurationManager
-Write-Host "LCMState : $($m.LCMState)"
-if ($m.LCMState -eq "PendingReboot")
+$pendingReboot = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending"
+Write-Host "PendingReboot : $pendingReboot"
+if ($pendingReboot)
 {
     # Exit with code 200 to indicate reboot is needed
     Exit 200
 }
 
-# Now all the required windows features are installed, time to configure Remote
-# Desktop Host. This part needs to run using the administrator credential.
+if ($error.Count -gt $errorCount)
+{
+    # Exit with error code
+    Write-Host "Error Occurred"
+    Exit 100
+}
 
-import-module RemoteDesktop
-$localhost = [System.Net.Dns]::GetHostByName((hostname)).HostName
-$errorCount = $error.Count
+import-module RemoteDesktopServices
 
-$adminPassword ="2,b)n^!q:x~VuXck"
-$scriptDir = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
-& $scriptDir\reset_local_admin_password.ps1 -newPassword $adminPassword
-$cred = New-Object System.Management.Automation.PSCredential ("Administrator", (ConvertTo-SecureString $adminPassword -AsPlainText -Force))
+$RemoteAppProgramsPath = "RDS:\RemoteApp\RemoteAppPrograms"
 
-Invoke-Command -Credential $cred -ComputerName localhost -ScriptBlock {
-    param($localhost, $collectionName, $collectionDescription)
-    $params = @{
-        ConnectionBroker = $localhost
-        WebAccessServer = $localhost
-        SessionHost = $localhost
-        Verbose = $true
-    }
-    Write-Host "New-RDSessionDeployment. Params:`n $($params | Out-String)"
-    New-RDSessionDeployment @params
+# Check if we've already created the RemoteApp program
+if (Test-Path $RemoteAppProgramsPath\Calc)
+{
+    Write-Host "Calc is already registered as a RemoteApp program."
+    Exit 0
+}
 
-    $params = @{
-        CollectionName=$collectionName
-        SessionHost=$localhost
-        CollectionDescription = $collectionDescription
-        ConnectionBroker = $localhost
-        Verbose = $true
-    }
-    Write-Host "New-RDSessionCollection. Params:`n $($params | Out-String)"
-    New-RDSessionCollection @params
+$cred = New-Object System.Management.Automation.PSCredential ($adminName, (ConvertTo-SecureString $adminPassword -AsPlainText -Force))
 
-    $params = @{
-        Alias = "Calc"
-        DisplayName="Calc"
-        FilePath="C:\Windows\System32\calc.exe"
-        ShowInWebAccess=$true
-        CollectionName=$collectionName
-        ConnectionBroker=$localhost
-        Verbose=$true
-    }
-    Write-Host "New-RDRemoteapp. Params:`n $($params | Out-String)"
-    New-RDRemoteapp @params 
-} -ArgumentList $localhost,$collectionName,$collectionDescription
+# Allow all domain users to access the remote apps
+[Microsoft.TerminalServices.PSEngine.UserGroupHelper]::AddMember("Remote Desktop Users", "Domain Users")
+Set-Item RDS:\RDSConfiguration\SessionSettings\AllowConnections 1 -Credential $cred
+Set-Item RDS:\RDSConfiguration\Connections\RDP-Tcp\SecuritySettings\UserAuthenticationRequired 1 -Credential $cred
+
+# Add the Calc.exe app to the list of available remote apps
+$params = @{
+    Name = "Calc"
+    ApplicationPath = "C:\Windows\System32\calc.exe"
+    ShowInWebAccess = 1
+    Credential = $cred
+    Verbose = $true
+}
+Write-Host "New-Item in RemoteAppPrograms. Params:`n $($params | Out-String)"
+New-Item $RemoteAppProgramsPath @params
 
 if ($error.Count -gt $errorCount)
 {
-  # Exit with error code
-  Write-Host "Error Occurred during remote desktop configuration"
-  Exit 100
+    # Exit with error code
+    Write-Host "Error Occurred during remote desktop configuration"
+    Exit 100
 }

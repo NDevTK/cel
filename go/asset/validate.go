@@ -196,5 +196,9 @@ func (rd *RemoteDesktopHost) Validate() error {
 		return errors.Errorf("collection_description '%s' cannot start with a '-'", rd.CollectionDescription)
 	}
 
+	if len(rd.CollectionName) > 15 {
+		return errors.New("'collection_name' can't be longer than 15 characters")
+	}
+
 	return nil
 }

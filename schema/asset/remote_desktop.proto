@@ -15,6 +15,14 @@ message RemoteDesktopHost {
   // WindowsMachine entry.
   string windows_machine = 1 [(common.v).ref = "asset.windows_machine"];
 
-  string collection_name = 2 [(common.v).type = REQUIRED];
+  // The name of the collection to create. This is required for
+  // Windows Server >= 2012 but is ignored for older versions.
+  // RDS Collections were introduced in Windows Server 2012.
+  // More info:
+  // https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/rds-create-collection
+  string collection_name = 2;
+
+  // The description of the collection to create. This is optional for
+  // Windows Server >= 2012 and is ignored for older versions.
   string collection_description = 3;
 }

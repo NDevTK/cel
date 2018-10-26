@@ -1693,7 +1693,7 @@ REG_MULTI_SZ
 ### Inputs for `RemoteDesktopHost`
 
 * `string` [`windows_machine`](#RemoteDesktopHost.windows_machine) = 1 (**Required**)
-* `string` [`collection_name`](#RemoteDesktopHost.collection_name) = 2 (**Required**)
+* `string` [`collection_name`](#RemoteDesktopHost.collection_name) = 2
 * `string` [`collection_description`](#RemoteDesktopHost.collection_description) = 3
 
 ### `windows_machine` {#RemoteDesktopHost.windows_machine}
@@ -1714,7 +1714,12 @@ WindowsMachine entry.
 |----------|----------|
 | Field Name | `collection_name` |
 | Type | `string` |
-| Required | This field is required. It is an error to omit this field. |
+
+The name of the collection to create. This is required for
+Windows Server >= 2012 but is ignored for older versions.
+RDS Collections were introduced in Windows Server 2012.
+More info:
+https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/rds-create-collection
 
 ### `collection_description` {#RemoteDesktopHost.collection_description}
 
@@ -1722,6 +1727,9 @@ WindowsMachine entry.
 |----------|----------|
 | Field Name | `collection_description` |
 | Type | `string` |
+
+The description of the collection to create. This is optional for
+Windows Server >= 2012 and is ignored for older versions.
 
 ## Message `UserOrGroupReference` {#UserOrGroupReference}
 

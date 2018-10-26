@@ -1,0 +1,90 @@
+network {
+  name: 'primary'
+}
+
+#######################################
+# Remote Desktop Services in a Windows Server 2012 domain
+
+ad_domain {
+  name: 'domain2012.com'
+  netbios_name: 'domain2012'
+
+  domain_controller {
+    windows_machine: 'domain2012-dc'
+  }
+}
+
+windows_user {
+  name: 'joe'
+  container { ad_domain: 'domain2012.com' }
+}
+
+# A Windows machine.
+windows_machine {
+  name: 'domain2012-dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+remote_desktop_host {
+  windows_machine: 'domain2012-dc'
+  collection_name: 'CollectionName'
+  collection_description: 'Collection description'
+}
+
+# A client
+windows_machine {
+  name: 'domain2012-client'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+
+  container { ad_domain: 'domain2012.com' }
+}
+
+remote_desktop_host {
+  windows_machine: 'domain2012-client'
+  collection_name: 'CollectionName2'
+  collection_description: 'Other Collection description'
+}
+
+
+#######################################
+# Remote Desktop Services in a Windows Server 2008 domain
+
+ad_domain {
+  name: 'domain2008.com'
+  netbios_name: 'domain2008'
+
+  domain_controller {
+    windows_machine: 'domain2008-dc'
+  }
+}
+
+windows_user {
+  name: 'jane'
+  container { ad_domain: 'domain2008.com' }
+}
+
+# A Windows machine.
+windows_machine {
+  name: 'domain2008-dc'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+}
+
+remote_desktop_host {
+  windows_machine: 'domain2008-dc'
+}
+
+# A client
+windows_machine {
+  name: 'domain2008-client'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+
+  container { ad_domain: 'domain2008.com' }
+}
+
+remote_desktop_host {
+  windows_machine: 'domain2008-client'
+}

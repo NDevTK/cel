@@ -33,13 +33,12 @@ func (*RemoteDesktopHostResolver) ResolveOnHost(ctx common.Context, rd *asset.Re
 func setupRemoteDesktopHost(d *deployer, ad *asset.ActiveDirectoryDomain, rd *asset.RemoteDesktopHost) error {
 	fileToRun := ""
 	if d.IsWindows2012() || d.IsWindows2016() {
+		if len(rd.CollectionName) <= 0 {
+			return errors.New("collection_name is required for RDS on Windows Server >= 2012.")
+		}
 		fileToRun = d.GetSupportingFilePath("create_remote_desktop_win2012.ps1")
 	} else if d.IsWindows2008() {
-		// TODO: The powershell script, create_remote_desktop_win2008.ps1, doesn't work because
-		// module RemoteDesktop is not available on Windows 2008R2. The solution is to
-		// use the steps documented in
-		// https://blogs.technet.microsoft.com/ptsblog/2011/12/09/extending-remote-desktop-services-using-powershell/
-		return errors.New("unsupported windows version")
+		fileToRun = d.GetSupportingFilePath("create_remote_desktop_win2008.ps1")
 	} else {
 		return errors.New("unsupported windows version")
 	}
