@@ -424,22 +424,9 @@ func (d *deployer) getWindowsMachine() *asset.WindowsMachine {
 func (d *deployer) getActiveDirectoryDomain() *asset.ActiveDirectoryDomain {
 	m := d.getWindowsMachine()
 
-	if m != nil {
-		if m.Container != nil {
-			// machine joining a domain
-			ad, err := d.getAdDomainAsset(m.Container.GetAdDomain())
-			if err == nil {
-				return ad
-			}
-		} else {
-			// machine could be the Domain Controller
-			for _, ad := range d.configuration.AssetManifest.AdDomain {
-				if ad.DomainController[0].WindowsMachine == d.instanceName {
-					return ad
-				}
-			}
-		}
-
+	ad, err := d.configuration.AssetManifest.FindActiveDirectoryDomainFor(m)
+	if err == nil {
+		return ad
 	}
 
 	return nil
@@ -654,13 +641,7 @@ func (d *deployer) RunConfigCommand(name string, arg ...string) error {
 
 // getAdDomainAsset returns the ActiveDirectoryDomain asset of the given domain.
 func (d *deployer) getAdDomainAsset(domainName string) (*asset.ActiveDirectoryDomain, error) {
-	for _, ad := range d.configuration.AssetManifest.AdDomain {
-		if ad.Name == domainName {
-			return ad, nil
-		}
-	}
-
-	return nil, errors.Errorf("cannot find asset for domain: %s", domainName)
+	return d.configuration.AssetManifest.FindActiveDirectoryDomain(domainName)
 }
 
 // waitForDependency waits for the dependency to be ready.

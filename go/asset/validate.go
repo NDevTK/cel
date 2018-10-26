@@ -25,7 +25,6 @@ func (*ActiveDirectoryGroupPolicyLink) Validate() error    { return nil }
 func (*ActiveDirectoryOrganizationalUnit) Validate() error { return nil }
 func (*ActiveDirectoryRegistryPolicy) Validate() error     { return nil }
 func (*ActiveDirectoryRegistryPrefPolicy) Validate() error { return nil }
-func (*AssetManifest) Validate() error                     { return nil }
 func (*Certificate) Validate() error                       { return nil }
 func (*GroupReference) Validate() error                    { return nil }
 func (*IISApplication) Validate() error                    { return nil }
@@ -43,6 +42,23 @@ func (u *WindowsUser) Validate() error {
 	if strings.HasPrefix(u.Description, "-") {
 		return errors.Errorf("description '%s' cannot start with a '-'", u.Description)
 	}
+	return nil
+}
+
+// Validate that all assets are coherent with one another.
+func (a *AssetManifest) Validate() error {
+	for _, remoteDesktopHost := range a.RemoteDesktopHost {
+		if err := remoteDesktopHost.ValidateWithAssetManifest(a); err != nil {
+			return err
+		}
+	}
+
+	for _, iisSite := range a.IisSite {
+		if err := iisSite.ValidateWithAssetManifest(a); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -198,6 +214,43 @@ func (rd *RemoteDesktopHost) Validate() error {
 
 	if len(rd.CollectionName) > 15 {
 		return errors.New("'collection_name' can't be longer than 15 characters")
+	}
+
+	return nil
+}
+
+func (rd *RemoteDesktopHost) ValidateWithAssetManifest(a *AssetManifest) error {
+	// RDS is not supported outside of a domain
+	windows_machine, err := a.FindWindowsMachine(rd.WindowsMachine)
+	if err != nil {
+		return err
+	}
+
+	_, err = a.FindActiveDirectoryDomainFor(windows_machine)
+	if err != nil {
+		return errors.Errorf("RDS is not supported on machine '%s' (not in a domain)", rd.WindowsMachine)
+	}
+
+	return nil
+}
+
+func (s *IISSite) ValidateWithAssetManifest(a *AssetManifest) error {
+	// Kerberos is not supported outside of a domain
+	if s.AuthType == IISAuthType_KERBEROS || s.AuthType == IISAuthType_KERBEROS_NEGOTIABLE2 {
+		iis_server, err := a.FindIISServer(s.IisServer)
+		if err != nil {
+			return err
+		}
+
+		windows_machine, err := a.FindWindowsMachine(iis_server.WindowsMachine)
+		if err != nil {
+			return err
+		}
+
+		_, err = a.FindActiveDirectoryDomainFor(windows_machine)
+		if err != nil {
+			return errors.Errorf("Kerberos is unsupported for site %s on machine '%s' (not in a domain)", s.Name, windows_machine.Name)
+		}
 	}
 
 	return nil
