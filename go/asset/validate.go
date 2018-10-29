@@ -30,7 +30,6 @@ func (*GroupReference) Validate() error                    { return nil }
 func (*IISApplication) Validate() error                    { return nil }
 func (*IISBindings) Validate() error                       { return nil }
 func (*IISServer) Validate() error                         { return nil }
-func (*IISSite) Validate() error                           { return nil }
 func (*Machine) Validate() error                           { return nil }
 func (*Network) Validate() error                           { return nil }
 func (*NetworkInterface) Validate() error                  { return nil }
@@ -253,5 +252,12 @@ func (s *IISSite) ValidateWithAssetManifest(a *AssetManifest) error {
 		}
 	}
 
+	return nil
+}
+
+func (s *IISSite) Validate() error {
+	if s.Bindings.Protocol == Protocol_HTTPS {
+		return errors.Errorf("HTTPS is not yet supported for IIS Sites")
+	}
 	return nil
 }

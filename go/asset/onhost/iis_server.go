@@ -5,6 +5,8 @@
 package onhost
 
 import (
+	"fmt"
+
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"github.com/pkg/errors"
@@ -72,9 +74,24 @@ func createIisSite(d *deployer, iisSite *asset.IISSite) error {
 		return errors.New("unsupported windows version")
 	}
 
+	port := iisSite.Bindings.Port
+
+	if port == 0 {
+		switch iisSite.Bindings.Protocol {
+		case asset.Protocol_HTTP:
+			port = 80
+		case asset.Protocol_HTTPS:
+			port = 443
+		default:
+			return errors.New("can't find default port for unsupported protocol")
+		}
+	}
+
 	if err := d.RunConfigCommand("powershell.exe", "-File", fileToRun,
 		"-Name", iisSite.Name,
-		"-Protocol", iisSite.Bindings.Protocol.String()); err != nil {
+		"-Protocol", iisSite.Bindings.Protocol.String(),
+		"-Port", fmt.Sprintf("%d", port),
+		"-Authentication", iisSite.AuthType.String()); err != nil {
 		return err
 	}
 

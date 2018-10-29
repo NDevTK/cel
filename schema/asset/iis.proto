@@ -71,6 +71,10 @@ message IISSite {
   // While it is legal, avoid nesting sites and applications within a single
   // directory tree.
   common.FileReference contents = 4;
+
+  // Authentication to use for the site. Can be NONE, NTLM or KERBEROS. If left
+  // unset, this will default to NONE. Kerberos can only be used in a domain.
+  IISAuthType auth_type = 5;
 }
 
 message IISApplication {
@@ -96,4 +100,19 @@ message IISApplication {
   // |web_config_file| if there is one, a web config file found in the top
   // level of |contents|.
   string web_config_string = 5;
+}
+
+// List of IIS Authentication Types.
+enum IISAuthType {
+  // Anonymous Authentication
+  NONE = 0;
+
+  // NTLM Authentication
+  NTLM = 1;
+
+  // Kerberos Authentication with NTLM fallback (standard Negotiable provider)
+  KERBEROS = 2;
+
+  // Explicit Kerberos Authentication w/o NTLM fallback (Negotiable 2 provider)
+  KERBEROS_NEGOTIABLE2 = 3;
 }

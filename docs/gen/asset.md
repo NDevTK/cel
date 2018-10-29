@@ -1346,6 +1346,7 @@ A single web site.
 * `string` [`iis_server`](#IISSite.iis_server) = 2 (**Required**)
 * [`asset.IISBindings`](asset.md#IISBindings) [`bindings`](#IISSite.bindings) = 3
 * [`common.FileReference`](common.md#FileReference) [`contents`](#IISSite.contents) = 4
+* [`asset.IISAuthType`](asset.md#IISAuthType) [`auth_type`](#IISSite.auth_type) = 5
 
 ### `name` {#IISSite.name}
 
@@ -1391,6 +1392,16 @@ this site. The entire subtree will be copied over to the target host.
 
 While it is legal, avoid nesting sites and applications within a single
 directory tree.
+
+### `auth_type` {#IISSite.auth_type}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `auth_type` |
+| Type | [`asset.IISAuthType`](asset.md#IISAuthType) |
+
+Authentication to use for the site. Can be NONE, NTLM or KERBEROS. If left
+unset, this will default to NONE. Kerberos can only be used in a domain.
 
 ## Message `Machine` {#Machine}
 
@@ -2252,6 +2263,37 @@ Values:
 * "`REPLACE`"
 * "`UPDATE`"
 * "`DELETE`"
+
+## Enumeration `IISAuthType` {#IISAuthType}
+
+List of IIS Authentication Types.
+
+
+Values:
+* ["`NONE`"](#IISAuthType.NONE)
+* ["`NTLM`"](#IISAuthType.NTLM)
+* ["`KERBEROS`"](#IISAuthType.KERBEROS)
+* ["`KERBEROS_NEGOTIABLE2`"](#IISAuthType.KERBEROS_NEGOTIABLE2)
+
+### "`NONE`" {#IISAuthType.NONE}
+
+Anonymous Authentication
+
+
+### "`NTLM`" {#IISAuthType.NTLM}
+
+NTLM Authentication
+
+
+### "`KERBEROS`" {#IISAuthType.KERBEROS}
+
+Kerberos Authentication with NTLM fallback (standard Negotiable provider)
+
+
+### "`KERBEROS_NEGOTIABLE2`" {#IISAuthType.KERBEROS_NEGOTIABLE2}
+
+Explicit Kerberos Authentication w/o NTLM fallback (Negotiable 2 provider)
+
 
 ## Enumeration `Protocol` {#Protocol}
 

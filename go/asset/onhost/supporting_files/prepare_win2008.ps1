@@ -52,4 +52,4 @@ install-module-if-not-installed -Name xActiveDirectory -RequiredVersion 2.19.0.0
 install-module-if-not-installed -Name xComputerManagement -RequiredVersion 4.1.0.0
 install-module-if-not-installed -Name xNetworking -RequiredVersion 5.7.0.0
 install-module-if-not-installed -Name xRemoteDesktopSessionHost -RequiredVersion 1.6.0.0
-install-module-if-not-installed -Name xWebAdministration -RequiredVersion 2.0.0.0
+install-module-if-not-installed -Name xWebAdministration -RequiredVersion 2.2.0.0
