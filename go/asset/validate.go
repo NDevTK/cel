@@ -135,6 +135,9 @@ func (w *WindowsMachine) Validate() error {
 		return errors.Errorf("at least one 'network_interface' is required for WindowsMachine named %s", w.Name)
 	case w.Container != nil && w.Container.GetWindowsMachine() != "":
 		return errors.Errorf("'container' cannot specify 'windows_machine' for WindowsMachine named %s", w.Name)
+	case len(w.Name) > 15:
+		return errors.Errorf("WindowsMachine name %s is too long. Its length is %d, while the max length allowed is 15.",
+			w.Name, len(w.Name))
 	}
 
 	return nil

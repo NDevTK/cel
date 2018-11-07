@@ -24,8 +24,9 @@ var projectPath = common.RefPathMust("host.project")
 var serviceAccountPath = common.RefPathMust("host.resources.service_account")
 var storageBucketPath = common.RefPathMust("host.storage.bucket")
 
-const windowsStartupScriptMetadataKey = "windows-startup-script-url"
-const linuxStartupScriptMetadataKey = "startup-script-url"
+const windowsStartupScriptUrlMetadataKey = "windows-startup-script-url"
+const linuxStartupScriptUrlMetadataKey = "startup-script-url"
+const linuxShutdownScriptMetadataKey = "shutdown-script"
 
 type windowsMachine struct{}
 
@@ -63,7 +64,7 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.Win
 	d := GetDeploymentManifest()
 
 	// add runtime config variable for this windows machine
-	variableName := onhost.GetActiveDirectoryRuntimeConfigVariableName(m.Name)
+	variableName := onhost.GetWindowsMachineRuntimeConfigVariableName(m.Name)
 	if err := d.Emit(nil, &onhost.RuntimeConfigConfigVariable{
 		Name:     "runtimeconfigVariable_" + variableName,
 		Parent:   onhost.RuntimeconfigVariableParent,
@@ -130,11 +131,35 @@ func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine) error {
 		common.Must(ctx.Get(storageBucketPath)).(string),
 		common.Must(ctx.Get(linuxStartupScriptPath)).(*common.FileReference).ObjectReference)
 
+	// script to tell KVM to shutdown the VM
+	shutdownScript := `#!/bin/bash
+
+# Send monitor command to kvm to shutdown the VM
+nc 127.0.0.1 25555 <<JSON
+{ "execute": "qmp_capabilities" }
+{ "execute": "system_powerdown" }
+JSON
+
+# wait until kvm stops
+while true; do
+  kvm_count=$(ps ax | grep kvm | wc -l)
+  echo "kvm process count: $kvm_count"
+  if [ "$kvm_count" = "1" ]; then
+	break
+  fi
+
+  sleep 1
+done
+`
 	md := &compute.Metadata{
 		Items: []*compute.Metadata_Items{
 			{
-				Key:   linuxStartupScriptMetadataKey,
+				Key:   linuxStartupScriptUrlMetadataKey,
 				Value: ss,
+			},
+			{
+				Key:   linuxShutdownScriptMetadataKey,
+				Value: shutdownScript,
 			},
 			{
 				// without this, SSH to the instance won't work
@@ -207,7 +232,7 @@ func resolveNormalMachineType(ctx common.Context, m *asset.WindowsMachine) error
 	md := &compute.Metadata{
 		Items: []*compute.Metadata_Items{
 			&compute.Metadata_Items{
-				Key:   windowsStartupScriptMetadataKey,
+				Key:   windowsStartupScriptUrlMetadataKey,
 				Value: ss,
 			},
 		},

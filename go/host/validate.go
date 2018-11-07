@@ -68,6 +68,5 @@ func (t *MachineType) Validate() error {
 }
 
 func (n *NestedVM) Validate() error {
-	// !!!
 	return nil
 }

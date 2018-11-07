@@ -121,7 +121,11 @@ message Image {
 
 message NestedVM {
   // The image to use. It's a gs://path.
-  string image = 1;
+  string image = 1 [(common.v).type = REQUIRED];
+
+  // The user name & password used to log in through ssh.
+  string user_name = 2;
+  string password = 3;
 }
 
 // Describes a type of machine (virtual or otherwise).

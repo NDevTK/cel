@@ -7,10 +7,10 @@ param(
     [Parameter(Mandatory=$true)] [String] $adminName,
     [Parameter(Mandatory=$true)] [String] $adminPassword,
 
-    # the name of the dns server
-    [Parameter(Mandatory=$true)] [String] $dnsServer
-  )  
-  
+    # the address the dns server
+    [Parameter(Mandatory=$true)] [String] $dnsServerAddress
+  )
+
 Configuration JoinDomain
 {
     param
@@ -56,22 +56,6 @@ $ConfigData = @{
 
 $domainCred = New-Object System.Management.Automation.PSCredential ($adminName, (ConvertTo-SecureString $adminPassword -AsPlainText -Force))
 
-$errorCount = $error.Count
-$dnsServerAddress = (Resolve-DNSName -Name $dnsServer -Type A).IPAddress
-
-if ($error.Count -gt $errorCount)
-{
-    if ($error[-1].FullyQualifiedErrorId -match "ERROR_TIMEOUT,Microsoft.DnsClient.Commands.ResolveDnsName")
-    {
-        # The DomainController might be temporarily down - return 150 to try again later.
-        Write-Host "Transient Error Occurred, returning 150"
-        Exit 150
-    }
-
-    Write-Host "Error Occurred, returning 100"
-    Exit 100
-}
-
 JoinDomain -ConfigurationData $ConfigData -credential $domainCred
 
 # Join the domain
@@ -84,10 +68,16 @@ if ($error.Count -gt $errorCount)
 
     foreach ($err in $error[$errorCount..($error.Count-1)])
     {
+        Write-Host "FullyQualifiedErrorId: $($err.FullyQualifiedErrorId)"
+
         # Look for retryable errors
         if ($err.FullyQualifiedErrorId -match "FailToJoinDomainFromWorkgroup")
         {
-                $errorCode = 150
+            $errorCode = 150
+        } 
+        elseif ($err.FullyQualifiedErrorId -match "PathNotFound,Microsoft.PowerShell.Commands.GetItemPropertyCommand") 
+        {
+            $errorCode=150
         }
     }
 

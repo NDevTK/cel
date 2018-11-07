@@ -335,6 +335,8 @@ be a full or a partial URL.
 ### Inputs for `NestedVM`
 
 * `string` [`image`](#NestedVM.image) = 1
+* `string` [`user_name`](#NestedVM.user_name) = 2
+* `string` [`password`](#NestedVM.password) = 3
 
 ### `image` {#NestedVM.image}
 
@@ -344,6 +346,20 @@ be a full or a partial URL.
 | Type | `string` |
 
 The image to use. It's a gs://path.
+
+### `user_name` {#NestedVM.user_name}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `user_name` |
+| Type | `string` |
+
+### `password` {#NestedVM.password}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `password` |
+| Type | `string` |
 
 ## Message `Project` {#Project}
 

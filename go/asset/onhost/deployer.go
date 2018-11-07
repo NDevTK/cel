@@ -8,8 +8,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -30,6 +32,8 @@ import (
 	"cloud.google.com/go/logging"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
@@ -39,6 +43,9 @@ import (
 const statusError = "error"
 const statusReady = "ready"
 const statusInProgress = "in-progress"
+
+// the working directory on the nested VM
+const workingDirectoryOnNestedVM = "c:\\cel"
 
 type windowsVersion int
 
@@ -67,6 +74,15 @@ type deployer struct {
 	winVersion windowsVersion
 
 	configuration *cel.Configuration
+
+	// The nested VM if this instance is a host.
+	nestedVM *host.NestedVM
+
+	// The internal IP addresses for hosted VM. E.g. 192.168.122.89
+	internalIP string
+
+	// The external IP addresses for hosted VM. E.g. 10.128.0.2
+	externalIP string
 }
 
 // Implement interface common.context
@@ -119,7 +135,7 @@ func (d *deployer) Get(p common.RefPath) (interface{}, error) {
 }
 
 func (d *deployer) Indirect(m proto.Message, f string) (interface{}, error) {
-	return nil, nil
+	return d.configuration.GetNamespace().Indirect(m, f)
 }
 
 func (d *deployer) Close() error {
@@ -173,17 +189,9 @@ func CreateDeployer() (*deployer, error) {
 
 	ver := other
 	if runtime.GOOS == "windows" {
-		verString, err := getWindowsVersion()
+		ver, err = getWindowsVersionByVerCommand()
 		if err != nil {
 			return nil, errors.WithStack(err)
-		}
-
-		if strings.HasPrefix(verString, "10.0.") {
-			ver = win2016
-		} else if strings.HasPrefix(verString, "6.3.") {
-			ver = win2012
-		} else if strings.HasPrefix(verString, "6.1.") {
-			ver = win2008
 		}
 	}
 
@@ -199,30 +207,44 @@ func CreateDeployer() (*deployer, error) {
 	}, nil
 }
 
-// getWindowsVersion parses the output of the "ver" command to get the Windows version string.
+// versionString is the output of running "ver"
+func getWindowsVersion(verOutput string) (windowsVersion, error) {
+	ver := other
+
+	// remove newlines from the output
+	outStr := strings.Replace(verOutput, "\r\n", "", -1)
+	tmp1 := strings.Index(outStr, "[Version ")
+	tmp2 := strings.Index(outStr, "]")
+	if tmp1 == -1 || tmp2 == -1 {
+		return ver, fmt.Errorf("The output of 'ver' cannot be parsed: %s", outStr)
+	}
+
+	verString := outStr[tmp1+9 : tmp2]
+	if strings.HasPrefix(verString, "10.0.") {
+		ver = win2016
+	} else if strings.HasPrefix(verString, "6.3.") {
+		ver = win2012
+	} else if strings.HasPrefix(verString, "6.1.") {
+		ver = win2008
+	}
+	return ver, nil
+}
+
+// getWindowsVersionByVerCommand parses the output of the "ver" command to get the Windows version string.
 // The output of ver looks like this:
 //   Microsoft Windows [Version 6.1.7601]
 // The return value will be "6.1.7601"
-func getWindowsVersion() (string, error) {
+func getWindowsVersionByVerCommand() (windowsVersion, error) {
 	cmd := exec.Command("cmd", "ver")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
 	err := cmd.Run()
 	if err != nil {
-		return "", err
+		return other, err
 	}
 
-	// remove newlines from the output
-	outStr := strings.Replace(out.String(), "\r\n", "", -1)
-	tmp1 := strings.Index(outStr, "[Version ")
-	tmp2 := strings.Index(outStr, "]")
-	if tmp1 == -1 || tmp2 == -1 {
-		return "", fmt.Errorf("The output of 'ver' cannot be parsed: %s", outStr)
-	}
-
-	ver := outStr[tmp1+9 : tmp2]
-	return ver, nil
+	return getWindowsVersion(out.String())
 }
 
 // Deploy assets on the current instance. manifestFilePath is the path
@@ -231,7 +253,7 @@ func (d *deployer) Deploy(manifestFile string) {
 	if runtime.GOOS == "windows" {
 		d.DeployOnNormalInstance(manifestFile)
 	} else {
-		d.DeployOnHostInstance(manifestFile)
+		d.DeployOnVMHostInstance(manifestFile)
 	}
 }
 
@@ -271,42 +293,11 @@ func (d *deployer) DeployOnNormalInstance(manifestFile string) {
 		return
 	}
 
-	// Add additional dependency
-	if err := common.ApplyResolvers(d, d.configuration.GetNamespace(), common.AdditionalDependencyResolverKind); err != nil {
-		d.Logf("Error adding additonal dependency : %s", err)
-		d.setRuntimeConfigVariable(machineConfigVar, statusError)
-	}
-	if err := d.configuration.Validate(); err != nil {
-		d.Logf("Error validating configuration after adding additional dependency : %s", err)
-		d.setRuntimeConfigVariable(machineConfigVar, statusError)
-		return
-	}
-
-	// Call on-host resolvers to create on-host assets
-	d.Logf("Call resolvers")
-	if err := common.ApplyResolvers(d, d.configuration.GetNamespace(),
-		common.OnHostResolverKind); err != nil {
-		if err == ErrRebootNeeded {
-			// Reboot is needed. In this case, we don't change the config status.
-			// After reboot, the configuration will be applied again, and this time since
-			// the asset is already configured, RebootNeeded will not be returned.
-			d.Logf("Reboot needed. Continue configuration after reboot.")
-			if err := d.Reboot(); err != nil {
-				d.setRuntimeConfigVariable(machineConfigVar, statusError)
-				d.Logf("Failed to reboot. error: %s", err)
-			}
-		} else {
-			d.setRuntimeConfigVariable(machineConfigVar, statusError)
-			d.Logf("Setup Instance failed. error: %s", err)
-		}
-	} else {
-		d.setRuntimeConfigVariable(machineConfigVar, statusReady)
-		d.Logf("Everything is OK.")
-	}
+	d.createOnHostAssets()
 }
 
 // Deploy on an instance hosting a nested VM.
-func (d *deployer) DeployOnHostInstance(manifestFile string) {
+func (d *deployer) DeployOnVMHostInstance(manifestFile string) {
 	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
 	status := d.getRuntimeConfigVariableValue(machineConfigVar)
 	if status == statusError {
@@ -327,9 +318,61 @@ func (d *deployer) DeployOnHostInstance(manifestFile string) {
 		return
 	}
 
-	d.setRuntimeConfigVariable(machineConfigVar, statusReady)
+	if status == statusReady {
+		return
+	}
+
+	err := d.commonSetupOnNestedVM()
+	if err != nil {
+		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+		return
+	}
+
+	d.createOnHostAssets()
 }
 
+// create on-host assets
+func (d *deployer) createOnHostAssets() {
+	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
+
+	// Add additional dependency
+	if err := common.ApplyResolvers(d, d.configuration.GetNamespace(), common.AdditionalDependencyResolverKind); err != nil {
+		d.Logf("Error adding additonal dependency : %s", err)
+		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+		return
+	}
+	if err := d.configuration.Validate(); err != nil {
+		d.Logf("Error validating configuration after adding additional dependency : %s", err)
+		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+		return
+	}
+
+	// Call on-host resolvers to create on-host assets
+	d.Logf("Call resolvers")
+	if err := common.ApplyResolvers(d, d.configuration.GetNamespace(),
+		common.OnHostResolverKind); err != nil {
+		if err == ErrRebootNeeded {
+			// Reboot is needed. In this case, we don't change the config status.
+			// After reboot, the configuration will be applied again, and this time since
+			// the asset is already configured, RebootNeeded will not be returned.
+			d.Logf("Reboot needed. Continue configuration after reboot.")
+			if err := d.Reboot(); err != nil {
+				d.setRuntimeConfigVariable(machineConfigVar, statusError)
+				d.Logf("Failed to reboot. error: %s", err)
+				return
+			}
+		} else {
+			d.setRuntimeConfigVariable(machineConfigVar, statusError)
+			d.Logf("Setup Instance failed. error: %s", err)
+			return
+		}
+	} else {
+		d.setRuntimeConfigVariable(machineConfigVar, statusReady)
+		d.Logf("Everything is OK.")
+	}
+}
+
+// Setup nested VM, mainly the virtual network setup. This step is always needed.
 func (d *deployer) setupNestedVM(manifestFile string) error {
 	if err := d.getCelConfiguration(manifestFile); err != nil {
 		return errors.Errorf("Error getting CEL configuration: %s", err)
@@ -345,6 +388,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 
 	m := d.getWindowsMachine()
 	mt := d.getMachineType(m.MachineType).Base.(*host.MachineType_NestedVm)
+	d.nestedVM = mt.NestedVm
 
 	imageFile := path.Join(d.directory, path.Base(mt.NestedVm.Image))
 
@@ -366,12 +410,16 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 		// the default CPU is qemu64, which cannot run Win10. So we need to
 		// change it to "host"
 		"-cpu", "host",
+		// the monitor so that we can tell kvm to cleanly shutdown the VM.
+		"-qmp", "tcp:127.0.0.1:25555,server,nowait",
 		"-vnc", ":20100", imageFile)
 
 	internalIP, err := d.waitForVMToStart()
 	if err != nil {
 		return err
 	}
+
+	d.internalIP = internalIP
 
 	aliasIP, err := metadata.Get("instance/network-interfaces/0/ip-aliases/0")
 	if err != nil {
@@ -380,6 +428,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 
 	// aliasIP is CIDR such as 10.128.0.3/32 . We need to get the IP address.
 	externalIP := strings.Split(aliasIP, "/")[0]
+	d.externalIP = externalIP
 	return d.RunCommand("bash", d.GetSupportingFilePath("setup_iptables.sh"), externalIP, internalIP)
 }
 
@@ -476,7 +525,14 @@ func (d *deployer) Reboot() error {
 
 	// Exit code 1190 means "A system shutdown has already been scheduled."
 	// This case should be treated as success
-	if err := d.RunCommand("shutdown", "/r", "/t", "0"); err != nil {
+	var err error
+	if d.nestedVM == nil {
+		err = d.RunCommand("shutdown", "/r", "/t", "0")
+	} else {
+		_, err = d.sshRunCommand("shutdown /r /t 0")
+	}
+
+	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			waitStaus, ok := exitError.Sys().(syscall.WaitStatus)
 			if ok && waitStaus.ExitStatus() == 1190 {
@@ -491,7 +547,7 @@ func (d *deployer) Reboot() error {
 
 func (d *deployer) Logf(format string, arg ...interface{}) {
 	text := fmt.Sprintf(format, arg...)
-	log.Print(text)
+	log.Output(3, text)
 	d.loggingClient.Logger("cel").Log(
 		logging.Entry{
 			Payload: text,
@@ -550,6 +606,7 @@ func (d *deployer) setRuntimeConfigVariable(variable string, value string) {
 		d.getFullRuntimeConfigVariableName(variable),
 		&runtimeconfig.Variable{Text: value}).Context(d.ctx).Do()
 	if err == nil {
+		d.Logf("config variable %s is set to %s", variable, value)
 		return
 	}
 
@@ -639,6 +696,26 @@ func (d *deployer) RunConfigCommand(name string, arg ...string) error {
 	return nil
 }
 
+// Requirement for ConfigCommand:
+// exit code 200 indicating that reboot is needed
+func (d *deployer) runConfigCommandOnNestedVM(arg ...string) error {
+	_, err := d.sshRunCommand(strings.Join(arg, " "))
+	if err != nil {
+		exitError, ok := err.(*ssh.ExitError)
+		if ok && exitError.Waitmsg.ExitStatus() == 150 {
+			// Exit code 150 means "failure is retryable."
+			return ErrTransient
+		} else if ok && exitError.Waitmsg.ExitStatus() == 200 {
+			// Exit code 200 means "reboot is needed."
+			return ErrRebootNeeded
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 // getAdDomainAsset returns the ActiveDirectoryDomain asset of the given domain.
 func (d *deployer) getAdDomainAsset(domainName string) (*asset.ActiveDirectoryDomain, error) {
 	return d.configuration.AssetManifest.FindActiveDirectoryDomain(domainName)
@@ -670,4 +747,177 @@ func (d *deployer) waitForDependency(depVar string, timeOut time.Duration) error
 	}
 
 	return nil
+}
+
+func (d *deployer) sshRunCommand(cmd string) ([]byte, error) {
+	d.Logf("Run command on nested VM: %s", cmd)
+	conn, err := d.sshConnect()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	session, err := conn.NewSession()
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := session.CombinedOutput(cmd)
+	d.Logf("output from nested VM: [%s], err: %v", output, err)
+	return output, err
+}
+
+// sshConnect connects to the instance and returns the ssh client.
+func (d *deployer) sshConnect() (*ssh.Client, error) {
+	sshConfig := &ssh.ClientConfig{
+		User: d.nestedVM.UserName,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(d.nestedVM.Password),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         10 * time.Second,
+	}
+
+	return ssh.Dial("tcp", d.internalIP+":22", sshConfig)
+}
+
+// waitUntilSshIsAlive waits until ssh connection can be made.
+func (d *deployer) waitUntilSshIsAlive() error {
+	d.Logf("Try ssh connecting to nested VM")
+	timeOut := 20 * time.Minute
+	for start := time.Now(); time.Since(start) < timeOut; {
+		conn, err := d.sshConnect()
+		if err == nil {
+			d.Logf("Connected")
+			conn.Close()
+			return nil
+		}
+
+		d.Logf("Retry")
+		time.Sleep(1 * time.Minute)
+	}
+
+	return errors.New("ssh timeout")
+}
+
+func (d *deployer) commonSetupOnNestedVM() error {
+	err := d.getNestedVMWindowsVersion()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = d.uploadSupportingFilesToNestedVM()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	fileToRun := ""
+	if d.IsWindows2008() {
+		fileToRun = filepath.Join(workingDirectoryOnNestedVM, "prepare_win2008.ps1")
+	} else if d.IsWindows2016() || d.IsWindows2012() {
+		fileToRun = filepath.Join(workingDirectoryOnNestedVM, "prepare_win2012.ps1")
+	} else {
+		return errors.New("unsupported windows version")
+	}
+
+	_, err = d.sshRunCommand("powershell.exe -ExecutionPolicy ByPass -File " + fileToRun)
+	if err != nil {
+		return err
+	}
+
+	// Rename nestedVM
+	d.sshRunCommand(
+		fmt.Sprintf("powershell.exe -Command \"Rename-Computer -NewName %s -Restart\"",
+			d.instanceName))
+
+	// wait a while to give shutdown enough time to finish.
+	time.Sleep(1 * time.Minute)
+
+	return d.waitUntilSshIsAlive()
+}
+
+func (d *deployer) getNestedVMWindowsVersion() error {
+	// get nested VM windows version
+	err := d.waitUntilSshIsAlive()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	out, err := d.sshRunCommand("cmd ver")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	ver, err := getWindowsVersion(string(out))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	d.winVersion = ver
+	return nil
+}
+
+func (d *deployer) uploadFileToNestedVM(srcFilePath string, destDirectory string) error {
+	fileName := filepath.Base(srcFilePath)
+	destFilePath := filepath.Join(workingDirectoryOnNestedVM, fileName)
+
+	d.Logf("Upload file %s -> %s to nested VM", srcFilePath, destFilePath)
+	srcFile, err := os.Open(srcFilePath)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	conn, err := d.sshConnect()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer conn.Close()
+
+	client, err := sftp.NewClient(conn)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	destFile, err := client.Create(destFilePath)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func (d *deployer) uploadSupportingFilesToNestedVM() error {
+	_, err := d.sshRunCommand(fmt.Sprintf("if not exist %s mkdir %s", workingDirectoryOnNestedVM, workingDirectoryOnNestedVM))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	// save supporting files on disk
+	for filename, file := range _escData {
+		if !file.isDir {
+			supportingFile := path.Join(d.directory, filename)
+			err := d.uploadFileToNestedVM(supportingFile, workingDirectoryOnNestedVM)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// getInstanceAddress gets the IP address of the given instance.
+func getInstanceAddress(instanceName string) (string, error) {
+	addrs, err := net.LookupHost(instanceName)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	return addrs[0], nil
 }

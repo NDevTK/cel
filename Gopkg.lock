@@ -32,6 +32,12 @@
   version = "v1.0"
 
 [[projects]]
+  name = "github.com/kr/fs"
+  packages = ["."]
+  revision = "1455def202f6e05b95cc7bfc7e8ae67ae5141eba"
+  version = "v0.1.0"
+
+[[projects]]
   name = "github.com/mjibson/esc"
   packages = [".","embed"]
   revision = "58d9cde84f237ecdd89bd7f61c2de2853f4c5c6e"
@@ -42,6 +48,12 @@
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/pkg/sftp"
+  packages = ["."]
+  revision = "6b9fa10dea25176501bd80eb8a45a46d2afc97ad"
+  version = "v1.8.1"
 
 [[projects]]
   name = "github.com/spf13/cobra"
@@ -60,6 +72,12 @@
   packages = [".","exporter/stackdriver/propagation","internal","internal/tagencoding","plugin/ocgrpc","plugin/ochttp","plugin/ochttp/propagation/b3","stats","stats/internal","stats/view","tag","trace","trace/internal","trace/propagation"]
   revision = "6edeb78af2d9e4f169abb223feaef35da2e45d06"
   version = "v0.13.0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","internal/subtle","poly1305","ssh"]
+  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
 
 [[projects]]
   branch = "master"
@@ -124,6 +142,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "56ad4a16a3cc50656ee2db639a21fda9868942525e78a201865b70df126dcd85"
+  inputs-digest = "0428da8a3eb1fc892401c6d838a0bca6053a70c33cd8fd4aca1757f060b21e32"
   solver-name = "gps-cdcl"
   solver-version = 1

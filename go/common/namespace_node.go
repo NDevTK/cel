@@ -6,10 +6,11 @@ package common
 
 import (
 	"encoding/json"
+	"reflect"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	"reflect"
 )
 
 // namespaceNode is a node in a reference graph.

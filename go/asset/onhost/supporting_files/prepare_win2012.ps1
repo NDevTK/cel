@@ -14,6 +14,14 @@ function install-module-if-not-installed {
   }
 }
 
+# Enable WinRM, which is needed by DSC. This is not needed on GCE images,
+# but for nested VM, we need this.
+Enable-PSRemoting -SkipNetworkProfileCheck -Force
+
+# Again, this statement is not needed on GCE images, but we need it for nested VM.
+Write-Host "The warning message from Set-ExecutionPolicy can be safely ignored."
+Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
+
 # Install modules
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -force -Verbose
 install-module-if-not-installed -Name xActiveDirectory -RequiredVersion 2.19.0.0

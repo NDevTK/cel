@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Create a user in a domain.
+# Join the machine in a domain.
 param(
     # the FQDN name of the domain.
     [Parameter(Mandatory=$true)] [String] $domainName,
@@ -13,8 +13,8 @@ param(
     # the name of the user to be created.
     [Parameter(Mandatory=$true)] [String] $adminPassword,
 
-    # the name of the dns server
-    [Parameter(Mandatory=$true)] [String] $dnsServer
+    # the address of the dns server
+    [Parameter(Mandatory=$true)] [String] $dnsServerAddress
   )
 
 Configuration JoinDomain
@@ -54,7 +54,6 @@ $ConfigData = @{
 
 $domainCred = New-Object System.Management.Automation.PSCredential ($adminName, (ConvertTo-SecureString $adminPassword -AsPlainText -Force))
 
-$dnsServerAddress = [Net.DNS]::GetHostEntry($dnsServer).AddressList.IPAddressToString
 netsh interface ip add dnsserver "Local Area Connection" $dnsServerAddress
 
 JoinDomain -ConfigurationData $ConfigData -credential $domainCred
@@ -69,10 +68,16 @@ if ($error.Count -gt $errorCount)
 
     foreach ($err in $error[$errorCount..($error.Count-1)])
     {
+        Write-Host "FullyQualifiedErrorId: $($err.FullyQualifiedErrorId)"
+
         # Look for retryable errors
         if ($err.FullyQualifiedErrorId -match "FailToJoinDomainFromWorkgroup")
         {
-                $errorCode = 150
+            $errorCode = 150
+        }
+        elseif ($err.FullyQualifiedErrorId -match "PathNotFound,Microsoft.PowerShell.Commands.GetItemPropertyCommand") 
+        {
+            $errorCode=150
         }
     }
 

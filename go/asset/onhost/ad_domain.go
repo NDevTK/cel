@@ -57,7 +57,7 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 		if ok {
 			err = createChildDomain(d, ad, parent.ParentName)
 		} else {
-			// TODO(feiling): add support for child & tree AD
+			// TODO(feiling): add support for tree AD
 			err = common.NewNotImplementedError("Support for Child and Tree AD")
 		}
 	}

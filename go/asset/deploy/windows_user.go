@@ -5,11 +5,12 @@
 package deploy
 
 import (
+	"crypto/rand"
+	"strings"
+
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
-	"crypto/rand"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 type windowsUser struct{}
@@ -32,10 +33,8 @@ func (*windowsUser) ResolveGeneratedContent(ctx common.Context, u *asset.Windows
 	return ctx.Publish(u, "password", s)
 }
 
-// The printable characters from 0x21-0x7e rearranged to have a bias for
-// alphanums. Due to the method of password generation, the first 64 characters
-// have a 50% higher probability of being picked than others.
-const pwChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+// Characters that can appear in passwords.
+const pwChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&'()*+,-./:;<=>?@[]^_`{|}~"
 
 func generatePassword() (string, error) {
 	entropy := make([]byte, 32)

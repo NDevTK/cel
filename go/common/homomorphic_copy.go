@@ -5,8 +5,9 @@
 package common
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 // HomomorphicCopy makes potentially shallow copies of on object to another.
@@ -50,7 +51,6 @@ func homomorphicCopy(from reflect.Value, to reflect.Value) (err error) {
 			switch e := r.(type) {
 			case error:
 				err = errors.Wrapf(e, "copying %v to %v", from, to)
-
 			case string:
 				err = errors.Errorf("copying %v to %v: %s", from, to, e)
 			default:
