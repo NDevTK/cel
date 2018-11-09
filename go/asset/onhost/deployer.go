@@ -602,15 +602,15 @@ func (d *deployer) getRuntimeConfigVariableParentName() string {
 // sets the value of a runtime config variable.
 // Note that errors are ignored
 func (d *deployer) setRuntimeConfigVariable(variable string, value string) {
-	_, err := d.configService.Variables.Update(
-		d.getFullRuntimeConfigVariableName(variable),
-		&runtimeconfig.Variable{Text: value}).Context(d.ctx).Do()
-	if err == nil {
-		d.Logf("config variable %s is set to %s", variable, value)
-		return
-	}
+	for i := 0; i < 3; i++ {
+		_, err := d.configService.Variables.Update(
+			d.getFullRuntimeConfigVariableName(variable),
+			&runtimeconfig.Variable{Text: value}).Context(d.ctx).Do()
+		if err == nil {
+			d.Logf("config variable %s is set to %s", variable, value)
+			return
+		}
 
-	if err != nil {
 		apiError, ok := err.(*googleapi.Error)
 		if ok && apiError.Code == 404 {
 			// the variable does not exist. So we create it instead
@@ -622,8 +622,16 @@ func (d *deployer) setRuntimeConfigVariable(variable string, value string) {
 			return
 		}
 
-		// Log the error
-		d.Logf("Error updating config variable %s: %s", variable, err)
+		if ok && apiError.Code == 503 {
+			// service unavailable. In this case, retry
+			d.Logf("Error updating config variable %s: %s. Retry", variable, err)
+			time.Sleep(5 * time.Second)
+		} else {
+			// Log the error and return
+			d.Logf("Error updating config variable %s: %s.", variable, err)
+			return
+		}
+
 	}
 }
 

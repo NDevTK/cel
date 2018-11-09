@@ -334,7 +334,7 @@ be a full or a partial URL.
 
 ### Inputs for `NestedVM`
 
-* `string` [`image`](#NestedVM.image) = 1
+* `string` [`image`](#NestedVM.image) = 1 (**Required**)
 * `string` [`user_name`](#NestedVM.user_name) = 2
 * `string` [`password`](#NestedVM.password) = 3
 
@@ -344,6 +344,7 @@ be a full or a partial URL.
 |----------|----------|
 | Field Name | `image` |
 | Type | `string` |
+| Required | This field is required. It is an error to omit this field. |
 
 The image to use. It's a gs://path.
 
@@ -353,6 +354,8 @@ The image to use. It's a gs://path.
 |----------|----------|
 | Field Name | `user_name` |
 | Type | `string` |
+
+The user name & password used to log in through ssh.
 
 ### `password` {#NestedVM.password}
 

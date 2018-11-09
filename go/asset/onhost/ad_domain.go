@@ -57,8 +57,7 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 		if ok {
 			err = createChildDomain(d, ad, parent.ParentName)
 		} else {
-			// TODO(feiling): add support for tree AD
-			err = common.NewNotImplementedError("Support for Child and Tree AD")
+			err = createTreeDomain(d, ad)
 		}
 	}
 
@@ -72,10 +71,13 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 
 func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	fileToRun := ""
+	addDnsForwardFile := ""
 	if d.IsWindows2012() || d.IsWindows2016() {
 		fileToRun = d.GetSupportingFilePath("create_ad_win2012.ps1")
+		addDnsForwardFile = d.GetSupportingFilePath("add_dns_forwarder_win2012.ps1")
 	} else if d.IsWindows2008() {
 		fileToRun = d.GetSupportingFilePath("create_ad_win2008.ps1")
+		addDnsForwardFile = d.GetSupportingFilePath("add_dns_forwarder_win2008.ps1")
 	} else {
 		return errors.New("unsupported windows version")
 	}
@@ -87,8 +89,30 @@ func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 		return err
 	}
 
+	// create DNS forwarder for tree domains whose root is this domain.
+	for _, dn := range d.configuration.AssetManifest.GetAdDomain() {
+		_, ok := dn.Ancestor.(*asset.ActiveDirectoryDomain_Forest)
+		if !ok {
+			continue
+		}
+
+		rootAd, err := getRootDomain(d, dn)
+		if err != nil || rootAd != ad {
+			continue
+		}
+
+		// create DNS forwarder
+		if err := d.RunConfigCommand(
+			"powershell.exe", "-File", addDnsForwardFile,
+			"-name", dn.Name,
+			"-masterServer", dn.DomainController[0].WindowsMachine); err != nil {
+			return err
+		}
+	}
+
 	// TODO(feiling): create DNS forwarder if there are tree domains underneath it.
 	d.Logf("AD Domain config is finished.")
+
 	return nil
 }
 
@@ -181,6 +205,43 @@ func createChildDomain(d *deployer, ad *asset.ActiveDirectoryDomain, parentAdNam
 	}
 
 	return err
+}
+
+func createTreeDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
+	rootAd, err := getRootDomain(d, ad)
+	if err != nil {
+		return err
+	}
+
+	// wait for root domain to be ready
+	depVar := onhost.GetActiveDirectoryRuntimeConfigVariableName(rootAd.Name)
+	err = d.waitForDependency(depVar, time.Duration(60)*time.Minute)
+	if err != nil {
+		return err
+	}
+
+	fileToRun := ""
+	if d.IsWindows2012() || d.IsWindows2016() {
+		fileToRun = d.GetSupportingFilePath("create_tree_domain_win2012.ps1")
+	} else if d.IsWindows2008() {
+		fileToRun = d.GetSupportingFilePath("create_tree_domain_win2008.ps1")
+	} else {
+		return errors.New("unsupported windows version")
+	}
+
+	if err := d.RunConfigCommand("powershell.exe", "-File", fileToRun,
+		"-domainName", ad.Name,
+		"-netbiosName", ad.NetbiosName,
+		"-rootDomainName", rootAd.Name,
+		"-dnsServer", rootAd.DomainController[0].WindowsMachine,
+		"-adminName", rootAd.Name+"\\administrator",
+		"-adminPassword", string(rootAd.SafeModeAdminPassword.Final),
+		"-localAdminPassword", string(ad.SafeModeAdminPassword.Final)); err != nil {
+		return err
+	}
+
+	d.Logf("Tree domain config is finished.")
+	return nil
 }
 
 func init() {
