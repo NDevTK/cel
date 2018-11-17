@@ -13,16 +13,27 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/asset/onhost"
 )
 
+var version = "unknown"
+
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Printf("Usage: cel_agent manifest_file")
+		fmt.Println("Usage of cel_agent:")
+		fmt.Println("  cel_agent manifest_file")
+		fmt.Println("  cel_agent --version")
 		return
 	}
 
+	show_version := flag.Bool("version", false, "version for cel_agent")
 	flag.Parse()
+
+	if *show_version {
+		fmt.Println("cel_agent version", version)
+		return
+	}
+
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
-	log.Printf("Start of cel_agent")
+	log.Printf("Start of cel_agent version %s", version)
 
 	d, err := onhost.CreateDeployer()
 	if err != nil {

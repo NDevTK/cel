@@ -32,6 +32,7 @@ See CONTRIBUTING.md for details for contributing code upstream.
 
 import argparse
 import ast
+import datetime
 import errno
 import itertools
 import logging
@@ -672,7 +673,12 @@ This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
   return os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
 
 
-def _BuildCommand(command, package, build_env, out_dir=None, verbose=False):
+def _BuildCommand(command,
+                  package,
+                  build_env,
+                  build_version=None,
+                  out_dir=None,
+                  verbose=False):
   '''\
   _BuildCommand builds a Go command.
 
@@ -680,6 +686,11 @@ def _BuildCommand(command, package, build_env, out_dir=None, verbose=False):
   flags = []
   if verbose:
     flags += ['-v', '-x']
+
+  if build_version:
+    now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+    version_string = "%s, built on %s" % (build_version, now)
+    flags += ['-ldflags', '-X "main.version=%s"' % version_string]
 
   if out_dir is None:
     out_dir = _GetBuildDir(build_env)
@@ -744,9 +755,17 @@ Why not just run "go build" ?
 
   commands = os.listdir(os.path.join(SOURCE_PATH, 'go', 'cmd'))
 
+  build_version = None
+  with open("VERSION", 'r') as file:
+    build_version = file.read()
+
   for command in commands:
     _BuildCommand(
-        command, './go/cmd/' + command, build_env, verbose=args.verbose)
+        command,
+        './go/cmd/' + command,
+        build_env,
+        build_version=build_version,
+        verbose=args.verbose)
 
 
 def _GetGoPackages(root_package, root_path):

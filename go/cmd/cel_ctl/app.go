@@ -101,6 +101,9 @@ var app = &Application{
 	},
 }
 
+var version = "unknown"
+
 func init() {
+	app.rootCommand.Version = version
 	app.setFlags()
 }
