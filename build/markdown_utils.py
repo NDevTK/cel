@@ -82,8 +82,8 @@ def ProcessIncludesInContent(lines, fname):
       newlines.append('```\n')
 
     lines[r.at] = '<!-- INCLUDE {} ({} lines){} -->\n'.format(
-        r.filename, len(newlines), ' fenced as {}'.format(r.fence_type)
-        if r.fence_type else '')
+        r.filename, len(newlines),
+        ' fenced as {}'.format(r.fence_type) if r.fence_type else '')
     lines[r.at + 1:r.at + 1 + r.line_count] = newlines
 
 

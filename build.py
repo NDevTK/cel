@@ -391,14 +391,13 @@ def _Deps(args):
     verbose_flag += ["-v"]
 
   with open(os.devnull, 'r+') as f:
-    _CheckAndInstall(
-        ['protoc', '--version'],
-        _InstallProtoc,
-        env=_MergeEnv(args, target_host=True),
-        cwd=SOURCE_PATH,
-        stdin=f,
-        stdout=f,
-        stderr=f)
+    _CheckAndInstall(['protoc', '--version'],
+                     _InstallProtoc,
+                     env=_MergeEnv(args, target_host=True),
+                     cwd=SOURCE_PATH,
+                     stdin=f,
+                     stdout=f,
+                     stderr=f)
 
   o = subprocess.check_output(['protoc', '--version']).strip()
   if o.startswith('libprotoc '):
@@ -457,14 +456,13 @@ def _Deps(args):
     subprocess.check_call(['dep', 'prune'])
 
   with open(os.devnull, 'r+') as f:
-    _CheckAndInstall(
-        ['protoc-gen-go'],
-        _InstallGoProtoc,
-        env=_MergeEnv(args, target_host=True),
-        cwd=SOURCE_PATH,
-        stdin=f,
-        stdout=f,
-        stderr=f)
+    _CheckAndInstall(['protoc-gen-go'],
+                     _InstallGoProtoc,
+                     env=_MergeEnv(args, target_host=True),
+                     cwd=SOURCE_PATH,
+                     stdin=f,
+                     stdout=f,
+                     stderr=f)
 
   with open(sentinel, 'w') as f:
     pass
@@ -477,8 +475,8 @@ def _Deps(args):
         ['git', 'clone', 'https://github.com/googleapis/googleapis.git'],
         cwd=THIRD_PARTY_DIR)
   if update_deps:
-    subprocess.check_call(
-        ['git', 'pull', 'origin', 'master'], cwd=GOOGLEAPIS_DIR)
+    subprocess.check_call(['git', 'pull', 'origin', 'master'],
+                          cwd=GOOGLEAPIS_DIR)
 
 
 def _Generate(args):
@@ -496,15 +494,15 @@ missing.
 
   gen_api_command = _BuildCommand('gen_api_proto', './go/tools/gen_api_proto',
                                   _MergeEnv(args, target_host=True))
+  gen_api_invocation = [
+      gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
+      'chromium.googlesource.com/enterprise/cel/go/gcp'
+  ]
 
   _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
   _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'compute'))
   _BuildStep(
-      [
-          gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
-          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
-          'go/gcp/compute/validate.go'
-      ],
+      gen_api_invocation + ['-g', 'go/gcp/compute/validate.go'],
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH,
       inp=['vendor/google.golang.org/api/compute/v0.beta/compute-api.json'],
@@ -513,11 +511,7 @@ missing.
   _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'cloudkms'))
   _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'cloudkms'))
   _BuildStep(
-      [
-          gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
-          'chromium.googlesource.com/enterprise/cel/go/gcp', '-g',
-          'go/gcp/cloudkms/validate.go'
-      ],
+      gen_api_invocation + ['-g', 'go/gcp/cloudkms/validate.go'],
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH,
       inp=['vendor/google.golang.org/api/cloudkms/v1/cloudkms-api.json'],
@@ -614,11 +608,12 @@ missing.
     else:
       agent_bins.append(agent_dir + "/cel_agent")
 
+  esc_invocation = [
+      esc_command, '-pkg', 'deploy', '-prefix', 'resources', '-o', '{out}',
+      '-private', '$^'
+  ]
   _BuildStep(
-      [
-          esc_command, '-pkg', 'deploy', '-prefix', 'resources', '-o', '{out}',
-          '-private', '$^'
-      ],
+      esc_invocation,
       inp=[
           'resources/deployment/cel-base.yaml',
           'resources/deployment/gcp-builtins.host.textpb',
@@ -668,10 +663,12 @@ Return the build directory.
 
 This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
 '''
-  goos = subprocess.check_output(
-      ['go', 'env', 'GOOS'], env=build_env, cwd=SOURCE_PATH).strip()
-  goarch = subprocess.check_output(
-      ['go', 'env', 'GOARCH'], env=build_env, cwd=SOURCE_PATH).strip()
+  goos = subprocess.check_output(['go', 'env', 'GOOS'],
+                                 env=build_env,
+                                 cwd=SOURCE_PATH).strip()
+  goarch = subprocess.check_output(['go', 'env', 'GOARCH'],
+                                   env=build_env,
+                                   cwd=SOURCE_PATH).strip()
   return os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
 
 
@@ -1086,8 +1083,9 @@ Problems with 'clang-format'?
     print(broken_calls)
     sys.exit(1)
 
-  o = subprocess.check_output(
-      ['git', 'ls-files'], cwd=SOURCE_PATH, env=_MergeEnv(args))
+  o = subprocess.check_output(['git', 'ls-files'],
+                              cwd=SOURCE_PATH,
+                              env=_MergeEnv(args))
   all_files = [os.path.join(SOURCE_PATH, p) for p in o.splitlines()]
 
   logging.info("checking .proto files")

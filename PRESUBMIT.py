@@ -36,11 +36,12 @@ def CheckIfFilesNeedFormatting(input_api, output_api):
 
 def RunGoTests(input_api, output_api):
   results = []
+  cmd = [
+      'go', 'test',
+      '-p=%s' % input_api.cpu_count, '-json', '-vet', 'off', './go/...'
+  ]
   p = input_api.subprocess.Popen(
-      [
-          'go', 'test', '-p={}'.format(input_api.cpu_count), '-json', '-vet',
-          'off', './go/...'
-      ],
+      cmd,
       cwd=input_api.PresubmitLocalPath(),
       stdout=input_api.subprocess.PIPE,
       stderr=input_api.subprocess.PIPE)
@@ -67,8 +68,9 @@ def RunGoTests(input_api, output_api):
 
 def RunGoVet(input_api, output_api):
   results = []
+  cmd = ['go', 'vet', './go/...']
   p = input_api.subprocess.Popen(
-      ['go', 'vet', './go/...'],
+      cmd,
       cwd=input_api.PresubmitLocalPath(),
       stdout=input_api.subprocess.PIPE,
       stderr=input_api.subprocess.PIPE)
