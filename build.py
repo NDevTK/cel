@@ -305,10 +305,6 @@ def _InstallGoProtoc(args):
             protoc-gen-go which generates Go code. More information can be found including
             installation instructions at https://github.com/golang/protobuf.
 
-            A quick and portable way to get it is to run the following:
-
-                go get -u github.com/golang/protobuf/protoc-gen-go
-
             Rerun this script as 'build.py deps --install' to install "protoc-gen-go"
             automatically. If you've already done so, it may be that the GOBIN path is not
             in the system.
@@ -319,8 +315,8 @@ def _InstallGoProtoc(args):
     verbose_flag += ["-v"]
 
   _RunCommand(
-      ['go', 'get', '-u'] + verbose_flag +
-      ['github.com/golang/protobuf/protoc-gen-go'],
+      ['go', 'install'] + verbose_flag +
+      ['./vendor/github.com/golang/protobuf/protoc-gen-go'],
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -396,14 +392,6 @@ def _Deps(args):
 
   with open(os.devnull, 'r+') as f:
     _CheckAndInstall(
-        ['protoc-gen-go'],
-        _InstallGoProtoc,
-        env=_MergeEnv(args, target_host=True),
-        cwd=SOURCE_PATH,
-        stdin=f,
-        stdout=f,
-        stderr=f)
-    _CheckAndInstall(
         ['protoc', '--version'],
         _InstallProtoc,
         env=_MergeEnv(args, target_host=True),
@@ -467,6 +455,16 @@ def _Deps(args):
 
   if update_deps:
     subprocess.check_call(['dep', 'prune'])
+
+  with open(os.devnull, 'r+') as f:
+    _CheckAndInstall(
+        ['protoc-gen-go'],
+        _InstallGoProtoc,
+        env=_MergeEnv(args, target_host=True),
+        cwd=SOURCE_PATH,
+        stdin=f,
+        stdout=f,
+        stderr=f)
 
   with open(sentinel, 'w') as f:
     pass
