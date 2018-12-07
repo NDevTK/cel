@@ -14,7 +14,7 @@ import traceback
 
 class SingleTestController:
 
-  def __init__(self, testCaseClassName, hostFile):
+  def __init__(self, testCaseClassName, hostFile, cel_ctl):
     if not os.path.exists(hostFile):
       raise ValueError('Host file not found: %s' % hostFile)
 
@@ -37,16 +37,11 @@ class SingleTestController:
     name, zone = self._ParseProjectInfo(hostFile)
     self._project = gcp.ComputeProject(name, zone)
 
-  def DeployNewEnvironment(self, cel_ctl, showProgress=False):
+    self._celCtlRunner = CelCtlRunner(cel_ctl, self._hostFile, self._assetFile)
+
+  def DeployNewEnvironment(self, showProgress=False):
     """Deploys the test environment. Returns only when it is ready."""
-    cmd = [cel_ctl, 'deploy', '--builtins', self._hostFile, self._assetFile]
-
-    logging.info("Running %s" % cmd)
-    code = subprocess.call(cmd)
-    logging.info("cel_ctl returned code=%s" % code)
-
-    if code != 0:
-      raise CelCtlError("Deployment failed.")
+    self._celCtlRunner.Deploy()
 
     # Wait for the on-host deployment scripts to finish.
     print("Waiting for all assets to be ready...")
@@ -61,7 +56,7 @@ class SingleTestController:
     Returns:
       True if all tests passed.
     """
-    environment = TestEnvironment(self._project)
+    environment = TestEnvironment(self._project, self._celCtlRunner)
 
     testCaseInstance = self._testClass(environment)
 
@@ -129,6 +124,41 @@ class SingleTestController:
         parts[p['key']] = p['v']
 
     return parts['name'], parts['zone']
+
+
+class CelCtlRunner:
+
+  def __init__(self, cel_ctl, hostFile, assetFile):
+    self._cel_ctl = cel_ctl
+    self._hostFile = hostFile
+    self._assetFile = assetFile
+
+  def Deploy(self):
+    cmd = [
+        self._cel_ctl, 'deploy', '--builtins', self._hostFile, self._assetFile
+    ]
+
+    logging.info("Running %s" % cmd)
+    code = subprocess.call(cmd)
+    logging.info("cel_ctl returned code=%s" % code)
+
+    if code != 0:
+      raise CelCtlError("Deployment failed.")
+
+  def RunCommand(self, instance, command):
+    cmd = [
+        self._cel_ctl, 'run', '--instance', instance, '--command', command,
+        '--builtins', self._hostFile, self._assetFile
+    ]
+
+    try:
+      logging.debug("Running on %s: %s" % (instance, command))
+      output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+      logging.debug("cel_ctl run output: %s" % output)
+      return 0, output
+    except subprocess.CalledProcessError, e:
+      logging.debug("cel_ctl run returned %s: %s" % (e.returncode, e.output))
+      return e.returncode, e.output
 
 
 class CelCtlError(Exception):

@@ -62,7 +62,11 @@ class CloudRuntimeConfig:
         time.sleep(interval)
       elif len(assetStates) == 1 and 'ready' in assetStates:
         message = 'All (%s) assets are ready' % len(assetStates['ready'])
-        logging.info('%s: %s' % (message, assetStates))
+        if showProgress:
+          now = datetime.datetime.now().strftime('%H:%M:%S')
+          print('[%s] %s: %s' % (now, message, assetStates))
+        else:
+          logging.info('%s: %s' % (message, assetStates))
         return
       else:
         raise Exception('Failed to parse asset states: %s' % assetStates)

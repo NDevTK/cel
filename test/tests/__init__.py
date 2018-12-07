@@ -3,3 +3,4 @@
 # found in the LICENSE file.
 
 from iis_sites import IISSitesTest
+from machine_registry import MachineRegistryTest

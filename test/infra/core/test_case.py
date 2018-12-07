@@ -19,3 +19,11 @@ class EnterpriseTestCase:
       if hasattr(elem, 'IS_TEST_METHOD'):
         test_methods.append(elem)
     return test_methods
+
+  def assertTrue(self, assertion, message='Assertion failed'):
+    if not assertion:
+      raise Exception(message)
+
+  def assertEqual(self, first, second, message='Assertion failed'):
+    if first != second:
+      raise Exception("%s [first=%s, second=%s]" % (message, first, second))

@@ -103,13 +103,13 @@ if __name__ == '__main__':
 
   logging.info("Arguments: %s" % args)
 
-  c = controller.SingleTestController(args.test, args.host)
+  c = controller.SingleTestController(args.test, args.host, args.cel_ctl)
 
   success = False
   should_write_logs = (args.error_logs_dir != None)
   try:
     if args.deploy:
-      c.DeployNewEnvironment(args.cel_ctl, args.show_progress)
+      c.DeployNewEnvironment(args.show_progress)
 
     success = c.ExecuteTestCase()
   except controller.CelCtlError:
