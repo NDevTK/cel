@@ -1,4 +1,4 @@
-// Copyright 2017 The Chromium Authors. All rights reserved.
+// Copyright 2018 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -13,17 +13,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type PasswdCommand struct {
+type RunCommand struct {
 	UseBuiltins bool
 	Instance    string
-	Username    string
-	Email       string
+
+	// The command to execute.
+	// Metadata entries are limited to 256KB and have a total limit (512KB).
+	Command string
 }
 
-func (p *PasswdCommand) Run(ctx context.Context, c *Application, cmd *cobra.Command, args []string) error {
-	if p.Instance == "" || p.Username == "" {
+func (p *RunCommand) Run(ctx context.Context, c *Application, cmd *cobra.Command, args []string) error {
+	if p.Instance == "" || p.Command == "" {
 		cmd.Usage()
-		return fmt.Errorf("instance and username are required options")
+		return fmt.Errorf("instance and command are required options")
 	}
 
 	session, err := c.CreateSession(ctx, args, p.UseBuiltins)
@@ -51,22 +53,26 @@ func (p *PasswdCommand) Run(ctx context.Context, c *Application, cmd *cobra.Comm
 	zoneUrl := instance.Zone
 	zone := zoneUrl[strings.LastIndex(zoneUrl, "/")+1:]
 
-	password, err := gcp.ResetWindowsPassword(ctx, c.Client,
+	runCommand := gcp.NewRunCommand(p.Command)
+	exitCode, err := gcp.RunCommandOnInstance(ctx, c.Client,
 		session.GetConfiguration().HostEnvironment.Project.Name,
-		zone, instance.Name, p.Username, p.Email)
+		zone, instance.Name, runCommand)
 	if err != nil {
-		return fmt.Errorf("failed to reset password: %v", err)
+		return fmt.Errorf("failed to execute command: %v", err)
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), password)
+	if exitCode != 0 {
+		return fmt.Errorf("command executed but returned: %v", exitCode)
+	}
+
 	return nil
 }
 
 func init() {
 	c := &cobra.Command{
-		Use:   "passwd",
-		Short: "reset password on a Windows instance",
-		Long: `Resets the password for a local user on a Windows instance.
+		Use:   "run",
+		Short: "run a command on a Windows instance",
+		Long: `Runs a command on a Windows instance via cel_agent.
 The environment must exist and match the one described in the asset file.
 `,
 		TraverseChildren: true,
@@ -74,11 +80,10 @@ The environment must exist and match the one described in the asset file.
 
 	f := c.Flags()
 
-	p := &PasswdCommand{}
+	p := &RunCommand{}
 	f.BoolVarP(&p.UseBuiltins, "builtins", "B", false, "Use builtin assets")
 	f.StringVar(&p.Instance, "instance", "", "short instance name of VM")
-	f.StringVar(&p.Username, "username", "", "username of account to reset password")
-	f.StringVar(&p.Email, "email", "", "email address to associate with account")
+	f.StringVar(&p.Command, "command", "", "command to execute")
 
 	app.AddCommand(c, p)
 }

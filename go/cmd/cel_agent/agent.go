@@ -32,4 +32,14 @@ func main() {
 
 	defer d.Close()
 	d.Deploy(os.Args[1])
+
+	// Keep running and watch for command signals
+	c, err := onhost.CreateCommander()
+	if err != nil {
+		log.Printf("Commander creation failed. error: %s", err)
+		return
+	}
+
+	defer c.Close()
+	c.WatchForCommands()
 }
