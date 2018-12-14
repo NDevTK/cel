@@ -7,7 +7,10 @@ package deploy
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"text/template"
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
@@ -334,6 +337,37 @@ func deployBaseAssets(ctx common.Context, s *gcp.Session) (err error) {
 	return deployKmsKey(ctx, s)
 }
 
+// uploadLocalResource fetches a local resource and uploads it to the
+// ObjectStore.
+//
+// localResource is the path to the local resource, relative to the current exe
+// e.g. ./resource/cel_agent.exe.
+//
+// fieldName is the name of the field in HostEnvironment.Resources where the
+// resulting FileReference should be published.
+func uploadLocalResource(ctx common.Context, s *gcp.Session, localResource, fieldName string) (err error) {
+	defer common.LoggedAction(ctx, &err, "uploading %s", localResource)()
+
+	var baseDir string
+	if baseDir, err = currentBinDir(); err != nil {
+		return err
+	}
+
+	var data []byte
+	if data, err = ioutil.ReadFile(path.Join(baseDir, localResource)); err != nil {
+		return err
+	}
+
+	fr := &common.FileReference{
+		TargetPath: path.Join("/cel", path.Base(localResource)),
+	}
+	if err = fr.StoreFile(ctx, data); err != nil {
+		return err
+	}
+
+	return ctx.Publish(s.HostEnvironment.Resources.Startup, fieldName, fr)
+}
+
 // uploadNamedResource fetches a named resource and uploads it to the
 // ObjectStore.
 //
@@ -346,6 +380,7 @@ func uploadNamedResource(ctx common.Context, s *gcp.Session, embeddedResource, f
 	defer common.LoggedAction(ctx, &err, "uploading %s", embeddedResource)()
 
 	data := _escFSMustByte(false, embeddedResource)
+
 	fr := &common.FileReference{
 		TargetPath: path.Join("/cel", path.Base(embeddedResource)),
 	}
@@ -357,6 +392,10 @@ func uploadNamedResource(ctx common.Context, s *gcp.Session, embeddedResource, f
 	return ctx.Publish(s.HostEnvironment.Resources.Startup, fieldName, fr)
 }
 
+func currentBinDir() (string, error) {
+	return filepath.Abs(filepath.Dir(os.Args[0]))
+}
+
 // uploadStartupDependencies uploads the assets that are used during VM
 // instance startup.
 func uploadStartupDependencies(ctx common.Context, s *gcp.Session) error {
@@ -365,7 +404,7 @@ func uploadStartupDependencies(ctx common.Context, s *gcp.Session) error {
 		return err
 	}
 
-	err = uploadNamedResource(ctx, s, "/windows/gen/windows_amd64/cel_agent.exe", "win_agent_x64")
+	err = uploadLocalResource(ctx, s, "./resources/cel_agent.exe", "win_agent_x64")
 	if err != nil {
 		return err
 	}
@@ -375,7 +414,7 @@ func uploadStartupDependencies(ctx common.Context, s *gcp.Session) error {
 		return err
 	}
 
-	return uploadNamedResource(ctx, s, "/linux/gen/linux_amd64/cel_agent", "linux_agent_x64")
+	return uploadLocalResource(ctx, s, "./resources/cel_agent", "linux_agent_x64")
 }
 
 // PrepBackend prepares the backend for hosting a lab. The resources deployed

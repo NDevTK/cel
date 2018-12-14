@@ -592,22 +592,16 @@ missing.
 
   esc_command = _BuildCommand('esc', './vendor/github.com/mjibson/esc',
                               _MergeEnv(args, target_host=True))
-  agent_bins = []
   _BuildStep([
       esc_command, '-pkg', 'onhost', '-prefix', 'go/asset/onhost/', '-o',
       'go/asset/onhost/static.go', 'go/asset/onhost/supporting_files/'
   ])
+  env = _MergeEnv(args)
+  out_dir = os.path.join(_GetBuildDir(env), 'resources')
   for goos, goarch in TARGET_ARCHS:
-    agent_dir = 'resources/{0}/gen/{0}_{1}'.format(goos, goarch)
-    env = _MergeEnv(args)
     env['GOOS'] = goos
     env['GOARCH'] = goarch
-    _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=agent_dir)
-
-    if goos == 'windows':
-      agent_bins.append(agent_dir + "/cel_agent.exe")
-    else:
-      agent_bins.append(agent_dir + "/cel_agent")
+    _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=out_dir)
 
   esc_invocation = [
       esc_command, '-pkg', 'deploy', '-prefix', 'resources', '-o', '{out}',
@@ -620,7 +614,7 @@ missing.
           'resources/deployment/gcp-builtins.host.textpb',
           'resources/windows/instance-startup.ps1',
           'resources/linux/instance-startup.py'
-      ] + agent_bins,
+      ],
       out=os.path.join(SOURCE_PATH, 'go', 'gcp', 'deploy', 'resources.gen.go'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
