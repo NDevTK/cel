@@ -14,11 +14,11 @@ class EnterpriseTestCase:
 
   @staticmethod
   def GetTestMethods(_class):
-    test_methods = []
+    testMethods = []
     for _, elem in _class.__dict__.items():
       if hasattr(elem, 'IS_TEST_METHOD'):
-        test_methods.append(elem)
-    return test_methods
+        testMethods.append(elem)
+    return testMethods
 
   def assertTrue(self, assertion, message='Assertion failed'):
     if not assertion:

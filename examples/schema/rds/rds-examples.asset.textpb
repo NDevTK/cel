@@ -10,31 +10,32 @@ ad_domain {
   netbios_name: 'domain2012'
 
   domain_controller {
-    windows_machine: 'domain2012-dc'
+    windows_machine: 'win2012-dc'
   }
 }
 
 windows_user {
-  name: 'joe'
+  name: 'domain2012-user'
+  hardcoded_password: 'AAAaaa111!!!'
   container { ad_domain: 'domain2012.com' }
 }
 
 # A Windows machine.
 windows_machine {
-  name: 'domain2012-dc'
+  name: 'win2012-dc'
   machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 }
 
 remote_desktop_host {
-  windows_machine: 'domain2012-dc'
+  windows_machine: 'win2012-dc'
   collection_name: 'CollectionName'
   collection_description: 'Collection description'
 }
 
 # A client
 windows_machine {
-  name: 'domain2012-client'
+  name: 'win2012-client'
   machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 
@@ -42,7 +43,7 @@ windows_machine {
 }
 
 remote_desktop_host {
-  windows_machine: 'domain2012-client'
+  windows_machine: 'win2012-client'
   collection_name: 'CollectionName2'
   collection_description: 'Other Collection description'
 }
@@ -56,29 +57,30 @@ ad_domain {
   netbios_name: 'domain2008'
 
   domain_controller {
-    windows_machine: 'domain2008-dc'
+    windows_machine: 'win2008-dc'
   }
 }
 
 windows_user {
-  name: 'jane'
+  name: 'domain2008-user'
+  hardcoded_password: 'AAAaaa111!!!'
   container { ad_domain: 'domain2008.com' }
 }
 
 # A Windows machine.
 windows_machine {
-  name: 'domain2008-dc'
+  name: 'win2008-dc'
   machine_type: 'win2008r2'
   network_interface { network: 'primary' }
 }
 
 remote_desktop_host {
-  windows_machine: 'domain2008-dc'
+  windows_machine: 'win2008-dc'
 }
 
 # A client
 windows_machine {
-  name: 'domain2008-client'
+  name: 'win2008-client'
   machine_type: 'win2008r2'
   network_interface { network: 'primary' }
 
@@ -86,5 +88,5 @@ windows_machine {
 }
 
 remote_desktop_host {
-  windows_machine: 'domain2008-client'
+  windows_machine: 'win2008-client'
 }

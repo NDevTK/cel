@@ -34,7 +34,7 @@ class CloudRuntimeConfig:
       AssetError: We timed out
       TimeoutError: All assets were not ready after `timeout`
     """
-    logging.info('Entering CloudRuntimeConfig.WaitForAllAssetsReady')
+    logging.info('Entering WaitForAllAssetsReady(%s)' % timeout)
 
     api = googleapiclient.discovery.build('runtimeconfig', 'v1beta1')
 

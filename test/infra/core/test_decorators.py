@@ -8,8 +8,9 @@ from test_case import EnterpriseTestCase
 class environment(object):
   """@environment annotation for test case classes."""
 
-  def __init__(self, file):
+  def __init__(self, file, timeout=None):
     self.file = file
+    self.timeout = timeout
 
   def __call__(self, _class):
     if not issubclass(_class, EnterpriseTestCase):
@@ -17,6 +18,7 @@ class environment(object):
       raise Exception(error)
 
     _class.ASSET_FILE = self.file
+    _class.DEPLOY_TIMEOUT = self.timeout
     return _class
 
 

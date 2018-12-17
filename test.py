@@ -123,7 +123,7 @@ if __name__ == '__main__':
     logging.error('Test failed.')
 
   if not success and should_write_logs:
-    print('Writing Compute logs to %s...' % args.error_logs_dir)
+    print('Writing Compute logs to "%s"...' % args.error_logs_dir)
     c.WriteComputeLogsTo(args.error_logs_dir)
 
   sys.exit(0 if success else 1)

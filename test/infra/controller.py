@@ -33,6 +33,7 @@ class SingleTestController:
     self._testClass = testClass
     self._hostFile = hostFile
     self._assetFile = testClass.ASSET_FILE
+    self._deployTimeout = testClass.DEPLOY_TIMEOUT
 
     name, zone = self._ParseProjectInfo(hostFile)
     self._project = gcp.ComputeProject(name, zone)
@@ -46,7 +47,12 @@ class SingleTestController:
     # Wait for the on-host deployment scripts to finish.
     print("Waiting for all assets to be ready...")
     config = gcp.CloudRuntimeConfig('cel-config', self._project)
-    config.WaitForAllAssetsReady(showProgress=showProgress)
+
+    kwargs = {'showProgress': showProgress}
+    if self._deployTimeout:
+      kwargs['timeout'] = self._deployTimeout
+
+    config.WaitForAllAssetsReady(**kwargs)
 
   def ExecuteTestCase(self):
     """Runs all the @test methods for this TestCase.

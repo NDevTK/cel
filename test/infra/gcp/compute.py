@@ -19,8 +19,9 @@ class ComputeProject:
     response = request.execute()
 
     instances = []
-    for instance in response['items']:
-      instances.append(ComputeInstance(instance['name'], self))
+    if 'items' in response:
+      for instance in response['items']:
+        instances.append(ComputeInstance(instance['name'], self))
 
     return instances
 
