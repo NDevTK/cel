@@ -10,6 +10,7 @@
 
 # Generated files.
 *.pb.go
+*_pb2.py
 go/gcp/cloudkms/validate.go
 go/gcp/compute/validate.go
 go/gcp/deploy/resources.gen.go

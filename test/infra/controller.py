@@ -2,13 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.protobuf import text_format
 import logging
 import os
 import pydoc
-import re
 import subprocess
 import test.infra.gcp as gcp
 from test.infra.core import EnterpriseTestCase, TestEnvironment
+from test.infra.proto.schema.host import host_environment_pb2
 import traceback
 
 
@@ -35,8 +36,8 @@ class SingleTestController:
     self._assetFile = testClass.ASSET_FILE
     self._deployTimeout = testClass.DEPLOY_TIMEOUT
 
-    name, zone = self._ParseProjectInfo(hostFile)
-    self._project = gcp.ComputeProject(name, zone)
+    host = self._ParseHostFile(hostFile)
+    self._project = gcp.ComputeProject(host.project.name, host.project.zone)
 
     self._celCtlRunner = CelCtlRunner(cel_ctl, self._hostFile, self._assetFile)
 
@@ -106,32 +107,15 @@ class SingleTestController:
       with open(pathToLog, 'w') as f:
         f.write(logs)
 
-  def _ParseProjectInfo(self, hostFile):
-    # TODO: Generate *_pb.py and use google.protobuf.text_format.Parse
+  def _ParseHostFile(self, hostFile):
     content = ''
     with open(hostFile, 'r') as f:
       content = f.read()
 
-    pattern = re.compile(r'project\s*\{([^\}]*)\}', re.DOTALL)
-    match = pattern.match(content)
-    if not match:
-      raise Exception('Failed to parse host file.')
+    host = host_environment_pb2.HostEnvironment()
+    text_format.Parse(content, host)
 
-    projectContent = match.groups()[0]
-    logging.debug("ParseProjectInfo matched: %s" % repr(projectContent))
-
-    parts = {}
-    for line in projectContent.splitlines():
-      line = line.strip()
-      if line.startswith('#'):
-        continue
-      pattern = re.compile(r'(?P<key>(name)|(zone))\s*:\s*["\'](?P<v>.*)["\']')
-      match = pattern.match(line)
-      if match:
-        p = match.groupdict()
-        parts[p['key']] = p['v']
-
-    return parts['name'], parts['zone']
+    return host
 
 
 class CelCtlRunner:

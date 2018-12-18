@@ -6,9 +6,18 @@ import argparse
 import logging
 import os
 import sys
-import test.infra.controller as controller
 import traceback
 import warnings
+
+try:
+  import test.infra.controller as controller
+except ImportError as e:
+  nonDefaultModules = ['googleapiclient.discovery', 'google.iam.admin.v1']
+  for module in nonDefaultModules:
+    if module in e.message:
+      print('Failed to import %s in test.py.' % module)
+      print('Try running  `python ./scripts/tests/setup.py`.\n')
+  raise
 
 
 def ParseArgs():

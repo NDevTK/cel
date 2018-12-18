@@ -4,6 +4,8 @@
 
 import sys
 
+_EXCLUDED_PATHS = (r"^test[\\\/]infra[\\\/]proto[\\\/].*",)
+
 
 def CheckIfFilesNeedFormatting(input_api, output_api):
   """CheckIfFilesNeedFormatting runs CheckFormatting from the build.py script
@@ -97,7 +99,8 @@ def CommonChecks(input_api, output_api):
   results.extend(RunGoTests(input_api, output_api))
   results.extend(RunGoVet(input_api, output_api))
   results.extend(
-      input_api.canned_checks.PanProjectChecks(input_api, output_api))
+      input_api.canned_checks.PanProjectChecks(
+          input_api, output_api, excluded_paths=_EXCLUDED_PATHS))
   return results
 
 

@@ -518,9 +518,11 @@ missing.
       inp=['vendor/google.golang.org/api/cloudkms/v1/cloudkms-api.json'],
       out='schema/gcp/cloudkms/cloudkms-api.proto')
 
+  python_proto_path = os.path.join(SOURCE_PATH, "test", "infra", "proto")
   protoc_command = [
       'protoc', '--go_out=../../../', '--descriptor_set_out={out}',
       '--include_source_info', '--proto_path=.',
+      '--python_out={}'.format(python_proto_path),
       '--proto_path={}'.format(GOOGLEAPIS_DIR), '$^'
   ]
 
@@ -1111,7 +1113,8 @@ Problems with 'clang-format'?
   go = _FormatGoFiles(args, [f for f in all_files if f.endswith('.go')])
 
   logging.info("checking .py files")
-  py = _FormatPythonFiles(args, [f for f in all_files if f.endswith('.py')])
+  py_files_filter = lambda f: f.endswith('.py') and not f.endswith('_pb2.py')
+  py = _FormatPythonFiles(args, [f for f in all_files if py_files_filter(f)])
 
   if args.check:
     modified_files = [
@@ -1150,7 +1153,8 @@ incorrectly formatted code.
   pr = _FormatProtoFiles(args, [f for f in files if f.endswith('.proto')])
   md = _FormatMarkdownFiles(args, [f for f in files if f.endswith('.md')])
   go = _FormatGoFiles(args, [f for f in files if f.endswith('.go')])
-  py = _FormatPythonFiles(args, [f for f in files if f.endswith('.py')])
+  py_files_filter = lambda f: f.endswith('.py') and not f.endswith('_pb2.py')
+  py = _FormatPythonFiles(args, [f for f in files if py_files_filter(f)])
   modified_files = [
       os.path.relpath(f, SOURCE_PATH) for f in (pr + md + go + py)
   ]
