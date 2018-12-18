@@ -15,6 +15,13 @@ ad_domain {
   }
 }
 
+windows_user {
+  name: 'joe2012'
+  description: 'A user that can authenticate on domain2012.com'
+  hardcoded_password: 'AAAaaa111!!!'
+  container { ad_domain: 'domain2012.com' }
+}
+
 windows_machine {
   name: 'domain2012-dc'
   machine_type: 'win2012r2'
@@ -93,6 +100,13 @@ ad_domain {
   domain_controller {
     windows_machine: 'domain2008-dc'
   }
+}
+
+windows_user {
+  name: 'joe2008'
+  description: 'A user that can authenticate on domain2008.com'
+  hardcoded_password: 'AAAaaa111!!!'
+  container { ad_domain: 'domain2008.com' }
 }
 
 windows_machine {

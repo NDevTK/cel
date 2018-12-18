@@ -76,6 +76,8 @@ class SingleTestController:
         test(self=testCaseInstance)
         print("PASSED   %s" % test.func_name)
         passes += 1
+      except KeyboardInterrupt:
+        raise
       except:
         print("FAILED   %s" % test.func_name)
         print(traceback.format_exc())
