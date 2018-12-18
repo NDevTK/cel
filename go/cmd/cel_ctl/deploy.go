@@ -8,6 +8,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
 	"context"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 type DeployCommand struct {
@@ -27,6 +28,8 @@ func init() {
 }
 
 func (d *DeployCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
+	log.Printf("Start of `cel_ctl deploy` - version %s", version)
+
 	session, err := a.CreateSession(ctx, args, d.UseBuiltins)
 	if err != nil {
 		return err

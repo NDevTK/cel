@@ -53,7 +53,6 @@ func showStructuredError(err error, w io.Writer) {
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.Printf("Start of cel_ctl version %s", version)
 	err := app.Run()
 	if err != nil {
 		showStructuredError(err, os.Stderr)
