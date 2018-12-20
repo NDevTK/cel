@@ -22,7 +22,7 @@ class TestClient:
     b64Script = base64.b64encode(script.encode('utf-16-le'))
     return self.RunCommand('powershell', ['-EncodedCommand', b64Script])
 
-  def RunCommand(self, cmd, args):
+  def RunCommand(self, cmd, args=[]):
     # TODO: Escape arguments
     commandString = '%s %s' % (cmd, ' '.join(args))
     return self._celCtlRunner.RunCommand(self.name, commandString)
