@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from test_case import EnterpriseTestCase
+from test_registry import TestRegistry
 
 
 class environment(object):
@@ -17,6 +18,8 @@ class environment(object):
       error = '@environment can only be used on EnterpriseTestCase subclasses!'
       raise Exception(error)
 
+    className = "%s.%s" % (_class.__module__, _class.__name__)
+    TestRegistry.Register(className)
     _class.ASSET_FILE = self.file
     _class.DEPLOY_TIMEOUT = self.timeout
     return _class
