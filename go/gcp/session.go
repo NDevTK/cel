@@ -16,6 +16,7 @@ import (
 	cloudresourcemanager "google.golang.org/api/cloudresourcemanager/v1"
 	compute "google.golang.org/api/compute/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
+	"google.golang.org/api/option"
 	"log"
 	"net/http"
 	"sync"
@@ -61,9 +62,13 @@ func NewSession(ctx context.Context, client *http.Client, env *host.HostEnvironm
 	s.ctx = context.WithValue(ctx, gcpSessionKey, s)
 
 	if env.LogSettings.GetAdminLog() != "" {
-		s.logClient, err = logging.NewClient(s.ctx, env.Project.Name)
+		ts, err := GetDefaultTokenSource(ctx)
 		if err != nil {
-			return
+			return s, err
+		}
+		s.logClient, err = logging.NewClient(s.ctx, env.Project.Name, option.WithTokenSource(ts))
+		if err != nil {
+			return s, err
 		}
 		s.logger = s.logClient.Logger(env.LogSettings.AdminLog)
 	}
@@ -107,7 +112,12 @@ func (s *Session) GetCloudKmsService() (*cloudkms.Service, error) {
 
 func (s *Session) GetIamClient() (*iam.IamClient, error) {
 	s.iamClientOnce.Do(func() {
-		s.iamClient, s.iamResult = iam.NewIamClient(s.ctx)
+		ts, err := GetDefaultTokenSource(s.ctx)
+		if err != nil {
+			s.iamClient, s.iamResult = nil, err
+			return
+		}
+		s.iamClient, s.iamResult = iam.NewIamClient(s.ctx, option.WithTokenSource(ts))
 	})
 	return s.iamClient, s.iamResult
 }

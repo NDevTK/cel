@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import googleapiclient.discovery
+import api_client
 
 
 class ComputeProject:
@@ -12,7 +12,7 @@ class ComputeProject:
     self.zone = zone
 
   def GetComputeInstances(self):
-    service = googleapiclient.discovery.build('compute', 'v1')
+    service = api_client.build('compute', 'v1')
 
     request = service.instances().list(project=self.name, zone=self.zone)
 
@@ -35,7 +35,7 @@ class ComputeInstance:
     self._next = 0
 
   def GetLatestConsoleOutput(self):
-    service = googleapiclient.discovery.build('compute', 'v1')
+    service = api_client.build('compute', 'v1')
 
     request = service.instances().getSerialPortOutput(
         instance=self.name,

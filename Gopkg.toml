@@ -20,3 +20,6 @@ required = ["github.com/mjibson/esc"]
   branch = "master"
   name = "google.golang.org/api"
 
+[[constraint]]
+  name = "go.chromium.org/luci"
+  revision = "c3e2432858d88fef07a863d8d087c707737c8c7b"

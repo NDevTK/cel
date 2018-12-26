@@ -14,6 +14,7 @@ import (
 	"cloud.google.com/go/logging/logadmin"
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 // Stay below project-wide quotas (per second - enforced per minute)
@@ -128,12 +129,15 @@ func (r *runCommandOperation) setRunCommandMetadata(client *http.Client) error {
 func (r *runCommandOperation) watchLogsForResult() (int, error) {
 	r.resetTimeout()
 	for r.timedout() {
-		client, err := logadmin.NewClient(r.ctx, r.project)
+		ts, err := GetDefaultTokenSource(r.ctx)
+		if err != nil {
+			return -1, err
+		}
+		client, err := logadmin.NewClient(r.ctx, r.project, option.WithTokenSource(ts))
 		if err != nil {
 			return -1, fmt.Errorf("can't read logs for project %s", r.project)
 		}
 
-		//todo: don't fetch what you just fetched (use timestamp? might still need a check for equality ...) //tODO: put project in there below. //TODO: instance filter.
 		filter := fmt.Sprintf(`logName = "projects/%s/logs/%s"`, r.project, "cel%2Fcommander")
 		if r.lastLogInsertId != "" {
 			filter = filter + fmt.Sprintf(` AND insertId > "%s"`, r.lastLogInsertId)

@@ -2,11 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import api_client
 import datetime
 import logging
-import googleapiclient.discovery
-import time
 import sys
+import time
 
 
 class CloudRuntimeConfig:
@@ -36,7 +36,7 @@ class CloudRuntimeConfig:
     """
     logging.info('Entering WaitForAllAssetsReady(%s)' % timeout)
 
-    api = googleapiclient.discovery.build('runtimeconfig', 'v1beta1')
+    api = api_client.build('runtimeconfig', 'v1beta1')
 
     startTime = time.time()
     assetStates = {}
