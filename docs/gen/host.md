@@ -337,6 +337,7 @@ be a full or a partial URL.
 * `string` [`image`](#NestedVM.image) = 1 (**Required**)
 * `string` [`user_name`](#NestedVM.user_name) = 2
 * `string` [`password`](#NestedVM.password) = 3
+* `string` [`machineType`](#NestedVM.machineType) = 4
 
 ### `image` {#NestedVM.image}
 
@@ -363,6 +364,15 @@ The user name & password used to log in through ssh.
 |----------|----------|
 | Field Name | `password` |
 | Type | `string` |
+
+### `machineType` {#NestedVM.machineType}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `machineType` |
+| Type | `string` |
+
+The GCE machine type used for the host. Default is n1-standard-2.
 
 ## Message `Project` {#Project}
 

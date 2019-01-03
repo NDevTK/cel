@@ -76,14 +76,14 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.Win
 
 	mt := common.Must(ctx.Indirect(m, "machine_type")).(*host.MachineType)
 
-	_, ok := mt.Base.(*host.MachineType_NestedVm)
+	nestedVm, ok := mt.Base.(*host.MachineType_NestedVm)
 	if ok {
-		return resolveNestedVM(ctx, m)
+		return resolveNestedVM(ctx, m, nestedVm)
 	}
 	return resolveNormalMachineType(ctx, m)
 }
 
-func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine) error {
+func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host.MachineType_NestedVm) error {
 	d := GetDeploymentManifest()
 	p := common.Must(ctx.Get(projectPath)).(*host.Project)
 	si := common.Must(ctx.Get(serviceAccountPath)).(*google_iam_admin_v1.ServiceAccount)
@@ -169,10 +169,15 @@ done
 		},
 	}
 
+	machineType := nestedVm.NestedVm.MachineType
+	if machineType == "" {
+		machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-2", p.Name, p.Zone)
+	}
+
 	return d.Emit(m, &compute.Instance{
 		Name:              m.Name,
 		Description:       "CEL VM",
-		MachineType:       fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-2", p.Name, p.Zone),
+		MachineType:       machineType,
 		Zone:              p.Zone,
 		CanIpForward:      true,
 		NetworkInterfaces: cni,
