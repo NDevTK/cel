@@ -56,6 +56,12 @@ def ParseArgs():
       action='store_false',
       help='Skip the deployment phase and go straight to tests')
   parser.add_argument(
+      '--cleanup',
+      dest='cleanup',
+      default=False,
+      action='store_true',
+      help='Clean up the host environment after the test')
+  parser.add_argument(
       '--error_logs_dir',
       metavar='<path>',
       dest='error_logs_dir',
@@ -130,9 +136,13 @@ if __name__ == '__main__':
   except:
     print(traceback.format_exc())
     logging.error('Test failed.')
+  finally:
+    if not success and should_write_logs:
+      print('Writing Compute logs to "%s"...' % args.error_logs_dir)
+      c.TryWriteComputeLogsTo(args.error_logs_dir)
 
-  if not success and should_write_logs:
-    print('Writing Compute logs to "%s"...' % args.error_logs_dir)
-    c.WriteComputeLogsTo(args.error_logs_dir)
+    if args.cleanup:
+      print('Cleaning up host environment...')
+      c.TryCleanHostEnvironment()
 
   sys.exit(0 if success else 1)

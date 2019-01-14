@@ -93,7 +93,21 @@ class SingleTestController:
 
     return success
 
-  def WriteComputeLogsTo(self, destination):
+  def TryWriteComputeLogsTo(self, destination):
+    try:
+      self._WriteComputeLogsTo(destination)
+    except:
+      print(traceback.format_exc())
+      logging.error('TryWriteComputeLogsTo(%s) failed.' % destination)
+
+  def TryCleanHostEnvironment(self):
+    try:
+      self._celCtlRunner.Clean()
+    except:
+      print(traceback.format_exc())
+      logging.error('TryCleanHostEnvironment failed.')
+
+  def _WriteComputeLogsTo(self, destination):
     """Writes all useful logs to investigate a test failure."""
     if not os.path.exists(destination):
       os.makedirs(destination)
@@ -151,6 +165,18 @@ class CelCtlRunner:
     except subprocess.CalledProcessError, e:
       logging.debug("cel_ctl run returned %s: %s" % (e.returncode, e.output))
       return e.returncode, e.output
+
+  def Clean(self):
+    cmd = [
+        self._cel_ctl, 'purge', '--builtins', self._hostFile, self._assetFile
+    ]
+
+    logging.info("Running %s" % cmd)
+    code = subprocess.call(cmd)
+    logging.info("cel_ctl returned code=%s" % code)
+
+    if code != 0:
+      raise CelCtlError("Clean failed.")
 
 
 class CelCtlError(Exception):
