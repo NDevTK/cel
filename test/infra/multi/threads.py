@@ -26,7 +26,7 @@ class TestWorkerThread(threading.Thread):
   def run(self):
     cmd = [
         'python', 'test.py', '--test', self.test, '--host', self.host,
-        '--noprogress', '--cleanup'
+        '--cleanup'
     ]
 
     if self._errorLogsDir != None:

@@ -44,12 +44,6 @@ def ParseArgs():
       action='store',
       help='Which binary to use to deploy the environment')
   parser.add_argument(
-      '--noprogress',
-      dest='show_progress',
-      default=True,
-      action='store_false',
-      help='Don\'t show progress during the deployment phase')
-  parser.add_argument(
       '--nodeploy',
       dest='deploy',
       default=True,
@@ -124,7 +118,7 @@ if __name__ == '__main__':
   should_write_logs = (args.error_logs_dir != None)
   try:
     if args.deploy:
-      c.DeployNewEnvironment(args.show_progress)
+      c.DeployNewEnvironment()
 
     success = c.ExecuteTestCase()
   except controller.CelCtlError:

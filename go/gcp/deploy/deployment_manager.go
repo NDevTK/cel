@@ -117,7 +117,29 @@ Underlying error:`)
 		return err
 	}
 
-	return gcp.JoinOperation(s, o, "Deploying lab")
+	err = gcp.JoinOperation(s, o, "Deploying lab")
+	if err != nil {
+		return err
+	}
+
+	// Report any failed resource in that deployment.
+	resources, err := GetResources(ctx, s)
+	if err != nil {
+		return
+	}
+
+	for _, resource := range resources {
+		if resource.Update != nil && resource.Update.State != "SUCCESS" {
+			return fmt.Errorf(`GCP Deployment failed at least one resource: %s (%s)
+
+See logs for more info:
+* https://console.cloud.google.com/dm/deployments/details/%s?project=%s`,
+				resource.Name, resource.Update.State,
+				celDeploymentName, s.GetProject())
+		}
+	}
+
+	return nil
 }
 
 func cleanupFirewallRules(ctx common.Context, s *gcp.Session) error {

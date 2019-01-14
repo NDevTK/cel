@@ -9,10 +9,12 @@ import (
 	"context"
 	"github.com/spf13/cobra"
 	"log"
+	"time"
 )
 
 type DeployCommand struct {
 	UseBuiltins bool
+	Timeout     int
 }
 
 func init() {
@@ -24,6 +26,7 @@ func init() {
 `,
 	}
 	cmd.Flags().BoolVarP(&dc.UseBuiltins, "builtins", "B", false, "Use builtin assets")
+	cmd.Flags().IntVarP(&dc.Timeout, "timeout", "T", 3600, "Timeout in seconds to wait for onhost configuration")
 	app.AddCommand(cmd, dc)
 }
 
@@ -35,5 +38,10 @@ func (d *DeployCommand) Run(ctx context.Context, a *Application, cmd *cobra.Comm
 		return err
 	}
 
-	return deploy.Deploy(session)
+	err = deploy.Deploy(session)
+	if err != nil {
+		return err
+	}
+
+	return deploy.WaitForAllAssetsReady(session.GetBackend(), time.Duration(d.Timeout)*time.Second)
 }

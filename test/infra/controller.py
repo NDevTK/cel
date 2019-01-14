@@ -41,19 +41,9 @@ class SingleTestController:
 
     self._celCtlRunner = CelCtlRunner(cel_ctl, self._hostFile, self._assetFile)
 
-  def DeployNewEnvironment(self, showProgress=False):
+  def DeployNewEnvironment(self):
     """Deploys the test environment. Returns only when it is ready."""
-    self._celCtlRunner.Deploy()
-
-    # Wait for the on-host deployment scripts to finish.
-    print("Waiting for all assets to be ready...")
-    config = gcp.CloudRuntimeConfig('cel-config', self._project)
-
-    kwargs = {'showProgress': showProgress}
-    if self._deployTimeout:
-      kwargs['timeout'] = self._deployTimeout
-
-    config.WaitForAllAssetsReady(**kwargs)
+    self._celCtlRunner.Deploy(self._deployTimeout)
 
   def ExecuteTestCase(self):
     """Runs all the @test methods for this TestCase.
@@ -139,10 +129,13 @@ class CelCtlRunner:
     self._hostFile = hostFile
     self._assetFile = assetFile
 
-  def Deploy(self):
+  def Deploy(self, deployTimeout):
     cmd = [
         self._cel_ctl, 'deploy', '--builtins', self._hostFile, self._assetFile
     ]
+
+    if deployTimeout != None:
+      cmd += ['--timeout', str(deployTimeout)]
 
     logging.info("Running %s" % cmd)
     code = subprocess.call(cmd)

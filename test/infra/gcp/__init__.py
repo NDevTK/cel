@@ -3,4 +3,3 @@
 # found in the LICENSE file.
 
 from compute import ComputeInstance, ComputeProject
-from runtime_config import CloudRuntimeConfig
