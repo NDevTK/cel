@@ -3,3 +3,4 @@
 # found in the LICENSE file.
 
 from compute import ComputeInstance, ComputeProject
+from storage import StorageBucket

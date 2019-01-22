@@ -4,4 +4,5 @@
 
 from args_parser import ArgsParser
 from controller import MultiTestController
-from host_provider import SimpleHostProvider
+from simple_host_provider import SimpleHostProvider
+from shared_host_provider import SharedHostProvider

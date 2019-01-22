@@ -4,10 +4,8 @@
 
 import collections
 import logging
-import threading
 
 
-# TODO: Implement SharedHostProvider which locks projects (shared pool).
 # TODO: Implement NewHostProvider which creates new GCP projects.
 class SimpleHostProvider:
 
@@ -37,5 +35,10 @@ class SimpleHostProvider:
     logging.info("Releasing host '%s'" % host)
     self._hosts.append(host)
 
+  def SetNewAvailableHostCallback(self, callback):
+    """Not implemented for SimpleHostProvider."""
+    pass
+
   def Size(self):
+    """Returns the number of hosts left in this provider."""
     return len(self._hosts)

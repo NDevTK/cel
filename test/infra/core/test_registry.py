@@ -21,9 +21,9 @@ class TestRegistry:
     Returns:
       The full identifier for the class if found. None if not found.
     """
-    for _class in TestRegistry._allTestCases:
-      if _class == pattern:
-        return _class
+    for c in TestRegistry._allTestCases:
+      if _class == c:
+        return c
 
     return None
 

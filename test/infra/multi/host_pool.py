@@ -75,6 +75,8 @@ class HostPool:
     """
     logging.debug("Waiting for a new available host.")
     while True:
+      self._provider.SetNewAvailableHostCallback(self.AddAvailableHost)
+
       # wait() with no timeout blocks KeyboardInterrupt (CTRL+C) in Python 2.7,
       # but doesn't if one is passed. Let's wait 100h. (Python3 never blocks)
       if not self._hostAvailableEvent.wait(60 * 60 * 100):
@@ -83,6 +85,7 @@ class HostPool:
 
       with self._hostsLock:
         if len(self._available) > 0:
+          self._provider.SetNewAvailableHostCallback(None)
           return self._PopAvailableHost()
 
       # Should not happen. Main thread is the only TakeOrWaitForHost caller.
@@ -91,6 +94,7 @@ class HostPool:
   def ReleaseAllAvailableHosts(self):
     """Releases all current and future available hosts."""
     self._releaseAvailableHosts = True
+    self._provider.SetNewAvailableHostCallback(None)
 
     with self._hostsLock:
       while len(self._available) > 0:
@@ -100,7 +104,8 @@ class HostPool:
   def AddAvailableHost(self, host):
     """This marks a host as available for TakeOrWaitForHost.
 
-    This is called by test threads when they complete and no longer need it.
+    This is called by test threads when they complete and no longer need it,
+    or by some Providers that can watch for new available hosts.
     """
     with self._hostsLock:
       if host in self._busy:

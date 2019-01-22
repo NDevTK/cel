@@ -7,6 +7,7 @@ import logging
 import sys
 from test.infra.multi import *
 import traceback
+import warnings
 
 # Import all known tests
 from test.tests import *
@@ -34,6 +35,13 @@ def ParseArgs():
       default=True,
       action='store_false',
       help='Don\'t show progress while running tests')
+  parser.add_argument(
+      '--shared_provider_storage',
+      metavar='<bucketName>',
+      dest='shared_provider_storage',
+      default=None,
+      action='store',
+      help='Where to store locks for the SharedHostProvider hosts')
   parser.add_argument(
       '--error_logs_dir',
       metavar='<path>',
@@ -64,6 +72,13 @@ def ConfigureLogging(args):
   if args.debug:
     level = logging.DEBUG
 
+  # Filter out logs from low level loggers
+  errorOnlyLoggers = ['googleapiclient', 'google.auth', 'google_auth_httplib2']
+  for logger in errorOnlyLoggers:
+    logging.getLogger(logger).setLevel(logging.ERROR)
+  message = 'We recommend that most server applications use service accounts.'
+  warnings.filterwarnings('ignore', '.*%s' % message)
+
   logfmt = '%(asctime)s %(filename)s:%(lineno)s: [%(levelname)s] %(message)s'
   datefmt = '%Y/%m/%d %H:%M:%S'
 
@@ -83,7 +98,13 @@ if __name__ == '__main__':
   hostFiles = ArgsParser.ParseHostsArg(args.hosts)
   logging.debug('Found hosts: %s', hostFiles)
 
-  c = MultiTestController(tests, SimpleHostProvider(hostFiles))
+  hostProvider = None
+  if args.shared_provider_storage == None:
+    hostProvider = SimpleHostProvider(hostFiles)
+  else:
+    hostProvider = SharedHostProvider(hostFiles, args.shared_provider_storage)
+
+  c = MultiTestController(tests, hostProvider)
 
   success = False
   try:

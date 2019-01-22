@@ -29,7 +29,6 @@ Here are the different threads running in a multi-test run:
 """
 
 from test.infra.multi.host_pool import HostPool
-from test.infra.multi.host_provider import SimpleHostProvider
 from test.infra.multi.threads import TestWorkerThread, DisplayProgressThread
 import logging
 import threading
