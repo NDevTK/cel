@@ -445,7 +445,7 @@ def _Deps(args):
       os.path.join(SOURCE_PATH, 'Gopkg.lock')):
     return
 
-  update_flag = ['-update'] if update_deps else []
+  update_flag = ['-update'] if update_deps else ['-vendor-only']
 
   _CheckAndInstall(
       ['dep', 'ensure'] + verbose_flag + update_flag,
