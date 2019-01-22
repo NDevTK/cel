@@ -41,7 +41,7 @@ func WaitForAllAssetsReady(s *gcp.Session, timeout time.Duration) (err error) {
 	i := -1
 	startTime := time.Now()
 	for time.Now().Before(startTime.Add(timeout)) {
-		variables, err := fetchVariablesFromRuntimeConfig(api, configPath)
+		variables, err := fetchVariablesFromRuntimeConfig(s.Logger, api, configPath)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,7 @@ See instance console logs for more info:
 }
 
 // Fetches the variables and values for this config.
-func fetchVariablesFromRuntimeConfig(api *runtimeconfig.Service, configPath string) ([]*runtimeconfig.Variable, error) {
+func fetchVariablesFromRuntimeConfig(logger common.Logger, api *runtimeconfig.Service, configPath string) ([]*runtimeconfig.Variable, error) {
 	retries := 0
 	for {
 		request := api.Projects.Configs.Variables.List(configPath).ReturnValues(true)
@@ -96,6 +96,9 @@ func fetchVariablesFromRuntimeConfig(api *runtimeconfig.Service, configPath stri
 			if retries > maxRetries {
 				return nil, err
 			}
+
+			logger.Warning(common.MakeStringer("Retrying Projects.Configs.Variables.List after failure: %s", err))
+			continue
 		}
 
 		return response.Variables, nil
