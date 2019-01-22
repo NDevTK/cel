@@ -5,7 +5,8 @@
 from test.infra.core import *
 
 
-@environment(file="./examples/schema/rds/rds-examples.asset.textpb")
+@environment(
+    file="./examples/schema/rds/rds-examples.asset.textpb", timeout=5400)
 class RemoteDesktopTest(EnterpriseTestCase):
 
   @test

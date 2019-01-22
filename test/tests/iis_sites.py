@@ -161,7 +161,7 @@ class IISTestHelper:
   def _VerifyAnonymousAccessFails(test, case):
     """Verifies that an Invoke-WebReguest with no credential fails w/ 401."""
     script = '(Invoke-WebRequest %s -UseBasicParsing).StatusCode' % case.target
-    ret, output = self.clients[case.client].RunPowershell(script)
+    ret, output = test.clients[case.client].RunPowershell(script)
     test.assertEqual(ret, 1)
     test.assertTrue("401 - Unauthorized" in output)
 

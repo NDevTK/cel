@@ -75,10 +75,8 @@ class SingleTestController:
 
     success = (passes == len(tests))
 
-    # Print summary (in red if there are failures)
+    # Print summary
     summary = "\n%s/%s tests passed.\n" % (passes, len(tests))
-    if not success:
-      summary = '\033[91m%s\033[0m' % summary
     print(summary)
 
     return success

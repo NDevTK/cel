@@ -89,13 +89,15 @@ class MultiTestController:
       message += " [test=%s]" % self._activeTestThreads[threadID].test
       logging.warning(message)
 
-    # Print summary (in red if there are failures)
+    success = (self._totalTestsPassed == len(self._testsToRun))
+
+    # Print summary
     results = (self._totalTestsPassed, len(self._testsToRun))
     summary = "\n%s/%s test cases passed.\n" % results
-    if results[0] < results[1]:
-      summary = '\033[91m%s\033[0m' % summary
     with self._printLock:
       print(summary)
+
+    return success
 
   def _OnTestWorkerThreadCompleted(self, thread, success, details):
     """This is called by a TestWorkerThread when it completes."""

@@ -44,3 +44,41 @@ wheel: <
   name: "infra/python/wheels/uritemplate-py2_py3"
   version: "version:3.0.0"
 >
+
+# google.protobuf
+wheel: <
+  name: "infra/python/wheels/protobuf-py2_py3"
+  version: "version:3.6.1"
+>
+
+# iam.admin.v1
+wheel: <
+  name: "infra/python/wheels/grpc-google-iam-admin-v1-py2_py3"
+  version: "version:0.10.0"
+>
+
+# iam.admin.v1's dependencies
+wheel: <
+  name: "infra/python/wheels/grpc-google-iam-v1-py2_py3"
+  version: "version:0.11.4"
+>
+
+wheel: <
+  name: "infra/python/wheels/googleapis-common-protos-py2_py3"
+  version: "version:1.5.3"
+>
+
+wheel: <
+  name: "infra/python/wheels/grpcio/${vpython_platform}"
+  version: "version:1.4.0"
+>
+
+wheel: <
+  name: "infra/python/wheels/futures-py2_py3"
+  version: "version:3.1.1"
+>
+
+wheel: <
+  name: "infra/python/wheels/enum34-py2"
+  version: "version:1.1.6"
+>
