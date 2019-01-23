@@ -779,6 +779,10 @@ func (d *deployer) waitForDependency(depVar string, timeOut time.Duration) error
 	return nil
 }
 
+func (d *deployer) RunCommandOnNestedVM(cmd string) ([]byte, error) {
+	return d.sshRunCommand(cmd)
+}
+
 func (d *deployer) sshRunCommand(cmd string) ([]byte, error) {
 	d.Logf("Run command on nested VM: %s", cmd)
 	conn, err := d.sshConnect()

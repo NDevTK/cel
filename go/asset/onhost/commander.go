@@ -6,14 +6,17 @@ package onhost
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"sync"
 	"time"
 
@@ -36,9 +39,10 @@ type commander struct {
 	ctx           context.Context
 	loggingClient *logging.Client
 	logger        *logging.Logger
+	deployer      *deployer
 }
 
-func CreateCommander() (*commander, error) {
+func CreateCommander(deployer *deployer) (*commander, error) {
 	_ = os.Mkdir(workingDirectory, os.ModePerm)
 
 	projectId, err := metadata.ProjectID()
@@ -59,6 +63,7 @@ func CreateCommander() (*commander, error) {
 		ctx:           ctx,
 		loggingClient: loggingClient,
 		logger:        logger,
+		deployer:      deployer,
 	}, nil
 }
 
@@ -154,17 +159,9 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 		c.logger.Flush()
 	}()
 
-	// Execute the command and redirect all output to our logger.
-	command := exec.Command("cmd.exe", "/C", runCommand.Command)
-	command.Dir = workingDirectory
+	logFn := func(reader io.Reader) {
+		scanner := bufio.NewScanner(reader)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	stdout, err := command.StdoutPipe()
-	command.Stderr = command.Stdout
-
-	scanner := bufio.NewScanner(stdout)
-	go func() {
 		for scanner.Scan() {
 			// Text() usually returns a single line of output, but can also
 			// return a partial line if it's over 64 * 1024 bytes.
@@ -180,27 +177,55 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 			)
 			logInsertId++
 		}
+	}
+
+	// We assume that non-windows machines are Linux boxes hosting a NestedVM.
+	// We make the same assumption in deployer.go.
+	if runtime.GOOS == "windows" {
+		exitCode = c.processRunCommandEntryOnWindows(runCommand, logFn)
+	} else {
+		output, err := c.deployer.RunCommandOnNestedVM(runCommand.Command)
+
+		logFn(bytes.NewReader(output))
+
+		if err != nil {
+			exitCode = -1
+		}
+	}
+}
+
+func (c *commander) processRunCommandEntryOnWindows(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
+	// Execute the command and redirect all output to our logger.
+	command := exec.Command("cmd.exe", "/C", runCommand.Command)
+	command.Dir = workingDirectory
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	stdout, err := command.StdoutPipe()
+	command.Stderr = command.Stdout
+
+	go func() {
+		logFn(stdout)
 
 		wg.Done()
 	}()
 
 	if err = command.Start(); err != nil {
 		c.Logf("Error starting command: %v", err)
-		exitCode = -1
-		return
+		return -1
 	} else if err = command.Wait(); err != nil {
 		c.Logf("Error waiting for command: %v", err)
-		exitCode = -1
-		return
+		return -1
 	}
 
 	// Wait for all remaining output to be processed.
 	wg.Wait()
 
 	if !command.ProcessState.Success() {
-		exitCode = -1
-		return
+		return -1
 	}
+
+	return 0
 }
 
 func formatLogInsertId(runCommand *gcp.RunCommandMetadataEntry, insertId int) string {

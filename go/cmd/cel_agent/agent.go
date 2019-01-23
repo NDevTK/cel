@@ -45,7 +45,7 @@ func main() {
 	d.Deploy(os.Args[1])
 
 	// Keep running and watch for command signals
-	c, err := onhost.CreateCommander()
+	c, err := onhost.CreateCommander(d)
 	if err != nil {
 		log.Printf("Commander creation failed. error: %s", err)
 		return
