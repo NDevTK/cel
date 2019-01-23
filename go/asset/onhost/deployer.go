@@ -330,7 +330,13 @@ func (d *deployer) DeployOnVMHostInstance(manifestFile string) {
 
 	if err := d.setupNestedVM(manifestFile); err != nil {
 		d.Logf("Error: %s.", err)
-		d.setRuntimeConfigVariable(machineConfigVar, statusError)
+
+		// if the status is already 'ready', then we shouldn't change it.
+		// The reason is that if it is changed to error, then the nested VM cannot
+		// work after host reboot since setupNestedVM() will never be called.
+		if status != statusReady {
+			d.setRuntimeConfigVariable(machineConfigVar, statusError)
+		}
 		return
 	}
 
