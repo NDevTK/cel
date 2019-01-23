@@ -142,7 +142,23 @@ func (d *deployer) Close() error {
 	return d.loggingClient.Close()
 }
 
+// CreateDeployer creates the deployer
 func CreateDeployer() (*deployer, error) {
+	timeOut := 5 * time.Minute
+	for start := time.Now(); time.Since(start) < timeOut; {
+		d, err := createDeployer()
+		if err == nil {
+			return d, nil
+		}
+
+		log.Printf("Deployer creation failed. error: %s. Retry", err)
+		time.Sleep(1 * time.Minute)
+	}
+
+	return nil, errors.New("CreateDeployer failed")
+}
+
+func createDeployer() (*deployer, error) {
 	ex, err := os.Executable()
 	if err != nil {
 		return nil, err

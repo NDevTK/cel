@@ -79,6 +79,12 @@ if ($error.Count -gt $errorCount)
         {
             $errorCode=150
         }
+        elseif ($err.FullyQualifiedErrorId -match "HRESULT 0x80338012")
+        {
+            # The error is "The client cannot connect to the destination specified in the request."
+            # This can happen when the DC is not ready.
+            $errorCode=150
+        }
     }
 
     # Exit with error code
