@@ -260,3 +260,19 @@ func GetResources(ctx common.Context, s *gcp.Session) (r []*deploymentmanager.Re
 
 	return
 }
+
+// Returns the service account used by the DeploymentManager.
+// By default, {projectNumber}@cloudservices.gserviceaccount.com is used.
+func GetDeploymentManagerServiceAccount(ctx common.Context, s *gcp.Session) (string, error) {
+	cloudResourceManagerService, err := s.GetCloudResourceManagerService()
+	if err != nil {
+		return "", err
+	}
+
+	project, err := cloudResourceManagerService.Projects.Get(s.GetProject()).Context(ctx).Do()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%d@cloudservices.gserviceaccount.com", project.ProjectNumber), nil
+}
