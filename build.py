@@ -217,6 +217,12 @@ Recognized keyword arguments are:
         time of the file at |out|. If |out| is missing, then the behavior is
         equivalent to |out| being older than the inputs.
 
+    outpy: string
+        A python proto root directory. If specified, the timestamps of the
+        input files are compared against the modified time of the mapped file
+        in |outpy|. If |outpy| is missing, then the behavior is equivalent to
+        |outpy| being older than the inputs.
+
     stamp: string
         A stamp file. The behavior is equivalent to setting |out| except that
         the timestamp of the file at |stamp| is updated to the current time if
@@ -239,8 +245,19 @@ argument string '$^' expands to |inp|.
       _SourcePath(kwargs['stamp']), *deps):
     return
 
+  # Verify if output files are more recent than the input files (and skip gen).
   if 'out' in kwargs and _IsTimestampNewer(_SourcePath(kwargs['out']), *deps):
-    return
+    skip_generate = True
+
+    if 'outpy' in kwargs:
+      for f in inp:
+        pyProto = f.replace('.proto', '_pb2.py').replace('-', '_')
+        pyProtoPath = os.path.join(kwargs['outpy'], pyProto)
+        if not _IsTimestampNewer(pyProtoPath, _SourcePath(f)):
+          skip_generate = False
+
+    if skip_generate:
+      return
 
   kwargs['inp'] = inp
   args = list(
@@ -248,10 +265,9 @@ argument string '$^' expands to |inp|.
   stamp = kwargs['stamp'] if 'stamp' in kwargs else None
 
   del kwargs['inp']
-  if 'out' in kwargs:
-    del kwargs['out']
-  if 'stamp' in kwargs:
-    del kwargs['stamp']
+  for key in ['out', 'outpy', 'stamp']:
+    if key in kwargs:
+      del kwargs[key]
 
   logging.info("%s [CWD: %s, GOOS: %s]",
                ' '.join([(x if ' ' not in x else '"' + x + '"') for x in args]),
@@ -528,14 +544,15 @@ missing.
 
   _BuildStep(
       protoc_command,
-      env=_MergeEnv(args, target_host=True),
-      cwd=SOURCE_PATH,
       inp=[
           'schema/common/validation.proto',
           'schema/common/file_reference.proto', 'schema/common/secret.proto',
           'go/common/testdata/testmsgs.proto'
       ],
-      out=os.path.join(descriptor_path, 'common.pb'))
+      out=os.path.join(descriptor_path, 'common.pb'),
+      outpy=python_proto_path,
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
 
   _BuildStep(
       protoc_command,
@@ -546,6 +563,7 @@ missing.
           'schema/asset/machine.proto', 'schema/asset/remote_desktop.proto'
       ],
       out=os.path.join(descriptor_path, 'asset.pb'),
+      outpy=python_proto_path,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -553,6 +571,7 @@ missing.
       protoc_command,
       inp=['schema/host/host_environment.proto'],
       out=os.path.join(descriptor_path, 'host.pb'),
+      outpy=python_proto_path,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -560,6 +579,7 @@ missing.
       protoc_command,
       inp=['schema/lab/lab.proto'],
       out=os.path.join(descriptor_path, 'lab.pb'),
+      outpy=python_proto_path,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -567,6 +587,7 @@ missing.
       protoc_command,
       inp=['schema/gcp/agent_metadata.proto'],
       out=os.path.join(descriptor_path, 'gcp_agent_metadata.pb'),
+      outpy=python_proto_path,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -574,6 +595,7 @@ missing.
       protoc_command,
       inp=['schema/gcp/compute/compute-api.proto'],
       out=os.path.join(descriptor_path, 'gcp_compute.pb'),
+      outpy=python_proto_path,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -581,6 +603,7 @@ missing.
       protoc_command,
       inp=['schema/gcp/cloudkms/cloudkms-api.proto'],
       out=os.path.join(descriptor_path, 'gcp_cloudkms.pb'),
+      outpy=python_proto_path,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
@@ -589,6 +612,7 @@ missing.
       inp=['go/tools/gen_doc_proto/testdata/test.proto'],
       out=os.path.join(SOURCE_PATH, 'go', 'tools', 'gen_doc_proto', 'testdata',
                        'test.pb'),
+      outpy=python_proto_path,
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
 
