@@ -16,7 +16,10 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,11 +32,8 @@ import (
 
 const defaultEtag = "NONE"
 
-// The working directory where commands are executed.
-const workingDirectory = "C:\\cel\\commander"
-
 // The stamp file we use on start to know what's the last thing we processed.
-const pathToLastCommandId = workingDirectory + "\\_LAST_PROCESSED_COMMAND_ID"
+var pathToLastCommandId = getWorkingDirectory() + "_LAST_PROCESSED_COMMAND_ID"
 
 type commander struct {
 	ctx           context.Context
@@ -42,8 +42,17 @@ type commander struct {
 	deployer      *deployer
 }
 
+// The working directory where commands are executed with a trailing slash.
+func getWorkingDirectory() string {
+	if runtime.GOOS == "windows" {
+		return "C:\\cel\\commander\\"
+	} else {
+		return "/cel/commander/"
+	}
+}
+
 func CreateCommander(deployer *deployer) (*commander, error) {
-	_ = os.Mkdir(workingDirectory, os.ModePerm)
+	_ = os.Mkdir(getWorkingDirectory(), os.ModePerm)
 
 	projectId, err := metadata.ProjectID()
 	if err != nil {
@@ -184,20 +193,19 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 	if runtime.GOOS == "windows" {
 		exitCode = c.processRunCommandEntryOnWindows(runCommand, logFn)
 	} else {
-		output, err := c.deployer.RunCommandOnNestedVM(runCommand.Command)
-
-		logFn(bytes.NewReader(output))
-
-		if err != nil {
-			exitCode = -1
-		}
+		exitCode = c.processRunCommandEntryOnNestedVM(runCommand, logFn)
 	}
 }
 
 func (c *commander) processRunCommandEntryOnWindows(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
-	// Execute the command and redirect all output to our logger.
 	command := exec.Command("cmd.exe", "/C", runCommand.Command)
-	command.Dir = workingDirectory
+
+	return c.runCommand(command, logFn)
+}
+
+func (c *commander) runCommand(command *exec.Cmd, logFn func(io.Reader)) int {
+	// Execute the command and redirect all output to our logger.
+	command.Dir = getWorkingDirectory()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -222,6 +230,57 @@ func (c *commander) processRunCommandEntryOnWindows(runCommand *gcp.RunCommandMe
 	wg.Wait()
 
 	if !command.ProcessState.Success() {
+		return -1
+	}
+
+	return 0
+}
+
+func (c *commander) processRunCommandEntryOnNestedVM(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
+	// gsutil is not installed on nested VMs, but it's a common command
+	// used during tests. The host will act as a proxy to support gsutil.
+	if strings.HasPrefix(runCommand.Command, "gsutil ") {
+		return c.processGsutilOnNestedVM(runCommand, logFn)
+	}
+
+	output, err := c.deployer.RunCommandOnNestedVM("cmd.exe /C " + runCommand.Command)
+
+	logFn(bytes.NewReader(output))
+
+	if err != nil {
+		return -1
+	}
+
+	return 0
+}
+
+func (c *commander) processGsutilOnNestedVM(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
+	// We currently only support "gsutil cp"
+	re := regexp.MustCompile("^gsutil (cp|copy) (.*) (.*)$")
+	match := re.FindStringSubmatch(runCommand.Command)
+	if match == nil {
+		logFn(strings.NewReader("gsutil is not installed on Nested VMs. Only `gsutil cp` is supported at this time."))
+
+		return -1
+	}
+
+	cpDestLocal := getWorkingDirectory() + filepath.Base(match[2])
+	cpDestVm := match[3]
+
+	// Copy the file here (VM host)
+	command := exec.Command("gsutil", match[1], match[2], cpDestLocal)
+	exitCode := c.runCommand(command, logFn)
+	if exitCode != 0 {
+		return exitCode
+	}
+
+	// Upload the file to our nested VM
+	err := c.deployer.UploadFileToNestedVM(cpDestLocal, cpDestVm)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Error during UploadFileToNestedVM: %s", err)
+
+		logFn(strings.NewReader(errorMessage))
+
 		return -1
 	}
 

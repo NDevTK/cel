@@ -784,6 +784,11 @@ func (d *deployer) RunCommandOnNestedVM(cmd string) ([]byte, error) {
 }
 
 func (d *deployer) sshRunCommand(cmd string) ([]byte, error) {
+	err := d.ensureWorkingDirOnNestedVmExists()
+	if err != nil {
+		return nil, err
+	}
+
 	d.Logf("Run command on nested VM: %s", cmd)
 	conn, err := d.sshConnect()
 	if err != nil {
@@ -796,9 +801,32 @@ func (d *deployer) sshRunCommand(cmd string) ([]byte, error) {
 		return nil, err
 	}
 
+	// Set WorkingDirectory to workingDirectoryOnNestedVM
+	cmd = fmt.Sprintf("cd %s && %s", workingDirectoryOnNestedVM, cmd)
 	output, err := session.CombinedOutput(cmd)
 	d.Logf("output from nested VM: [%s], err: %v", output, err)
 	return output, err
+}
+
+func (d *deployer) ensureWorkingDirOnNestedVmExists() error {
+	cmd := fmt.Sprintf("if not exist %s mkdir %s", workingDirectoryOnNestedVM, workingDirectoryOnNestedVM)
+
+	d.Logf("Run command on nested VM: %s", cmd)
+	conn, err := d.sshConnect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	session, err := conn.NewSession()
+	if err != nil {
+		return err
+	}
+
+	output, err := session.CombinedOutput(cmd)
+	d.Logf("output from nested VM: [%s], err: %v", output, err)
+
+	return err
 }
 
 // sshConnect connects to the instance and returns the ssh client.
@@ -891,7 +919,7 @@ func (d *deployer) getNestedVMWindowsVersion() error {
 	return nil
 }
 
-func (d *deployer) uploadFileToNestedVM(srcFilePath string, destDirectory string) error {
+func (d *deployer) UploadFileToNestedVM(srcFilePath string, destDirectory string) error {
 	fileName := filepath.Base(srcFilePath)
 	destFilePath := filepath.Join(workingDirectoryOnNestedVM, fileName)
 
@@ -927,7 +955,7 @@ func (d *deployer) uploadFileToNestedVM(srcFilePath string, destDirectory string
 }
 
 func (d *deployer) uploadSupportingFilesToNestedVM() error {
-	_, err := d.sshRunCommand(fmt.Sprintf("if not exist %s mkdir %s", workingDirectoryOnNestedVM, workingDirectoryOnNestedVM))
+	err := d.ensureWorkingDirOnNestedVmExists()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -936,7 +964,7 @@ func (d *deployer) uploadSupportingFilesToNestedVM() error {
 	for filename, file := range _escData {
 		if !file.isDir {
 			supportingFile := path.Join(d.directory, filename)
-			err := d.uploadFileToNestedVM(supportingFile, workingDirectoryOnNestedVM)
+			err := d.UploadFileToNestedVM(supportingFile, workingDirectoryOnNestedVM)
 			if err != nil {
 				return errors.WithStack(err)
 			}
