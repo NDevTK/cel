@@ -48,7 +48,7 @@ from distutils.version import LooseVersion
 # Root of the source tree.
 SOURCE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-# OUT_PATH is the root of the output tree. This is where build artifacts are placed.
+# OUT_PATH is the root of the output tree where build artifacts are placed.
 OUT_PATH = os.path.join(SOURCE_PATH, 'out')
 
 # STAMP_PATH is a directory that contains timestamp files that are used during
@@ -243,6 +243,7 @@ argument string '$^' expands to |inp|.
 
   if 'stamp' in kwargs and _IsTimestampNewer(
       _SourcePath(kwargs['stamp']), *deps):
+    logging.info('Skipping _BuildStep [stamp: %s]', kwargs['stamp'])
     return
 
   # Verify if output files are more recent than the input files (and skip gen).
@@ -257,6 +258,7 @@ argument string '$^' expands to |inp|.
           skip_generate = False
 
     if skip_generate:
+      logging.info('Skipping _BuildStep [out: %s]', kwargs['out'])
       return
 
   kwargs['inp'] = inp
@@ -287,8 +289,8 @@ def _InstallDep(args):
         textwrap.dedent('''\
             "dep" command not found.
 
-            The CEL project uses "deps" to manage dependencies. You can get it by following
-            the instructions at :
+            The CEL project uses "deps" to manage dependencies. You can get it
+            by following the instructions at :
 
                 https://github.com/golang/dep#setup
 
@@ -296,9 +298,9 @@ def _InstallDep(args):
 
                 go get -u github.com/golang/dep/cmd/dep
 
-            Rerun as 'build.py deps --install' to install dependencies automatically. If
-            you've already done so, it may be that the GOBIN path is not in the system
-            PATH.
+            Rerun as 'build.py deps --install' to install dependencies
+            automatically. If you've already done so, it may be that the GOBIN
+            path is not in the system PATH.
             '''))
 
   verbose_flag = []
@@ -317,14 +319,15 @@ def _InstallGoProtoc(args):
         textwrap.dedent('''\
             "protoc-gen-go" not found.
 
-            The CEL project relies on generating Go code for Google ProtoBuf files. In
-            addition to the Protocol Buffers Compiler (protoc), Go support requires
-            protoc-gen-go which generates Go code. More information can be found including
-            installation instructions at https://github.com/golang/protobuf.
+            The CEL project relies on generating Go code for Google ProtoBuf
+            files. In addition to the Protocol Buffers Compiler (protoc), Go
+            support requires protoc-gen-go which generates Go code. More
+            information can be found including installation instructions at
+            https://github.com/golang/protobuf.
 
-            Rerun this script as 'build.py deps --install' to install "protoc-gen-go"
-            automatically. If you've already done so, it may be that the GOBIN path is not
-            in the system.
+            Rerun this script as 'build.py deps --install' to install
+            "protoc-gen-go" automatically. If you've already done so,
+            it may be that the GOBIN path is not in the system.
             '''))
 
   verbose_flag = []
@@ -344,15 +347,15 @@ def _InstallProtoc(args):
           "protoc" not found or is too old. The version should be at least
           3.5.1 as reported by 'protoc --version'.
 
-          The CEL project relies on generating Go code for Google ProtoBuf files. This
-          requires having the ProtoBuf compiler in the PATH.
+          The CEL project relies on generating Go code for Google ProtoBuf
+          files. This requires having the ProtoBuf compiler in the PATH.
 
           Instructions for installing "protoc" can be found at
           https://developers.google.com/protocol-buffers/docs/downloads
 
-          Unfortunately, protoc can't be installed automatically. So you'll need to
-          install it manually. If you've arleady installed it, it's possible that the
-          installed location is not in the system PATH.
+          Unfortunately, protoc can't be installed automatically. So you'll
+          need to install it manually. If you've arleady installed it, it's
+          possible that the installed location is not in the system PATH.
           '''))
 
 
@@ -364,12 +367,18 @@ Returns true if any of the `sources` has a timestamp that's newer than
 All of `sources` and `sentinel_path` are full paths to files.
 '''
   if not os.path.exists(sentinel_path):
+    logging.info('  %s does not exist', sentinel_path)
     return False
   basetime = os.path.getmtime(sentinel_path)
   for source in sources:
-    if os.path.getmtime(source) > basetime:
-      logging.info('  %s is newer than %s', source, sentinel_path)
+    sourcetime = os.path.getmtime(source)
+    if sourcetime > basetime:
+      logging.info('  %s is newer than %s [%s ; %s]', source, sentinel_path,
+                   sourcetime, basetime)
       return False
+    else:
+      logging.info('  %s is older than %s [%s ; %s]', source, sentinel_path,
+                   sourcetime, basetime)
   return True
 
 
@@ -428,9 +437,9 @@ def _Deps(args):
           Instructions for installing "protoc" can be found at
           https://developers.google.com/protocol-buffers/docs/downloads
 
-          Unfortunately, protoc can't be installed automatically. So you'll need to
-          install it manually. If you've arleady installed it, it's possible that the
-          installed location is not in the system PATH.
+          Unfortunately, protoc can't be installed automatically. So you'll
+          need to install it manually. If you've arleady installed it, it's
+          possible that the installed location is not in the system PATH.
           '''.format(o)))
   else:
     raise Exception(
@@ -832,7 +841,8 @@ line option to set GOOS.
     if not test_arg.startswith('-'):
       raise (Exception(
           textwrap.dedent('''\
-              It looks like you are passing in package names. Please invoke 'go test' directly.
+              It looks like you are passing in package names.
+              Please invoke 'go test' directly.
               ''')))
 
   if not args.fast:
@@ -1037,12 +1047,12 @@ def _FormatPythonFiles(args, py_files):
               YAPF not found.
 
               YAPF is used for formatting Python files. See https://github.com/google/yapf
-              for more information on how to install YAPF. Without it, this script can't
-              correctly format Python source files.
+              for more information on how to install YAPF. Without it, this
+              script can't correctly format Python source files.
 
-              You can still land code if your change doesn't touch any Python files. If you
-              do modify Python files, it's likely that someone will have to reformat the
-              files later.
+              You can still land code if your change doesn't touch any Python
+              files. If you do modify Python files, it's likely that someone
+              will have to reformat the files later.
               '''))
     else:
       raise e
@@ -1084,9 +1094,9 @@ Problems with 'clang-format'?
 
      2. If you have a Chromium checkout handy, set the CHROMIUM_BUILDTOOLS_PATH
         environment variable to point to the 'buildtools' directory. E.g. if
-        your Chromium checkout is in /src/chromium, then:
+        your Chromium checkout is in /chromium, then:
 
-           CHROMIUM_BUILDTOOLS_PATH=/src/chromium/src/buildtools ./build.py format
+          CHROMIUM_BUILDTOOLS_PATH=/chromium/src/buildtools ./build.py format
 
      3. Create a .build.environment file at the root of the CEL checkout to set
         the CHROMIUM_BUILDTOOLS_PATH environment variable. The environment
@@ -1099,7 +1109,8 @@ Problems with 'clang-format'?
         
         E.g.: Using the same paths as the previous option:
 
-            echo '{ "CHROMIUM_BUILDTOOLS_PATH": "/src/chromium/src/buildtools" }' > .build.environment
+          echo '{ "CHROMIUM_BUILDTOOLS_PATH": "/chromium/src/buildtools" }' \
+            > .build.environment
 
         Now you should be able to invoke 'build.py' directly without having to
         set the environment variable each time.
@@ -1147,9 +1158,8 @@ Problems with 'clang-format'?
     if len(modified_files) == 0:
       return
 
-    print(
-        "The following files need reformatting. Use 'python build.py format' to fix:\n"
-    )
+    print("The following files need reformatting. " +
+          "Use 'python build.py format' to fix:\n")
 
     for f in sorted(modified_files):
       print(f)
@@ -1255,7 +1265,8 @@ def main():
       metavar='ARGS',
       type=str,
       help='''aruments to pass down to "go test".
-      Preface with "--" to disambiguate from arguments passed in to this build tool.''',
+      Preface with "--" to disambiguate arguments passed in to
+      this build tool.''',
       nargs='*')
   test_command.set_defaults(closure=TestCommand)
 
