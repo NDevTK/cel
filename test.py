@@ -121,9 +121,6 @@ if __name__ == '__main__':
       c.DeployNewEnvironment()
 
     success = c.ExecuteTestCase()
-  except controller.CelCtlError:
-    logging.error('Test failed to run cel_ctl.')
-    should_write_logs = False
   except KeyboardInterrupt:
     logging.error('Test aborted.')
     should_write_logs = False
