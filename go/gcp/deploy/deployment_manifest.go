@@ -16,14 +16,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type resource struct {
+type Resource struct {
 	Name       string        `json:"name"`
 	Type       string        `json:"type"`
 	Properties proto.Message `json:"properties"`
 }
 
 type resourceList struct {
-	Resources []resource `json:"resources"`
+	Resources []Resource `json:"resources"`
 }
 
 type DeploymentManifest struct {
@@ -78,7 +78,7 @@ func (d *DeploymentManifest) Emit(m proto.Message, v proto.Message) error {
 		name = d.Ref(v)
 	}
 
-	r := resource{
+	r := Resource{
 		Name:       name,
 		Type:       tn,
 		Properties: v,
@@ -86,6 +86,10 @@ func (d *DeploymentManifest) Emit(m proto.Message, v proto.Message) error {
 
 	d.schema.Resources = append(d.schema.Resources, r)
 	return nil
+}
+
+func (d *DeploymentManifest) GetResources() []Resource {
+	return d.schema.Resources
 }
 
 func (d *DeploymentManifest) GetYaml() ([]byte, error) {

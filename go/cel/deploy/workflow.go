@@ -20,6 +20,15 @@ import (
 func Deploy(d *Session) (err error) {
 	defer common.LoggedAction(d.GetContext(), &err, "Deployment %s", d.config.Lab.GenerationId)()
 
+	err = PrepareDeploymentConfiguration(d)
+	if err != nil {
+		return err
+	}
+
+	return InvokeDeploymentManager(d)
+}
+
+func PrepareDeploymentConfiguration(d *Session) (err error) {
 	// Right off the bat, lab and host.log_settings must be complete.
 	err = checkNamespaceIsReady(d.GetConfiguration().GetNamespace(),
 		[]common.RefPath{
@@ -107,12 +116,7 @@ func Deploy(d *Session) (err error) {
 		return err
 	}
 
-	err = InvokeConstructedAssetResolvers(d)
-	if err != nil {
-		return err
-	}
-
-	return InvokeDeploymentManager(d)
+	return InvokeConstructedAssetResolvers(d)
 }
 
 // InvokeAdditionalDependencyResolvers step adds any explicit dependences that were
