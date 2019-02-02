@@ -631,12 +631,6 @@ missing.
       esc_command, '-pkg', 'onhost', '-prefix', 'go/asset/onhost/', '-o',
       'go/asset/onhost/static.go', 'go/asset/onhost/supporting_files/'
   ])
-  env = _MergeEnv(args)
-  out_dir = os.path.join(_GetBuildDir(env), 'resources')
-  for goos, goarch in TARGET_ARCHS:
-    env['GOOS'] = goos
-    env['GOARCH'] = goarch
-    _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=out_dir)
 
   esc_invocation = [
       esc_command, '-pkg', 'deploy', '-prefix', 'resources', '-o', '{out}',
@@ -685,6 +679,13 @@ missing.
       out=os.path.join(doc_path, 'gcp_compute.md'),
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH)
+
+  env = _MergeEnv(args)
+  out_dir = os.path.join(_GetBuildDir(env), 'resources')
+  for goos, goarch in TARGET_ARCHS:
+    env['GOOS'] = goos
+    env['GOARCH'] = goarch
+    _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=out_dir)
 
 
 def _GetBuildDir(build_env):
