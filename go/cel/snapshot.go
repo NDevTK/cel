@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
+	"path"
 	"regexp"
 	"strings"
 
@@ -63,6 +64,9 @@ type EnvironmentSnapshot struct {
 
 	// Map of all instances in an environment keyed by InstanceName.
 	Instances map[string]InstanceSnapshot
+
+	// The date that the environment snapshot was created in RFC3339 text format.
+	CreationTimestamp string
 }
 
 type instanceOperation func(ctx common.Context, service *compute.InstancesService, project string, zone string, instance *compute.Instance) (*compute.Operation, error)
@@ -325,7 +329,11 @@ func GetAllEnvironmentSnapshots(ctx context.Context, client *http.Client, projec
 		instanceName := parts[2]
 
 		if snapshot == nil || snapshot.Name != snapshotName {
-			snapshot = &EnvironmentSnapshot{Name: snapshotName, Instances: make(map[string]InstanceSnapshot)}
+			snapshot = &EnvironmentSnapshot{
+				Name:              snapshotName,
+				Instances:         make(map[string]InstanceSnapshot),
+				CreationTimestamp: image.CreationTimestamp,
+			}
 			snapshots = append(snapshots, snapshot)
 		}
 
@@ -360,4 +368,23 @@ func FindEnvironmentSnapshot(ctx context.Context, client *http.Client, project s
 	}
 
 	return nil, ErrSnapshotNotFound
+}
+
+// Deletes all images in an environment snapshot.
+func DeleteEnvironmentSnapshot(ctx context.Context, client *http.Client, project string, snapshot *EnvironmentSnapshot) error {
+	computeService, err := compute.New(client)
+	if err != nil {
+		return err
+	}
+
+	imagesService := compute.NewImagesService(computeService)
+
+	for _, instance := range snapshot.Instances {
+		_, err := imagesService.Delete(project, path.Base(instance.Image)).Context(ctx).Do()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

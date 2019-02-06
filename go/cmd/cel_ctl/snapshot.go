@@ -14,6 +14,7 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
 )
 
 type CreateSnapshotCommand struct {
@@ -25,6 +26,15 @@ type RestoreSnapshotCommand struct {
 	UseBuiltins   bool
 	SourceProject string
 	SnapshotName  string
+}
+
+type ListSnapshotCommand struct {
+	Project string
+}
+
+type DeleteSnapshotCommand struct {
+	Project      string
+	SnapshotName string
 }
 
 func init() {
@@ -51,6 +61,30 @@ func init() {
 	cmd.Flags().StringVar(&rsc.SnapshotName, "name", "", "name of the snapshot to restore")
 	cmd.MarkFlagRequired("name")
 	app.AddCommand(cmd, rsc)
+
+	lsc := &ListSnapshotCommand{}
+	cmd = &cobra.Command{
+		Use:   "list-snapshot --project project",
+		Short: "list snapshots in target lab environment",
+		Long: `Lists snapshots in target lab environment.
+`,
+	}
+	cmd.Flags().StringVar(&lsc.Project, "project", "", "project to list snapshots")
+	cmd.MarkFlagRequired("project")
+	app.AddCommand(cmd, lsc)
+
+	dsc := &DeleteSnapshotCommand{}
+	cmd = &cobra.Command{
+		Use:   "delete-snapshot --project project --name name",
+		Short: "delete snapshots of instances in target lab environment",
+		Long: `Deletes snapshots of compute instances in target lab environment.
+`,
+	}
+	cmd.Flags().StringVar(&dsc.Project, "project", "", "project to delete a snapshot from")
+	cmd.Flags().StringVar(&dsc.SnapshotName, "name", "", "name of the snapshot to delete")
+	cmd.MarkFlagRequired("project")
+	cmd.MarkFlagRequired("name")
+	app.AddCommand(cmd, dsc)
 }
 
 func (csc *CreateSnapshotCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
@@ -144,4 +178,63 @@ func (rsc *RestoreSnapshotCommand) Run(ctx context.Context, a *Application, cmd 
 
 	// Perform the actual deployment with updated deployment configuration.
 	return deploy.InvokeDeploymentManager(session)
+}
+
+func (lsc *ListSnapshotCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
+	client, err := gcp.GetDefaultClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	snapshots, err := cel.GetAllEnvironmentSnapshots(ctx, client, lsc.Project)
+	if err != nil {
+		return err
+	}
+
+	if len(snapshots) == 0 {
+		fmt.Println("No celab environment snapshot found.")
+		return nil
+	}
+
+	lineFormat := "%-20s%-25s%s\n"
+	fmt.Printf(lineFormat, "SNAPSHOT", "CREATED ON", "MACHINES")
+	for _, snapshot := range snapshots {
+		var machines []string = make([]string, 0, len(snapshot.Instances))
+		for name, _ := range snapshot.Instances {
+			machines = append(machines, name)
+		}
+
+		// Turn the RFC3339 time (2019-02-01T15:52:34.289-08:00) to a more readable format.
+		creationTime, err := time.Parse(time.RFC3339, snapshot.CreationTimestamp)
+		if err != nil {
+			return err
+		}
+		readableTime := creationTime.Format("02/01/2006 15:04 MST")
+
+		fmt.Printf(lineFormat, snapshot.Name, readableTime, machines)
+	}
+
+	return nil
+}
+
+func (dsc *DeleteSnapshotCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
+	client, err := gcp.GetDefaultClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	snapshot, err := cel.FindEnvironmentSnapshot(ctx, client, dsc.Project, dsc.SnapshotName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Deleting environment snapshot...")
+	err = cel.DeleteEnvironmentSnapshot(ctx, client, dsc.Project, snapshot)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Environment snapshot deleted.")
+
+	return nil
 }
