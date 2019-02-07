@@ -92,6 +92,7 @@ if __name__ == '__main__':
   config_cronjob_py = os.path.join(current_dir,
                                    'configure_cron_stop_instances.py')
   storage_assets = "%s-assets" % args.name
+  storage_logs = "%s-logs" % args.name
 
   # Create all the GCP projects
   for i in xrange(0, pool_size):
@@ -103,10 +104,13 @@ if __name__ == '__main__':
     ]
     RunPython(create_project_py, cmd_args)
 
-    # Create the shared storage in the first project
+    # Create the shared storages in the first project
     if i == 0:
       cmd_args = [
           '--project', project_id, '--storage', storage_assets, '--delete', '1'
+      ]
+      cmd_args = [
+          '--project', project_id, '--storage', storage_logs, '--delete', '30'
       ]
       RunPython(create_storage_py, cmd_args)
 

@@ -98,11 +98,17 @@ if __name__ == '__main__':
 
   logging.info("Arguments: %s" % args)
 
-  # Enable the Compute Engine
-  p = subprocess.Popen(['gcloud', 'services', 'enable', 'compute'],
-                       env=dict(os.environ, CLOUDSDK_CORE_PROJECT=args.project))
-  output, err = p.communicate()
-  logging.info("Enable Compute Engine: %s -- %s" % (output, err))
+  # Enable the required services to "warm up" projects before the first test.
+  services = [
+      'compute', 'cloudresourcemanager', 'iam', 'runtimeconfig', 'monitoring',
+      'cloudkms', 'deploymentmanager'
+  ]
+  for service in services:
+    p = subprocess.Popen(
+        ['gcloud', 'services', 'enable', service + ".googleapis.com"],
+        env=dict(os.environ, CLOUDSDK_CORE_PROJECT=args.project))
+    output, err = p.communicate()
+    logging.info("Enable %s: %s -- %s" % (service, output, err))
 
   # Give project permissions to service accounts
   for account in args.accounts.split(';'):
