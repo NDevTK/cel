@@ -5,12 +5,12 @@
 from test.infra.core import *
 
 
-@environment(file="./examples/schema/ad/domain-join.asset.textpb")
+@environment(file="./assets/domain-join.asset.textpb")
 class DomainJoinTest(EnterpriseTestCase):
 
   @test
   def VerifyDomainJoined(self):
-    for client in ['client2008', 'client2012']:
+    for client in ['client2008', 'client2012', 'client2016']:
       ret, output = self.clients[client].RunCommand("systeminfo")
 
       domain = ADTestHelper._GetDomainFromSystemInfo(output)
@@ -18,21 +18,36 @@ class DomainJoinTest(EnterpriseTestCase):
       self.assertEqual(domain, "test1.com")
 
 
-@environment(file="./examples/schema/ad/domain-tree.asset.textpb", timeout=7200)
+@environment(file="./assets/domain-tree.asset.textpb", timeout=7200)
 class DomainTreeTest(EnterpriseTestCase):
 
   @test
   def VerifyDomainTreeExists(self):
-    # The AD Tree looks like this:
-    #      a1.com
+    # There are 2 AD trees.
+    #
+    # The first one looks like this:
+    #            a1-2012.com
+    #         /             \
+    #     b1.a1-2012.com   a2-2012.com
     #         |
-    #     b1.a1.com
+    #    c1.b1.a1-2012.com
+
+    # The second one looks like this:
+    #            a1-2008.com
+    #         /              \
+    #     b1.a1-2008.com   a2-2008.com
     #         |
-    #    c1.b1.a1.com
+    #    c1.b1.a1-2008.com
     cases = []
-    cases.append(('a1dc', 'a1.com'))
-    cases.append(('b1dc', 'b1.a1.com'))
-    cases.append(('c1dc', 'c1.b1.a1.com'))
+    cases.append(('a1-2012dc', 'a1-2012.com'))
+    cases.append(('a2-2012dc', 'a2-2012.com'))
+    cases.append(('b1-2012dc', 'b1.a1-2012.com'))
+    cases.append(('c1-2012dc', 'c1.b1.a1-2012.com'))
+
+    cases.append(('a1-2008dc', 'a1-2008.com'))
+    cases.append(('a2-2008dc', 'a2-2008.com'))
+    cases.append(('b1-2008dc', 'b1.a1-2008.com'))
+    cases.append(('c1-2008dc', 'c1.b1.a1-2008.com'))
 
     for client, expectedDomain in cases:
       ret, output = self.clients[client].RunCommand("systeminfo")

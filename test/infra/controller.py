@@ -6,6 +6,7 @@ from google.protobuf import text_format
 import logging
 import os
 import pydoc
+import inspect
 import subprocess
 import test.infra.gcp as gcp
 from test.infra.core import EnterpriseTestCase, TestEnvironment
@@ -28,12 +29,14 @@ class SingleTestController:
       message = 'Class found with no @environment: %s.' % testCaseClassName
       raise ValueError(message)
 
-    if not os.path.exists(testClass.ASSET_FILE):
-      raise ValueError('Asset file not found: %s' % testClass.ASSET_FILE)
+    asset_file = os.path.join(
+        os.path.dirname(inspect.getfile(testClass)), testClass.ASSET_FILE)
+    if not os.path.exists(asset_file):
+      raise ValueError('Asset file not found: %s' % asset_file)
 
     self._testClass = testClass
     self._hostFile = hostFile
-    self._assetFile = testClass.ASSET_FILE
+    self._assetFile = asset_file
     self._deployTimeout = testClass.DEPLOY_TIMEOUT
 
     host = self._ParseHostFile(hostFile)

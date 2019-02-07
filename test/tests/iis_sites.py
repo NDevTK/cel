@@ -7,7 +7,7 @@ import re
 from test.infra.core import *
 
 
-@environment(file="./examples/schema/iis/iis-various-auth.asset.textpb")
+@environment(file="../../examples/schema/iis/iis-various-auth.asset.textpb")
 class IISSitesTest(EnterpriseTestCase):
 
   @test
@@ -90,7 +90,7 @@ class IISSitesTest(EnterpriseTestCase):
     return cases
 
 
-@environment(file="./examples/schema/iis/iis-ntlm-v1.asset.textpb")
+@environment(file="../../examples/schema/iis/iis-ntlm-v1.asset.textpb")
 class IISNTLMTest(EnterpriseTestCase):
 
   @test

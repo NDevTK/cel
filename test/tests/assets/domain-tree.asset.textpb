@@ -1,0 +1,145 @@
+network {
+  name: 'primary'
+}
+
+
+# an AD Tree, built on win2012r2
+#            a1-2012.com
+#           /           \
+#     b1.a1-2012.com   a2-2012.com
+#         |
+#    c1.b1.a1-2012.com
+
+ad_domain {
+  name: 'a1-2012.com'
+  netbios_name: 'a1-2012'
+
+  domain_controller {
+    windows_machine: 'a1-2012dc'
+  }
+}
+
+ad_domain {
+  name: 'a2-2012.com'
+  netbios_name: 'a2-2012'
+  forest: 'a1-2012.com'
+
+  domain_controller {
+    windows_machine: 'a2-2012dc'
+  }
+}
+
+ad_domain {
+  name: 'b1.a1-2012.com'
+  netbios_name: 'b1-2012'
+  parent_name: 'a1-2012.com'
+
+  domain_controller {
+    windows_machine: 'b1-2012dc'
+  }
+}
+
+ad_domain {
+  name: 'c1.b1.a1-2012.com'
+  netbios_name: 'c1-2012'
+  parent_name: 'b1.a1-2012.com'
+  
+  domain_controller {
+    windows_machine: 'c1-2012dc'
+  }
+}
+
+windows_machine {
+  name: 'a1-2012dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'a2-2012dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'b1-2012dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'c1-2012dc'
+  machine_type: 'win2012r2'
+  network_interface { network: 'primary' }
+}
+
+
+# another AD Tree, built on win2008r2
+#            a1-2008.com
+#         /              \
+#     b1.a1-2008.com   a2-2008.com
+#         |
+#    c1.b1.a1-2008.com
+
+ad_domain {
+  name: 'a1-2008.com'
+  netbios_name: 'a1-2008'
+
+  domain_controller {
+    windows_machine: 'a1-2008dc'
+  }
+}
+
+ad_domain {
+  name: 'a2-2008.com'
+  netbios_name: 'a2-2008'
+  forest: 'a1-2008.com'
+
+  domain_controller {
+    windows_machine: 'a2-2008dc'
+  }
+}
+
+ad_domain {
+  name: 'b1.a1-2008.com'
+  netbios_name: 'b1-2008'
+  parent_name: 'a1-2008.com'
+
+  domain_controller {
+    windows_machine: 'b1-2008dc'
+  }
+}
+
+ad_domain {
+  name: 'c1.b1.a1-2008.com'
+  netbios_name: 'c1-2008'
+  parent_name: 'b1.a1-2008.com'
+  
+  domain_controller {
+    windows_machine: 'c1-2008dc'
+  }
+}
+
+windows_machine {
+  name: 'a1-2008dc'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'a2-2008dc'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'b1-2008dc'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
+  name: 'c1-2008dc'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+}

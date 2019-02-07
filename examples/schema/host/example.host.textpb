@@ -88,3 +88,26 @@ machine_type {
     }
   }
 }
+
+machine_type {
+  # Name must match the host_machine_type field in the windows_machine asset
+  # entries.
+  name: 'win2016'
+
+  instance_properties {
+    machineType: 'projects/${host.project.name}/zones/${host.project.zone}/machineTypes/n1-standard-2'
+
+    scheduling {
+      automaticRestart: true
+    }
+
+    disks {
+      autoDelete: true
+      boot: true
+
+      initializeParams {
+        sourceImage: '${host.image.windows-2016.url}'
+      }
+    }
+  }
+}
