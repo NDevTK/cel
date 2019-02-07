@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/logging/logadmin"
@@ -84,6 +86,8 @@ type runCommandOperation struct {
 
 	lastLogInsertId string
 	timeoutAt       time.Time
+
+	nextLogSequenceId int
 }
 
 // This indicates to cel_agent that there is something to run on this instance.
@@ -173,6 +177,17 @@ func (r *runCommandOperation) searchForCommandResult(entries *logadmin.EntryIter
 			return nil, fmt.Errorf("failed to iterate through logs: %v", err)
 		}
 
+		currentSequenceId, err := getSequenceIdFromInsertId(entry.InsertID)
+		if err != nil {
+			return nil, err
+		}
+
+		if r.nextLogSequenceId != currentSequenceId {
+			continue
+		}
+
+		r.nextLogSequenceId = currentSequenceId + 1
+
 		r.lastLogInsertId = entry.InsertID
 		r.resetTimeout()
 
@@ -195,4 +210,18 @@ func (r *runCommandOperation) resetTimeout() {
 
 func (r *runCommandOperation) timedout() bool {
 	return time.Now().Before(r.timeoutAt)
+}
+
+func getSequenceIdFromInsertId(insertId string) (int, error) {
+	parts := strings.Split(insertId, "_")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("failed to split RunCommand LogEntry.InsertID %s: %v", insertId, parts)
+	}
+
+	sequenceId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse RunCommand LogEntry.InsertID %s: %v", insertId, err)
+	}
+
+	return sequenceId, nil
 }
