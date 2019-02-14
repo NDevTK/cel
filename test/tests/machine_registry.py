@@ -6,7 +6,7 @@ import logging
 from test.infra.core import *
 
 
-@environment(file="../../examples/schema/machine/registry-keys.asset.textpb")
+@environment(file="./assets/registry-keys.asset.textpb")
 class MachineRegistryTest(EnterpriseTestCase):
 
   @test
