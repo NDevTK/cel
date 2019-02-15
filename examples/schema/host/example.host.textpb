@@ -111,3 +111,21 @@ machine_type {
     }
   }
 }
+
+machine_type {
+  name: 'win7'
+  nested_vm {
+    image: 'gs://<storage_bucket>/images/win7_sp1_ent_unlicensed.img'
+    user_name: 'win7'
+    password: 'pass@word!'
+  }
+}
+
+machine_type {
+  name: 'win10'
+  nested_vm {
+    image: 'gs://<storage_bucket>/images/win10_pro_1803.img'
+    user_name: 'win10'
+    password: 'pass@word!'
+  }
+}
