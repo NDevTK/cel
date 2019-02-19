@@ -17,6 +17,8 @@ import (
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Stay below project-wide quotas (per second - enforced per minute)
@@ -174,7 +176,14 @@ func (r *runCommandOperation) searchForCommandResult(entries *logadmin.EntryIter
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to iterate through logs: %v", err)
+			// retry if the error is caused by over quota
+			st, ok := status.FromError(err)
+			if ok && st.Code() == codes.ResourceExhausted {
+				time.Sleep(waitTimeBetweenLogReads)
+				continue
+			} else {
+				return nil, fmt.Errorf("failed to iterate through logs: %v", err)
+			}
 		}
 
 		currentSequenceId, err := getSequenceIdFromInsertId(entry.InsertID)

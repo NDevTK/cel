@@ -10,12 +10,15 @@ class DomainJoinTest(EnterpriseTestCase):
 
   @test
   def VerifyDomainJoined(self):
-    for client in ['client2008', 'client2012', 'client2016']:
+    for client in [
+        'client2008', 'client2012', 'client2016', 'clientwin7', 'clientwin10'
+    ]:
       ret, output = self.clients[client].RunCommand("systeminfo")
 
       domain = ADTestHelper._GetDomainFromSystemInfo(output)
 
-      self.assertEqual(domain, "test1.com")
+      self.assertEqual(domain, "test1.com",
+                       "client is %s, output is %s" % (client, output))
 
 
 @environment(file="./assets/domain-tree.asset.textpb", timeout=7200)
