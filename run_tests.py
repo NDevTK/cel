@@ -104,11 +104,11 @@ if __name__ == '__main__':
   else:
     hostProvider = SharedHostProvider(hostFiles, args.shared_provider_storage)
 
-  c = MultiTestController(tests, hostProvider)
+  c = MultiTestController(tests, hostProvider, args.error_logs_dir)
 
   success = False
   try:
-    success = c.ExecuteTestCases(args.error_logs_dir, args.show_progress)
+    success = c.ExecuteTestCases(args.show_progress)
   except KeyboardInterrupt:
     logging.error('Test run aborted.')
     should_write_logs = False

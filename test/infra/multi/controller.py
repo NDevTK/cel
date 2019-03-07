@@ -30,13 +30,15 @@ Here are the different threads running in a multi-test run:
 
 from test.infra.multi.host_pool import HostPool
 from test.infra.multi.threads import TestWorkerThread, DisplayProgressThread
+import json
 import logging
+import os
 import threading
 
 
 class MultiTestController:
 
-  def __init__(self, tests, hostProvider):
+  def __init__(self, tests, hostProvider, errorLogsDir=None):
     """Initializes the controller for a multi-test run.
 
     Args:
@@ -45,16 +47,30 @@ class MultiTestController:
     """
     self._testsToRun = tests
     self._hostPool = HostPool(hostProvider)
+    self._errorLogsDir = errorLogsDir
 
     self._activeTestThreads = {}
 
+    self._testsSummary = {}
     self._totalTestsPassed = 0
     self._totalTestsFailed = 0
 
     # All threads should use this lock when printing something to stdout
     self._printLock = threading.Lock()
 
-  def ExecuteTestCases(self, errorLogsDir=None, showProgress=False):
+  def ExecuteTestCases(self, showProgress=False):
+    try:
+      return self._ExecuteTestCases(showProgress)
+    except:
+      raise
+    finally:
+      # Save a summary of test results for LUCI to consume.
+      if self._errorLogsDir != None:
+        summaryFilePath = os.path.join(self._errorLogsDir, "summary.json")
+        with open(summaryFilePath, "w") as summaryFile:
+          json.dump(self._testsSummary, summaryFile)
+
+  def _ExecuteTestCases(self, showProgress):
     """This is our main loop and entry point for ./run_tests.py."""
     progressThread = None
     if showProgress:
@@ -67,7 +83,7 @@ class MultiTestController:
 
       # Start a TestWorker thread to run this test
       callback = self._OnTestWorkerThreadCompleted
-      thread = TestWorkerThread(test, host, errorLogsDir, callback)
+      thread = TestWorkerThread(test, host, self._errorLogsDir, callback)
       thread.start()
       self._activeTestThreads[thread.ident] = thread
 
@@ -102,6 +118,19 @@ class MultiTestController:
     """This is called by a TestWorkerThread when it completes."""
     self._PrintResult(thread.test, success, details)
     self._hostPool.AddAvailableHost(thread.host)
+
+    # Save the test.py logs for LUCI to consume.
+    if self._errorLogsDir != None:
+      outputFilePath = os.path.join(self._errorLogsDir,
+                                    thread.test + ".output.txt")
+      with open(outputFilePath, "w") as outputFile:
+        for line in details:
+          outputFile.write(line + "\n")
+
+      self._testsSummary[thread.test] = {
+          'success': success,
+          'output': outputFilePath
+      }
 
     if success:
       self._totalTestsPassed += 1
