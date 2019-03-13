@@ -20,6 +20,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"chromium.googlesource.com/enterprise/cel/go/host"
 
@@ -572,9 +573,19 @@ func (d *deployer) Logf(format string, arg ...interface{}) {
 	log.Output(3, text)
 	d.loggingClient.Logger("cel").Log(
 		logging.Entry{
-			Payload: text,
+			Payload: strings.Map(removeInvalidUTF8, text),
 		},
 	)
+}
+
+// This is used as a strings mapping function: https://golang.org/pkg/strings/#Map
+// Negative values are dropped from the string with no replacement.
+func removeInvalidUTF8(char rune) rune {
+	if char == utf8.RuneError {
+		return -1
+	} else {
+		return char
+	}
 }
 
 func (d *deployer) getCelConfiguration(manifestFilePath string) error {

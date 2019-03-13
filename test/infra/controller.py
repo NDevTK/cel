@@ -110,7 +110,7 @@ class SingleTestController:
       pathToLog = os.path.join(destination, "instance-%s.log" % instance.name)
       logs = instance.GetLatestConsoleOutput()
       with open(pathToLog, 'w') as f:
-        f.write(logs)
+        f.write(logs.encode("utf-8"))
 
   def _ParseHostFile(self, hostFile):
     content = ''
