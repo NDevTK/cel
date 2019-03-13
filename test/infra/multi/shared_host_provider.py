@@ -188,7 +188,7 @@ class SharedHostProvider:
     so it's our responsibility to call this every so often (30 mins) to ensure
     we don't lose exclusivity on a GCP project.
     """
-    for host in self._lockedHosts:
+    for host in list(self._lockedHosts):
       try:
         genId = self._storage.WriteObject(
             self._GetLockName(host), self._GetLockContent(host),
