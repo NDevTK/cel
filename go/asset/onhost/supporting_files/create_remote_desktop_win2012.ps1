@@ -82,7 +82,7 @@ Configuration RemoteDesktopSessionHost
             WebAccessServer = $localhost
             SessionHost = $localhost
             PsDscRunAsCredential = $credential
-            DependsOn = "[WindowsFeature]Remote-Desktop-Services", "[WindowsFeature]RDS-RD-Server"
+            DependsOn = "[WindowsFeature]Remote-Desktop-Services", "[WindowsFeature]RDS-RD-Server", "[WindowsFeature]RDS-Connection-Broker"
         }
 
         xRDSessionCollection Collection
