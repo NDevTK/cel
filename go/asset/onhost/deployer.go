@@ -568,6 +568,31 @@ func (d *deployer) Reboot() error {
 	return nil
 }
 
+// Reboot the instance with QMP's system_reset. For nested VMs only.
+func (d *deployer) RebootWithQMP() error {
+	d.Logf("Rebooting VM with RebootWithQMP")
+
+	if d.nestedVM == nil {
+		return fmt.Errorf("Can't use RebootWithQMP on non-nestedVM machines.")
+	}
+
+	command := exec.Command("telnet", "localhost", "25555")
+	stdin, err := command.StdinPipe()
+	if err != nil {
+		return err
+	}
+	defer stdin.Close()
+
+	_, err = io.WriteString(stdin, "{\"execute\": \"qmp_capabilities\"}\r{\"execute\": \"system_reset\"}\r")
+	if err != nil {
+		return err
+	}
+
+	err = command.Start()
+
+	return errors.Wrap(err, "run command")
+}
+
 func (d *deployer) Logf(format string, arg ...interface{}) {
 	text := fmt.Sprintf(format, arg...)
 	log.Output(3, text)
@@ -899,9 +924,19 @@ func (d *deployer) commonSetupOnNestedVM() error {
 	}
 
 	// Rename nestedVM
-	d.sshRunCommand(
-		fmt.Sprintf("powershell.exe -Command \"Rename-Computer -NewName %s -Restart\"",
+	_, err = d.sshRunCommand(
+		fmt.Sprintf("powershell.exe -Command \"Rename-Computer -NewName %s -Force -PassThru\"",
 			d.instanceName))
+	if err != nil {
+		return err
+	}
+
+	// Restart the VM. `Rename-Computer -Restart`, `Restart-Computer` and
+	// `shutdown` are intermittently ineffective (~10%).
+	err = d.RebootWithQMP()
+	if err != nil {
+		return err
+	}
 
 	// wait a while to give shutdown enough time to finish.
 	time.Sleep(1 * time.Minute)
