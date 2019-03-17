@@ -30,6 +30,33 @@ func (*RemoteDesktopHostResolver) ResolveOnHost(ctx common.Context, rd *asset.Re
 	}
 }
 
+// Add ActiveDirectory dependency to RemoteDesktopHost. This is needed because
+// the dependency is not represented in the completed asset manifest.
+func (*RemoteDesktopHostResolver) ResolveAdditionalDependencies(ctx common.Context, rd *asset.RemoteDesktopHost) (err error) {
+	if rd == nil {
+		return nil
+	}
+
+	d, ok := ctx.(*deployer)
+	if !ok {
+		return errors.New("ctx is not Deployer")
+	}
+
+	manifest := d.configuration.AssetManifest
+	machine, err := manifest.FindWindowsMachine(rd.WindowsMachine)
+	if err != nil {
+		return errors.New("Couldn't find WindowsMachine in RemoteDesktopHost.")
+	}
+
+	ad, err := manifest.FindActiveDirectoryDomainFor(machine)
+	if err != nil {
+		return common.NewNotImplementedError("non domain-joined servers is not supported")
+	}
+
+	adRef := common.RefPathFromComponents("asset", "ad_domain", ad.Name)
+	return ctx.PublishDependency(rd, adRef)
+}
+
 func setupRemoteDesktopHost(d *deployer, ad *asset.ActiveDirectoryDomain, rd *asset.RemoteDesktopHost) error {
 	fileToRun := ""
 	if d.IsWindows2012() || d.IsWindows2016() {
