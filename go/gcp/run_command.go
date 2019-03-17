@@ -180,7 +180,7 @@ func (r *runCommandOperation) searchForCommandResult(entries *logadmin.EntryIter
 			st, ok := status.FromError(err)
 			if ok && st.Code() == codes.ResourceExhausted {
 				time.Sleep(waitTimeBetweenLogReads)
-				continue
+				break
 			} else {
 				return nil, fmt.Errorf("failed to iterate through logs: %v", err)
 			}
