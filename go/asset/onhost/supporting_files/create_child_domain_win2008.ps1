@@ -80,9 +80,17 @@ Start-DscConfiguration -Wait -Force -Path .\InstallFeatures -Verbose
 
 if ($error.Count -gt $errorCount)
 {
+    $errorCode = 100
+
+    foreach ($err in $error[$errorCount..($error.Count-1)])
+    {
+        Write-Host "FullyQualifiedErrorId: $($err.FullyQualifiedErrorId)"
+        Format-List -InputObject $err
+    }
+
     # Exit with error code
-    Write-Host "Error Occurred"
-    Exit 100
+    Write-Host "Error Occurred, returning $errorCode"
+    Exit $errorCode
 }
 
 # Now call dcpromo to config AD. See https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2008-R2-and-2008/cc732887(v=ws.10)

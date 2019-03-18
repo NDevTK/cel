@@ -62,6 +62,7 @@ JoinDomain -ConfigurationData $ConfigData -credential $domainCred
 $errorCount = $error.Count
 Start-DscConfiguration -Wait -Force -Path .\JoinDomain -Verbose
 
+$m = Get-DscLocalConfigurationManager
 if ($error.Count -gt $errorCount)
 {
     $errorCode = 100
@@ -69,13 +70,14 @@ if ($error.Count -gt $errorCount)
     foreach ($err in $error[$errorCount..($error.Count-1)])
     {
         Write-Host "FullyQualifiedErrorId: $($err.FullyQualifiedErrorId)"
+        Format-List -InputObject $err
 
         # Look for retryable errors
         if ($err.FullyQualifiedErrorId -match "FailToJoinDomainFromWorkgroup")
         {
             $errorCode = 150
-        } 
-        elseif ($err.FullyQualifiedErrorId -match "PathNotFound,Microsoft.PowerShell.Commands.GetItemPropertyCommand") 
+        }
+        elseif ($err.FullyQualifiedErrorId -match "PathNotFound,Microsoft.PowerShell.Commands.GetItemPropertyCommand")
         {
             $errorCode=150
         }
@@ -88,14 +90,13 @@ if ($error.Count -gt $errorCount)
     }
 
     # Exit with error code
-    Write-Host "Error Occurred, returning $errorCode"
+    Write-Host "Error Occurred, returning $errorCode, LCMState : $($m.LCMState)"
     Exit $errorCode
 }
 
-$m = Get-DscLocalConfigurationManager
 Write-Host "LCMState : $($m.LCMState)"
 if ($m.LCMState -eq "PendingReboot")
 {
     # Exit with code 200 to indicate reboot is needed
-    Exit 200 
+    Exit 200
 }

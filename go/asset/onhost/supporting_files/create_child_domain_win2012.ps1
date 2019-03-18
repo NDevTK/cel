@@ -108,15 +108,23 @@ Set-DSCLocalConfigurationManager -Path .\NewDomain -Verbose
 # Build the domain
 $errorCount = $error.Count
 Start-DscConfiguration -Wait -Force -Path .\NewDomain -Verbose
-if ($error.Count -gt $errorCount)
-{
-  # Exit with error code
-  Write-Host "Error Occurred"
-  Exit 100
-}
-
 
 $m = Get-DscLocalConfigurationManager
+if ($error.Count -gt $errorCount)
+{
+    $errorCode = 100
+
+    foreach ($err in $error[$errorCount..($error.Count-1)])
+    {
+        Write-Host "FullyQualifiedErrorId: $($err.FullyQualifiedErrorId)"
+        Format-List -InputObject $err
+    }
+
+    # Exit with error code
+    Write-Host "Error Occurred, returning $errorCode, LCMState : $($m.LCMState)"
+    Exit $errorCode
+}
+
 Write-Host "LCMState : $($m.LCMState)"
 if ($m.LCMState -eq "PendingReboot")
 {

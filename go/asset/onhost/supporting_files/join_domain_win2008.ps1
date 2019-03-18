@@ -69,13 +69,14 @@ if ($error.Count -gt $errorCount)
     foreach ($err in $error[$errorCount..($error.Count-1)])
     {
         Write-Host "FullyQualifiedErrorId: $($err.FullyQualifiedErrorId)"
+        Format-List -InputObject $err
 
         # Look for retryable errors
         if ($err.FullyQualifiedErrorId -match "FailToJoinDomainFromWorkgroup")
         {
             $errorCode = 150
         }
-        elseif ($err.FullyQualifiedErrorId -match "PathNotFound,Microsoft.PowerShell.Commands.GetItemPropertyCommand") 
+        elseif ($err.FullyQualifiedErrorId -match "PathNotFound,Microsoft.PowerShell.Commands.GetItemPropertyCommand")
         {
             $errorCode=150
         }
