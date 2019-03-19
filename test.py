@@ -8,6 +8,32 @@ import os
 import sys
 import traceback
 import warnings
+from absl import app
+from absl import flags
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string(
+    'test', None,
+    'The full class name of the EnterpriseTestCase class (w/ package)')
+flags.mark_flag_as_required('test')
+
+flags.DEFINE_string('host', None,
+                    'The full path to the *.host.textpb file to use')
+flags.mark_flag_as_required('host')
+
+flags.DEFINE_string('cel_ctl', None,
+                    'Which binary to use to deploy the environment')
+flags.DEFINE_bool(
+    'deploy', True, 'Depoly the test environment. '
+    'Set to false to skip the deployment phase and go straight to tests')
+flags.DEFINE_bool('cleanup', False,
+                  'Clean up the host environment after the test')
+flags.DEFINE_bool('error_logs_dir', None,
+                  'Where to collect extra logs on test failures')
+flags.DEFINE_bool('verbose', False, 'Show info logs')
+flags.DEFINE_bool('debug', False, 'Show debug and info logs', short_name='vv')
+flags.DEFINE_multi_string('test_arg', None, 'Flags passed to tests')
 
 try:
   import test.infra.controller as controller
@@ -20,74 +46,16 @@ except ImportError as e:
   raise
 
 
-def ParseArgs():
-  example = '%s test.tests.IISSitesTest test.host.textpb' % sys.argv[0]
-
-  parser = argparse.ArgumentParser(
-      description='Test runner for CELab', epilog='example: %s' % example)
-
-  parser.add_argument(
-      '--test',
-      required=True,
-      metavar='<test_class>',
-      help='The full class name of the EnterpriseTestCase class (w/ package)')
-  parser.add_argument(
-      '--host',
-      required=True,
-      metavar='<host_file>',
-      help='The full path to the *.host.textpb file to use')
-  parser.add_argument(
-      '--cel_ctl',
-      metavar='<path>',
-      dest='cel_ctl',
-      default=GetDefaultCelCtl(),
-      action='store',
-      help='Which binary to use to deploy the environment')
-  parser.add_argument(
-      '--nodeploy',
-      dest='deploy',
-      default=True,
-      action='store_false',
-      help='Skip the deployment phase and go straight to tests')
-  parser.add_argument(
-      '--cleanup',
-      dest='cleanup',
-      default=False,
-      action='store_true',
-      help='Clean up the host environment after the test')
-  parser.add_argument(
-      '--error_logs_dir',
-      metavar='<path>',
-      dest='error_logs_dir',
-      default=None,
-      action='store',
-      help='Where to collect extra logs on test failures')
-  parser.add_argument(
-      '-v',
-      '--verbose',
-      dest='verbose',
-      action='store_true',
-      help='Show info logs')
-  parser.add_argument(
-      '-vv',
-      '--debug',
-      dest='debug',
-      action='store_true',
-      help='Show debug and info logs')
-
-  return parser.parse_args()
-
-
 def GetDefaultCelCtl():
   # TODO: Add Windows support
   return os.path.join(sys.path[0], 'out/linux_amd64/bin/cel_ctl')
 
 
-def ConfigureLogging(args):
+def ConfigureLogging():
   level = logging.WARNING
-  if args.verbose:
+  if FLAGS.verbose:
     level = logging.INFO
-  if args.debug:
+  if FLAGS.debug:
     level = logging.DEBUG
 
   # Filter out logs from low level loggers
@@ -105,19 +73,24 @@ def ConfigureLogging(args):
   logging.basicConfig(level=level, format=logfmt, datefmt=datefmt)
 
 
-if __name__ == '__main__':
-  args = ParseArgs()
+def main(argv):
+  if FLAGS.cel_ctl is None:
+    FLAGS.cel_ctl = GetDefaultCelCtl()
 
-  ConfigureLogging(args)
+  ConfigureLogging()
 
-  logging.info("Arguments: %s" % args)
+  c = controller.SingleTestController(FLAGS.test, FLAGS.host, FLAGS.cel_ctl)
 
-  c = controller.SingleTestController(args.test, args.host, args.cel_ctl)
+  # Parse test specific flags. Note that we need to use a dummy element
+  # as the first element of the list since absl.flags ignores the first element
+  # during parsing.
+  if FLAGS.test_arg is not None:
+    FLAGS([''] + FLAGS.test_arg)
 
   success = False
-  should_write_logs = (args.error_logs_dir != None)
+  should_write_logs = (FLAGS.error_logs_dir != None)
   try:
-    if args.deploy:
+    if FLAGS.deploy:
       c.DeployNewEnvironment()
 
     success = c.ExecuteTestCase()
@@ -129,11 +102,15 @@ if __name__ == '__main__':
     logging.error('Test failed.')
   finally:
     if not success and should_write_logs:
-      print('Writing Compute logs to "%s"...' % args.error_logs_dir)
-      c.TryWriteComputeLogsTo(args.error_logs_dir)
+      print('Writing Compute logs to "%s"...' % FLAGS.error_logs_dir)
+      c.TryWriteComputeLogsTo(FLAGS.error_logs_dir)
 
-    if args.cleanup:
+    if FLAGS.cleanup:
       print('Cleaning up host environment...')
       c.TryCleanHostEnvironment()
 
   sys.exit(0 if success else 1)
+
+
+if __name__ == '__main__':
+  app.run(main)

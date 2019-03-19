@@ -31,12 +31,16 @@ head start on the code in this repository.
 * [Go support for Protocol Buffers][] : This can be installed automatically by
   running `./build.py deps --install` from the root of the source tree.
 
+* [absl-py][]: This Python package is used by tests. Install it by running
+  `pip install absl-py`.
+
 [Go]: https://golang.org/
 [Go download page]: https://golang.org/dl/
 [Depot Tools]: https://dev.chromium.org/developers/how-tos/install-depot-tools
 [Protocol Buffers Compiler]: https://developers.google.com/protocol-buffers/
 [Dep]: https://github.com/golang/dep
 [Go support for Protocol Buffers]: https://github.com/golang/protobuf
+[absl-py]: https://pypi.org/project/absl-py/
 
 ### Get The Source
 
