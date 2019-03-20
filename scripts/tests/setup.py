@@ -11,6 +11,7 @@ import subprocess
 
 # TODO: Add Windows support
 subprocess.check_call(['apt-get', 'install', 'python-pip'])
+subprocess.check_call(['pip', 'install', 'absl-py'])
 subprocess.check_call(['pip', 'install', 'google-api-python-client'])
 subprocess.check_call(['pip', 'install', 'grpc-google-iam-admin-v1'])
 subprocess.check_call(['pip', 'install', 'grpc-google-iam-v1'])

@@ -29,8 +29,8 @@ flags.DEFINE_bool(
     'Set to false to skip the deployment phase and go straight to tests')
 flags.DEFINE_bool('cleanup', False,
                   'Clean up the host environment after the test')
-flags.DEFINE_bool('error_logs_dir', None,
-                  'Where to collect extra logs on test failures')
+flags.DEFINE_string('error_logs_dir', None,
+                    'Where to collect extra logs on test failures')
 flags.DEFINE_bool('verbose', False, 'Show info logs')
 flags.DEFINE_bool('debug', False, 'Show debug and info logs', short_name='vv')
 flags.DEFINE_multi_string('test_arg', None, 'Flags passed to tests')
