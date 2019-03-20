@@ -16,14 +16,16 @@ import (
 var version = "unknown"
 
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) < 2 || len(os.Args) > 3 {
 		fmt.Println("Usage of cel_agent:")
 		fmt.Println("  cel_agent manifest_file")
+		fmt.Println("  cel_agent --nocommander manifest_file")
 		fmt.Println("  cel_agent --version")
 		return
 	}
 
 	show_version := flag.Bool("version", false, "version for cel_agent")
+	skip_commander := flag.Bool("nocommander", false, "skip the commander and return after deployment")
 	flag.Parse()
 
 	if *show_version {
@@ -42,7 +44,12 @@ func main() {
 	}
 
 	defer d.Close()
-	d.Deploy(os.Args[1])
+	d.Deploy(os.Args[len(os.Args)-1])
+
+	if *skip_commander {
+		log.Printf("Skipping Commander's WatchForCommands (nocommander).")
+		return
+	}
 
 	// Keep running and watch for command signals
 	c, err := onhost.CreateCommander(d)
