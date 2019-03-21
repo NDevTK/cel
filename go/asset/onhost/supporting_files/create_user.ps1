@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
 # Create a user in a domain.
 param(
     # the FQDN name of the domain.
@@ -18,8 +17,8 @@ param(
     [Parameter(Mandatory=$true)] [String] $password,
 
     [Parameter()] [String] $description = ""
-  )  
-  
+)
+
 Configuration AddUser
 {
     Import-DscResource -Module xActiveDirectory

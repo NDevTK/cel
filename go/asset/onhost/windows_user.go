@@ -37,10 +37,8 @@ func (*windowsUser) ResolveOnHost(ctx common.Context, u *asset.WindowsUser) erro
 
 func createUser(d *deployer, ad *asset.ActiveDirectoryDomain, u *asset.WindowsUser) error {
 	fileToRun := ""
-	if d.IsWindows2012() || d.IsWindows2016() {
-		fileToRun = d.GetSupportingFilePath("create_user_win2012.ps1")
-	} else if d.IsWindows2008() {
-		fileToRun = d.GetSupportingFilePath("create_user_win2008.ps1")
+	if d.IsWindows2008() || d.IsWindows2012() || d.IsWindows2016() {
+		fileToRun = d.GetSupportingFilePath("create_user.ps1")
 	} else {
 		return errors.New("unsupported windows version")
 	}
