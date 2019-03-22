@@ -556,8 +556,6 @@ func (d *deployer) CommonSetup() error {
 func (d *deployer) Reboot() error {
 	d.Logf("Execute shutdown to reboot")
 
-	// Exit code 1190 means "A system shutdown has already been scheduled."
-	// This case should be treated as success
 	var err error
 	if d.nestedVM == nil {
 		err = d.RunCommand("shutdown", "/r", "/t", "0")
@@ -567,9 +565,21 @@ func (d *deployer) Reboot() error {
 
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			waitStaus, ok := exitError.Sys().(syscall.WaitStatus)
-			if ok && waitStaus.ExitStatus() == 1190 {
-				return nil
+			waitStatus, ok := exitError.Sys().(syscall.WaitStatus)
+			if !ok {
+				return err
+			}
+
+			// Some exit codes should be treated as success:
+			// ERROR_SHUTDOWN_IN_PROGRESS (1115): "A system shutdown is in progress."
+			// ERROR_SHUTDOWN_IS_SCHEDULED (1190): "A system shutdown has already been scheduled."
+			// RPC_S_UNKNOWN_IF (1717): "The interface is unknown."
+			codesToIgnore := []int{1115, 1190, 1717}
+			for _, code := range codesToIgnore {
+				if waitStatus.ExitStatus() == code {
+					d.Logf("Ignoring shutdown error with exit code %v : %v", code, err)
+					return nil
+				}
 			}
 		}
 		return err
