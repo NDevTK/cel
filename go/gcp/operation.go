@@ -21,7 +21,7 @@ const pollDuration = time.Second * 10
 // Maximum number of times an operation poll will be retried before giving up.
 // The amount of time before an operation times out would be (maxRetries *
 // pollDuration) + (overhead for operation state polling).
-const maxRetries = 30
+const defaultMaxRetries = 30
 
 var (
 	ErrOperationTimedOut    = errors.New("operation timed out")
@@ -29,15 +29,25 @@ var (
 )
 
 func JoinOperation(s *Session, oi interface{}, desc string) error {
+	return joinOperation(s, oi, desc, defaultMaxRetries)
+}
+
+// This function takes in an approximate timeout that doesn't take into account
+// the overhead of each operation state polling (assumed 0).
+func JoinOperationWithTimeout(s *Session, oi interface{}, desc string, timeout time.Duration) error {
+	return joinOperation(s, oi, desc, int(timeout/pollDuration))
+}
+
+func joinOperation(s *Session, oi interface{}, desc string, maxRetries int) error {
 	switch o := oi.(type) {
 	case *compute.Operation:
-		return joinComputeOperation(s, o, desc)
+		return joinComputeOperation(s, o, desc, maxRetries)
 
 	case *deploymentmanager.Operation:
-		return joinDeploymentOperation(s, o, desc)
+		return joinDeploymentOperation(s, o, desc, maxRetries)
 
 	case *servicemanagement.Operation:
-		return joinServiceManagementOperation(s, o, desc)
+		return joinServiceManagementOperation(s, o, desc, maxRetries)
 	}
 
 	return ErrUnknownOperationType
@@ -45,7 +55,7 @@ func JoinOperation(s *Session, oi interface{}, desc string) error {
 
 // JoinComputeOperation waits for the specific GCE compute operation to complete.
 // These require periodic polling to make sure it's succeeded.
-func joinComputeOperation(s *Session, op *compute.Operation, desc string) (err error) {
+func joinComputeOperation(s *Session, op *compute.Operation, desc string, maxRetries int) (err error) {
 	defer GcpLoggedServiceAction(s, ComputeServiceName, &err, "%s", desc)()
 
 	if op.Description != "" {
@@ -116,7 +126,7 @@ func joinComputeOperation(s *Session, op *compute.Operation, desc string) (err e
 	return errors.Wrapf(common.WrapErrorList(el), "%s failed", op.Name)
 }
 
-func joinDeploymentOperation(s *Session, op *deploymentmanager.Operation, desc string) (err error) {
+func joinDeploymentOperation(s *Session, op *deploymentmanager.Operation, desc string, maxRetries int) (err error) {
 	defer GcpLoggedServiceAction(s, DeploymentManagerServiceName, &err, "%s", desc)()
 
 	if op.Description != "" {
@@ -165,7 +175,7 @@ func joinDeploymentOperation(s *Session, op *deploymentmanager.Operation, desc s
 	return errors.Wrapf(common.WrapErrorList(el), "%s failed", op.Name)
 }
 
-func joinServiceManagementOperation(s *Session, op *servicemanagement.Operation, desc string) (err error) {
+func joinServiceManagementOperation(s *Session, op *servicemanagement.Operation, desc string, maxRetries int) (err error) {
 	defer GcpLoggedServiceAction(s, ServiceManagementServiceName, &err, "%s", desc)()
 
 	sm, err := servicemanagement.New(s.client)

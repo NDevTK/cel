@@ -6,6 +6,7 @@ package deploy
 
 import (
 	"fmt"
+	"time"
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
@@ -43,7 +44,7 @@ func DeleteObsoleteDeployments(ctx common.Context, s *gcp.Session) error {
 		return err
 	}
 
-	return gcp.JoinOperation(s, o, "Deleting obsolete deployment")
+	return gcp.JoinOperationWithTimeout(s, o, "Deleting obsolete deployment", 15*time.Minute)
 }
 
 func InvokeDeploymentManager(ctx common.Context, s *gcp.Session) (err error) {
@@ -117,7 +118,7 @@ Underlying error:`)
 		return err
 	}
 
-	err = gcp.JoinOperation(s, o, "Deploying lab")
+	err = gcp.JoinOperationWithTimeout(s, o, "Deploying lab", 15*time.Minute)
 	if err != nil {
 		return err
 	}
