@@ -63,7 +63,7 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 
 	if err == nil {
 		d.setRuntimeConfigVariable(configVar, statusReady)
-	} else if err != ErrRebootNeeded {
+	} else if err != ErrRebootNeeded && !IsRestarting(d) {
 		d.setRuntimeConfigVariable(configVar, statusError)
 	}
 	return err

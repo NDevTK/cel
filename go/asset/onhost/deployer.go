@@ -289,6 +289,11 @@ func (d *deployer) DeployOnNormalInstance(manifestFile string) {
 
 	// common setup
 	if err := d.CommonSetup(); err != nil {
+		if IsRestarting(d) {
+			d.Logf("Ignoring failure during restart: %s", err)
+			return
+		}
+
 		d.Logf("Common setup failed: %s", err)
 		d.setRuntimeConfigVariable(machineConfigVar, statusError)
 		return
@@ -385,6 +390,11 @@ func (d *deployer) createOnHostAssets() {
 				return
 			}
 		} else {
+			if IsRestarting(d) {
+				d.Logf("Ignoring failure during restart: %s", err)
+				return
+			}
+
 			d.setRuntimeConfigVariable(machineConfigVar, statusError)
 			d.Logf("Setup Instance failed. error: %s", err)
 			return

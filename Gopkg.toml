@@ -10,7 +10,11 @@ required = ["github.com/mjibson/esc"]
 
 [[constraint]]
   name = "github.com/golang/protobuf"
-  version = "1.2.0"
+  version = "v1.2.0"
+
+[[constraint]]
+  name = "golang.org/x/sys"
+  revision = "fead79001313d15903fb4605b4a1b781532cd93e"
 
 [[constraint]]
   branch = "master"

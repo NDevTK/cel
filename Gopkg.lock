@@ -219,6 +219,13 @@
   revision = "1d60e4601c6fd243af51cc01ddf169918a5407ca"
 
 [[projects]]
+  digest = "1:9c1e747af61ab955fba74a79e87d5843a5d1d504e3ef86480f76e6a4e3a49136"
+  name = "golang.org/x/sys"
+  packages = ["windows"]
+  pruneopts = ""
+  revision = "fead79001313d15903fb4605b4a1b781532cd93e"
+
+[[projects]]
   digest = "1:5acd3512b047305d49e8763eef7ba423901e85d5dd2fd1e71778a0ea8de10bd4"
   name = "golang.org/x/text"
   packages = [
@@ -416,6 +423,7 @@
     "golang.org/x/crypto/ssh",
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
+    "golang.org/x/sys/windows",
     "gonum.org/v1/gonum/graph",
     "gonum.org/v1/gonum/graph/encoding/dot",
     "gonum.org/v1/gonum/graph/simple",
@@ -433,6 +441,8 @@
     "google.golang.org/api/servicemanagement/v1",
     "google.golang.org/genproto/googleapis/iam/admin/v1",
     "google.golang.org/genproto/googleapis/logging/v2",
+    "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/status",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
