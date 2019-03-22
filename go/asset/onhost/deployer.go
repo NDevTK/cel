@@ -923,10 +923,27 @@ func (d *deployer) commonSetupOnNestedVM() error {
 		return err
 	}
 
-	// Rename nestedVM
-	_, err = d.sshRunCommand(
+	output, err := d.sshRunCommand("hostname")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	hostname := strings.TrimRight(string(output), "\r\n")
+
+	// Rename nestedVM if needed. Windows hostnames are not case-sentive.
+	if !strings.EqualFold(hostname, d.instanceName) {
+		d.Logf("Renaming nested VM from %v to %v.", hostname, d.instanceName)
+		return d.renameNestedVM(d.instanceName)
+	} else {
+		d.Logf("Skip renaming nested VM because it's already named %v.", d.instanceName)
+	}
+
+	return nil
+}
+
+func (d *deployer) renameNestedVM(newName string) error {
+	_, err := d.sshRunCommand(
 		fmt.Sprintf("powershell.exe -Command \"Rename-Computer -NewName %s -Force -PassThru\"",
-			d.instanceName))
+			newName))
 	if err != nil {
 		return err
 	}
