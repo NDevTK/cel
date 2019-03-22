@@ -1047,12 +1047,32 @@ func (d *deployer) uploadSupportingFilesToNestedVM() error {
 	return nil
 }
 
-// getInstanceAddress gets the IP address of the given instance.
-func getInstanceAddress(instanceName string) (string, error) {
-	addrs, err := net.LookupHost(instanceName)
-	if err != nil {
+// getInstanceAddress gets the IP address of the given instance and retries on transient errors.
+func (d *deployer) getInstanceAddress(instanceName string) (string, error) {
+	var dnsServerAddress string
+
+	const maxRetries = 5
+	retries := 0
+	for {
+		addrs, err := net.LookupHost(instanceName)
+
+		if err == nil {
+			dnsServerAddress = addrs[0]
+			break
+		}
+
+		// `LookupHost` can fail when the instance is restarting.
+		// Ideally, `errNoSuchHost` would be exposed so we don't have to compare strings, but it's not:
+		// https://github.com/golang/go/issues/28635
+		if strings.Contains(err.Error(), "no such host") && retries <= maxRetries {
+			retries++
+			d.Logf("net.LookupHost returned a transient error. Will wait a minute and try again.")
+			time.Sleep(1 * time.Minute)
+			continue
+		}
+
 		return "", errors.WithStack(err)
 	}
 
-	return addrs[0], nil
+	return dnsServerAddress, nil
 }

@@ -58,7 +58,8 @@ func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 		return errors.New("unsupported windows version")
 	}
 
-	dnsServerAddress, err := getInstanceAddress(ad.DomainController[0].WindowsMachine)
+	dnsServerAddress, err := d.getInstanceAddress(ad.DomainController[0].WindowsMachine)
+
 	if err != nil {
 		return err
 	}
