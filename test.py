@@ -31,8 +31,6 @@ flags.DEFINE_bool('cleanup', False,
                   'Clean up the host environment after the test')
 flags.DEFINE_string('error_logs_dir', None,
                     'Where to collect extra logs on test failures')
-flags.DEFINE_bool('verbose', False, 'Show info logs')
-flags.DEFINE_bool('debug', False, 'Show debug and info logs', short_name='vv')
 flags.DEFINE_multi_string('test_arg', None, 'Flags passed to tests')
 
 try:
@@ -52,12 +50,6 @@ def GetDefaultCelCtl():
 
 
 def ConfigureLogging():
-  level = logging.WARNING
-  if FLAGS.verbose:
-    level = logging.INFO
-  if FLAGS.debug:
-    level = logging.DEBUG
-
   # Filter out logs from low level loggers
   errorOnlyLoggers = [
       'googleapiclient.discovery_cache', 'google.auth', 'google_auth_httplib2'
@@ -67,10 +59,10 @@ def ConfigureLogging():
   message = 'We recommend that most server applications use service accounts.'
   warnings.filterwarnings('ignore', '.*%s' % message)
 
-  logfmt = '%(asctime)s %(filename)s:%(lineno)s: [%(levelname)s] %(message)s'
-  datefmt = '%Y/%m/%d %H:%M:%S'
-
-  logging.basicConfig(level=level, format=logfmt, datefmt=datefmt)
+  logging.error("%s: Logging level error is visible." % __file__)
+  logging.warning("%s: Logging level warning is visible." % __file__)
+  logging.info("%s: Logging level info is visible." % __file__)
+  logging.debug("%s: Logging level debug is visible." % __file__)
 
 
 def main(argv):

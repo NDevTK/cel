@@ -51,25 +51,20 @@ def ParseArgs():
       help='Where to collect extra logs on test failures')
   parser.add_argument(
       '-v',
-      '--verbose',
-      dest='verbose',
-      action='store_true',
-      help='Show info logs')
-  parser.add_argument(
-      '-vv',
-      '--debug',
-      dest='debug',
-      action='store_true',
-      help='Show debug and info logs')
+      '--verbosity',
+      dest='verbosity',
+      default=-1,
+      help='Logging verbosity level. Messages logged at this level or lower' +
+      'will be included. Set to 1 for debug logging.')
 
   return parser.parse_args()
 
 
 def ConfigureLogging(args):
   level = logging.WARNING
-  if args.verbose:
+  if args.verbosity == "0":
     level = logging.INFO
-  if args.debug:
+  if args.verbosity == "1":
     level = logging.DEBUG
 
   # Filter out logs from low level loggers
@@ -83,6 +78,11 @@ def ConfigureLogging(args):
   datefmt = '%Y/%m/%d %H:%M:%S'
 
   logging.basicConfig(level=level, format=logfmt, datefmt=datefmt)
+
+  logging.error("%s: Logging level error is visible." % __file__)
+  logging.warning("%s: Logging level warning is visible." % __file__)
+  logging.info("%s: Logging level info is visible." % __file__)
+  logging.debug("%s: Logging level debug is visible." % __file__)
 
 
 if __name__ == '__main__':

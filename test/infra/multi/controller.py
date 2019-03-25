@@ -149,7 +149,7 @@ class MultiTestController:
     result is printed together on dedicated lines, including the final newline.
     `print` doesn't offer this guarantee which can produce weird output.
 
-    This might not always play nicely with -v & -vv.
+    This might not always play nicely with --verbosity.
     """
     with self._printLock:
       if success:

@@ -35,10 +35,12 @@ class TestWorkerThread(threading.Thread):
 
     # Pass down the current verbosity to ./test.py
     level = logging.getLogger().getEffectiveLevel()
-    if level == logging.INFO:
-      cmd += ['-v']
+    if level == logging.WARNING:
+      cmd += ['-v', '-1']
+    elif level == logging.INFO:
+      cmd += ['-v', '0']
     elif level == logging.DEBUG:
-      cmd += ['-vv']
+      cmd += ['-v', '1']
 
     logging.info("Running command %s" % cmd)
     success = False
