@@ -23,6 +23,7 @@ Write-Host "The warning message from Set-ExecutionPolicy can be safely ignored."
 Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
 
 # Install modules
+Register-PSRepository -Default
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -force -Verbose
 install-module-if-not-installed -Name xActiveDirectory -RequiredVersion 2.19.0.0
 install-module-if-not-installed -Name xComputerManagement -RequiredVersion 4.1.0.0
