@@ -704,6 +704,11 @@ func (d *deployer) setRuntimeConfigVariable(variable string, value string) {
 			// service unavailable. In this case, retry
 			d.Logf("Error updating config variable %s: %s. Retry", variable, err)
 			time.Sleep(5 * time.Second)
+		} else if strings.Contains(err.Error(), "no such host") {
+			// Ideally, `errNoSuchHost` would be exposed, but it's not:
+			// https://github.com/golang/go/issues/28635
+			d.Logf("Error updating config variable %s: %s. Retry", variable, err)
+			time.Sleep(1 * time.Minute)
 		} else {
 			// Log the error and return
 			d.Logf("Error updating config variable %s: %s.", variable, err)
