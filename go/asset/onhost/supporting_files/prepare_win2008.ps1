@@ -17,7 +17,7 @@ function install-module-if-not-installed {
 # Download PackageManagement_x64.msi
 $downloadUrl = 'https://download.microsoft.com/download/C/4/1/C41378D4-7F41-4BBE-9D0D-0E4F98585C61/PackageManagement_x64.msi'
 $WC = New-Object System.Net.WebClient
-$WC.DownloadFile($downloadUrl,"c:\cel\PackageManagement_x64.msi")
+$WC.DownloadFile($downloadUrl, "c:\cel\PackageManagement_x64.msi")
 $WC.Dispose()
 
 # Install PackageManagement_x64.msi.
@@ -53,3 +53,19 @@ install-module-if-not-installed -Name xComputerManagement -RequiredVersion 4.1.0
 install-module-if-not-installed -Name xNetworking -RequiredVersion 5.7.0.0
 install-module-if-not-installed -Name xRemoteDesktopSessionHost -RequiredVersion 1.6.0.0
 install-module-if-not-installed -Name xWebAdministration -RequiredVersion 2.2.0.0
+
+# WinServer2008 has scheduled tasks for consistency that can't be disabled (removed in WMF 5.0).
+# Calling `Start-DscConfiguration` during those tasks fails and can't be bypassed with `-Force`.
+# This will remove Pending DSC configs. We cycle through all onhost scripts after restarts so
+# incomplete configurations will continue when we get back to it.
+function Get-ConfigurationFilesCsv {
+  $items = Get-ChildItem "C:\Windows\System32\Configuration\" | % { $_.FullName }
+  return $items -join ", "
+}
+
+Write-Host "Configuration files before: " + (Get-ConfigurationFilesCsv)
+
+Remove-Item C:\Windows\System32\Configuration\*.mof
+Get-Process *WMI* | ? { $_.modules.ModuleName -like "*DSC*" } | Stop-Process -Force
+
+Write-Host "Configuration files after: " + (Get-ConfigurationFilesCsv)
