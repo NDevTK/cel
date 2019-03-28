@@ -23,12 +23,12 @@ param(
 
     # the dns server
     [Parameter(Mandatory=$true)] [String] $dnsServer
-  )  
+)
 
 $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 & $scriptDir\reset_local_admin_password.ps1 -newPassword $localAdminPassword
 
-configuration NewDomain
+Configuration NewDomain
 {
    param
     (

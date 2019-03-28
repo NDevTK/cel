@@ -16,7 +16,7 @@ param(
     [Parameter(Mandatory=$true)] [String] $domainName,
     [Parameter(Mandatory=$true)] [String] $computerName,
     [Parameter(Mandatory=$true)] [String] $ipAddress
-  )
+)
 
 $cred = New-Object System.Management.Automation.PSCredential ($adminName, (ConvertTo-SecureString $adminPassword -AsPlainText -Force))
 

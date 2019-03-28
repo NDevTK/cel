@@ -9,7 +9,7 @@ param(
 
     # name of the instance whose IP address is to be added as forwarder
     [Parameter(Mandatory=$true)] [String] $masterServer
-  )
+)
 
 $address = (Resolve-DNSName -Name $masterServer -Type A).IPAddress
 Add-DnsServerConditionalForwarderZone -Name $name -MasterServers $address -Verbose

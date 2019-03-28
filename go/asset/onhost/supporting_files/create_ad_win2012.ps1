@@ -14,7 +14,7 @@ param(
 $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 & $scriptDir\reset_local_admin_password.ps1 -newPassword $adminPassword
 
-configuration NewDomain
+Configuration NewDomain
 {
    param
     (

@@ -69,6 +69,8 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	return err
 }
 
+const maxRetriesCreateActiveDirectory = 5
+
 func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	fileToRun := ""
 	addDnsForwardFile := ""
@@ -82,11 +84,21 @@ func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 		return errors.New("unsupported windows version")
 	}
 
-	// normal domain
-	if err := d.RunConfigCommand("powershell.exe", "-File", fileToRun, "-domainName", ad.Name,
-		"-netbiosName", ad.NetbiosName, "-adminName", "administrator",
-		"-adminPassword", string(ad.SafeModeAdminPassword.Final)); err != nil {
-		return err
+	retries := 0
+	for {
+		// normal domain
+		if err := d.RunConfigCommand("powershell.exe", "-File", fileToRun, "-domainName", ad.Name,
+			"-netbiosName", ad.NetbiosName, "-adminName", "administrator",
+			"-adminPassword", string(ad.SafeModeAdminPassword.Final)); err == nil {
+			break
+		} else if err == ErrTransient && retries <= maxRetriesCreateActiveDirectory {
+			retries++
+			d.Logf("Script returned a transient error. Will wait a minute and try again.")
+			time.Sleep(1 * time.Minute)
+			continue
+		} else {
+			return err
+		}
 	}
 
 	// create DNS forwarder for tree domains whose root is this domain.

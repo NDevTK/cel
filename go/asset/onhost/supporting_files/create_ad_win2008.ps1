@@ -7,19 +7,15 @@ param(
     [Parameter(Mandatory=$true)] [String] $netbiosName,
     [Parameter(Mandatory=$true)] [String] $adminName,
     [Parameter(Mandatory=$true)] [String] $adminPassword
-  )
+)
 
 # AD cannot be created if local admin password is empty.
 # Set the password here.
 $scriptDir = Split-Path -Path $MyInvocation.MyCommand.Definition -Parent
 & $scriptDir\reset_local_admin_password.ps1 -newPassword $adminPassword
 
-configuration InstallFeatures
+Configuration InstallFeatures
 {
-    param
-    (
-    )
-
     Node localhost
     {
         LocalConfigurationManager
@@ -43,6 +39,7 @@ configuration InstallFeatures
 }
 
 # first check if the domain is already created
+Write-Host "Get-ADDomain args: Identity=$domainName"
 $domain = Get-ADDomain -Identity $domainName -ErrorAction Stop
 if ($domain.DnsRoot -eq $domainName)
 {
@@ -55,6 +52,14 @@ Set-DSCLocalConfigurationManager -Path .\InstallFeatures -Verbose
 
 $errorCount = $error.Count
 Start-DscConfiguration -Wait -Force -Path .\InstallFeatures -Verbose
+
+$pendingReboot = Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending"
+Write-Host "PendingReboot : $pendingReboot"
+if ($pendingReboot)
+{
+    # Exit with code 200 to indicate reboot is needed
+    Exit 200
+}
 
 if ($error.Count -gt $errorCount)
 {
@@ -72,6 +77,7 @@ if ($error.Count -gt $errorCount)
 }
 
 # Now call dcpromo to config AD
+Write-Host "dcpromo args: SafeModeAdminPassword=$adminPassword, DomainNetBiosName=$netbiosName, NewDomainDNSName=$domainName, Password=$adminPassword, UserName=$adminName"
 dcpromo /unattend /ReplicaOrNewDomain:Domain /SafeModeAdminPassword:$adminPassword /RebootOnCompletion:no /NewDomain:Forest /InstallDNS:yes /DomainNetBiosName:$netbiosName /NewDomainDNSName:$domainName /Password:$adminPassword /UserName:$adminName
 
 Write-Host "Last exit code: $LastExitCode"
@@ -84,8 +90,14 @@ if (($LastExitCode -ge 1) -and ($LastExitCode -le 4))
     Write-Host "Reboot needed"
     Exit 200
 }
-else
+
+# exit code 77: The specified argument 'DomainNetBiosName' was not recognized.
+# exit code 98: Component binaries are being installed or uninstalled. Try again later.
+if (($LastExitCode -eq 77) -or ($LastExitCode -eq 98))
 {
-    Write-Host "Error occurred"
-    Exit 100
+    # Exit with code 150 to indicate this is a retryable error
+    Exit 150
 }
+
+Write-Host "Error occurred"
+Exit 100
