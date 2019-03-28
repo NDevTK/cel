@@ -26,7 +26,7 @@ Configuration RemoteDesktopSessionHost
 
     Import-DscResource -Module xRemoteDesktopSessionHost
 
-    Node "localhost"
+    Node localhost
     {
         LocalConfigurationManager
         {
@@ -142,7 +142,7 @@ if ($error.Count -gt $errorCount)
 
     # Exit with error code
     Write-Host "Error Occurred, returning $errorCode, LCMState : $($m.LCMState)"
-    Exit 100
+    Exit $errorCode
 }
 
 Write-Host "LCMState : $($m.LCMState)"

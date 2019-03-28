@@ -13,7 +13,7 @@ param (
 
 Configuration RemoteDesktopSessionHost
 {
-    Node "localhost"
+    Node localhost
     {
         LocalConfigurationManager
         {
@@ -75,6 +75,13 @@ if ($error.Count -gt $errorCount)
     {
         Write-Host "FullyQualifiedErrorId: $($err.FullyQualifiedErrorId)"
         Format-List -InputObject $err
+
+        # FullyQualifiedErrorId: DiscoveryFailed,Microsoft.Windows.ServerManager.Commands.GetWindowsFeatureCommand
+        # A system shutdown is in progress. (Exception from HRESULT: 0x8007045B)
+        if ($err.FullyQualifiedErrorId -match "DiscoveryFailed,Microsoft.Windows.ServerManager.Commands.GetWindowsFeatureCommand") {
+          $errorCode = 200
+          break
+        }
     }
 
     # Exit with error code
