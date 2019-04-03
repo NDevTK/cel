@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-Param(
-    [string]$newpassword
+param(
+    [String] $newPassword
 )
 
-net user administrator $newpassword
+Write-Host "Resetting admin password to: $newPassword"
+net user administrator $newPassword

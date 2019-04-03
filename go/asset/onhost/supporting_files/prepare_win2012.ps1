@@ -7,19 +7,40 @@ function install-module-if-not-installed {
   param($name, $requiredVersion)
 
   if (Get-Module -ListAvailable -Name $name) {
-    Write-Host "Module $name exists"
+    Write-Host "$(Get-Date): Module $name exists"
   }
   else {
-      Install-Module -Name $name -Force -Verbose -RequiredVersion $requiredVersion
+    Write-Host "$(Get-Date): Installing module $Name"
+    Install-Module -Name $name -Force -Verbose -RequiredVersion $requiredVersion
   }
 }
 
-# Enable WinRM, which is needed by DSC. This is not needed on GCE images,
-# but for nested VM, we need this.
-Enable-PSRemoting -SkipNetworkProfileCheck -Force
+# Enable WinRM, needed for DSC on nested VMs (not needed on GCE images).
+$retries = 0
+while ($true) {
+  try {
+    Write-Host "$(Get-Date): Enable WinRM"
+    Enable-PSRemoting -SkipNetworkProfileCheck -Force
+    break
+  }
+  catch [System.InvalidOperationException]
+  {
+    Write-Host "$(Get-Date): Exception during Enable-PSRemoting:"
+    Write-Host $_.Exception.Message
+
+    $retries++
+    if ($retries -gt 3) {
+      Write-Host "$(Get-Date): Have already retried enough times. Aborting."
+      throw $_.Exception
+    }
+
+    Write-Host "$(Get-Date): Will sleep a bit and try again."
+    Start-Sleep 30
+  }
+}
 
 # Again, this statement is not needed on GCE images, but we need it for nested VM.
-Write-Host "The warning message from Set-ExecutionPolicy can be safely ignored."
+Write-Host "$(Get-Date): The warning message from Set-ExecutionPolicy can be safely ignored."
 Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
 
 # Install modules
