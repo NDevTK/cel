@@ -13,7 +13,7 @@ class MachineRegistryTest(EnterpriseTestCase):
   def VerifyRegistryKeys(self):
     """Verify that the registry keys were set correctly."""
     self.assertRegistryContains(
-        "HKLM:\\System\\Foo", {
+        "win2008-regkeys", "HKLM:\\System\\Foo", {
             'SomeStringKey': 'Some string value',
             'SomeExpandStringKey': 'Another string value',
             'SomeBinaryKey': '{1, 2, 3}',
@@ -22,12 +22,16 @@ class MachineRegistryTest(EnterpriseTestCase):
             'SomeMultiStringKey': '{First, Second, Third}'
         })
 
-    self.assertRegistryContains("HKLM:\\System\\Bar", {'FooBar': '1'})
+    self.assertRegistryContains("win2008-regkeys", "HKLM:\\System\\Bar",
+                                {'FooBar': '1'})
 
-  def assertRegistryContains(self, path, expected):
+    self.assertRegistryContains("win10-regkeys", "HKLM:\\System\\Bar",
+                                {'FooBar10': '1'})
+
+  def assertRegistryContains(self, machine, path, expected):
     logging.debug("Checking %s for %s" % (path, expected))
 
-    ret, output = self.clients["win2008-regkeys"].RunPowershell("""
+    ret, output = self.clients[machine].RunPowershell("""
       Get-ItemProperty "%s"
     """ % path)
 

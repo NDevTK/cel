@@ -6,7 +6,6 @@ package onhost
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -243,9 +242,9 @@ func (c *commander) processRunCommandEntryOnNestedVM(runCommand *gcp.RunCommandM
 		return c.processGsutilOnNestedVM(runCommand, logFn)
 	}
 
-	output, err := c.deployer.RunCommandOnNestedVM("cmd.exe /C " + runCommand.Command)
+	output, err := c.deployer.RunCommandWithOutput(runCommand.Command)
 
-	logFn(bytes.NewReader(output))
+	logFn(strings.NewReader(output))
 
 	if err != nil {
 		return -1

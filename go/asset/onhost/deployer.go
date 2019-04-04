@@ -5,7 +5,6 @@
 package onhost
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -204,14 +203,6 @@ func createDeployer() (*deployer, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	ver := other
-	if runtime.GOOS == "windows" {
-		ver, err = getWindowsVersionByVerCommand()
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-
 	return &deployer{
 		ctx:           ctx,
 		service:       computeService,
@@ -220,7 +211,7 @@ func createDeployer() (*deployer, error) {
 		configService: runtimeConfigService.Projects.Configs,
 		instanceName:  hostname,
 		directory:     exPath,
-		winVersion:    ver,
+		winVersion:    other,
 	}, nil
 }
 
@@ -251,17 +242,13 @@ func getWindowsVersion(verOutput string) (windowsVersion, error) {
 // The output of ver looks like this:
 //   Microsoft Windows [Version 6.1.7601]
 // The return value will be "6.1.7601"
-func getWindowsVersionByVerCommand() (windowsVersion, error) {
-	cmd := exec.Command("cmd", "ver")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
-	err := cmd.Run()
+func (d *deployer) getWindowsVersionByVerCommand() (windowsVersion, error) {
+	out, err := d.RunCommandWithOutput("cmd", "ver")
 	if err != nil {
 		return other, err
 	}
 
-	return getWindowsVersion(out.String())
+	return getWindowsVersion(out)
 }
 
 // Deploy assets on the current instance. manifestFilePath is the path
@@ -427,18 +414,18 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 
 	// download the image file if it does not exist
 	if _, err := os.Stat(imageFile); os.IsNotExist(err) {
-		if err := d.RunCommand("gsutil", "cp", mt.NestedVm.Image, d.directory); err != nil {
+		if err := d.RunLocalCommand("gsutil", "cp", mt.NestedVm.Image, d.directory); err != nil {
 			return err
 		}
 	}
 
-	fileToRun := d.GetSupportingFilePath("setup_vm_host.sh")
-	if err := d.RunCommand("bash", fileToRun); err != nil {
+	fileToRun := d.GetLocalSupportingFilePath("setup_vm_host.sh")
+	if err := d.RunLocalCommand("bash", fileToRun); err != nil {
 		return err
 	}
 
 	// start the VM
-	d.RunCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
+	d.RunLocalCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
 		"-net", "tap,ifname=tap0,script=no", "-usbdevice", "tablet",
 		// the default CPU is qemu64, which cannot run Win10. So we need to
 		// change it to "host"
@@ -462,7 +449,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 	// aliasIP is CIDR such as 10.128.0.3/32 . We need to get the IP address.
 	externalIP := strings.Split(aliasIP, "/")[0]
 	d.externalIP = externalIP
-	return d.RunCommand("bash", d.GetSupportingFilePath("setup_iptables.sh"), externalIP, internalIP)
+	return d.RunLocalCommand("bash", d.GetLocalSupportingFilePath("setup_iptables.sh"), externalIP, internalIP)
 }
 
 // The output will look like this:
@@ -473,7 +460,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 func (d *deployer) waitForVMToStart() (string, error) {
 	// wait until the VM gets its IP address
 	for i := 0; i < 10; i++ {
-		output, err := d.RunCommandWithOutput("sudo", "virsh", "net-dhcp-leases", "default")
+		output, err := d.RunLocalCommandWithOutput("sudo", "virsh", "net-dhcp-leases", "default")
 		if err != nil {
 			return "", err
 		}
@@ -537,32 +524,37 @@ func (d *deployer) CommonSetup() error {
 		}
 	}
 
+	// Only run prepare on windows hosts (Nested VMs aren't booted up).
 	if runtime.GOOS == "windows" {
-		if d.IsWindows2008() {
-			return d.RunCommand("powershell.exe", "-File",
-				d.GetSupportingFilePath("prepare_win2008.ps1"))
-		} else if d.IsWindows2016() || d.IsWindows2012() {
-			return d.RunCommand("powershell.exe", "-File",
-				d.GetSupportingFilePath("prepare_win2012.ps1"))
-		} else {
-			return errors.New("unsupported windows version")
-		}
+		return d.PrepareInstance()
 	}
 
 	return nil
+}
+
+func (d *deployer) PrepareInstance() error {
+	ver, err := d.getWindowsVersionByVerCommand()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	d.winVersion = ver
+
+	if d.IsWindows2008() {
+		return d.RunCommand("powershell.exe", "-ExecutionPolicy", "ByPass",
+			"-File", d.GetSupportingFilePath("prepare_win2008.ps1"))
+	} else if d.IsWindows2016() || d.IsWindows2012() {
+		return d.RunCommand("powershell.exe", "-ExecutionPolicy", "ByPass",
+			"-File", d.GetSupportingFilePath("prepare_win2012.ps1"))
+	}
+
+	return errors.New("unsupported windows version")
 }
 
 // Reboot the instance.
 func (d *deployer) Reboot() error {
 	d.Logf("Execute shutdown to reboot")
 
-	var err error
-	if d.nestedVM == nil {
-		err = d.RunCommand("shutdown", "/r", "/t", "0")
-	} else {
-		_, err = d.sshRunCommand("shutdown /r /t 0")
-	}
-
+	err := d.RunCommand("shutdown", "/r", "/t", "0")
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			waitStatus, ok := exitError.Sys().(syscall.WaitStatus)
@@ -708,21 +700,46 @@ func (d *deployer) IsWindows2008() bool {
 	return d.winVersion == win2008
 }
 
+// Returns the path to a supporting file on the current CEL instance.
+// It can be a local path or a path inside a CEL NestedVM.
+// In both cases, the path is safe to pass to RunCommand or RunConfigCommand,
+// so this is the method that should be used most of the time.
 func (d *deployer) GetSupportingFilePath(filename string) string {
+	if d.IsNestedVM() {
+		return filepath.Join(workingDirectoryOnNestedVM, filename)
+	} else {
+		return d.GetLocalSupportingFilePath(filename)
+	}
+}
+
+// Returns the path to a local supporting file, on the current Compute instance
+// running this code. The current instance can be a Linux host or a NestedVM.
+// This path is only safe to pass to RunLocalCommand and should only be used
+// for NestedVM-specific code that needs to refer to the Linux host.
+func (d *deployer) GetLocalSupportingFilePath(filename string) string {
 	return path.Join(d.directory, "supporting_files", filename)
 }
 
-func (d *deployer) RunCommand(name string, arg ...string) error {
-	d.Logf("Run command: %s, args: %s", name, arg)
-	output, err := exec.Command(name, arg...).CombinedOutput()
-	if output != nil {
-		d.Logf("Output of command %s, args %s is: %s", name, arg, output)
-	}
+func (d *deployer) IsNestedVM() bool {
+	return d.nestedVM != nil
+}
 
+// Runs a command on the current CEL instance, either locally or a Nested VM.
+func (d *deployer) RunCommandWithOutput(name string, arg ...string) (string, error) {
+	if d.IsNestedVM() {
+		return d.sshRunCommand(name, arg...)
+	} else {
+		return d.RunLocalCommandWithOutput(name, arg...)
+	}
+}
+
+// Runs a command on the current CEL instance, either locally or a Nested VM.
+func (d *deployer) RunCommand(name string, arg ...string) error {
+	_, err := d.RunCommandWithOutput(name, arg...)
 	return err
 }
 
-func (d *deployer) RunCommandWithOutput(name string, arg ...string) (string, error) {
+func (d *deployer) RunLocalCommandWithOutput(name string, arg ...string) (string, error) {
 	d.Logf("Run command: %s, args: %s", name, arg)
 	output, err := exec.Command(name, arg...).CombinedOutput()
 	if output != nil {
@@ -732,7 +749,12 @@ func (d *deployer) RunCommandWithOutput(name string, arg ...string) (string, err
 	return string(output), err
 }
 
-func (d *deployer) RunCommandWithoutWait(name string, arg ...string) error {
+func (d *deployer) RunLocalCommand(name string, arg ...string) error {
+	_, err := d.RunLocalCommandWithOutput(name, arg...)
+	return err
+}
+
+func (d *deployer) RunLocalCommandWithoutWait(name string, arg ...string) error {
 	d.Logf("Run command: %s, args: %s", name, arg)
 	err := exec.Command(name, arg...).Start()
 	return errors.Wrap(err, "run command")
@@ -744,34 +766,20 @@ func (d *deployer) RunCommandWithoutWait(name string, arg ...string) error {
 // exit code 200 indicating that reboot is needed
 func (d *deployer) RunConfigCommand(name string, arg ...string) error {
 	if err := d.RunCommand(name, arg...); err != nil {
-		exitError, ok := err.(*exec.ExitError)
-		if ok {
-			waitStatus, ok := exitError.Sys().(syscall.WaitStatus)
-			if ok && waitStatus.ExitStatus() == 150 {
-				// Exit code 150 means "failure is retryable."
-				return ErrTransient
-			} else if ok && waitStatus.ExitStatus() == 200 {
-				// Exit code 200 means "reboot is needed."
-				return ErrRebootNeeded
+		var exitCode int
+
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if waitStatus, ok := exitError.Sys().(syscall.WaitStatus); ok {
+				exitCode = waitStatus.ExitStatus()
 			}
+		} else if exitError, ok := err.(*ssh.ExitError); ok {
+			exitCode = exitError.Waitmsg.ExitStatus()
 		}
 
-		return err
-	}
-
-	return nil
-}
-
-// Requirement for ConfigCommand:
-// exit code 200 indicating that reboot is needed
-func (d *deployer) runConfigCommandOnNestedVM(arg ...string) error {
-	_, err := d.sshRunCommand(strings.Join(arg, " "))
-	if err != nil {
-		exitError, ok := err.(*ssh.ExitError)
-		if ok && exitError.Waitmsg.ExitStatus() == 150 {
+		if exitCode == 150 {
 			// Exit code 150 means "failure is retryable."
 			return ErrTransient
-		} else if ok && exitError.Waitmsg.ExitStatus() == 200 {
+		} else if exitCode == 200 {
 			// Exit code 200 means "reboot is needed."
 			return ErrRebootNeeded
 		}
@@ -815,33 +823,52 @@ func (d *deployer) waitForDependency(depVar string, timeOut time.Duration) error
 	return nil
 }
 
-func (d *deployer) RunCommandOnNestedVM(cmd string) ([]byte, error) {
-	return d.sshRunCommand(cmd)
+// Builds a command string that is safe to pass inside a SSH session.
+func sshGetCommandString(name string, arg ...string) string {
+	cmd := name
+
+	for _, argument := range arg {
+		cmd += " " + sshEscapeArgument(argument)
+	}
+
+	return cmd
 }
 
-func (d *deployer) sshRunCommand(cmd string) ([]byte, error) {
+// Escapes parameters that contains special characters.
+func sshEscapeArgument(argument string) string {
+	if strings.ContainsAny(argument, " |&<>^\"") {
+		argument = strings.Replace(argument, "\"", "\\\"", -1)
+		return fmt.Sprintf("\"%s\"", argument)
+	}
+
+	return argument
+}
+
+func (d *deployer) sshRunCommand(name string, arg ...string) (string, error) {
 	err := d.ensureWorkingDirOnNestedVmExists()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+
+	cmd := sshGetCommandString(name, arg...)
 
 	d.Logf("Run command on nested VM: %s", cmd)
 	conn, err := d.sshConnect()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// Set WorkingDirectory to workingDirectoryOnNestedVM
 	cmd = fmt.Sprintf("cd %s && %s", workingDirectoryOnNestedVM, cmd)
 	output, err := session.CombinedOutput(cmd)
 	d.Logf("output from nested VM: [%s], err: %v", output, err)
-	return output, err
+	return string(output), err
 }
 
 func (d *deployer) ensureWorkingDirOnNestedVmExists() error {
@@ -899,7 +926,7 @@ func (d *deployer) waitUntilSshIsAlive() error {
 }
 
 func (d *deployer) commonSetupOnNestedVM() error {
-	err := d.getNestedVMWindowsVersion()
+	err := d.waitUntilSshIsAlive()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -909,21 +936,12 @@ func (d *deployer) commonSetupOnNestedVM() error {
 		return errors.WithStack(err)
 	}
 
-	fileToRun := ""
-	if d.IsWindows2008() {
-		fileToRun = filepath.Join(workingDirectoryOnNestedVM, "prepare_win2008.ps1")
-	} else if d.IsWindows2016() || d.IsWindows2012() {
-		fileToRun = filepath.Join(workingDirectoryOnNestedVM, "prepare_win2012.ps1")
-	} else {
-		return errors.New("unsupported windows version")
-	}
-
-	_, err = d.sshRunCommand("powershell.exe -ExecutionPolicy ByPass -File " + fileToRun)
+	err = d.PrepareInstance()
 	if err != nil {
 		return err
 	}
 
-	output, err := d.sshRunCommand("hostname")
+	output, err := d.RunCommandWithOutput("hostname")
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -954,30 +972,9 @@ func (d *deployer) renameNestedVM(newName string) error {
 	return d.waitUntilSshIsAlive()
 }
 
-func (d *deployer) getNestedVMWindowsVersion() error {
-	// get nested VM windows version
-	err := d.waitUntilSshIsAlive()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	out, err := d.sshRunCommand("cmd ver")
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	ver, err := getWindowsVersion(string(out))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	d.winVersion = ver
-	return nil
-}
-
 func (d *deployer) UploadFileToNestedVM(srcFilePath string, destDirectory string) error {
 	fileName := filepath.Base(srcFilePath)
-	destFilePath := filepath.Join(workingDirectoryOnNestedVM, fileName)
+	destFilePath := filepath.Join(destDirectory, fileName)
 
 	d.Logf("Upload file %s -> %s to nested VM", srcFilePath, destFilePath)
 	srcFile, err := os.Open(srcFilePath)

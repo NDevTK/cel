@@ -5,8 +5,6 @@
 package onhost
 
 import (
-	"fmt"
-	"path/filepath"
 	"time"
 
 	"chromium.googlesource.com/enterprise/cel/go/asset"
@@ -66,15 +64,15 @@ func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 
 	retries := 0
 	for {
-		if d.nestedVM == nil {
-			err = d.RunConfigCommand("powershell.exe", "-File", fileToRun,
-				"-domainName", ad.Name,
-				"-dnsServerAddress", dnsServerAddress,
-				"-adminName", ad.Name+"\\administrator", "-adminPassword",
-				string(ad.SafeModeAdminPassword.Final))
+		err = d.RunConfigCommand("powershell.exe",
+			"-File", fileToRun,
+			"-domainName", ad.Name,
+			"-dnsServerAddress", dnsServerAddress,
+			"-adminName", ad.Name+"\\administrator",
+			"-adminPassword", string(ad.SafeModeAdminPassword.Final))
 
-		} else {
-			err = joinNestedVMtoDomain(d, ad, fileToRun, dnsServerAddress)
+		if d.IsNestedVM() && err == ErrRebootNeeded {
+			err = onRebootNeededForNestedVM(d, ad, fileToRun, dnsServerAddress)
 		}
 
 		if err == nil {
@@ -94,20 +92,7 @@ func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	return nil
 }
 
-func joinNestedVMtoDomain(d *deployer, ad *asset.ActiveDirectoryDomain, fileToRun string, dnsServerAddress string) error {
-	fileToRun = filepath.Join(workingDirectoryOnNestedVM, filepath.Base(fileToRun))
-	err := d.runConfigCommandOnNestedVM("powershell.exe",
-		"-File", fileToRun,
-		"-domainName", ad.Name,
-		"-dnsServerAddress", dnsServerAddress,
-		"-adminName", ad.Name+"\\administrator",
-		"-adminPassword",
-		fmt.Sprintf("\"%s\"", ad.SafeModeAdminPassword.Final))
-
-	if err != nil && err != ErrRebootNeeded {
-		return err
-	}
-
+func onRebootNeededForNestedVM(d *deployer, ad *asset.ActiveDirectoryDomain, fileToRun string, dnsServerAddress string) error {
 	// for nested VM, reboot is handled here.
 	d.Logf("Reboot needed. Continue configuration after reboot.")
 	if err := d.Reboot(); err != nil {
@@ -127,11 +112,11 @@ func joinNestedVMtoDomain(d *deployer, ad *asset.ActiveDirectoryDomain, fileToRu
 
 	// fix dns record. For some reason, this can fail (e.g. on Win7) so we
 	// need retry logic here
-	fileToRun = filepath.Join(workingDirectoryOnNestedVM, "add_dns_entry.ps1")
-	return d.runConfigCommandOnNestedVM("powershell.exe",
+	fileToRun = d.GetSupportingFilePath("add_dns_entry.ps1")
+	return d.RunConfigCommand("powershell.exe",
 		"-File", fileToRun,
 		"-adminName", ad.Name+"\\administrator",
-		"-adminPassword", fmt.Sprintf("\"%s\"", ad.SafeModeAdminPassword.Final),
+		"-adminPassword", string(ad.SafeModeAdminPassword.Final),
 		"-dnsServerName", ad.DomainController[0].WindowsMachine,
 		"-domainName", ad.Name,
 		"-computerName", d.instanceName,
