@@ -28,18 +28,55 @@ at {{ .Build.EndTime | time }}.
     <td>Finished at:</td>
     <td>{{ .Build.EndTime | time }}</td>
   </tr>
-  <tr>
-    <td>Steps:</td>
-    <td>
-      <ol>
-      {{range $s := .Build.Steps}}
-        <li>{{$s.Name}} : {{$s.Status}}</li>
-      {{end}}
-      </ol>
-    </td>
-  </tr>
 </table>
 
 Full details are available
 <a href="https://ci.chromium.org/b/{{.Build.Id}}">here</a>.
 <br/><br/>
+
+<hr/>
+Steps-1:
+<ol>
+{{range $s := .Build.Steps}}
+  <li>{{$s.Name}} : {{$s.Status}}</li>
+{{end}}
+</ol>
+
+<hr/>
+Steps-2:
+<table>
+{{range $s := .Build.Steps}}
+  <td>{{$s.Name}}</td>
+  <td>{{$s.Status}}</td>
+{{end}}
+</table>
+
+<hr/>
+Steps-3:
+<table>
+{{range $s := .Build.Steps}}
+  <td>{{$s.Name}}</td>
+  <td>
+    {{$s.Status}}
+    {{if ne $s.Name "SUCCESS"}}
+      {{range $l := $s.Logs}}
+      <br/>
+      <a href="{{$l.ViewUrl}}">{{$l.Name}}</a>.
+      {{end}}
+    {{end}}
+  </td>
+{{end}}
+</table>
+
+<hr/>
+Others:
+{{ .Build.SummaryMarkdown }}
+<table>
+{{range $s := .Build.Steps}}
+  <td>{{$s.Name}}</td>
+  <td>
+    {{$s.SummaryMarkdown}}
+  </td>
+{{end}}
+</table>
+
