@@ -42,7 +42,15 @@ Steps:
     <td>{{$s.Name}}</td>
     <td>
     {{$s.Status}}
-    {{if ne $s.Status "SUCCESS"}}
+
+    {{/*
+      From https://godoc.org/go.chromium.org/luci/buildbucket/proto#Status:
+        Status 12: SUCCESS
+        Status 20: FAILURE
+        Status 36: INFRA_FAILURE
+        Status 68: CANCELED
+    */}}
+    {{if ne $s.Status 12}}
       {{range $l := $s.Logs}}
         <br/>
         <a href="{{$l.ViewUrl}}">{{$l.Name}}</a>
