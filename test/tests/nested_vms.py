@@ -12,10 +12,16 @@ class NestedVMsTest(EnterpriseTestCase):
   @test
   def VerifyNestedVMsAreUp(self):
     """Verify that the nested VMs are up and able to run commands."""
-    ret, output = self.clients["win7-client"].RunPowershell("whoami")
-    self.assertEqual(ret, 0)
-    self.assertEqual(output.strip(), "win7-client\\win7")
+    self._VerifyMachineNameMatch("win7-client", "win7-client\\win7")
+    self._VerifyMachineNameMatch("win10-client", "win10-client\\win10")
 
-    ret, output = self.clients["win10-client"].RunPowershell("whoami")
-    self.assertEqual(ret, 0)
-    self.assertEqual(output.strip(), "win10-client\\win10")
+  def _VerifyMachineNameMatch(self, machine, expected_name):
+    try:
+      ret, output = self.clients[machine].RunPowershell("whoami")
+      self.assertEqual(ret, 0)
+      self.assertEqual(output.strip(), expected_name)
+    except:
+      # Log potentially useful information to debug NestedVM test failures.
+      ret, output = self.clients[machine].RunCommand("sc queryex")
+      logging.debug("Services running: %s" % (output))
+      raise

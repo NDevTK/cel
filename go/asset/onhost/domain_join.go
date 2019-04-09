@@ -92,21 +92,18 @@ func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	return nil
 }
 
+// Handles NestedVM reboot (special case).
 func onRebootNeededForNestedVM(d *deployer, ad *asset.ActiveDirectoryDomain, fileToRun string, dnsServerAddress string) error {
-	// for nested VM, reboot is handled here.
 	d.Logf("Reboot needed. Continue configuration after reboot.")
 	if err := d.Reboot(); err != nil {
 		return err
 	}
 
-	// wait a while to give shutdown enough time to finish.
-	time.Sleep(1 * time.Minute)
-
 	// After domain join, on Win7, local user login thru ssh stops working.
 	// So switch to domain admin account for log in.
 	d.nestedVM.UserName = ad.Name + "\\administrator"
 	d.nestedVM.Password = string(ad.SafeModeAdminPassword.Final)
-	if err := d.waitUntilSshIsAlive(); err != nil {
+	if err := d.WaitForNestedVMRebootComplete(); err != nil {
 		return err
 	}
 

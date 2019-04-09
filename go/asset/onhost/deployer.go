@@ -15,7 +15,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -251,38 +250,15 @@ func (d *deployer) getWindowsVersionByVerCommand() (windowsVersion, error) {
 	return getWindowsVersion(out)
 }
 
-// Deploy assets on the current instance. manifestFilePath is the path
-// to the CEL manifest file.
+// Deploy assets on the current CEL instance, either locally or on a NestedVM.
+// manifestFilePath is the path to the CEL manifest file.
 func (d *deployer) Deploy(manifestFile string) {
-	if runtime.GOOS == "windows" {
-		d.DeployOnNormalInstance(manifestFile)
-	} else {
-		d.DeployOnVMHostInstance(manifestFile)
-	}
-}
-
-// Deploy assets on a normal, i.e. not a nested VM host, instance.
-func (d *deployer) DeployOnNormalInstance(manifestFile string) {
 	log.Printf("Start on-host deployment")
 
 	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
 	status := d.getRuntimeConfigVariableValue(machineConfigVar)
-	if status == statusReady || status == statusError {
+	if status == statusError {
 		d.Logf("Status of %s is %s. Nothing needs to be done.", machineConfigVar, status)
-		return
-	}
-
-	d.setRuntimeConfigVariable(machineConfigVar, statusInProgress)
-
-	// common setup
-	if err := d.CommonSetup(); err != nil {
-		if IsRestarting(d) {
-			d.Logf("Ignoring failure during restart: %s", err)
-			return
-		}
-
-		d.Logf("Common setup failed: %s", err)
-		d.setRuntimeConfigVariable(machineConfigVar, statusError)
 		return
 	}
 
@@ -302,43 +278,59 @@ func (d *deployer) DeployOnNormalInstance(manifestFile string) {
 		return
 	}
 
-	d.createOnHostAssets()
-}
-
-// Deploy on an instance hosting a nested VM.
-func (d *deployer) DeployOnVMHostInstance(manifestFile string) {
-	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
-	status := d.getRuntimeConfigVariableValue(machineConfigVar)
-	if status == statusError {
-		d.Logf("Status of %s is %s. Nothing needs to be done.", machineConfigVar, status)
-		return
+	m := d.getWindowsMachine()
+	if mt, ok := d.getMachineType(m.MachineType).Base.(*host.MachineType_NestedVm); ok {
+		d.nestedVM = mt.NestedVm
 	}
 
-	// common setup
-	if err := d.CommonSetup(); err != nil {
-		d.Logf("Common setup failed: %s", err)
+	if err := d.SaveSupportingFilesToDisk(); err != nil {
+		if IsRestarting(d) {
+			d.Logf("Ignoring failure during restart: %s", err)
+			return
+		}
+
+		d.Logf("Saving supporting files to disk failed: %s", err)
 		d.setRuntimeConfigVariable(machineConfigVar, statusError)
 		return
 	}
 
-	if err := d.setupNestedVM(manifestFile); err != nil {
-		d.Logf("Error: %s.", err)
+	if d.IsNestedVM() {
+		if err := d.setupNestedVM(manifestFile); err != nil {
+			d.Logf("Error setting up the nested VM: %s.", err)
 
-		// if the status is already 'ready', then we shouldn't change it.
-		// The reason is that if it is changed to error, then the nested VM cannot
-		// work after host reboot since setupNestedVM() will never be called.
-		if status != statusReady {
-			d.setRuntimeConfigVariable(machineConfigVar, statusError)
+			// if the status is already 'ready', then we shouldn't change it.
+			// The reason is that if it is changed to error, then the nested VM cannot
+			// work after host reboot since setupNestedVM() will never be called.
+			if status != statusReady {
+				d.setRuntimeConfigVariable(machineConfigVar, statusError)
+			}
+			return
 		}
-		return
 	}
 
 	if status == statusReady {
+		d.Logf("Status of %s is %s. We're done.", machineConfigVar, status)
 		return
 	}
 
-	err := d.commonSetupOnNestedVM()
+	d.setRuntimeConfigVariable(machineConfigVar, statusInProgress)
+
+	if d.IsNestedVM() {
+		if err := d.commonSetupOnNestedVM(); err != nil {
+			d.Logf("Common setup on nested VM failed: %s", err)
+			d.setRuntimeConfigVariable(machineConfigVar, statusError)
+			return
+		}
+	}
+
+	err := d.PrepareInstance()
 	if err != nil {
+		if IsRestarting(d) {
+			d.Logf("Ignoring failure during restart: %s", err)
+			return
+		}
+
+		d.Logf("Preparing the CEL instance failed: %s", err)
 		d.setRuntimeConfigVariable(machineConfigVar, statusError)
 		return
 	}
@@ -394,27 +386,11 @@ func (d *deployer) createOnHostAssets() {
 
 // Setup nested VM, mainly the virtual network setup. This step is always needed.
 func (d *deployer) setupNestedVM(manifestFile string) error {
-	if err := d.getCelConfiguration(manifestFile); err != nil {
-		return errors.Errorf("Error getting CEL configuration: %s", err)
-	}
-
-	d.configuration.AssetManifest = *d.configuration.Lab.AssetManifest
-	d.configuration.HostEnvironment = *d.configuration.Lab.HostEnvironment
-	d.configuration.Lab = lab.Lab{}
-
-	if err := d.configuration.Validate(); err != nil {
-		return errors.Errorf("Error validating configuration : %s", err)
-	}
-
-	m := d.getWindowsMachine()
-	mt := d.getMachineType(m.MachineType).Base.(*host.MachineType_NestedVm)
-	d.nestedVM = mt.NestedVm
-
-	imageFile := path.Join(d.directory, path.Base(mt.NestedVm.Image))
+	imageFile := path.Join(d.directory, path.Base(d.nestedVM.Image))
 
 	// download the image file if it does not exist
 	if _, err := os.Stat(imageFile); os.IsNotExist(err) {
-		if err := d.RunLocalCommand("gsutil", "cp", mt.NestedVm.Image, d.directory); err != nil {
+		if err := d.RunLocalCommand("gsutil", "cp", d.nestedVM.Image, d.directory); err != nil {
 			return err
 		}
 	}
@@ -510,8 +486,7 @@ func (d *deployer) getMachineType(machineType string) *host.MachineType {
 	return nil
 }
 
-func (d *deployer) CommonSetup() error {
-	// save supporting files on disk
+func (d *deployer) SaveSupportingFilesToDisk() error {
 	for filename, file := range _escData {
 		if !file.isDir {
 			outputFileName := path.Join(d.directory, filename)
@@ -522,11 +497,6 @@ func (d *deployer) CommonSetup() error {
 				return errors.Wrapf(err, "error saving file %s", outputFileName)
 			}
 		}
-	}
-
-	// Only run prepare on windows hosts (Nested VMs aren't booted up).
-	if runtime.GOOS == "windows" {
-		return d.PrepareInstance()
 	}
 
 	return nil
@@ -578,6 +548,13 @@ func (d *deployer) Reboot() error {
 	}
 
 	return nil
+}
+
+func (d *deployer) WaitForNestedVMRebootComplete() error {
+	// Wait a while to give shutdown enough time to finish.
+	time.Sleep(1 * time.Minute)
+
+	return d.waitUntilSshIsAlive()
 }
 
 func (d *deployer) Logf(format string, arg ...interface{}) {
@@ -867,7 +844,8 @@ func (d *deployer) sshRunCommand(name string, arg ...string) (string, error) {
 	// Set WorkingDirectory to workingDirectoryOnNestedVM
 	cmd = fmt.Sprintf("cd %s && %s", workingDirectoryOnNestedVM, cmd)
 	output, err := session.CombinedOutput(cmd)
-	d.Logf("output from nested VM: [%s], err: %v", output, err)
+	d.Logf("output from nested VM '%s': [%s], err: %v", cmd, output, err)
+
 	return string(output), err
 }
 
@@ -887,7 +865,7 @@ func (d *deployer) ensureWorkingDirOnNestedVmExists() error {
 	}
 
 	output, err := session.CombinedOutput(cmd)
-	d.Logf("output from nested VM: [%s], err: %v", output, err)
+	d.Logf("output from ensureWorkingDirOnNestedVmExists: [%s], err: %v", output, err)
 
 	return err
 }
@@ -925,6 +903,61 @@ func (d *deployer) waitUntilSshIsAlive() error {
 	return errors.New("ssh timeout")
 }
 
+// Disables Windows Update and makes sure wuauserv doesn't run.
+func (d *deployer) disableWindowsUpdate() error {
+	// Disable auto-start.
+	err := d.RunCommand("sc", "config", "wuauserv", "start=", "disabled")
+	if err != nil {
+		return err
+	}
+
+	// Stop the service if it's running.
+	output, err := d.RunCommandWithOutput("net", "stop", "wuauserv")
+	if err != nil {
+		// Ignore ExitError 2: The Windows Update service is not started
+		exitError, ok := err.(*ssh.ExitError)
+		if !ok || exitError.Waitmsg.ExitStatus() != 2 {
+			return err
+		}
+	}
+
+	// `net stop` returns 0/SUCCESS even when "service could not be stopped".
+	// In that case, we'll kill WindowsUpdate (wuauserv) and TrustedInstaller.
+	if strings.Contains(output, "The Windows Update service could not be stopped.") {
+		if err = d.killServiceProcess("wuauserv"); err != nil {
+			return err
+		}
+
+		return d.killServiceProcess("TrustedInstaller")
+	}
+
+	return nil
+}
+
+// Kills the service process on a CEL instance.
+func (d *deployer) killServiceProcess(service string) error {
+	// Get service information.
+	output, err := d.RunCommandWithOutput("sc", "queryex", service)
+	if err != nil {
+		return err
+	}
+
+	// Find the service PID.
+	for _, line := range strings.Split(output, "\n") {
+		if strings.Contains(line, "PID") {
+			parts := strings.Split(line, ": ")
+			if len(parts) != 2 {
+				return fmt.Errorf("The output of 'sc queryex' cannot be parsed: %s", parts)
+			}
+
+			// Kill the process.
+			return d.RunCommand("taskkill", "/f", "/pid", parts[1])
+		}
+	}
+
+	return nil
+}
+
 func (d *deployer) commonSetupOnNestedVM() error {
 	err := d.waitUntilSshIsAlive()
 	if err != nil {
@@ -936,9 +969,9 @@ func (d *deployer) commonSetupOnNestedVM() error {
 		return errors.WithStack(err)
 	}
 
-	err = d.PrepareInstance()
+	err = d.disableWindowsUpdate()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	output, err := d.RunCommandWithOutput("hostname")
@@ -966,10 +999,7 @@ func (d *deployer) renameNestedVM(newName string) error {
 		return err
 	}
 
-	// wait a while to give shutdown enough time to finish.
-	time.Sleep(1 * time.Minute)
-
-	return d.waitUntilSshIsAlive()
+	return d.WaitForNestedVMRebootComplete()
 }
 
 func (d *deployer) UploadFileToNestedVM(srcFilePath string, destDirectory string) error {
