@@ -10,7 +10,8 @@ class RemoteDesktopTest(EnterpriseTestCase):
 
   @test
   def VerifyRDS(self):
-    for version in ['win2008', 'win2012']:
+    # TODO(crbug.com/951596): Intermittent RDS deployment failures on Win2012.
+    for version in ['win2008']:
       for _from, to in [('dc', 'client'), ('client', 'dc')]:
         clientName = "%s-%s" % (version, _from)
         targetName = "%s-%s" % (version, to)
