@@ -6,7 +6,7 @@ Configuration CreateIISServer
 {
     Import-DscResource -Module xWebAdministration
 
-    Node 'localhost'
+    Node localhost
     {
         # Install the IIS role
         WindowsFeature IIS

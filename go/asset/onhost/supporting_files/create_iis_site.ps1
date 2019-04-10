@@ -25,7 +25,7 @@ Configuration CreateWebSite
 
     Import-DscResource -Module xWebAdministration
 
-    Node 'localhost'
+    Node localhost
     {
         # To print auth information on the test page.
         WindowsFeature AspNet

@@ -15,6 +15,9 @@ class TestWorkerThread(threading.Thread):
   """Runs ./test.py for a given (test, host) pair."""
 
   def __init__(self, test, host, errorLogsDir, callback):
+    if callback is None:
+      raise TypeError("`callback` cannot be None.")
+
     threading.Thread.__init__(self)
     self.daemon = True
 
@@ -47,16 +50,17 @@ class TestWorkerThread(threading.Thread):
     details = []
     try:
       output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-      logging.debug("Command %s output (success): %s" % (cmd, repr(output)))
       success = True
+
+      # Relevant output will be formatted by MultiTestController._PrintResult.
+      logging.debug("Command %s succeeded." % cmd)
       details = self._ParseOutputForTestDetails(output)
     except subprocess.CalledProcessError as e:
-      logging.debug("Command %s output (failed): %s" % (cmd, repr(e.output)))
-      # Everything is relevant for failed tests.
+      # Full output will be formatted by MultiTestController._PrintResult.
+      logging.debug("Failed %s failed." % cmd)
       details = e.output.splitlines()
     finally:
-      if self._callback != None:
-        self._callback(self, success, details)
+      self._callback(self, success, details)
 
   def _ParseOutputForTestDetails(self, output):
     details = []

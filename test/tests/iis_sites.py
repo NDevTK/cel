@@ -4,6 +4,7 @@
 
 import logging
 import re
+import time
 from test.infra.core import *
 
 
@@ -90,6 +91,10 @@ class IISSitesTest(EnterpriseTestCase):
     return cases
 
 
+MAX_RETRIES_EVENTLOG = 2
+DELAY_RETRY_EVENTLOG = 5  # In seconds
+
+
 @environment(file="./assets/iis-ntlm-v1.asset.textpb")
 class IISNTLMTest(EnterpriseTestCase):
 
@@ -124,18 +129,29 @@ class IISNTLMTest(EnterpriseTestCase):
 
     # Look at the EventLogs and assert on the NTLM version used.
     script = '''
-    $logs = Get-EventLog Security -newest 100
+    $logs = Get-EventLog Security -newest 500
     $logs = $logs | ? {{ $_.Index -gt {index} -and $_.EventID -eq 4624 }}
+    $logs = $logs | ? {{ $_.Message.Contains("NtLmSsp") }}
 
     $logs | % {{ $_.Message }}
     '''.format(index=lastEventLogIndex)
 
     ret, output = self.clients['website'].RunPowershell(script)
-
     self.assertEqual(ret, 0, 'Get-EventLog failed for %s.' % case)
 
     packageUsed = "Package Name (NTLM only):\t%s" % expectedVersion
-    message = "Couldn't find %s in %s" % (packageUsed, repr(output))
+
+    # Event logs can take a few seconds to be available in Get-EventLog.
+    i = 0
+    while i < MAX_RETRIES_EVENTLOG and packageUsed not in output:
+      logging.debug("No NTLM event found. Will retry in a few seconds.")
+      time.sleep(DELAY_RETRY_EVENTLOG)
+
+      ret, output = self.clients['website'].RunPowershell(script)
+      self.assertEqual(ret, 0, 'Get-EventLog failed for %s.' % case)
+      i += 1
+
+    message = "Couldn't find %s in output" % packageUsed
     self.assertTrue(packageUsed in output, message)
 
 
@@ -171,7 +187,7 @@ class IISTestHelper:
     match = re.search('\<title\>(.*)\</title\>', outputHTML)
 
     if not match:
-      message = 'Could not find title in output for %s: %s' % (case, outputHTML)
+      message = 'Could not find title in HTML output for %s' % case
       test.assertTrue(False, message)
 
     actualTitle = match.groups()[0]
