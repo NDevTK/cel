@@ -390,8 +390,18 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 
 	// download the image file if it does not exist
 	if _, err := os.Stat(imageFile); os.IsNotExist(err) {
-		if err := d.RunLocalCommand("gsutil", "cp", d.nestedVM.Image, d.directory); err != nil {
-			return err
+		retries := 0
+		for {
+			if err := d.RunLocalCommand("gsutil", "cp", d.nestedVM.Image, d.directory); err == nil {
+				break
+			}
+
+			retries++
+			if retries >= 3 {
+				return errors.Wrapf(err, "error downloading image %s", d.nestedVM.Image)
+			}
+
+			log.Printf("Failed image download (will retry): %s", err)
 		}
 	}
 
