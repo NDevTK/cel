@@ -5,6 +5,7 @@
 package onhost
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -401,7 +402,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 				return errors.Wrapf(err, "error downloading image %s", d.nestedVM.Image)
 			}
 
-			log.Printf("Failed image download (will retry): %s", err)
+			d.Logf("Failed image download (will retry): %s", err)
 		}
 	}
 
@@ -411,7 +412,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 	}
 
 	// start the VM
-	d.RunLocalCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
+	err := d.RunLocalCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
 		"-net", "tap,ifname=tap0,script=no", "-usbdevice", "tablet",
 		// the default CPU is qemu64, which cannot run Win10. So we need to
 		// change it to "host"
@@ -419,6 +420,9 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 		// the monitor so that we can tell kvm to cleanly shutdown the VM.
 		"-qmp", "tcp:127.0.0.1:25555,server,nowait",
 		"-vnc", ":20100", imageFile)
+	if err != nil {
+		return err
+	}
 
 	internalIP, err := d.waitForVMToStart()
 	if err != nil {
@@ -743,7 +747,23 @@ func (d *deployer) RunLocalCommand(name string, arg ...string) error {
 
 func (d *deployer) RunLocalCommandWithoutWait(name string, arg ...string) error {
 	d.Logf("Run command: %s, args: %s", name, arg)
-	err := exec.Command(name, arg...).Start()
+	command := exec.Command(name, arg...)
+
+	// Log the output of this command asynchronously.
+	stdout, err := command.StdoutPipe()
+	command.Stderr = command.Stdout
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+
+		for scanner.Scan() {
+			// Text() usually returns a single line of output, but can also
+			// return a partial line if it's over 64 * 1024 bytes.
+			text := scanner.Text()
+			d.Logf("%s: %s", name, text)
+		}
+	}()
+
+	err = command.Start()
 	return errors.Wrap(err, "run command")
 }
 
