@@ -4,6 +4,7 @@
 
 import base64
 import logging
+import subprocess
 
 
 class TestClient:
@@ -22,6 +23,16 @@ class TestClient:
     b64Script = base64.b64encode(script.encode('utf-16-le'))
     return self.RunCommand('powershell', ['-EncodedCommand', b64Script])
 
+  def RunPowershellNoThrow(self, script):
+    """Run powershell script, without raising exception on failure.
+
+    Returns: (retcode, output)"""
+    try:
+      output = self.RunPowershell(script)
+      return 0, output
+    except subprocess.CalledProcessError, e:
+      return e.returncode, e.output
+
   def RunCommand(self, cmd, args=[]):
     # TODO: Escape arguments
     commandString = '%s %s' % (cmd, ' '.join(args))
@@ -33,7 +44,8 @@ class TestClient:
 
 class TestEnvironment:
 
-  def __init__(self, computeProject, celCtlRunner):
+  def __init__(self, computeProject, gsbucket, celCtlRunner):
+    self.gsbucket = gsbucket
     computeInstances = computeProject.GetComputeInstances()
 
     self.clients = {}
@@ -42,4 +54,5 @@ class TestEnvironment:
       self.clients[instance.name] = testClient
 
   def __repr__(self):
-    return "<%s clients=%s>" % (self.__class__.__name__, self.clients)
+    return "<%s clients=%s gsbucket=%s>" % (self.__class__.__name__,
+                                            self.clients, self.gsbucket)

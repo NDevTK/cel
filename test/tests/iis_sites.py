@@ -27,8 +27,7 @@ class IISSitesTest(EnterpriseTestCase):
       logging.info("Verify %s can reach %s" % (case.client, case.target))
       script = 'Invoke-WebRequest %s -UseBasicParsing' % case.target
       script = '(%s).Content' % script
-      ret, output = self.clients[case.client].RunPowershell(script)
-      self.assertEqual(ret, 0, 'Invoke-WebRequest failed for %s.' % case)
+      output = self.clients[case.client].RunPowershell(script)
       IISTestHelper._AssertTitleEquals(self, case, output, "[Anonymous]")
 
   @test
@@ -117,9 +116,8 @@ class IISNTLMTest(EnterpriseTestCase):
   def _VerifyNTLMSite(self, case, expectedVersion):
     # Get the latest security EventLog Index. We'll use it later.
     script = "Get-EventLog Security -newest 1 | % { $_.Index }"
-    ret, output = self.clients['website'].RunPowershell(script)
+    output = self.clients['website'].RunPowershell(script)
 
-    self.assertEqual(ret, 0, 'Getting the last Security EventLog failed.')
     lastEventLogIndex = int(output)
 
     # Make sure the website is up & serves NTLM requests.
@@ -136,8 +134,7 @@ class IISNTLMTest(EnterpriseTestCase):
     $logs | % {{ $_.Message }}
     '''.format(index=lastEventLogIndex)
 
-    ret, output = self.clients['website'].RunPowershell(script)
-    self.assertEqual(ret, 0, 'Get-EventLog failed for %s.' % case)
+    output = self.clients['website'].RunPowershell(script)
 
     packageUsed = "Package Name (NTLM only):\t%s" % expectedVersion
 
@@ -168,16 +165,15 @@ class IISTestHelper:
     '''.format(
         target=case.target, username=case.username, password=case.password)
 
-    ret, output = test.clients[case.client].RunPowershell(script)
+    output = test.clients[case.client].RunPowershell(script)
 
-    test.assertEqual(ret, 0, 'Invoke-WebRequest failed for %s.' % case)
     IISTestHelper._AssertTitleEquals(test, case, output, expectedTitle)
 
   @staticmethod
   def _VerifyAnonymousAccessFails(test, case):
     """Verifies that an Invoke-WebReguest with no credential fails w/ 401."""
     script = '(Invoke-WebRequest %s -UseBasicParsing).StatusCode' % case.target
-    ret, output = test.clients[case.client].RunPowershell(script)
+    ret, output = test.clients[case.client].RunPowershellNoThrow(script)
     test.assertEqual(ret, 1)
     test.assertTrue("401 - Unauthorized" in output)
 

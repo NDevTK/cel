@@ -17,7 +17,7 @@ class RemoteDesktopTest(EnterpriseTestCase):
         targetName = "%s-%s" % (version, to)
 
         script = "query termserver %s" % targetName
-        ret, output = self.clients[clientName].RunPowershell(script)
+        ret, output = self.clients[clientName].RunPowershellNoThrow(script)
 
         # This doesn't return 0 when it finds the RDS host. Parse the output.
         successMsg = "Known Remote Desktop Session Host servers"

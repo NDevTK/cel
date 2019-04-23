@@ -17,11 +17,10 @@ class NestedVMsTest(EnterpriseTestCase):
 
   def _VerifyMachineNameMatch(self, machine, expected_name):
     try:
-      ret, output = self.clients[machine].RunPowershell("whoami")
-      self.assertEqual(ret, 0)
+      output = self.clients[machine].RunPowershell("whoami")
       self.assertEqual(output.strip(), expected_name)
     except:
       # Log potentially useful information to debug NestedVM test failures.
-      ret, output = self.clients[machine].RunCommand("sc queryex")
+      output = self.clients[machine].RunCommand("sc queryex")
       logging.debug("Services running: %s" % (output))
       raise

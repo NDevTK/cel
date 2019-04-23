@@ -31,11 +31,9 @@ class MachineRegistryTest(EnterpriseTestCase):
   def assertRegistryContains(self, machine, path, expected):
     logging.debug("Checking %s for %s" % (path, expected))
 
-    ret, output = self.clients[machine].RunPowershell("""
+    output = self.clients[machine].RunPowershell("""
       Get-ItemProperty "%s"
     """ % path)
-
-    self.assertEqual(ret, 0)
 
     actual = self.parseRegistryValues(output)
 

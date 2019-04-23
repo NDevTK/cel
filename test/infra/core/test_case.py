@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 import logging
+import os
+import subprocess
 
 
 class EnterpriseTestCase:
@@ -11,6 +13,7 @@ class EnterpriseTestCase:
   def __init__(self, environment):
     logging.info('Initialize Test=%s with %s' % (self.__class__, environment))
     self.clients = environment.clients
+    self.gsbucket = environment.gsbucket
 
   @staticmethod
   def GetTestMethods(_class):
@@ -27,3 +30,27 @@ class EnterpriseTestCase:
   def assertEqual(self, first, second, message='Assertion failed'):
     if first != second:
       raise Exception("%s [first=%s, second=%s]" % (message, first, second))
+
+  def RunCommand(self, instance_name, cmd):
+    """Run a command on the specified instance."""
+    return self.clients[instance_name].RunCommand(cmd)
+
+  def _runCommand(self, cmd):
+    """Run a command."""
+    logging.info("Running: %s", cmd)
+    output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+    logging.info("Output: %s", output)
+
+  def UploadFile(self, instance_name, src_file, dest_directory):
+    """Upload local file to the specified instance.
+
+    Returns:
+    the full path of the destination file.
+    """
+    file_name = os.path.basename(src_file)
+    self._runCommand(['gsutil', 'cp', src_file, 'gs://' + self.gsbucket])
+
+    dest_file = os.path.join(dest_directory, file_name).replace('/', '\\')
+    cmd = 'gsutil cp gs://%s/%s %s' % (self.gsbucket, file_name, dest_file)
+    self.RunCommand(instance_name, cmd)
+    return dest_file

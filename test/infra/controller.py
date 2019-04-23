@@ -2,21 +2,23 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.protobuf import text_format
+import inspect
 import logging
 import os
 import pydoc
-import inspect
 import subprocess
 import test.infra.gcp as gcp
+import traceback
 from test.infra.core import EnterpriseTestCase, TestEnvironment
 from test.infra.proto.schema.host import host_environment_pb2
-import traceback
+
+from google.protobuf import text_format
 
 
 class SingleTestController:
 
   def __init__(self, testCaseClassName, hostFile, cel_ctl):
+    hostFile = os.path.expanduser(hostFile)
     if not os.path.exists(hostFile):
       raise ValueError('Host file not found: %s' % hostFile)
 
@@ -41,6 +43,7 @@ class SingleTestController:
 
     host = self._ParseHostFile(hostFile)
     self._project = gcp.ComputeProject(host.project.name, host.project.zone)
+    self._host = host
 
     self._celCtlRunner = CelCtlRunner(cel_ctl, self._hostFile, self._assetFile)
 
@@ -56,7 +59,8 @@ class SingleTestController:
     Returns:
       True if all tests passed.
     """
-    environment = TestEnvironment(self._project, self._celCtlRunner)
+    environment = TestEnvironment(self._project, self._host.storage.bucket,
+                                  self._celCtlRunner)
 
     testCaseInstance = self._testClass(environment)
 
@@ -151,14 +155,14 @@ class CelCtlRunner:
         '--builtins', self._hostFile, self._assetFile
     ]
 
+    logging.info("Running on %s: %s" % (instance, command))
     try:
-      logging.debug("Running on %s: %s" % (instance, command))
       output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-      logging.debug("cel_ctl run output: %s" % output)
-      return 0, output
+      logging.info("cel_ctl run output: %s" % output)
+      return output
     except subprocess.CalledProcessError, e:
       logging.debug("cel_ctl run returned %s: %s" % (e.returncode, e.output))
-      return e.returncode, e.output
+      raise
 
   def Clean(self):
     cmd = [

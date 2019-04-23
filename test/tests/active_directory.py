@@ -13,7 +13,7 @@ class DomainJoinTest(EnterpriseTestCase):
     for client in [
         'client2008', 'client2012', 'client2016', 'clientwin7', 'clientwin10'
     ]:
-      ret, output = self.clients[client].RunCommand("systeminfo")
+      output = self.clients[client].RunCommand("systeminfo")
 
       domain = ADTestHelper._GetDomainFromSystemInfo(output)
 
@@ -53,7 +53,7 @@ class DomainTreeTest(EnterpriseTestCase):
     cases.append(('c1-2008dc', 'c1.b1.a1-2008.com'))
 
     for client, expectedDomain in cases:
-      ret, output = self.clients[client].RunCommand("systeminfo")
+      output = self.clients[client].RunCommand("systeminfo")
 
       domain = ADTestHelper._GetDomainFromSystemInfo(output)
 
