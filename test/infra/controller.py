@@ -161,7 +161,7 @@ class CelCtlRunner:
       logging.info("cel_ctl run output: %s" % output)
       return output
     except subprocess.CalledProcessError, e:
-      logging.debug("cel_ctl run returned %s: %s" % (e.returncode, e.output))
+      logging.info("cel_ctl run returned %s: %s" % (e.returncode, e.output))
       raise
 
   def Clean(self):

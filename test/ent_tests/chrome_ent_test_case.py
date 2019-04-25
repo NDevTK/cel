@@ -4,6 +4,7 @@
 
 import base64
 import logging
+import os
 import subprocess
 from test.infra.core import EnterpriseTestCase
 
@@ -19,12 +20,23 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
   """Base class for Chrome enterprise test cases."""
 
   def InstallChrome(self, instance_name):
+    """Installs chrome.
+
+    Currently supports two types of installer:
+    - mini_installer.exe, and
+    - *.msi
+    """
     file_name = self.UploadFile(instance_name, FLAGS.chrome_installer,
                                 r'c:\temp')
 
-    # TODO: currently we only install msi file. Add support other installers
-    # later.
-    cmd = 'msiexec /i %s' % file_name
+    if os.path.basename(file_name).lower() == 'mini_installer.exe':
+      dir = os.path.dirname(os.path.abspath(__file__))
+      self.UploadFile(instance_name, os.path.join(dir, 'installer_data'),
+                      r'c:\temp')
+      cmd = file_name + r' --installerdata=c:\temp\installer_data'
+    else:
+      cmd = 'msiexec /i %s' % file_name
+
     self.RunCommand(instance_name, cmd)
 
   def SetPolicy(self, instance_name, policy_name, policy_value, policy_type):

@@ -1015,11 +1015,15 @@ def _FormatPythonFiles(args, py_files):
   if len(py_files) == 0:
     return []
 
+  yapf_executable = 'yapf'
+  if os.name == 'nt':
+    yapf_executable = 'yapf.bat'
+
   try:
     if args.check:
       try:
         o = _RunCommandOutput(
-            ['yapf', '-r', '-d'] + py_files,
+            [yapf_executable, '-r', '-d'] + py_files,
             env=_MergeEnv(args, target_host=True),
             cwd=SOURCE_PATH)
       except subprocess.CalledProcessError as e:
@@ -1037,7 +1041,7 @@ def _FormatPythonFiles(args, py_files):
       return modified
 
     _RunCommand(
-        ['yapf', '-i', '-r'] + py_files,
+        [yapf_executable, '-i', '-r'] + py_files,
         env=_MergeEnv(args, target_host=True),
         cwd=SOURCE_PATH)
 

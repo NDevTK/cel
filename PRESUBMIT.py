@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import sys
 
 _EXCLUDED_PATHS = (r"^test[\\\/]infra[\\\/]proto[\\\/].*",)
@@ -96,11 +97,14 @@ def CommonChecks(input_api, output_api):
   commit."""
   results = []
   results.extend(CheckIfFilesNeedFormatting(input_api, output_api))
-  results.extend(RunGoTests(input_api, output_api))
-  results.extend(RunGoVet(input_api, output_api))
-  results.extend(
-      input_api.canned_checks.PanProjectChecks(
-          input_api, output_api, excluded_paths=_EXCLUDED_PATHS))
+
+  if os.name != 'nt':
+    # the following checks currently cannot be performed on Windows.
+    results.extend(RunGoTests(input_api, output_api))
+    results.extend(RunGoVet(input_api, output_api))
+    results.extend(
+        input_api.canned_checks.PanProjectChecks(
+            input_api, output_api, excluded_paths=_EXCLUDED_PATHS))
   return results
 
 

@@ -37,9 +37,14 @@ class EnterpriseTestCase:
 
   def _runCommand(self, cmd):
     """Run a command."""
-    logging.info("Running: %s", cmd)
-    output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-    logging.info("Output: %s", output)
+    try:
+      logging.info("Running: %s", cmd)
+      output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+      logging.info("Output: %s", output)
+    except subprocess.CalledProcessError, e:
+      logging.info("Command run failed with error code %s: %s" % (e.returncode,
+                                                                  e.output))
+      raise
 
   def UploadFile(self, instance_name, src_file, dest_directory):
     """Upload local file to the specified instance.
@@ -48,7 +53,14 @@ class EnterpriseTestCase:
     the full path of the destination file.
     """
     file_name = os.path.basename(src_file)
-    self._runCommand(['gsutil', 'cp', src_file, 'gs://' + self.gsbucket])
+
+    # On Windows, the gsutil program is named gsutil.cmd
+    gsutil_executable = 'gsutil'
+    if os.name == 'nt':
+      gsutil_executable = 'gsutil.cmd'
+
+    self._runCommand(
+        [gsutil_executable, 'cp', src_file, 'gs://' + self.gsbucket])
 
     dest_file = os.path.join(dest_directory, file_name).replace('/', '\\')
     cmd = 'gsutil cp gs://%s/%s %s' % (self.gsbucket, file_name, dest_file)
