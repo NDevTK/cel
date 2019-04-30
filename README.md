@@ -21,8 +21,18 @@ head start on the code in this repository.
 * [Depot Tools][]: Used for managing the checkout and the contributor workflow.
 
 * [Protocol Buffers Compiler][]: Protocol buffers are used extensively for
-    wranging all the data that needs to be shuttled around. Can be installed
-    automatically via `./build.py deps --install`.
+    wranging all the data that needs to be shuttled around. Run `protoc --version` to
+    check the protoc version. The protoc version should be at least 3.5.1. If
+    protoc is not installed, or if the version is less than 3.5.1, download it from
+    https://github.com/protocolbuffers/protobuf/releases.
+
+    Remember that you need to copy the contents of the `include`
+    directory of the zip file into `/usr/local/include/` as well, i.e.
+    ```
+    sudo cp -r <unzipped_protoc_release>/include /usr/local
+
+    sudo chmod -R a+rX /usr/local/include/
+    ```
 
 * [Dep][] : Used for Go depedency management. This can be installed
     automatically by running `./build.py deps --install` from the root of the
