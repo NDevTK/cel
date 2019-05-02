@@ -258,8 +258,9 @@ func (d *deployer) Deploy(manifestFile string) {
 
 	machineConfigVar := onhost.GetWindowsMachineRuntimeConfigVariableName(d.instanceName)
 	status := d.getRuntimeConfigVariableValue(machineConfigVar)
+	d.Logf("Status of %s is %s.", machineConfigVar, status)
 	if status == statusError {
-		d.Logf("Status of %s is %s. Nothing needs to be done.", machineConfigVar, status)
+		d.Logf("Status is %s. Nothing needs to be done.", status)
 		return
 	}
 
@@ -650,6 +651,7 @@ func (d *deployer) setRuntimeConfigVariable(variable string, value string) {
 		apiError, ok := err.(*googleapi.Error)
 		if ok && apiError.Code == 404 {
 			// the variable does not exist. So we create it instead
+			d.Logf("config variable %s doesn't exist, so we'll create it.", variable)
 			v := &runtimeconfig.Variable{
 				Name: d.getFullRuntimeConfigVariableName(variable),
 				Text: value}
