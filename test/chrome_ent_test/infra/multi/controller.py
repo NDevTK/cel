@@ -28,8 +28,8 @@ Here are the different threads running in a multi-test run:
     using the main print lock that other threads use.
 """
 
-from test.infra.multi.host_pool import HostPool
-from test.infra.multi.threads import TestWorkerThread, DisplayProgressThread
+from chrome_ent_test.infra.multi.host_pool import HostPool
+from chrome_ent_test.infra.multi.threads import TestWorkerThread, DisplayProgressThread
 import json
 import logging
 import os

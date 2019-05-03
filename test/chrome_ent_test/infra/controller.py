@@ -7,10 +7,10 @@ import logging
 import os
 import pydoc
 import subprocess
-import test.infra.gcp as gcp
+import chrome_ent_test.infra.gcp as gcp
 import traceback
-from test.infra.core import EnterpriseTestCase, TestEnvironment
-from test.infra.proto.schema.host import host_environment_pb2
+from chrome_ent_test.infra.core import EnterpriseTestCase, TestEnvironment
+from chrome_ent_test.infra.proto.schema.host import host_environment_pb2
 
 from google.protobuf import text_format
 

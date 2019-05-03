@@ -33,3 +33,7 @@ out/
 # Generated agent binaries
 resources/windows/gen/
 resources/linux/gen/
+
+# Generated when building python packages
+test/build/
+test/*.egg-info/

@@ -4,8 +4,8 @@
 
 import os
 import logging
-from test.infra.core import *
-from test.ent_tests import ChromeEnterpriseTestCase
+from chrome_ent_test.infra.core import *
+from chrome_ent_test.ent_tests import ChromeEnterpriseTestCase
 from absl import flags
 
 FLAGS = flags.FLAGS

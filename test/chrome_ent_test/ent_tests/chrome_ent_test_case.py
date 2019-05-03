@@ -6,7 +6,7 @@ import base64
 import logging
 import os
 import subprocess
-from test.infra.core import EnterpriseTestCase
+from chrome_ent_test.infra.core import EnterpriseTestCase
 
 from absl import flags
 

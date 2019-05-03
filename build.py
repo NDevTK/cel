@@ -543,7 +543,8 @@ missing.
       inp=['vendor/google.golang.org/api/cloudkms/v1/cloudkms-api.json'],
       out='schema/gcp/cloudkms/cloudkms-api.proto')
 
-  python_proto_path = os.path.join(SOURCE_PATH, "test", "infra", "proto")
+  python_proto_path = os.path.join(SOURCE_PATH, "test", "chrome_ent_test",
+                                   "infra", "proto")
   protoc_command = [
       'protoc', '--go_out=../../../', '--descriptor_set_out={out}',
       '--include_source_info', '--proto_path=.',
@@ -1218,6 +1219,13 @@ def CleanCommand(args):
     shutil.rmtree(OUT_PATH)
 
 
+def CreatePackageCommand(args):
+  '''Create package.'''
+  _RunCommand(['python', 'setup.py', 'bdist_wheel',
+               '--dist-dir=%s' % OUT_PATH],
+              cwd=os.path.join(SOURCE_PATH, 'test'))
+
+
 def main():
   common_options = argparse.ArgumentParser(add_help=False)
   common_options.add_argument(
@@ -1364,6 +1372,17 @@ def main():
   run_command.add_argument(
       'prog', metavar='ARG', type=str, help='Program and arguments', nargs='+')
   run_command.set_defaults(closure=RunCommand)
+
+  # ----------------------------------------------------------------------------
+  # create package
+  # ----------------------------------------------------------------------------
+  create_package_command = subparsers.add_parser(
+      'create_package',
+      help=CreatePackageCommand.__doc__.splitlines()[0],
+      description=CreatePackageCommand.__doc__,
+      formatter_class=argparse.RawDescriptionHelpFormatter,
+      parents=[common_options])
+  create_package_command.set_defaults(closure=CreatePackageCommand)
 
   args = parser.parse_args()
   if hasattr(args, 'verbose') and args.verbose:

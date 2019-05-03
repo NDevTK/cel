@@ -5,12 +5,12 @@
 import argparse
 import logging
 import sys
-from test.infra.multi import *
+from chrome_ent_test.infra.multi import *
 import traceback
 import warnings
 
 # Import all known tests
-from test.tests import *
+from chrome_ent_test.tests import *
 
 
 def ParseArgs():

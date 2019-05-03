@@ -5,7 +5,7 @@
 import logging
 import re
 import time
-from test.infra.core import *
+from chrome_ent_test.infra.core import *
 
 
 @environment(file="./assets/iis-various-auth.asset.textpb")

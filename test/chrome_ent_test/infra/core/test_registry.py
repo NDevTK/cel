@@ -41,3 +41,8 @@ class TestRegistry:
         results.append(_class)
 
     return results
+
+  @staticmethod
+  def AllTests():
+    """Return the list of all available tests."""
+    return TestRegistry._allTestCases

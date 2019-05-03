@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 import logging
-from test.infra.core import *
+from chrome_ent_test.infra.core import *
 
 
 @environment(file="./assets/registry-keys.asset.textpb")

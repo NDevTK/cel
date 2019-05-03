@@ -4,7 +4,7 @@
 
 import glob
 import os
-from test.infra.core.test_registry import TestRegistry
+from chrome_ent_test.infra.core.test_registry import TestRegistry
 
 
 class ArgsParser:
@@ -27,16 +27,16 @@ class ArgsParser:
     testsToRun = []
 
     for pattern in tests.split(';'):
+      message = 'No test found that matches "%s". Availabe tests are: %s' % (
+          pattern, TestRegistry.AllTests())
       if pattern.endswith('*'):
         results = TestRegistry.FindAll(pattern[:-1])
         if len(results) == 0:
-          message = 'No test found that matches "%s".' % pattern
           raise ValueError(message)
         testsToRun += results
       else:
         result = TestRegistry.Find(pattern)
         if result == None:
-          message = 'No test found with the name "%s".' % pattern
           raise ValueError(message)
         testsToRun += [result]
 

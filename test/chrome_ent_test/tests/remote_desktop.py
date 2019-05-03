@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from test.infra.core import *
+from chrome_ent_test.infra.core import *
 
 
 @environment(file="./assets/rds-examples.asset.textpb", timeout=5400)

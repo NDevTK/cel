@@ -34,7 +34,7 @@ flags.DEFINE_string('error_logs_dir', None,
 flags.DEFINE_multi_string('test_arg', None, 'Flags passed to tests')
 
 try:
-  import test.infra.controller as controller
+  import chrome_ent_test.infra.controller as controller
 except ImportError as e:
   nonDefaultModules = ['googleapiclient.discovery', 'google.iam.admin.v1']
   for module in nonDefaultModules:
@@ -46,7 +46,7 @@ except ImportError as e:
 
 def GetDefaultCelCtl():
   # TODO: Add Windows support
-  return os.path.join(sys.path[0], 'out/linux_amd64/bin/cel_ctl')
+  return os.path.join(sys.path[0], '../out/linux_amd64/bin/cel_ctl')
 
 
 def ConfigureLogging():

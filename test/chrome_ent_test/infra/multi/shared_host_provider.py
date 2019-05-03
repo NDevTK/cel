@@ -6,7 +6,7 @@ import collections
 from datetime import datetime
 import logging
 import os
-from test.infra.gcp import StorageBucket
+from chrome_ent_test.infra.gcp import StorageBucket
 import threading
 import time
 from googleapiclient.errors import HttpError
