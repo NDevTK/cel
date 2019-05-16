@@ -1,5 +1,6 @@
 .DS_Store
 .idea/*
+.vscode/
 *.pyc
 
 # Local build environment file. This file is evaluated as a Python literal and

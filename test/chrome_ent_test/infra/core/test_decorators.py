@@ -29,3 +29,11 @@ def test(_method):
   """@test annotation for test methods."""
   _method.IS_TEST_METHOD = True
   return _method
+
+
+def before_all(_method):
+  """@before_all annotation.
+
+  Such method is run right before any test methods are run."""
+  _method.IS_BEFORE_ALL = True
+  return _method

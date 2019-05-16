@@ -40,11 +40,22 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
     self.RunCommand(instance_name, cmd)
 
   def SetPolicy(self, instance_name, policy_name, policy_value, policy_type):
-    """Sets a Google Chrome policy in registry."""
+    r"""Sets a Google Chrome policy in registry.
+
+    Args:
+      policy_name: the policy name.
+        The name can contain \. In this case, the last segment will be the
+        real policy name, while anything before will be part of the key.
+    """
+    key = 'HKLM\Software\Policies\Google\Chrome'
+    segments = policy_name.split('\\')
+    policy_name = segments[-1]
+    if len(segments) >= 2:
+      key += '\\' + '\\'.join(segments[:-1])
+
     cmd = (r"Set-GPRegistryValue -Name 'Default Domain Policy' "
-           "-Key HKLM\Software\Policies\Google\Chrome "
-           "-ValueName %s -Value %s -Type %s") % (policy_name, policy_value,
-                                                  policy_type)
+           "-Key %s -ValueName %s -Value %s -Type %s") % (
+               key, policy_name, policy_value, policy_type)
     self.clients[instance_name].RunPowershell(cmd)
 
   def _installChocolatey(self, instance_name):
@@ -59,15 +70,28 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
   def InstallWebDriver(self, instance_name):
     self._installChocolatey(instance_name)
     self.InstallPackage(instance_name, 'python2', '2.7.15')
-    self.InstallPackage(instance_name, 'chromedriver', '2.450')
-    self.RunCommand(instance_name,
-                    r'c:\Python27\python.exe -m pip install -U selenium')
+    self.InstallPackage(instance_name, 'chromedriver', '74.0.3729.60')
+    self.RunCommand(
+        instance_name,
+        r'c:\Python27\python.exe -m pip install -U selenium absl-py pywin32')
 
-  def RunWebDriverTest(self, instance_name, test_file):
-    """Returns the output"""
+    dir = os.path.dirname(os.path.abspath(__file__))
+    self.UploadFile(instance_name, os.path.join(dir, 'test_util.py'),
+                    r'c:\temp')
+
+  def RunWebDriverTest(self, instance_name, test_file, args=[]):
+    """Runs a python webdriver test on an instance.
+
+    Args:
+      instance_name: name of the instance.
+      test_file: the path of the webdriver test file.
+      args: the list of arguments passed to the test.
+
+    Returns:
+      the output."""
     # upload the test
     file_name = self.UploadFile(instance_name, test_file, r'c:\temp')
 
     # run the test
-    cmd = r'c:\Python27\python.exe %s' % file_name
+    cmd = r'c:\Python27\python.exe %s %s' % (file_name, ' '.join(args))
     return self.RunCommand(instance_name, cmd)

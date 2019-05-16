@@ -17,7 +17,21 @@ from google.protobuf import text_format
 
 class SingleTestController:
 
-  def __init__(self, testCaseClassName, hostFile, cel_ctl):
+  def __init__(self,
+               testCaseClassName,
+               hostFile,
+               cel_ctl,
+               test_filter=None,
+               skip_before_all=False):
+    """Initializes a controller.
+
+    Args:
+      testCaseClassName: name of the test case.
+      hostFile: path to the host file.
+      cel_ctl: path to the cel_ctl executable.
+      test_filter: filter of the test methods in the test class.
+      skip_before_all: True if @before_all methods will be skipped.
+    """
     hostFile = os.path.expanduser(hostFile)
     if not os.path.exists(hostFile):
       raise ValueError('Host file not found: %s' % hostFile)
@@ -37,6 +51,8 @@ class SingleTestController:
       raise ValueError('Asset file not found: %s' % asset_file)
 
     self._testClass = testClass
+    self._testFilter = test_filter
+    self._skip_before_all = skip_before_all
     self._hostFile = hostFile
     self._assetFile = asset_file
     self._deployTimeout = testClass.DEPLOY_TIMEOUT
@@ -64,11 +80,22 @@ class SingleTestController:
 
     testCaseInstance = self._testClass(environment)
 
-    print("Running tests...\n")
+    # execute methods decorated with @before_all
+    if not self._skip_before_all:
+      for method in EnterpriseTestCase.GetBeforeAllMethods(self._testClass):
+        method(self=testCaseInstance)
 
+    print("Running tests...\n")
     passes = 0
     tests = EnterpriseTestCase.GetTestMethods(self._testClass)
+    test_count = 0
     for test in tests:
+      if self._testFilter != None and test.__name__ != self._testFilter:
+        logging.info('test %s does not match the filter %s. Skip it.',
+                     test.__name__, self._testFilter)
+        continue
+      test_count += 1
+
       try:
         logging.info("Running test %s" % test)
         test(self=testCaseInstance)
@@ -80,10 +107,10 @@ class SingleTestController:
         print("FAILED   %s" % test.func_name)
         print(traceback.format_exc())
 
-    success = (passes == len(tests))
+    success = (passes == test_count)
 
     # Print summary
-    summary = "\n%s/%s tests passed.\n" % (passes, len(tests))
+    summary = "\n%s/%s tests passed.\n" % (passes, test_count)
     print(summary)
 
     return success

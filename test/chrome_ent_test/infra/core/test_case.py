@@ -5,31 +5,42 @@
 import logging
 import os
 import subprocess
+import unittest
 
 
-class EnterpriseTestCase:
+# We inherit from unittest.TestCase so that we get all those assertXXX()
+# methods. Note that the way our tests work is different from unittest,
+# so please do not use anything in unittest.TestCase except those assert
+# methods.
+class EnterpriseTestCase(unittest.TestCase):
   """Base class for tests that provides test hooks and resources."""
 
   def __init__(self, environment):
     logging.info('Initialize Test=%s with %s' % (self.__class__, environment))
+    super(EnterpriseTestCase, self).__init__()
     self.clients = environment.clients
     self.gsbucket = environment.gsbucket
 
+  # this method is here to please unittest.
+  def runTest(self):
+    raise "Please use ./test.py to run this test."
+
   @staticmethod
   def GetTestMethods(_class):
-    testMethods = []
+    return EnterpriseTestCase._getMethods(_class, 'IS_TEST_METHOD')
+
+  @staticmethod
+  def GetBeforeAllMethods(_class):
+    return EnterpriseTestCase._getMethods(_class, 'IS_BEFORE_ALL')
+
+  @staticmethod
+  def _getMethods(_class, attr):
+    """Returns a list of methods that has the specified attribute."""
+    methods = []
     for _, elem in _class.__dict__.items():
-      if hasattr(elem, 'IS_TEST_METHOD'):
-        testMethods.append(elem)
-    return testMethods
-
-  def assertTrue(self, assertion, message='Assertion failed'):
-    if not assertion:
-      raise Exception(message)
-
-  def assertEqual(self, first, second, message='Assertion failed'):
-    if first != second:
-      raise Exception("%s [first=%s, second=%s]" % (message, first, second))
+      if hasattr(elem, attr):
+        methods.append(elem)
+    return methods
 
   def RunCommand(self, instance_name, cmd):
     """Run a command on the specified instance."""

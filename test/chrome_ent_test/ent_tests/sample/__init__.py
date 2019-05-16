@@ -3,3 +3,4 @@
 # found in the LICENSE file.
 
 from safe_search import *
+from restore_on_startup.restore_on_startup import *

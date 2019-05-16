@@ -19,7 +19,7 @@ class TestClient:
     script = "$ProgressPreference = 'SilentlyContinue'\n" + script.strip()
 
     # PowerShell EncodedCommand takes a UTF-16 little endian b64encoded string
-    logging.debug("RunPowershell script: %s" % repr(script))
+    logging.info("RunPowershell script: %s" % repr(script))
     b64Script = base64.b64encode(script.encode('utf-16-le'))
     return self.RunCommand('powershell', ['-EncodedCommand', b64Script])
 
