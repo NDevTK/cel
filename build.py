@@ -1139,13 +1139,19 @@ Problems with 'clang-format'?
     print(broken_calls)
     sys.exit(1)
 
-  o = subprocess.check_output(['git', 'ls-files'],
+  windows = sys.platform == 'win32'
+  git_command = 'git'
+  if windows:
+    git_command = 'git.bat'
+
+  o = subprocess.check_output([git_command, 'ls-files'],
                               cwd=SOURCE_PATH,
                               env=_MergeEnv(args))
   all_files = [os.path.join(SOURCE_PATH, p) for p in o.splitlines()]
 
-  logging.info("checking .proto files")
-  pr = _FormatProtoFiles(args, [f for f in all_files if f.endswith('.proto')])
+  if not windows:
+    logging.info("checking .proto files")
+    pr = _FormatProtoFiles(args, [f for f in all_files if f.endswith('.proto')])
 
   logging.info("checking .md files")
   md = _FormatMarkdownFiles(args, [f for f in all_files if f.endswith('.md')])

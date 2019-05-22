@@ -4,9 +4,13 @@
 
 import time
 from selenium import webdriver
+import os
+
+os.environ["CHROME_LOG_FILE"] = r"c:\temp\chrome_log.txt"
 
 driver = webdriver.Chrome(
-    "C:/ProgramData/chocolatey/lib/chromedriver/tools/chromedriver.exe")
+    "C:/ProgramData/chocolatey/lib/chromedriver/tools/chromedriver.exe",
+    service_args=["--verbose", r"--log-path=c:\temp\chromedriver.log"])
 driver.get('http://www.google.com/xhtml')
 time.sleep(5)  # wait for page to be loaded
 search_box = driver.find_element_by_name('q')
