@@ -11,7 +11,7 @@ from absl import flags
 FLAGS = flags.FLAGS
 
 
-@environment(file="./policy_test.asset.textpb")
+@environment(file="../policy_test.asset.textpb")
 class SafeSearchTest(ChromeEnterpriseTestCase):
 
   @test
