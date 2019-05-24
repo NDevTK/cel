@@ -1,0 +1,45 @@
+# Copyright 2019 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+from absl import app, flags
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string('url', None, 'The url to open in Chrome.')
+flags.mark_flag_as_required('url')
+
+flags.DEFINE_bool('incognito', False,
+                  'Set flag to open Chrome in incognito mode.')
+
+flags.DEFINE_bool(
+    'text_only', False,
+    'Set flag to print only page text (defaults to full source).')
+
+
+def main(argv):
+  chrome_options = Options()
+  if FLAGS.incognito:
+    chrome_options.add_argument('incognito')
+
+  os.environ["CHROME_LOG_FILE"] = r"c:\temp\chrome_log.txt"
+
+  driver = webdriver.Chrome(
+      "C:/ProgramData/chocolatey/lib/chromedriver/tools/chromedriver.exe",
+      service_args=["--verbose", r"--log-path=c:\temp\chromedriver.log"],
+      chrome_options=chrome_options)
+  driver.get(FLAGS.url)
+
+  if FLAGS.text_only:
+    print driver.find_element_by_css_selector('html').text.encode('utf-8')
+  else:
+    print driver.page_source.encode('utf-8')
+
+  driver.quit()
+
+
+if __name__ == '__main__':
+  app.run(main)
