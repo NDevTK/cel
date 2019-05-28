@@ -7,4 +7,5 @@ from restore_on_startup.restore_on_startup import *
 from popups_allowed.popups_allowed import *
 from url_blacklist.url_blacklist import *
 from url_whitelist.url_whitelist import *
+from translate_enabled.translate_enabled import *
 from youtube_restrict.youtube_restrict import *

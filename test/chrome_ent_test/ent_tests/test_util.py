@@ -5,10 +5,12 @@
 # This file contains the utility methods that can be used by python
 # tests running on Windows.
 
+import os
 import time
-
 import win32con
 import win32gui
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 
 def _window_enum_handler(hwnd, window_list):
@@ -38,3 +40,25 @@ def shutdown_chrome():
   # wait a little bit for chrome processes to end.
   # TODO: the right way is to wait until there are no chrome.exe processes.
   time.sleep(2)
+
+
+def create_chrome_webdriver(incognito=False, prefs=None):
+  """Configures and returns a Chrome WebDriver object."
+
+  Args:
+    incognito: Whether or not to launch Chrome in incognito mode.
+    prefs: Profile preferences. None for defaults.
+  """
+  chrome_options = Options()
+  if incognito:
+    chrome_options.add_argument('incognito')
+
+  if prefs != None:
+    chrome_options.add_experimental_option("prefs", prefs)
+
+  os.environ["CHROME_LOG_FILE"] = r"c:\temp\chrome_log.txt"
+
+  return webdriver.Chrome(
+      "C:/ProgramData/chocolatey/lib/chromedriver/tools/chromedriver.exe",
+      service_args=["--verbose", r"--log-path=c:\temp\chromedriver.log"],
+      chrome_options=chrome_options)

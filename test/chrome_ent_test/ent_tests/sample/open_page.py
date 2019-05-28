@@ -2,11 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
+import test_util
 import time
 from absl import app, flags
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 
 FLAGS = flags.FLAGS
 
@@ -27,16 +25,7 @@ flags.DEFINE_bool(
 
 
 def main(argv):
-  chrome_options = Options()
-  if FLAGS.incognito:
-    chrome_options.add_argument('incognito')
-
-  os.environ["CHROME_LOG_FILE"] = r"c:\temp\chrome_log.txt"
-
-  driver = webdriver.Chrome(
-      "C:/ProgramData/chocolatey/lib/chromedriver/tools/chromedriver.exe",
-      service_args=["--verbose", r"--log-path=c:\temp\chromedriver.log"],
-      chrome_options=chrome_options)
+  driver = test_util.create_chrome_webdriver(incognito=FLAGS.incognito)
   driver.get(FLAGS.url)
 
   if FLAGS.wait > 0:
