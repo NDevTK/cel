@@ -52,8 +52,10 @@ except ImportError as e:
 
 
 def GetDefaultCelCtl():
-  # TODO: Add Windows support
-  return os.path.join(sys.path[0], '../out/linux_amd64/bin/cel_ctl')
+  if sys.platform == 'win32':
+    return os.path.join(sys.path[0], '../out/windows_amd64/bin/cel_ctl.exe')
+  else:
+    return os.path.join(sys.path[0], '../out/linux_amd64/bin/cel_ctl')
 
 
 def ConfigureLogging():
