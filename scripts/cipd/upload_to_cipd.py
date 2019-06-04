@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import os
 import re
+import zipfile
 
 FLAGS = flags.FLAGS
 
@@ -35,14 +36,19 @@ description: CELab release
 install_mode: copy
 root: {}
 data:
-  - file: cel.zip
+  - dir: .
 """
 
   temp_dir = tempfile.mkdtemp()
+  bin_dir = os.path.join(temp_dir, "binaries")
   try:
     _runCommand(['gsutil', 'cp', FLAGS.input_file, temp_dir])
+    filename = os.path.basename(FLAGS.input_file)
+    zip_file = zipfile.ZipFile(os.path.join(temp_dir, filename), 'r')
+    zip_file.extractall(bin_dir)
+
     yaml_file = tempfile.NamedTemporaryFile(delete=False)
-    yaml_file.write(yaml_template.format(package, temp_dir))
+    yaml_file.write(yaml_template.format(package, bin_dir))
     yaml_file.close()
     try:
       # run command 'create' to create & upload the package.
