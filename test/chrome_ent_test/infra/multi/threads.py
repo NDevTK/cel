@@ -14,7 +14,7 @@ import time
 class TestWorkerThread(threading.Thread):
   """Runs ./test.py for a given (test, host) pair."""
 
-  def __init__(self, test, host, errorLogsDir, callback):
+  def __init__(self, test, host, testPy, celCtl, errorLogsDir, callback):
     if callback is None:
       raise TypeError("`callback` cannot be None.")
 
@@ -24,15 +24,19 @@ class TestWorkerThread(threading.Thread):
     self.test = test
     self.host = host
 
+    self._testPy = testPy
+    self._celCtl = celCtl
     self._errorLogsDir = errorLogsDir
     self._callback = callback
 
   def run(self):
     cmd = [
-        'python',
-        os.path.join('test', 'test.py'), '--test', self.test, '--host',
-        self.host, '--cleanup'
+        'python', self._testPy, '--test', self.test, '--host', self.host,
+        '--cleanup'
     ]
+
+    if self._celCtl != None:
+      cmd += ['--cel_ctl', self._celCtl]
 
     if self._errorLogsDir != None:
       cmd += ['--error_logs_dir', os.path.join(self._errorLogsDir, self.test)]

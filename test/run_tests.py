@@ -4,6 +4,7 @@
 
 import argparse
 import logging
+import os
 import sys
 from chrome_ent_test.infra.multi import *
 import traceback
@@ -35,6 +36,16 @@ def ParseArgs():
       default=True,
       action='store_false',
       help='Don\'t show progress while running tests')
+  parser.add_argument(
+      '--test_py',
+      dest='test_py',
+      default=os.path.join('test', 'test.py'),
+      help='Path to the script to use to launch a single test')
+  parser.add_argument(
+      '--cel_ctl',
+      dest='cel_ctl',
+      default=None,
+      help='Path of the binary to pass to test.py to deploy the environment')
   parser.add_argument(
       '--shared_provider_storage',
       metavar='<bucketName>',
@@ -108,7 +119,7 @@ if __name__ == '__main__':
 
   success = False
   try:
-    success = c.ExecuteTestCases(args.show_progress)
+    success = c.ExecuteTestCases(args.test_py, args.cel_ctl, args.show_progress)
   except KeyboardInterrupt:
     logging.error('Test run aborted.')
     should_write_logs = False
