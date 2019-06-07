@@ -109,6 +109,7 @@ if __name__ == '__main__':
       cmd_args = [
           '--project', project_id, '--storage', storage_assets, '--delete', '1'
       ]
+      RunPython(create_storage_py, cmd_args)
       cmd_args = [
           '--project', project_id, '--storage', storage_logs, '--delete', '30'
       ]
