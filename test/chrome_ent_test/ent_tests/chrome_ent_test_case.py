@@ -70,6 +70,26 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
                  key, policy_name, policy_value, policy_type)
       self.clients[instance_name].RunPowershell(cmd)
 
+  def RemovePolicy(self, instance_name, policy_name):
+    """Removes a Google Chrome policy in registry.
+    Args:
+      policy_name: the policy name.
+    """
+    segments = policy_name.split('\\')
+    policy_name = segments[-1]
+
+    keys = [
+        r'HKLM\Software\Policies\Google\Chrome',
+        r'HKLM\Software\Policies\Chromium'
+    ]
+    for key in keys:
+      if len(segments) >= 2:
+        key += '\\' + '\\'.join(segments[:-1])
+
+      cmd = (r"Remove-GPRegistryValue -Name 'Default Domain Policy' "
+             "-Key %s -ValueName %s") % (key, policy_name)
+      self.clients[instance_name].RunPowershell(cmd)
+
   def _installChocolatey(self, instance_name):
     cmd = "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
     self.clients[instance_name].RunPowershell(cmd)
