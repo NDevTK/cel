@@ -68,5 +68,15 @@ func (t *MachineType) Validate() error {
 }
 
 func (n *NestedVM) Validate() error {
+	if n.DiskSizeGb != 0 {
+		if n.DiskSizeGb < 10 {
+			return errors.New("'diskSizeGb' cannot be smaller than 10")
+		}
+
+		if n.DiskSizeGb > 500 {
+			return errors.New("'diskSizeGb' cannot be bigger than 500")
+		}
+	}
+
 	return nil
 }

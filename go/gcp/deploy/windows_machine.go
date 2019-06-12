@@ -6,6 +6,7 @@ package deploy
 
 import (
 	"fmt"
+	"strconv"
 
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
@@ -88,11 +89,16 @@ func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host
 	p := common.Must(ctx.Get(projectPath)).(*host.Project)
 	si := common.Must(ctx.Get(serviceAccountPath)).(*google_iam_admin_v1.ServiceAccount)
 
+	diskSizeGb := nestedVm.NestedVm.DiskSizeGb
+	if diskSizeGb == 0 {
+		diskSizeGb = 70
+	}
+
 	if err := d.Emit(nil, &compute.Disk{
 		Name:        m.Name + "-disk",
 		Zone:        p.Zone,
 		SourceImage: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts",
-		SizeGb:      "70",
+		SizeGb:      strconv.FormatUint(diskSizeGb, 10),
 		Licenses: []string{
 			"https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx",
 		},

@@ -129,6 +129,10 @@ message NestedVM {
 
   // The GCE machine type used for the host. Default is n1-standard-2.
   string machineType = 4;
+
+  // The size of the disk used for the host in GB (min: 10, max: 500).
+  // Default is 70.
+  uint64 diskSizeGb = 5;
 }
 
 // Describes a type of machine (virtual or otherwise).

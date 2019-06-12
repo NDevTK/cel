@@ -338,6 +338,7 @@ be a full or a partial URL.
 * `string` [`user_name`](#NestedVM.user_name) = 2
 * `string` [`password`](#NestedVM.password) = 3
 * `string` [`machineType`](#NestedVM.machineType) = 4
+* `uint64` [`diskSizeGb`](#NestedVM.diskSizeGb) = 5
 
 ### `image` {#NestedVM.image}
 
@@ -373,6 +374,16 @@ The user name & password used to log in through ssh.
 | Type | `string` |
 
 The GCE machine type used for the host. Default is n1-standard-2.
+
+### `diskSizeGb` {#NestedVM.diskSizeGb}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `diskSizeGb` |
+| Type | `uint64` |
+
+The size of the disk used for the host in GB (min: 10, max: 500).
+Default is 70.
 
 ## Message `Project` {#Project}
 
