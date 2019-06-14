@@ -42,10 +42,10 @@ def ParseArgs():
       default=os.path.join('test', 'test.py'),
       help='Path to the script to use to launch a single test')
   parser.add_argument(
-      '--cel_ctl',
-      dest='cel_ctl',
+      '--test_py_args',
+      dest='test_py_args',
       default=None,
-      help='Path of the binary to pass to test.py to deploy the environment')
+      help='Arguments to pass to the --test_py script.')
   parser.add_argument(
       '--shared_provider_storage',
       metavar='<bucketName>',
@@ -119,7 +119,8 @@ if __name__ == '__main__':
 
   success = False
   try:
-    success = c.ExecuteTestCases(args.test_py, args.cel_ctl, args.show_progress)
+    success = c.ExecuteTestCases(args.test_py, args.test_py_args,
+                                 args.show_progress)
   except KeyboardInterrupt:
     logging.error('Test run aborted.')
     should_write_logs = False

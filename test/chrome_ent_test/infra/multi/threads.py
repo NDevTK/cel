@@ -14,7 +14,7 @@ import time
 class TestWorkerThread(threading.Thread):
   """Runs ./test.py for a given (test, host) pair."""
 
-  def __init__(self, test, host, testPy, celCtl, errorLogsDir, callback):
+  def __init__(self, test, host, testPy, testPyArgs, errorLogsDir, callback):
     if callback is None:
       raise TypeError("`callback` cannot be None.")
 
@@ -25,7 +25,7 @@ class TestWorkerThread(threading.Thread):
     self.host = host
 
     self._testPy = testPy
-    self._celCtl = celCtl
+    self._testPyArgs = testPyArgs
     self._errorLogsDir = errorLogsDir
     self._callback = callback
 
@@ -35,8 +35,8 @@ class TestWorkerThread(threading.Thread):
         '--cleanup'
     ]
 
-    if self._celCtl != None:
-      cmd += ['--cel_ctl', self._celCtl]
+    if self._testPyArgs != None:
+      cmd += self._testPyArgs.split()
 
     if self._errorLogsDir != None:
       cmd += ['--error_logs_dir', os.path.join(self._errorLogsDir, self.test)]

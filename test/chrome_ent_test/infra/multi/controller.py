@@ -58,9 +58,9 @@ class MultiTestController:
     # All threads should use this lock when printing something to stdout
     self._printLock = threading.Lock()
 
-  def ExecuteTestCases(self, testPy, celCtl, showProgress=False):
+  def ExecuteTestCases(self, testPy, testPyArgs, showProgress=False):
     try:
-      return self._ExecuteTestCases(testPy, celCtl, showProgress)
+      return self._ExecuteTestCases(testPy, testPyArgs, showProgress)
     except:
       raise
     finally:
@@ -70,7 +70,7 @@ class MultiTestController:
         with open(summaryFilePath, "w") as summaryFile:
           json.dump(self._testsSummary, summaryFile)
 
-  def _ExecuteTestCases(self, testPy, celCtl, showProgress):
+  def _ExecuteTestCases(self, testPy, testPyArgs, showProgress):
     """This is our main loop and entry point for ./run_tests.py."""
     progressThread = None
     if showProgress:
@@ -83,8 +83,8 @@ class MultiTestController:
 
       # Start a TestWorker thread to run this test
       callback = self._OnTestWorkerThreadCompleted
-      thread = TestWorkerThread(test, host, testPy, celCtl, self._errorLogsDir,
-                                callback)
+      thread = TestWorkerThread(test, host, testPy, testPyArgs,
+                                self._errorLogsDir, callback)
       thread.start()
       self._activeTestThreads[thread.ident] = thread
 
