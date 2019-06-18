@@ -34,7 +34,7 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
     file_name = self.UploadFile(instance_name, FLAGS.chrome_installer,
                                 r'c:\temp')
 
-    if os.path.basename(file_name).lower() == 'mini_installer.exe':
+    if file_name.lower().endswith('mini_installer.exe'):
       dir = os.path.dirname(os.path.abspath(__file__))
       self.UploadFile(instance_name, os.path.join(dir, 'installer_data'),
                       r'c:\temp')
