@@ -417,6 +417,11 @@ func uploadStartupDependencies(ctx common.Context, s *gcp.Session) error {
 		return err
 	}
 
+	err = uploadLocalResource(ctx, s, "./resources/cel_ui_agent.exe", "win_ui_agent_x64")
+	if err != nil {
+		return err
+	}
+
 	err = uploadNamedResource(ctx, s, "/linux/instance-startup.py", "linux_startup")
 	if err != nil {
 		return err

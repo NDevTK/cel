@@ -11,3 +11,4 @@ from extension_blacklist.extension_blacklist import *
 from extension_whitelist.extension_whitelist import *
 from translate_enabled.translate_enabled import *
 from youtube_restrict.youtube_restrict import *
+from homepage.homepage import *

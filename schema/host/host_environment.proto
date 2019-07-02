@@ -194,6 +194,9 @@ message Startup {
 
   // Linux CEL Agent executable.
   common.FileReference linux_agent_x64 = 103 [(common.v).type = OUTPUT];
+
+  // Windows cel_ui_agent executable
+  common.FileReference win_ui_agent_x64 = 104 [(common.v).type = OUTPUT];
 }
 
 // Base support resources that must exist at the time the lab assets are

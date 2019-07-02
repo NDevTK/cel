@@ -78,8 +78,10 @@ message TestMessageWithOptions {
   string name = 1;
   string key = 2 [(common.v).ref = "a.b.with_types.repeated_field"];
   string label = 3 [(common.v).type = LABEL];
-  string optional_key = 4
-      [(common.v) = { ref: "a.b.with_types.repeated_field", optional: true }];
+  string optional_key = 4 [(common.v) = {
+    ref: "a.b.with_types.repeated_field",
+    optional: true
+  }];
   string fqdn = 5 [(common.v).type = FQDN];
   string reqd = 6 [(common.v).type = REQUIRED];
   string optional_string = 7 [(x) = true];

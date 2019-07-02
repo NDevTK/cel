@@ -493,6 +493,7 @@ Startup dependencies.
 * [`common.FileReference`](common.md#FileReference) [`win_agent_x64`](#Startup.win_agent_x64) = 101
 * [`common.FileReference`](common.md#FileReference) [`linux_startup`](#Startup.linux_startup) = 102
 * [`common.FileReference`](common.md#FileReference) [`linux_agent_x64`](#Startup.linux_agent_x64) = 103
+* [`common.FileReference`](common.md#FileReference) [`win_ui_agent_x64`](#Startup.win_ui_agent_x64) = 104
 
 ### `win_startup` {#Startup.win_startup}
 
@@ -529,6 +530,15 @@ Linux startup file.
 | Type | [`common.FileReference`](common.md#FileReference) |
 
 Linux CEL Agent executable.
+
+### `win_ui_agent_x64` {#Startup.win_ui_agent_x64}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `win_ui_agent_x64` |
+| Type | [`common.FileReference`](common.md#FileReference) |
+
+Windows cel_ui_agent executable
 
 ## Message `Storage` {#Storage}
 

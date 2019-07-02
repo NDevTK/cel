@@ -687,6 +687,7 @@ missing.
     env['GOOS'] = goos
     env['GOARCH'] = goarch
     _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=out_dir)
+    _BuildCommand('cel_ui_agent', './go/cmd/cel_ui_agent', env, out_dir=out_dir)
 
 
 def _GetBuildDir(build_env):
@@ -1105,7 +1106,7 @@ Problems with 'clang-format'?
           CHROMIUM_BUILDTOOLS_PATH=/chromium/src/buildtools ./build.py format
 
      3. Create a .build.environment file at the root of the CEL checkout to set
-        the CHROMIUM_BUILDTOOLS_PATH environment variable. The environment
+        the CHROMIUM_BUILDTOOLS_PATH: environment variable. The environment
         variables defined in .build.environment are applied to all binaries
         invoked by build.py.
 
@@ -1149,9 +1150,8 @@ Problems with 'clang-format'?
                               env=_MergeEnv(args))
   all_files = [os.path.join(SOURCE_PATH, p) for p in o.splitlines()]
 
-  if not windows:
-    logging.info("checking .proto files")
-    pr = _FormatProtoFiles(args, [f for f in all_files if f.endswith('.proto')])
+  logging.info("checking .proto files")
+  pr = _FormatProtoFiles(args, [f for f in all_files if f.endswith('.proto')])
 
   logging.info("checking .md files")
   md = _FormatMarkdownFiles(args, [f for f in all_files if f.endswith('.md')])

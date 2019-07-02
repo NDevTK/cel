@@ -20,4 +20,7 @@ message CelAgentMetadata {
   GCSObject win_agent_x64 = 1;
 
   GCSObject linux_agent_x64 = 2;
+
+  // Object containing Windows x64 cel_ui_agent binary
+  GCSObject win_ui_agent_x64 = 3;
 }

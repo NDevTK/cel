@@ -148,6 +148,7 @@ Write-Host "metadata cel-agent is $metadata"
 
 $cel_agent = $metadata | ConvertFrom-Json
 $cel_agent_path = $cel_agent.win_agent_x64.abs_path
+$cel_ui_agent_path = $cel_agent.win_ui_agent_x64.abs_path
 
 $cel_manifest = Get-GcpMetadata -Name "cel-manifest" -ProjectScoped
 Write-Host "metadata cel-manifest is $cel_manifest"
@@ -155,5 +156,6 @@ Write-Host "metadata cel-manifest is $cel_manifest"
 Assert-Directory c:\cel
 cd c:\cel
 gsutil cp $cel_agent_path cel_agent.exe
+gsutil cp $cel_ui_agent_path cel_ui_agent.exe
 gsutil cp $cel_manifest cel_manifest.textpb
 c:\cel\cel_agent.exe cel_manifest.textpb

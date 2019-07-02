@@ -62,6 +62,12 @@ func computeAgentMetadata(s *gcp.Session) ([]byte, error) {
 		s.HostEnvironment.Resources.Startup.WinAgentX64.ObjectReference)
 	md.WinAgentX64.Integrity = s.HostEnvironment.Resources.Startup.WinAgentX64.Integrity
 
+	md.WinUiAgentX64 = &gcp.CelAgentMetadata_GCSObject{}
+	md.WinUiAgentX64.AbsPath = gcp.AbsoluteReference(
+		s.HostEnvironment.Storage.Bucket,
+		s.HostEnvironment.Resources.Startup.WinUiAgentX64.ObjectReference)
+	md.WinUiAgentX64.Integrity = s.HostEnvironment.Resources.Startup.WinUiAgentX64.Integrity
+
 	md.LinuxAgentX64 = &gcp.CelAgentMetadata_GCSObject{}
 	md.LinuxAgentX64.AbsPath = gcp.AbsoluteReference(
 		s.HostEnvironment.Storage.Bucket,

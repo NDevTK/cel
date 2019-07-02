@@ -5,10 +5,13 @@
 import base64
 import logging
 import os
+import random
+import string
 import subprocess
-from chrome_ent_test.infra.core import EnterpriseTestCase
+import time
 
 from absl import flags
+from chrome_ent_test.infra.core import EnterpriseTestCase
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('chrome_installer', None,
@@ -104,7 +107,7 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
     self.InstallPackage(instance_name, 'python2', '2.7.15')
     self.RunCommand(
         instance_name,
-        r'c:\Python27\python.exe -m pip install -U selenium absl-py pywin32')
+        r'c:\Python27\python.exe -m pip install selenium absl-py pywin32')
     if FLAGS.chromedriver is None:
       # chromedriver flag is not specified. In this case, install the chocolatey
       # package
@@ -133,3 +136,55 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
     # run the test
     cmd = r'c:\Python27\python.exe %s %s' % (file_name, ' '.join(args))
     return self.RunCommand(instance_name, cmd)
+
+  def RunUITest(self, instance_name, test_file, args=[]):
+    """Runs a UI test on an instance.
+
+    Args:
+      instance_name: name of the instance.
+      test_file: the path of the UI test file.
+      args: the list of arguments passed to the test.
+
+    Returns:
+      the output."""
+    # upload the test
+    file_name = self.UploadFile(instance_name, test_file, r'c:\temp')
+
+    # run the test
+    ui_test_cmd = r'c:\Python27\python.exe %s %s' % (file_name, ' '.join(args))
+    cmd = (r'python c:\cel\supporting_files\run_ui_test.py %s') % ui_test_cmd
+    return self.RunCommand(instance_name, cmd)
+
+  def _generatePassword(self):
+    """Generates a random password."""
+    s = [random.choice(string.ascii_lowercase) for _ in range(4)]
+    s += [random.choice(string.ascii_uppercase) for _ in range(4)]
+    s += [random.choice(string.digits) for _ in range(4)]
+    random.shuffle(s)
+    return ''.join(s)
+
+  def _rebootInstance(self, instance_name):
+    self.RunCommand(instance_name, 'shutdown /r /t 0')
+
+    # wait a while for the instance to boot up
+    time.sleep(2 * 60)
+
+  def EnableUITest(self, instance_name):
+    """Configures the instance so that UI tests can be run on it."""
+    self.InstallWebDriver(instance_name)
+    self.InstallPackage(instance_name, 'sysinternals', '2019.6.29')
+    self.RunCommand(
+        instance_name,
+        r'c:\Python27\python.exe -m pip install pywinauto requests')
+
+    password = self._generatePassword()
+    user_name = 'ui_user'
+    cmd = (r'powershell -File c:\cel\supporting_files\enable_auto_logon.ps1 '
+           r'-userName %s -password %s') % (user_name, password)
+    self.RunCommand(instance_name, cmd)
+    self._rebootInstance(instance_name)
+
+    cmd = (r'powershell -File c:\cel\supporting_files\set_ui_agent.ps1 '
+           '-username %s') % user_name
+    self.RunCommand(instance_name, cmd)
+    self._rebootInstance(instance_name)

@@ -43,8 +43,10 @@ message IISBindings {
 
   // Name of a Certificate. This certificate should include a private key. See
   // the definition in cert.proto.
-  string certificate = 4
-      [(common.v) = { ref: "asset.certificate", optional: true }];
+  string certificate = 4 [(common.v) = {
+    ref: "asset.certificate",
+    optional: true
+  }];
 
   // Whether or not to use SNI. Only applicable when |protocol| is HTTPS. If
   // this value is false, then only one HTTPS site can be bound to a single
