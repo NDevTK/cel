@@ -90,6 +90,7 @@ type runCommandOperation struct {
 	timeoutAt       time.Time
 
 	nextLogSequenceId int
+	lastError         error
 }
 
 // This indicates to cel_agent that there is something to run on this instance.
@@ -165,7 +166,7 @@ func (r *runCommandOperation) watchLogsForResult() (int, error) {
 
 		time.Sleep(waitTimeBetweenLogReads)
 	}
-	return -1, fmt.Errorf("timed out while waiting for the command to finish (%s)", r.runCommand.Id)
+	return -1, fmt.Errorf("timed out while waiting for the command to finish (%s) (lastError=%v)", r.runCommand.Id, r.lastError)
 }
 
 // This prints command output and looks for the special result log.
@@ -179,6 +180,7 @@ func (r *runCommandOperation) searchForCommandResult(entries *logadmin.EntryIter
 			// retry if the error is caused by over quota
 			st, ok := status.FromError(err)
 			if ok && st.Code() == codes.ResourceExhausted {
+				r.lastError = err
 				time.Sleep(waitTimeBetweenLogReads)
 				break
 			} else {
@@ -192,6 +194,7 @@ func (r *runCommandOperation) searchForCommandResult(entries *logadmin.EntryIter
 		}
 
 		if r.nextLogSequenceId != currentSequenceId {
+			r.lastError = fmt.Errorf("unexpected sequence id [next=%d][current=%d]", r.nextLogSequenceId, currentSequenceId)
 			continue
 		}
 
@@ -208,6 +211,8 @@ func (r *runCommandOperation) searchForCommandResult(entries *logadmin.EntryIter
 
 		// Don't print `result` - it's not real command output.
 		fmt.Println(line)
+
+		r.lastError = nil
 	}
 
 	return nil, nil
