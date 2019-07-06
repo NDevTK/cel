@@ -137,12 +137,14 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
     cmd = r'c:\Python27\python.exe %s %s' % (file_name, ' '.join(args))
     return self.RunCommand(instance_name, cmd)
 
-  def RunUITest(self, instance_name, test_file, args=[]):
+  def RunUITest(self, instance_name, test_file, timeout=300, args=[]):
     """Runs a UI test on an instance.
 
     Args:
       instance_name: name of the instance.
       test_file: the path of the UI test file.
+      timeout: the timeout in seconds. Default is 300,
+               i.e. 5 minutes.
       args: the list of arguments passed to the test.
 
     Returns:
@@ -150,9 +152,15 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
     # upload the test
     file_name = self.UploadFile(instance_name, test_file, r'c:\temp')
 
-    # run the test
-    ui_test_cmd = r'c:\Python27\python.exe %s %s' % (file_name, ' '.join(args))
-    cmd = (r'python c:\cel\supporting_files\run_ui_test.py %s') % ui_test_cmd
+    # run the test.
+    # note that '-u' flag is passed to enable unbuffered stdout and stderr.
+    # Without this flag, if the test is killed because of timeout, we will not
+    # get any output from stdout because the output is buffered. When this happens
+    # it makes debugging really hard.
+    ui_test_cmd = r'c:\Python27\python.exe -u %s %s' % (file_name,
+                                                        ' '.join(args))
+    cmd = (r'python c:\cel\supporting_files\run_ui_test.py --timeout %s -- %s'
+          ) % (timeout, ui_test_cmd)
     return self.RunCommand(instance_name, cmd)
 
   def _generatePassword(self):

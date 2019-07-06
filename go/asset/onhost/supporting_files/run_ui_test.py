@@ -10,11 +10,18 @@ Sample usage:
 The script will call the cel_ui_agent to run command "python c:\temp\ui_test.py".
 """
 
-import requests
 import json
-import time
-import sys
 import logging
+import sys
+import time
+
+from absl import app, flags
+
+import requests
+
+FLAGS = flags.FLAGS
+flags.DEFINE_integer('timeout', None, 'timeout, in seconds')
+flags.mark_flag_as_required('timeout')
 
 
 def ConfigureLogging():
@@ -24,10 +31,14 @@ def ConfigureLogging():
   logging.basicConfig(level=logging.INFO, format=logfmt, datefmt=datefmt)
 
 
-def RunUITest():
-  cmd = ' '.join(sys.argv[1:])
+def RunUITest(cmd):
+  """Runs a UI test.
 
-  request = {"command": cmd}
+  Args:
+     cmd: the command to run.
+  """
+  request = {"command": cmd, "timeout": FLAGS.timeout}
+  logging.info("Request: %s", request)
   response = requests.post(
       'http://localhost:9000/Run', data=json.dumps(request))
   if not response.ok:
@@ -59,5 +70,10 @@ def RunUITest():
       raise RuntimeError('Error occurred: {}'.format(r))
 
 
-ConfigureLogging()
-RunUITest()
+def main(argv):
+  ConfigureLogging()
+  RunUITest(' '.join(argv[1:]))
+
+
+if __name__ == '__main__':
+  app.run(main)

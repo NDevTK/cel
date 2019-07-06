@@ -8,6 +8,11 @@ package main
 // the only caller is run_ui_test.py, and it is guaranteed that the method calls
 // are serialized.
 
+// We explicitly processes timeout, instead of using exec.CommandContext()
+// plus context.WithTimeout(). The reason is that because of this issue
+// https://github.com/golang/go/issues/22381, the process cannot be reliably
+// killed. Another reason is that we need to kill the chromedriver process
+// explicitly. See the comment in timeOutHandler() for details.
 import (
 	"bytes"
 	"encoding/json"
@@ -17,6 +22,7 @@ import (
 	"net/http"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 type singleWriter struct {
@@ -41,9 +47,15 @@ type uiServer struct {
 	exitStatus chan runStatus
 }
 
+// max time out is 1 hour
+const maxTimeout int = 3600
+
+// default time out is 5 minutes
+const defaultTimeout int = 5 * 60
+
 type runRequest struct {
 	Command string
-	timeOut int // time out in seconds. -1 means infinite timeout
+	Timeout int // time out in seconds.
 }
 
 // RunStartStatus is the status of runStart request
@@ -116,27 +128,7 @@ func (s *uiServer) runHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("command is: %s", request.Command)
-	s.command = exec.Command("cmd.exe", "/C", request.Command)
-	s.outputBuffer = &singleWriter{}
-	s.command.Stdout = s.outputBuffer
-	s.command.Stderr = s.outputBuffer
-	err = s.command.Start()
-	var response runResponse
-	if err != nil {
-		s.command = nil
-		response = runResponse{
-			Status:       statusError,
-			ErrorMessage: err.Error(),
-		}
-	} else {
-		response = runResponse{
-			Status: statusSuccess,
-		}
-	}
-
-	s.exitStatus = make(chan runStatus)
-	go s.waitForCommand()
+	response := s.startCommand(request)
 
 	json, err := json.Marshal(response)
 	if err != nil {
@@ -145,6 +137,81 @@ func (s *uiServer) runHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(json))
+}
+
+func (s *uiServer) startCommand(request runRequest) runResponse {
+	log.Printf("request is: %#v", request)
+
+	// validate time out
+	if request.Timeout < 0 || request.Timeout > maxTimeout {
+		return runResponse{
+			Status:       statusError,
+			ErrorMessage: fmt.Sprintf("Invalid Timeout value: %d. Valid range is (0, %d]", request.Timeout, maxTimeout),
+		}
+	}
+
+	if request.Timeout == 0 {
+		request.Timeout = defaultTimeout
+	}
+
+	s.command = exec.Command("cmd.exe", "/C", request.Command)
+	s.outputBuffer = &singleWriter{}
+	s.command.Stdout = s.outputBuffer
+	s.command.Stderr = s.outputBuffer
+	err := s.command.Start()
+	if err != nil {
+		s.command = nil
+		return runResponse{
+			Status:       statusError,
+			ErrorMessage: err.Error(),
+		}
+	}
+
+	s.exitStatus = make(chan runStatus, 1)
+	timer := time.AfterFunc(
+		time.Duration(request.Timeout)*time.Second,
+		s.timeoutHandler)
+	go func() {
+		s.waitForCommand()
+		timer.Stop()
+	}()
+
+	return runResponse{
+		Status: statusSuccess,
+	}
+}
+
+// this method is called when timeout happens.
+func (s *uiServer) timeoutHandler() {
+	// time out happened
+	log.Printf("Timeout")
+
+	// kill the process
+	err := exec.Command("taskkill", "/PID", string(s.command.Process.Pid), "/T", "/F").Run()
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+
+	// It's possible that the chromedriver process does not belong to the
+	// process tree rooted at s.command.Process.Pid, thus, it will not be
+	// killed by the previous command. So we kill it explicitly here
+	// to ensures that chromedriver and the chrome processes started by
+	// chromedriver all get killed.
+	err = exec.Command("taskkill", "/IM", "chromedriver.exe", "/T", "/F").Run()
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+
+	// Also kill chrome, in case it is not started by chromedriver.
+	err = exec.Command("taskkill", "/IM", "chrome.exe", "/T", "/F").Run()
+	if err != nil {
+		log.Printf("Error: %s", err)
+	}
+
+	s.exitStatus <- runStatus{
+		Status: statusKilled,
+		Output: string(s.outputBuffer.b.Bytes()),
+	}
 }
 
 func (s *uiServer) runStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -156,12 +223,13 @@ func (s *uiServer) runStatusHandler(w http.ResponseWriter, r *http.Request) {
 	var response runStatus
 	if s.command == nil {
 		response = runStatus{
-			Status: 4,
+			Status: statusNoCommand,
 		}
 	} else {
 		select {
 		case status := <-s.exitStatus:
 			response = status
+			s.command = nil
 		default:
 			response = runStatus{
 				Status: statusRunning,
@@ -180,8 +248,9 @@ func (s *uiServer) runStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 // waitForCommand waits for the current command to finish
 func (s *uiServer) waitForCommand() {
-	err := s.command.Wait()
 	status := runStatus{}
+
+	err := s.command.Wait()
 	if err != nil {
 		status.Status = statusFinishedWithError
 	} else {

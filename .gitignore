@@ -2,6 +2,7 @@
 .idea/*
 .vscode/
 *.pyc
+*.exe
 
 # Local build environment file. This file is evaluated as a Python literal and
 # must evaluate to a dict whose keys are environment variables and whose values
