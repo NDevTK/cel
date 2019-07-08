@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,10 @@ func (p *RunCommand) Run(ctx context.Context, c *Application, cmd *cobra.Command
 		return err
 	}
 
+	return RunCommandOnInstance(ctx, c, session, p.Instance, p.Command)
+}
+
+func RunCommandOnInstance(ctx context.Context, c *Application, session *deploy.Session, instanceName, command string) error {
 	cs, err := session.GetBackend().GetComputeService()
 	if err != nil {
 		return err
@@ -43,9 +48,9 @@ func (p *RunCommand) Run(ctx context.Context, c *Application, cmd *cobra.Command
 		return err
 	}
 
-	instance := state.Instances[p.Instance]
+	instance := state.Instances[instanceName]
 	if instance == nil {
-		return fmt.Errorf("instance not found: %v", p.Instance)
+		return fmt.Errorf("instance not found: %v", instanceName)
 	}
 
 	// Instance.Zone is the URL of the zone where the instance resides; ex:
@@ -53,7 +58,7 @@ func (p *RunCommand) Run(ctx context.Context, c *Application, cmd *cobra.Command
 	zoneUrl := instance.Zone
 	zone := zoneUrl[strings.LastIndex(zoneUrl, "/")+1:]
 
-	runCommand := gcp.NewRunCommand(p.Command)
+	runCommand := gcp.NewRunCommand(command)
 	exitCode, err := gcp.RunCommandOnInstance(ctx, c.Client,
 		session.GetConfiguration().HostEnvironment.Project.Name,
 		zone, instance.Name, runCommand)

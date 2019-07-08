@@ -96,6 +96,10 @@ func (s *Session) GetProject() string {
 	return s.HostEnvironment.Project.Name
 }
 
+func (s *Session) GetBucket() string {
+	return s.HostEnvironment.Storage.Bucket
+}
+
 func (s *Session) GetComputeService() (*compute.Service, error) {
 	s.computeOnce.Do(func() {
 		s.computeService, s.computeResult = compute.New(s.client)

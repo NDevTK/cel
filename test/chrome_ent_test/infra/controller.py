@@ -59,7 +59,6 @@ class SingleTestController:
 
     host = self._ParseHostFile(hostFile)
     self._project = gcp.ComputeProject(host.project.name, host.project.zone)
-    self._host = host
 
     self._celCtlRunner = CelCtlRunner(cel_ctl, self._hostFile, self._assetFile)
 
@@ -75,8 +74,7 @@ class SingleTestController:
     Returns:
       True if all tests passed.
     """
-    environment = TestEnvironment(self._project, self._host.storage.bucket,
-                                  self._celCtlRunner)
+    environment = TestEnvironment(self._project, self._celCtlRunner)
 
     testCaseInstance = self._testClass(environment)
 
@@ -189,6 +187,27 @@ class CelCtlRunner:
       return output
     except subprocess.CalledProcessError, e:
       logging.info("cel_ctl run returned %s: %s" % (e.returncode, e.output))
+      raise
+
+  def UploadFile(self, instance, file, destination):
+    """Uploads a local file to the specified instance.
+
+    Returns:
+      the full path of the destination file.
+    """
+    cmd = [
+        self._cel_ctl, 'upload', '--instance', instance, '--file', file,
+        '--destination', destination, '--builtins', self._hostFile,
+        self._assetFile
+    ]
+
+    logging.info("Uploading %s" % (file))
+    try:
+      output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+      logging.info("cel_ctl upload output: %s" % output)
+      return destination
+    except subprocess.CalledProcessError, e:
+      logging.info("cel_ctl upload returned %s: %s" % (e.returncode, e.output))
       raise
 
   def Clean(self):

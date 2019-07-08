@@ -38,14 +38,16 @@ class TestClient:
     commandString = '%s %s' % (cmd, ' '.join(args))
     return self._celCtlRunner.RunCommand(self.name, commandString)
 
+  def UploadFile(self, file, destination):
+    return self._celCtlRunner.UploadFile(self.name, file, destination)
+
   def __repr__(self):
     return "<%s %s>" % (self.__class__.__name__, self.name)
 
 
 class TestEnvironment:
 
-  def __init__(self, computeProject, gsbucket, celCtlRunner):
-    self.gsbucket = gsbucket
+  def __init__(self, computeProject, celCtlRunner):
     computeInstances = computeProject.GetComputeInstances()
 
     self.clients = {}
@@ -54,5 +56,4 @@ class TestEnvironment:
       self.clients[instance.name] = testClient
 
   def __repr__(self):
-    return "<%s clients=%s gsbucket=%s>" % (self.__class__.__name__,
-                                            self.clients, self.gsbucket)
+    return "<%s clients=%s>" % (self.__class__.__name__, self.clients)

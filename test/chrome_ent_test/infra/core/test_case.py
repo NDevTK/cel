@@ -19,7 +19,6 @@ class EnterpriseTestCase(unittest.TestCase):
     logging.info('Initialize Test=%s with %s' % (self.__class__, environment))
     super(EnterpriseTestCase, self).__init__()
     self.clients = environment.clients
-    self.gsbucket = environment.gsbucket
 
   # this method is here to please unittest.
   def runTest(self):
@@ -64,16 +63,5 @@ class EnterpriseTestCase(unittest.TestCase):
     the full path of the destination file.
     """
     file_name = os.path.basename(src_file)
-
-    # On Windows, the gsutil program is named gsutil.cmd
-    gsutil_executable = 'gsutil'
-    if os.name == 'nt':
-      gsutil_executable = 'gsutil.cmd'
-
-    self._runCommand(
-        [gsutil_executable, 'cp', src_file, 'gs://' + self.gsbucket])
-
     dest_file = os.path.join(dest_directory, file_name).replace('/', '\\')
-    cmd = 'gsutil cp gs://%s/%s %s' % (self.gsbucket, file_name, dest_file)
-    self.RunCommand(instance_name, cmd)
-    return dest_file
+    return self.clients[instance_name].UploadFile(src_file, dest_file)
