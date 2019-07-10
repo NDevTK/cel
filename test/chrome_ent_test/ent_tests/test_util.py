@@ -15,7 +15,7 @@ from selenium.webdriver.chrome.options import Options
 
 def _window_enum_handler(hwnd, window_list):
   win_title = win32gui.GetWindowText(hwnd)
-  if 'Google Chrome' in win_title:
+  if 'Google Chrome' in win_title or 'Chromium' in win_title:
     window_list.append(hwnd)
 
 
@@ -34,6 +34,9 @@ def shutdown_chrome():
     the chrome window first, then send WM_CLOSE message to it.
   """
   window_list = _get_chrome_windows()
+  if not window_list:
+    raise RuntimeError("Cannot find chrome windows")
+
   for win in window_list:
     win32gui.SendMessage(win, win32con.WM_CLOSE, 0, 0)
 
