@@ -415,9 +415,6 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 	// start the VM
 	err := d.RunLocalCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
 		"-net", "tap,ifname=tap0,script=no", "-usbdevice", "tablet",
-		// the default CPU is qemu64, which cannot run Win10. So we need to
-		// change it to "host"
-		"-cpu", "host",
 		// the monitor so that we can tell kvm to cleanly shutdown the VM.
 		"-qmp", "tcp:127.0.0.1:25555,server,nowait",
 		"-vnc", ":20100", imageFile)
