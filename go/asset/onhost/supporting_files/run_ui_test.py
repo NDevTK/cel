@@ -7,11 +7,13 @@ Script to run a UI test.
 Sample usage:
   run_ui_test.py python c:\temp\ui_test.py
 
-The script will call the cel_ui_agent to run command "python c:\temp\ui_test.py".
+The script will call the cel_ui_agent to run command:
+  python c:\temp\ui_test.py
 """
 
 import json
 import logging
+import subprocess
 import sys
 import time
 
@@ -72,7 +74,7 @@ def RunUITest(cmd):
 
 def main(argv):
   ConfigureLogging()
-  RunUITest(' '.join(argv[1:]))
+  RunUITest(subprocess.list2cmdline(argv[1:]))
 
 
 if __name__ == '__main__':

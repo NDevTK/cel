@@ -45,14 +45,17 @@ def shutdown_chrome():
   time.sleep(2)
 
 
-def create_chrome_webdriver(incognito=False, prefs=None):
+def create_chrome_webdriver(chrome_options=None, incognito=False, prefs=None):
   """Configures and returns a Chrome WebDriver object."
 
   Args:
+    chrome_options: The default ChromeOptions to use.
     incognito: Whether or not to launch Chrome in incognito mode.
     prefs: Profile preferences. None for defaults.
   """
-  chrome_options = Options()
+  if chrome_options == None:
+    chrome_options = Options()
+
   if incognito:
     chrome_options.add_argument('incognito')
 

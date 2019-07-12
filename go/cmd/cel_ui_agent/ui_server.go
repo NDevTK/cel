@@ -154,7 +154,7 @@ func (s *uiServer) startCommand(request runRequest) runResponse {
 		request.Timeout = defaultTimeout
 	}
 
-	s.command = exec.Command("cmd.exe", "/C", request.Command)
+	s.command = exec.Command("powershell.exe", "-Command", request.Command)
 	s.outputBuffer = &singleWriter{}
 	s.command.Stdout = s.outputBuffer
 	s.command.Stderr = s.outputBuffer

@@ -197,7 +197,7 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 }
 
 func (c *commander) processRunCommandEntryOnWindows(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
-	command := exec.Command("cmd.exe", "/C", runCommand.Command)
+	command := exec.Command("powershell.exe", "-Command", runCommand.Command)
 
 	return c.runCommand(command, logFn)
 }
