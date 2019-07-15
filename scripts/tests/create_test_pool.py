@@ -111,7 +111,8 @@ if __name__ == '__main__':
       ]
       RunPython(create_storage_py, cmd_args)
       cmd_args = [
-          '--project', project_id, '--storage', storage_logs, '--delete', '30'
+          '--project', project_id, '--storage', storage_logs, '--delete', '30',
+          '--domainreader', 'google.com'
       ]
       RunPython(create_storage_py, cmd_args)
 

@@ -33,6 +33,13 @@ def ParseArgs():
       default=None,
       help='The number of days after which to delete objects.')
 
+  parser.add_argument(
+      '--domainreader',
+      dest="domainreader",
+      required=False,
+      default=None,
+      help='An additional IAM domain member to add read permissions to.')
+
   return parser.parse_args()
 
 
@@ -41,6 +48,22 @@ def ConfigureLogging(args):
   datefmt = '%Y/%m/%d %H:%M:%S'
 
   logging.basicConfig(level=logging.INFO, format=logfmt, datefmt=datefmt)
+
+
+def AddStorageBinding(storage, role, member):
+  # Get current bindings
+  service = googleapiclient.discovery.build('storage', 'v1')
+  request = service.buckets().getIamPolicy(bucket=storage)
+  response = request.execute()
+
+  # Add Binding to existing binding
+  response['bindings'].append({"role": role, "members": [member]})
+
+  # Update bindings
+  request = service.buckets().setIamPolicy(bucket=storage, body=response)
+  response = request.execute()
+
+  logging.info("buckets.setIamPolicy response: %s" % response)
 
 
 if __name__ == '__main__':
@@ -64,5 +87,11 @@ if __name__ == '__main__':
 
   response = request.execute()
   logging.info("buckets.insert response: %s" % response)
+
+  if args.domainreader:
+    AddStorageBinding(args.storage, "roles/storage.objectViewer",
+                      "domain:%s" % args.domainreader)
+    AddStorageBinding(args.storage, "roles/storage.legacyObjectReader",
+                      "domain:%s" % args.domainreader)
 
   sys.exit(0)
