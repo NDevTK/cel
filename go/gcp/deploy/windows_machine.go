@@ -102,7 +102,6 @@ func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host
 		Licenses: []string{
 			"https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx",
 		},
-		Type: fmt.Sprintf("projects/%s/zones/%s/diskTypes/pd-ssd", p.Name, p.Zone),
 	}); err != nil {
 		return err
 	}

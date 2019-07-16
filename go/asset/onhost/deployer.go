@@ -415,6 +415,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 	// start the VM
 	err := d.RunLocalCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
 		"-net", "tap,ifname=tap0,script=no", "-usbdevice", "tablet",
+		"-cpu", "host",
 		// the monitor so that we can tell kvm to cleanly shutdown the VM.
 		"-qmp", "tcp:127.0.0.1:25555,server,nowait",
 		"-vnc", ":20100", imageFile)
