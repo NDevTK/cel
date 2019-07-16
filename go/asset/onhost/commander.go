@@ -26,7 +26,6 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
 	"github.com/pkg/errors"
-	logpb "google.golang.org/genproto/googleapis/logging/v2"
 )
 
 const defaultEtag = "NONE"
@@ -138,9 +137,7 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 
 	c.Logf("Processing command: %v", runCommand)
 
-	operation := &logpb.LogEntryOperation{Id: runCommand.Id}
 	exitCode := 0
-	logInsertId := 0
 
 	// Make our best effort to log `result` when we exit to release the caller.
 	defer func() {
@@ -150,18 +147,8 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 			c.Logf("Error serializing results: %v", err)
 		}
 
-		resultStr := string(resultJson)
-		log.Output(1, resultStr)
-		c.logger.Log(
-			logging.Entry{
-				Payload:   resultStr,
-				Operation: operation,
-				Labels: map[string]string{
-					"type": "result",
-				},
-				InsertID: formatLogInsertId(runCommand, logInsertId),
-			},
-		)
+		message := gcp.FormatLogEntryMessage(runCommand, "result", string(resultJson))
+		c.Logf(message)
 
 		// Ensure the `result` log is not buffered (client is waiting on this to return)
 		c.logger.Flush()
@@ -175,15 +162,8 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 			// return a partial line if it's over 64 * 1024 bytes.
 			text := scanner.Text()
 
-			log.Output(1, text)
-			c.logger.Log(
-				logging.Entry{
-					Payload:   text,
-					Operation: operation,
-					InsertID:  formatLogInsertId(runCommand, logInsertId),
-				},
-			)
-			logInsertId++
+			message := gcp.FormatLogEntryMessage(runCommand, "", text)
+			c.Logf(message)
 		}
 	}
 
@@ -284,10 +264,6 @@ func (c *commander) processGsutilOnNestedVM(runCommand *gcp.RunCommandMetadataEn
 	}
 
 	return 0
-}
-
-func formatLogInsertId(runCommand *gcp.RunCommandMetadataEntry, insertId int) string {
-	return fmt.Sprintf("%s_%08d", runCommand.Id, insertId)
 }
 
 func seedLastProcessedCommandId() string {

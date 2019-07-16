@@ -9,21 +9,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
+	"regexp"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/logging/logadmin"
 	compute "google.golang.org/api/compute/v1"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-// Stay below project-wide quotas (per second - enforced per minute)
-// See: https://cloud.google.com/logging/quotas
-const waitTimeBetweenLogReads = 3 * time.Second
+// How long to wait between GetSerialPortOutput calls. No known quota.
+const waitTimeBetweenLogReads = 1 * time.Second
 
 // How long before we timeout the operation when there're no new logs.
 // This can be caused by cel_agent crashing or the command hanging.
@@ -49,10 +43,10 @@ const timeoutNoSignal = 2 * time.Minute
 //    up the new 'cel-command' metadata entry.
 //
 // 3. The agent runs the command while logging all output and the exit code in
-//    log entries labeled with the command id.
+//    console output labeled with the command id.
 //
-// 4. Meanwhile the calling code polls the logs looking for the command id
-//    label. When one shows up with Labels["type"] == "result", it decodes the
+// 4. Meanwhile the calling code polls the logs looking for our runcommand
+//    label. When one shows up with a type == "result", it decodes the
 //    payload and returns.
 //
 // The http.Client referenced by |client| will be used for interacting with the
@@ -76,7 +70,7 @@ func RunCommandOnInstance(ctx context.Context, client *http.Client,
 		return -1, err
 	}
 
-	return operation.watchLogsForResult()
+	return operation.watchLogsForResult(client)
 }
 
 type runCommandOperation struct {
@@ -86,11 +80,15 @@ type runCommandOperation struct {
 	instance   string
 	runCommand *RunCommandMetadataEntry
 
-	lastLogInsertId string
-	timeoutAt       time.Time
+	lastOutputPosition int64
+	timeoutAt          time.Time
+	lastError          error
+}
 
-	nextLogSequenceId int
-	lastError         error
+type logEntry struct {
+	runCommandId string
+	logType      string
+	message      string
 }
 
 // This indicates to cel_agent that there is something to run on this instance.
@@ -128,40 +126,54 @@ func (r *runCommandOperation) setRunCommandMetadata(client *http.Client) error {
 	return err
 }
 
-// There's sometime a noticeable (~2-5 seconds) lag between when a trace
-// shows up in the Stackdriver vs Console logs. However, the Stackdriver
-// Operation/Labels features helps us reliably distinguish command logs from
-// other console logs, so we'll live with that extra cost for now.
-// TODO: Improve command output printing latency
-func (r *runCommandOperation) watchLogsForResult() (int, error) {
+// We previously used Stackdriver for its Operation/Labels features that helped
+// us reliably distinguish command logs from other console logs, but it had a
+// significant buffering delay (5+ seconds) and other weird behavior like out
+// of order log visibility. We're now using Console logs with a special format
+// that gives us better latency (<2s) and guarantees line order.
+func (r *runCommandOperation) watchLogsForResult(client *http.Client) (int, error) {
 	r.resetTimeout()
 	for r.timedout() {
-		ts, err := GetDefaultTokenSource(r.ctx)
-		if err != nil {
-			return -1, err
-		}
-		client, err := logadmin.NewClient(r.ctx, r.project, option.WithTokenSource(ts))
-		if err != nil {
-			return -1, fmt.Errorf("can't read logs for project %s", r.project)
-		}
-
-		filter := fmt.Sprintf(`logName = "projects/%s/logs/%s"`, r.project, "cel%2Fcommander")
-		if r.lastLogInsertId != "" {
-			filter = filter + fmt.Sprintf(` AND insertId > "%s"`, r.lastLogInsertId)
-		}
-		filter = filter + fmt.Sprintf(` AND operation.id = "%s"`, r.runCommand.Id)
-		entries := client.Entries(r.ctx, logadmin.Filter(filter))
+		service, err := compute.New(client)
 		if err != nil {
 			return -1, err
 		}
 
-		result, err := r.searchForCommandResult(entries)
+		request := service.Instances.GetSerialPortOutput(r.project, r.zone, r.instance)
+		if r.lastOutputPosition != 0 {
+			request = request.Start(r.lastOutputPosition)
+		}
+
+		serialPortOutput, err := request.Context(r.ctx).Do()
 		if err != nil {
 			return -1, err
 		}
 
-		if result != nil {
-			return result.ExitCode, nil
+		// Remove any partial lines from the console output.
+		output := serialPortOutput.Contents
+		lastNewline := strings.LastIndex(output, "\n")
+		if lastNewline != -1 {
+			lengthPartialLine := len(output) - lastNewline - 1
+			if lengthPartialLine != 0 {
+				output = output[:lastNewline+1]
+			}
+
+			// Update the start position for the next console fetch.
+			r.lastOutputPosition = serialPortOutput.Next - int64(lengthPartialLine)
+
+			// Parse, filter logs and print logs.
+			result, err := r.searchForCommandResult(output)
+			if err != nil {
+				return -1, err
+			}
+
+			if result != nil {
+				return result.ExitCode, nil
+			}
+		} else if len(output) > 512*1024 {
+			// Our algorithm doesn't support lines longer than 512 KB because
+			// of limitations on the GetSerialPortOutput side (1MB).
+			return -1, fmt.Errorf("console output line bigger than 512KB (%d)", len(output))
 		}
 
 		time.Sleep(waitTimeBetweenLogReads)
@@ -170,52 +182,55 @@ func (r *runCommandOperation) watchLogsForResult() (int, error) {
 }
 
 // This prints command output and looks for the special result log.
-func (r *runCommandOperation) searchForCommandResult(entries *logadmin.EntryIterator) (*RunCommandResultLogEntry, error) {
-	for {
-		entry, err := entries.Next()
-		if err == iterator.Done {
-			break
-		}
+func (r *runCommandOperation) searchForCommandResult(output string) (*RunCommandResultLogEntry, error) {
+	for _, line := range strings.Split(output, "\n") {
+		entry, err := parseLogEntryMessage(line)
 		if err != nil {
-			// retry if the error is caused by over quota
-			st, ok := status.FromError(err)
-			if ok && st.Code() == codes.ResourceExhausted {
-				r.lastError = err
-				time.Sleep(waitTimeBetweenLogReads)
-				break
-			} else {
-				return nil, fmt.Errorf("failed to iterate through logs: %v", err)
-			}
-		}
-
-		currentSequenceId, err := getSequenceIdFromInsertId(entry.InsertID)
-		if err != nil {
-			return nil, err
-		}
-
-		if r.nextLogSequenceId != currentSequenceId {
-			r.lastError = fmt.Errorf("unexpected sequence id [next=%d][current=%d]", r.nextLogSequenceId, currentSequenceId)
+			r.lastError = fmt.Errorf("failed to parse entry message [err=%v]", err)
 			continue
 		}
 
-		r.nextLogSequenceId = currentSequenceId + 1
+		if entry.runCommandId != r.runCommand.Id {
+			r.lastError = fmt.Errorf("unexpected runCommandId [entry=%s][current=%s]", entry.runCommandId, r.runCommand.Id)
+			continue
+		}
 
-		r.lastLogInsertId = entry.InsertID
 		r.resetTimeout()
 
-		line := fmt.Sprintf("%v", entry.Payload)
-		if v, ok := entry.Labels["type"]; ok && v == "result" {
+		if entry.logType == "result" {
 			var result RunCommandResultLogEntry
-			return &result, json.Unmarshal([]byte(line), &result)
+			return &result, json.Unmarshal([]byte(entry.message), &result)
 		}
 
 		// Don't print `result` - it's not real command output.
-		fmt.Println(line)
-
 		r.lastError = nil
+		fmt.Println(entry.message)
 	}
 
 	return nil, nil
+}
+
+// Formats a single-line log message in a way that `run` clients can parse.
+func FormatLogEntryMessage(runCommand *RunCommandMetadataEntry, logType string, message string) string {
+	return fmt.Sprintf("[$RunCommand$%s$%s] %s", runCommand.Id, logType, message)
+}
+
+// Parses a single-line log message formatted by FormatLogEntryMessage.
+var logEntryRegexp = regexp.MustCompile("\\[\\$RunCommand\\$([a-z0-9]+)\\$([a-z]*)\\] (.*)")
+
+func parseLogEntryMessage(message string) (*logEntry, error) {
+	// Quick check to see if this looks like a RunCommand log.
+	if strings.Index(message, "[$RunCommand$") == -1 {
+		return nil, fmt.Errorf("doesn't look like a RunCommand log entry: %s", message)
+	}
+
+	parts := logEntryRegexp.FindStringSubmatch(message)
+
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("doesn't match our RunCommand log entry regex: %s", message)
+	}
+
+	return &logEntry{runCommandId: parts[1], logType: parts[2], message: parts[3]}, nil
 }
 
 func (r *runCommandOperation) resetTimeout() {
@@ -224,18 +239,4 @@ func (r *runCommandOperation) resetTimeout() {
 
 func (r *runCommandOperation) timedout() bool {
 	return time.Now().Before(r.timeoutAt)
-}
-
-func getSequenceIdFromInsertId(insertId string) (int, error) {
-	parts := strings.Split(insertId, "_")
-	if len(parts) != 2 {
-		return 0, fmt.Errorf("failed to split RunCommand LogEntry.InsertID %s: %v", insertId, parts)
-	}
-
-	sequenceId, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse RunCommand LogEntry.InsertID %s: %v", insertId, err)
-	}
-
-	return sequenceId, nil
 }
