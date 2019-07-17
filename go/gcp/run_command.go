@@ -14,6 +14,7 @@ import (
 	"time"
 
 	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/googleapi"
 )
 
 // How long to wait between GetSerialPortOutput calls. No known quota.
@@ -146,7 +147,15 @@ func (r *runCommandOperation) watchLogsForResult(client *http.Client) (int, erro
 
 		serialPortOutput, err := request.Context(r.ctx).Do()
 		if err != nil {
-			return -1, err
+			// retry on intermittent errors
+			apiError, ok := err.(*googleapi.Error)
+			if ok && (apiError.Code == 503 || apiError.Code == 500) {
+				r.lastError = fmt.Errorf("transient error in GetSerialPortOutput: %v", err)
+				time.Sleep(waitTimeBetweenLogReads)
+				continue
+			}
+
+			return -1, fmt.Errorf("non-transient error in GetSerialPortOutput: %v", err)
 		}
 
 		// Remove any partial lines from the console output.
