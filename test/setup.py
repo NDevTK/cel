@@ -9,9 +9,6 @@ setuptools.setup(
     version="0.1",
     description="Chrome enterprise test framework",
     packages=setuptools.find_packages(exclude=["tests"]),
-    package_data={
-        'chrome_ent_test.ent_tests': ['installer_data'],
-    },
     install_requires=[
         "absl-py", "google-api-python-client", "protobuf",
         "grpc-google-iam-admin-v1", "grpc-google-iam-v1"
