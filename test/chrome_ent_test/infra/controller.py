@@ -59,6 +59,7 @@ class SingleTestController:
 
     host = self._ParseHostFile(hostFile)
     self._project = gcp.ComputeProject(host.project.name, host.project.zone)
+    self._gsbucket = host.storage.bucket
 
     self._celCtlRunner = CelCtlRunner(cel_ctl, self._hostFile, self._assetFile)
 
@@ -74,7 +75,8 @@ class SingleTestController:
     Returns:
       True if all tests passed.
     """
-    environment = TestEnvironment(self._project, self._celCtlRunner)
+    environment = TestEnvironment(self._project, self._gsbucket,
+                                  self._celCtlRunner)
 
     testCaseInstance = self._testClass(environment)
 

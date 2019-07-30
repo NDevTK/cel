@@ -47,6 +47,11 @@ class ChromeEnterpriseTestCase(EnterpriseTestCase):
 
     self.RunCommand(instance_name, cmd)
 
+    cmd = (
+        r'powershell -File c:\cel\supporting_files\ensure_chromium_api_keys.ps1'
+        r' -Path gs://%s/api/key') % self.gsbucket
+    self.RunCommand(instance_name, cmd)
+
   def SetPolicy(self, instance_name, policy_name, policy_value, policy_type):
     r"""Sets a Google Chrome policy in registry.
 

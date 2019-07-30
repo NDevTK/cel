@@ -19,6 +19,7 @@ class EnterpriseTestCase(unittest.TestCase):
     logging.info('Initialize Test=%s with %s' % (self.__class__, environment))
     super(EnterpriseTestCase, self).__init__()
     self.clients = environment.clients
+    self.gsbucket = environment.gsbucket
 
   # this method is here to please unittest.
   def runTest(self):

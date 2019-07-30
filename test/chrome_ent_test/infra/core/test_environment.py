@@ -47,7 +47,7 @@ class TestClient:
 
 class TestEnvironment:
 
-  def __init__(self, computeProject, celCtlRunner):
+  def __init__(self, computeProject, gsbucket, celCtlRunner):
     computeInstances = computeProject.GetComputeInstances()
 
     self.clients = {}
@@ -55,5 +55,8 @@ class TestEnvironment:
       testClient = TestClient(instance, celCtlRunner)
       self.clients[instance.name] = testClient
 
+    self.gsbucket = gsbucket
+
   def __repr__(self):
-    return "<%s clients=%s>" % (self.__class__.__name__, self.clients)
+    return "<%s clients=%s gsbucket=%s>" % (self.__class__.__name__,
+                                            self.clients, self.gsbucket)
