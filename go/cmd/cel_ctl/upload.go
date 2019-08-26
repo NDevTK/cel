@@ -5,13 +5,14 @@
 package main
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
-	"path"
+	"path/filepath"
+
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
+	"github.com/spf13/cobra"
 )
 
 type UploadCommand struct {
@@ -24,7 +25,7 @@ type UploadCommand struct {
 func init() {
 	uc := &UploadCommand{}
 	cmd := &cobra.Command{
-		Use:   "upload [--instance machine] --file file [--destination dest] [configuration files]",
+		Use:   "upload [--instance machine] --file file [--destination dest_dir] [configuration files]",
 		Short: "upload a file to a CELab instance",
 		Long: `Uploads a file to a CELab instance from a lab previously deployed via a 'Deploy' command.
 Will skip uploading to the Storage if the file already exists & has the same hash.
@@ -32,7 +33,7 @@ Will skip uploading to the Storage if the file already exists & has the same has
 	cmd.Flags().StringVar(&uc.Instance, "instance", "", "short instance name of VM to upload the file to (default: None)")
 	cmd.Flags().StringVar(&uc.File, "file", "", "path to the file to upload")
 	cmd.MarkFlagRequired("file")
-	cmd.Flags().StringVar(&uc.Destination, "destination", ".", "path of the destination of the upload (defaults to .)")
+	cmd.Flags().StringVar(&uc.Destination, "destination", ".", "destination directory of the upload (defaults to .)")
 	cmd.Flags().BoolVarP(&uc.UseBuiltins, "builtins", "B", false, "Use builtin assets")
 	app.AddCommand(cmd, uc)
 }
@@ -59,7 +60,7 @@ func (uc *UploadCommand) Run(ctx context.Context, a *Application, cmd *cobra.Com
 		return err
 	}
 
-	objRef, err := store.PutNamedObject(path.Base(uc.File), data)
+	objRef, err := store.PutNamedObject(filepath.Base(uc.File), data)
 	if err != nil {
 		return err
 	}

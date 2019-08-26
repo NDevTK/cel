@@ -191,23 +191,30 @@ class CelCtlRunner:
       logging.info("cel_ctl run returned %s: %s" % (e.returncode, e.output))
       raise
 
-  def UploadFile(self, instance, file, destination):
+  def UploadFile(self, instance, file, dest_directory):
     """Uploads a local file to the specified instance.
+
+    Args:
+      instance: the name of the instance.
+      file: the full path of the source file.
+      dest_directory: the destination directory.
 
     Returns:
       the full path of the destination file.
     """
     cmd = [
         self._cel_ctl, 'upload', '--instance', instance, '--file', file,
-        '--destination', destination, '--builtins', self._hostFile,
+        '--destination', dest_directory, '--builtins', self._hostFile,
         self._assetFile
     ]
 
-    logging.info("Uploading %s" % (file))
+    logging.info("Uploading %s -> directory %s on instance %s" %
+                 (file, dest_directory, instance))
     try:
       output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
       logging.info("cel_ctl upload output: %s" % output)
-      return destination
+      file_name = os.path.basename(file)
+      return os.path.join(dest_directory, file_name).replace('/', '\\')
     except subprocess.CalledProcessError, e:
       logging.info("cel_ctl upload returned %s: %s" % (e.returncode, e.output))
       raise

@@ -319,7 +319,7 @@ func (d *deployer) Deploy(manifestFile string) {
 
 	if d.IsNestedVM() {
 		if err := d.commonSetupOnNestedVM(); err != nil {
-			d.Logf("Common setup on nested VM failed: %s", err)
+			d.Logf("Common setup on nested VM failed: %+v", err)
 			d.setRuntimeConfigVariable(machineConfigVar, statusError)
 			return
 		}
@@ -697,7 +697,7 @@ func (d *deployer) IsWindows2008() bool {
 // so this is the method that should be used most of the time.
 func (d *deployer) GetSupportingFilePath(filename string) string {
 	if d.IsNestedVM() {
-		return filepath.Join(workingDirectoryOnNestedVM, filename)
+		return filepath.Join(workingDirectoryOnNestedVM, "supporting_files", filename)
 	} else {
 		return d.GetLocalSupportingFilePath(filename)
 	}
@@ -852,11 +852,6 @@ func sshEscapeArgument(argument string) string {
 }
 
 func (d *deployer) sshRunCommand(name string, arg ...string) (string, error) {
-	err := d.ensureWorkingDirOnNestedVmExists()
-	if err != nil {
-		return "", err
-	}
-
 	cmd := sshGetCommandString(name, arg...)
 
 	d.Logf("Run command on nested VM: %s", cmd)
@@ -871,8 +866,6 @@ func (d *deployer) sshRunCommand(name string, arg ...string) (string, error) {
 		return "", err
 	}
 
-	// Set WorkingDirectory to workingDirectoryOnNestedVM
-	cmd = fmt.Sprintf("cd %s && %s", workingDirectoryOnNestedVM, cmd)
 	output, err := session.CombinedOutput(cmd)
 	d.Logf("output from nested VM '%s': [%s], err: %v", cmd, output, err)
 
@@ -880,7 +873,8 @@ func (d *deployer) sshRunCommand(name string, arg ...string) (string, error) {
 }
 
 func (d *deployer) ensureWorkingDirOnNestedVmExists() error {
-	cmd := fmt.Sprintf("if not exist %s mkdir %s", workingDirectoryOnNestedVM, workingDirectoryOnNestedVM)
+	directory := workingDirectoryOnNestedVM + `\supporting_files`
+	cmd := fmt.Sprintf("if not exist %s mkdir %s", directory, directory)
 
 	d.Logf("Run command on nested VM: %s", cmd)
 	conn, err := d.sshConnect()
@@ -1035,8 +1029,8 @@ func (d *deployer) renameNestedVM(newName string) error {
 func (d *deployer) UploadFileToNestedVM(srcFilePath string, destDirectory string) error {
 	fileName := filepath.Base(srcFilePath)
 	destFilePath := filepath.Join(destDirectory, fileName)
-
 	d.Logf("Upload file %s -> %s to nested VM", srcFilePath, destFilePath)
+
 	srcFile, err := os.Open(srcFilePath)
 	if err != nil {
 		return errors.WithStack(err)
@@ -1074,16 +1068,24 @@ func (d *deployer) uploadSupportingFilesToNestedVM() error {
 	}
 
 	// save supporting files on disk
+	destDirectory := filepath.Join(workingDirectoryOnNestedVM, "supporting_files")
 	for filename, file := range _escData {
 		if !file.isDir {
 			supportingFile := path.Join(d.directory, filename)
-			err := d.UploadFileToNestedVM(supportingFile, workingDirectoryOnNestedVM)
+			err := d.UploadFileToNestedVM(supportingFile, destDirectory)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 		}
 	}
 
+	// upload cel_ui_agent
+	err = d.UploadFileToNestedVM(
+		path.Join(d.directory, "cel_ui_agent.exe"),
+		workingDirectoryOnNestedVM)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	return nil
 }
 

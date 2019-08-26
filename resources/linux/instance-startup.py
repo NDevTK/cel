@@ -22,6 +22,7 @@ def get_metadata(name):
 cel_agent = json.loads(get_metadata('cel-agent'))
 print 'cel_agent is {0}'.format(cel_agent)
 cel_agent_path = cel_agent['linux_agent_x64']['abs_path']
+cel_ui_agent_path = cel_agent['win_ui_agent_x64']['abs_path']
 
 cel_manifest = get_metadata('cel-manifest')
 print 'cel_manifest is {0}'.format(cel_manifest)
@@ -33,6 +34,8 @@ subprocess.call(['mkdir', '-p', dir])
 subprocess.call(['gsutil', 'cp', cel_agent_path, 'cel_agent'], cwd=dir)
 subprocess.call(['chmod', 'a+x', 'cel_agent'], cwd=dir)
 subprocess.call(['gsutil', 'cp', cel_manifest, 'cel_manifest.textpb'], cwd=dir)
+subprocess.call(['gsutil', 'cp', cel_ui_agent_path, 'cel_ui_agent.exe'],
+                cwd=dir)
 subprocess.call(
     [os.path.join(dir, 'cel_agent'),
      os.path.join(dir, 'cel_manifest.textpb')])

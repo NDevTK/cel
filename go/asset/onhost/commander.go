@@ -222,7 +222,7 @@ func (c *commander) processRunCommandEntryOnNestedVM(runCommand *gcp.RunCommandM
 		return c.processGsutilOnNestedVM(runCommand, logFn)
 	}
 
-	output, err := c.deployer.RunCommandWithOutput(runCommand.Command)
+	output, err := c.deployer.RunCommandWithOutput("powershell.exe", "-Command", runCommand.Command)
 
 	logFn(strings.NewReader(output))
 
@@ -244,7 +244,7 @@ func (c *commander) processGsutilOnNestedVM(runCommand *gcp.RunCommandMetadataEn
 	}
 
 	cpDestLocal := getWorkingDirectory() + filepath.Base(match[2])
-	cpDestVm := match[3]
+	cpDestVm := strings.Replace(match[3], "/", `\`, -1)
 
 	// Copy the file here (VM host)
 	command := exec.Command("gsutil", match[1], match[2], cpDestLocal)
@@ -253,10 +253,17 @@ func (c *commander) processGsutilOnNestedVM(runCommand *gcp.RunCommandMetadataEn
 		return exitCode
 	}
 
-	// Upload the file to our nested VM
-	err := c.deployer.UploadFileToNestedVM(cpDestLocal, cpDestVm)
+	// create destination directory on nested VM
+	cmd := fmt.Sprintf("md -Force %s ", cpDestVm)
+	err := c.deployer.RunCommand("powershell.exe", "-Command", cmd)
 	if err != nil {
-		errorMessage := fmt.Sprintf("Error during UploadFileToNestedVM: %s", err)
+		return -1
+	}
+
+	// Upload the file to our nested VM
+	err = c.deployer.UploadFileToNestedVM(cpDestLocal, cpDestVm)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Error during UploadFileToNestedVM: %+v", err)
 
 		logFn(strings.NewReader(errorMessage))
 

@@ -7,3 +7,4 @@ from iis_sites import *
 from machine_registry import *
 from nested_vms import *
 from remote_desktop import *
+from ui_test import *

@@ -63,6 +63,4 @@ class EnterpriseTestCase(unittest.TestCase):
     Returns:
     the full path of the destination file.
     """
-    file_name = os.path.basename(src_file)
-    dest_file = os.path.join(dest_directory, file_name).replace('/', '\\')
-    return self.clients[instance_name].UploadFile(src_file, dest_file)
+    return self.clients[instance_name].UploadFile(src_file, dest_directory)

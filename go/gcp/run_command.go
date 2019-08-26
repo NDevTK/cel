@@ -24,7 +24,7 @@ const waitTimeBetweenLogReads = 1 * time.Second
 // This can be caused by cel_agent crashing or the command hanging.
 // TODO: cel_agent should emit periodic type='processing' entries that are not
 //       printed out, similar to what we do with type='result'.
-const timeoutNoSignal = 2 * time.Minute
+const timeoutNoSignal = 5 * time.Minute
 
 // RunCommand runs a command on a Windows VM hosted on Google Compute Engine.
 //
