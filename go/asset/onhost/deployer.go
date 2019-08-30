@@ -974,8 +974,16 @@ func (d *deployer) killServiceProcess(service string) error {
 				return fmt.Errorf("The output of 'sc queryex' cannot be parsed: %s", parts)
 			}
 
-			// Kill the process.
-			return d.RunCommand("taskkill", "/f", "/pid", parts[1])
+			pid := strings.TrimSpace(parts[1])
+
+			// Kill the process if it has a PID. `sc queryex` can return 0 if
+			// the service has stopped by the time we get here.
+			if pid != "0" {
+				return d.RunCommand("taskkill", "/f", "/pid", pid)
+			} else {
+				d.Logf("Skip killing service process because PID is zero (%v).", pid)
+				return nil
+			}
 		}
 	}
 
