@@ -32,7 +32,7 @@ class UITest(EnterpriseTestCase):
     """Configures the instance so that UI tests can be run on it."""
     self._installChocolatey(instance_name)
     self._installPackage(instance_name, 'python2', '2.7.15')
-    self._installPackage(instance_name, 'sysinternals', '2019.6.29')
+    self._installPackage(instance_name, 'sysinternals', '2019.9.5')
     self.RunCommand(
         instance_name,
         r'c:\Python27\python.exe -m pip install absl-py requests pywinauto')
