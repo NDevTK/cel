@@ -20,6 +20,8 @@ class EnterpriseTestCase(unittest.TestCase):
     super(EnterpriseTestCase, self).__init__()
     self.clients = environment.clients
     self.gsbucket = environment.gsbucket
+    self._chocolateyInstalled = {}
+    self._pythonInstalled = {}
 
   # this method is here to please unittest.
   def runTest(self):
@@ -64,3 +66,37 @@ class EnterpriseTestCase(unittest.TestCase):
     the full path of the destination file.
     """
     return self.clients[instance_name].UploadFile(src_file, dest_directory)
+
+  def EnsureChocolateyInstalled(self, instance_name):
+    if instance_name in self._chocolateyInstalled:
+      return
+
+    cmd = "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
+    self.clients[instance_name].RunPowershell(cmd)
+
+    self._chocolateyInstalled[instance_name] = True
+
+  def EnsurePythonInstalled(self, instance_name):
+    if instance_name in self._pythonInstalled:
+      return
+
+    self.InstallChocolateyPackage(instance_name, 'python2', '2.7.15')
+
+    self._pythonInstalled[instance_name] = True
+
+  def InstallChocolateyPackage(self, instance_name, name, version):
+    self.EnsureChocolateyInstalled(instance_name)
+    cmd = r'c:\ProgramData\chocolatey\bin\choco install %s -y --version %s' % (
+        name, version)
+    self.RunCommand(instance_name, cmd)
+
+  def InstallChocolateyPackageLatest(self, instance_name, name):
+    self.EnsureChocolateyInstalled(instance_name)
+    cmd = r'c:\ProgramData\chocolatey\bin\choco install %s -y' % name
+    self.RunCommand(instance_name, cmd)
+
+  def InstallPipPackagesLatest(self, instance_name, packages):
+    self.EnsurePythonInstalled(instance_name)
+    self.RunCommand(
+        instance_name,
+        r'c:\Python27\python.exe -m pip install %s' % ' '.join(packages))

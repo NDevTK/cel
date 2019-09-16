@@ -19,23 +19,11 @@ class UITest(EnterpriseTestCase):
   """Tests that running UI tests works on all versions of Windows.
   """
 
-  def _installChocolatey(self, instance_name):
-    cmd = "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
-    self.clients[instance_name].RunPowershell(cmd)
-
-  def _installPackage(self, instance_name, package_name, package_version):
-    cmd = r'c:\ProgramData\chocolatey\bin\choco install %s -y --version %s' % (
-        package_name, package_version)
-    self.RunCommand(instance_name, cmd)
-
   def _enableUITest(self, instance_name):
     """Configures the instance so that UI tests can be run on it."""
-    self._installChocolatey(instance_name)
-    self._installPackage(instance_name, 'python2', '2.7.15')
-    self._installPackage(instance_name, 'sysinternals', '2019.9.5')
-    self.RunCommand(
-        instance_name,
-        r'c:\Python27\python.exe -m pip install absl-py requests pywinauto')
+    self.InstallChocolateyPackageLatest(instance_name, 'sysinternals')
+    self.InstallPipPackagesLatest(instance_name,
+                                  ['absl-py', 'requests', 'pywinauto'])
 
     self.RunCommand(instance_name, r'md -Force c:\temp')
 
@@ -93,6 +81,8 @@ class UITest(EnterpriseTestCase):
 
     Returns:
       the output."""
+    self.EnsurePythonInstalled(instance_name)
+
     # upload the test
     file_name = self.UploadFile(instance_name, test_file, r'c:\temp')
 
