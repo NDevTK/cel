@@ -522,15 +522,21 @@ func (d *deployer) PrepareInstance() error {
 	}
 	d.winVersion = ver
 
+	if !(d.IsWindows2008() || d.IsWindows2012() || d.IsWindows2016()) {
+		return errors.New("unsupported windows version")
+	}
+
+	// Run shared Windows image preparation script.
+	err = d.RunCommand("powershell.exe", "-ExecutionPolicy", "ByPass",
+		"-File", d.GetSupportingFilePath("prepare_windows.ps1"))
+
+	// Windows 2008 has extra setup steps - run them now.
 	if d.IsWindows2008() {
 		return d.RunCommand("powershell.exe", "-ExecutionPolicy", "ByPass",
 			"-File", d.GetSupportingFilePath("prepare_win2008.ps1"))
-	} else if d.IsWindows2016() || d.IsWindows2012() {
-		return d.RunCommand("powershell.exe", "-ExecutionPolicy", "ByPass",
-			"-File", d.GetSupportingFilePath("prepare_win2012.ps1"))
 	}
 
-	return errors.New("unsupported windows version")
+	return err
 }
 
 // Reboot the instance.
@@ -734,7 +740,7 @@ func (d *deployer) RunLocalCommandWithOutput(name string, arg ...string) (string
 	d.Logf("Run command: %s, args: %s", name, arg)
 	output, err := exec.Command(name, arg...).CombinedOutput()
 	if output != nil {
-		d.Logf("Output of command %s, args %s is: %s", name, arg, output)
+		d.Logf("Output of command %s, args %s, err %v, is: %s", name, arg, err, output)
 	}
 
 	return string(output), err

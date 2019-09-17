@@ -1,4 +1,4 @@
-# Copyright 2018 The Chromium Authors. All rights reserved.
+# Copyright 2019 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -15,7 +15,29 @@ function install-module-if-not-installed {
   }
 }
 
-# Enable WinRM, needed for DSC on nested VMs (not needed on GCE images).
+# Download PackageManagement_x64.msi
+$downloadUrl = 'https://download.microsoft.com/download/C/4/1/C41378D4-7F41-4BBE-9D0D-0E4F98585C61/PackageManagement_x64.msi'
+$WC = New-Object System.Net.WebClient
+$WC.DownloadFile($downloadUrl, "c:\cel\PackageManagement_x64.msi")
+$WC.Dispose()
+
+# Install PackageManagement_x64.msi.
+$arguments = @(
+    "/i"
+    "c:\cel\PackageManagement_x64.msi"
+    "/qn"
+    "/norestart"
+    "/l*v"
+    "c:\cel\msi_log.txt"
+)
+$process = Start-Process -FilePath msiexec.exe -ArgumentList $arguments -Wait -PassThru
+if ($process.ExitCode -eq 0) {
+    Write-Host "msiFile has been successfully installed"
+} else {
+    Write-Error "msiFile installation faield"
+}
+
+# Enable WinRM, needed for DSC on all nested VMs and WinServer2008.
 $retries = 0
 while ($true) {
   try {
@@ -39,7 +61,7 @@ while ($true) {
   }
 }
 
-# Again, this statement is not needed on GCE images, but we need it for nested VM.
+# This statement is needed on nested VMs and WinServer2008.
 Write-Host "$(Get-Date): The warning message from Set-ExecutionPolicy can be safely ignored."
 Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
 
