@@ -32,9 +32,27 @@ def CheckIfFilesNeedFormatting(input_api, output_api):
 
   return [
       output_api.PresubmitError(
-          'Modified files require formatting. Please run "python build.py format"',
-          modified)
+          'Modified files require formatting.' +
+          'Please run "python build.py format"', modified)
   ]
+
+
+def RunChromeEntTestUTs(input_api, output_api):
+  results = []
+  cmd = ['python', 'test/run_unit_tests.py', '-v']
+  p = input_api.subprocess.Popen(
+      cmd,
+      cwd=input_api.PresubmitLocalPath(),
+      stdout=input_api.subprocess.PIPE,
+      stderr=input_api.subprocess.PIPE)
+  output, err = p.communicate()
+
+  if p.returncode:
+    results.append(
+        output_api.PresubmitError(
+            message="chrome_ent_test unit tests failed:\n%s" % err))
+
+  return results
 
 
 def RunGoTests(input_api, output_api):
@@ -97,6 +115,7 @@ def CommonChecks(input_api, output_api):
   commit."""
   results = []
   results.extend(CheckIfFilesNeedFormatting(input_api, output_api))
+  results.extend(RunChromeEntTestUTs(input_api, output_api))
 
   if os.name != 'nt':
     # the following checks currently cannot be performed on Windows.

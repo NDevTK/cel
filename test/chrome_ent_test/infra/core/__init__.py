@@ -3,5 +3,5 @@
 # found in the LICENSE file.
 
 from test_case import EnterpriseTestCase
-from test_decorators import environment, test, before_all
+from test_decorators import environment, test, before_all, category
 from test_environment import TestEnvironment

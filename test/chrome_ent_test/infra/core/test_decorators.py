@@ -19,9 +19,27 @@ class environment(object):
       raise Exception(error)
 
     className = "%s.%s" % (_class.__module__, _class.__name__)
-    TestRegistry.Register(className)
+    TestRegistry.Register(className, _class)
     _class.ASSET_FILE = self.file
     _class.DEPLOY_TIMEOUT = self.timeout
+    return _class
+
+
+class category(object):
+  """@category annotation for test classes."""
+
+  def __init__(self, category):
+    self.category = category
+
+  def __call__(self, _class):
+    if not issubclass(_class, EnterpriseTestCase):
+      error = '@category can only be used on EnterpriseTestCase subclasses!'
+      raise Exception(error)
+
+    if not hasattr(_class, 'CATEGORIES'):
+      _class.CATEGORIES = []
+
+    _class.CATEGORIES.append(self.category)
     return _class
 
 

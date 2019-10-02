@@ -82,3 +82,23 @@ class ArgsParser:
         raise ValueError(message)
 
     return hostFilesFound
+
+  @staticmethod
+  def ProcessTestFilterArg(tests, includeArg, excludeArg):
+    """Filters a list of tests using user supplied --include/exclude arguments.
+
+    Supports both categories to include and exclude.
+
+    Returns:
+      The list of tests that pass the include and exclude filters.
+    """
+    includes = []
+    excludes = []
+
+    if includeArg:
+      includes = includeArg.split(';')
+
+    if excludeArg:
+      excludes = excludeArg.split(';')
+
+    return TestRegistry.Filter(tests, includes, excludes)
