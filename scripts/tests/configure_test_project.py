@@ -48,7 +48,7 @@ def ConfigureLogging(args):
 def AddProjectBinding(project, role, member):
   # Get current bindings
   service = googleapiclient.discovery.build('cloudresourcemanager', 'v1')
-  request = service.projects().getIamPolicy(resource=project)
+  request = service.projects().getIamPolicy(resource=project, body={})
   response = request.execute()
 
   # Add Binding to existing binding

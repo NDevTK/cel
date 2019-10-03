@@ -82,8 +82,8 @@ if __name__ == '__main__':
   # There's no obvious reason why a bigger pool wouldn't work, but we haven't
   # verified it. Let's stick to sizes that what we know will work and prevent
   # accidentally creating huge numbers or GCP projects.
-  if pool_size > 10:
-    raise ValueError('Pool size must be smaller than 10: %s' % args.size)
+  if pool_size > 20:
+    raise ValueError('Pool size must be smaller than 20: %s' % args.size)
 
   current_dir = os.path.dirname(os.path.realpath(__file__))
   create_project_py = os.path.join(current_dir, 'create_gcp_project.py')
