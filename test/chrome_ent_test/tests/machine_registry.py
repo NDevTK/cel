@@ -6,6 +6,7 @@ import logging
 from chrome_ent_test.infra.core import *
 
 
+@category("core")
 @environment(file="./assets/registry-keys.asset.textpb")
 class MachineRegistryTest(EnterpriseTestCase):
 

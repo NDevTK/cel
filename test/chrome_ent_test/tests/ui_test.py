@@ -14,6 +14,7 @@ from datetime import datetime
 from chrome_ent_test.infra.core import *
 
 
+@category("core")
 @environment(file="./assets/ui_test.asset.textpb")
 class UITest(EnterpriseTestCase):
   """Tests that running UI tests works on all versions of Windows.

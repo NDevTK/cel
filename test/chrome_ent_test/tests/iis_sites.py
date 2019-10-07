@@ -94,6 +94,7 @@ MAX_RETRIES_EVENTLOG = 2
 DELAY_RETRY_EVENTLOG = 5  # In seconds
 
 
+@category("core")
 @environment(file="./assets/iis-ntlm-v1.asset.textpb")
 class IISNTLMTest(EnterpriseTestCase):
 
