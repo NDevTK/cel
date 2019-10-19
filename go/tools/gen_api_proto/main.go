@@ -99,7 +99,7 @@ func wrapLines(lines []string) (out []string) {
 
 			index := strings.LastIndexFunc(line[:kColumns], unicode.IsSpace)
 			if index == -1 {
-				index := strings.IndexFunc(line, unicode.IsSpace)
+				index = strings.IndexFunc(line, unicode.IsSpace)
 				if index == -1 {
 					out = append(out, line)
 					break
