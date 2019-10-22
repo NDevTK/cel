@@ -166,6 +166,10 @@ class CelCtlRunner:
         self._cel_ctl, 'deploy', '--builtins', self._hostFile, self._assetFile
     ]
 
+    # Don't create the RDP/SSH firewall rule on LUCI deployments.
+    if "LUCI_CONTEXT" in os.environ:
+      cmd += ['--allow_external_rdp_ssh=False']
+
     if deployTimeout != None:
       cmd += ['--timeout', str(deployTimeout)]
 

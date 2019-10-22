@@ -9,6 +9,7 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 )
 
@@ -21,18 +22,28 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) e
 		return common.NewNotImplementedError("asset.network.{}.address_range")
 	}
 
-	if err := d.Emit(nil, &compute.Firewall{
-		Name:      n.Name + "-allow-rdp-ssh",
-		Network:   fmt.Sprintf("$(ref.%s.selfLink)", n.Name),
-		Direction: "INGRESS",
-		Allowed: []*compute.Firewall_Allowed{
-			&compute.Firewall_Allowed{
-				IPProtocol: "tcp",
-				Ports:      []string{"3389", "22"},
-			},
-		},
-	}); err != nil {
+	s, err := gcp.SessionFromContext(ctx)
+	if err != nil {
 		return err
+	}
+
+	if s.AllowExternalRdpSsh {
+		s.Logger.Info(common.MakeStringer("Creating rule %s.", n.Name+"-allow-rdp-ssh"))
+		if err := d.Emit(nil, &compute.Firewall{
+			Name:      n.Name + "-allow-rdp-ssh",
+			Network:   fmt.Sprintf("$(ref.%s.selfLink)", n.Name),
+			Direction: "INGRESS",
+			Allowed: []*compute.Firewall_Allowed{
+				&compute.Firewall_Allowed{
+					IPProtocol: "tcp",
+					Ports:      []string{"3389", "22"},
+				},
+			},
+		}); err != nil {
+			return err
+		}
+	} else {
+		s.Logger.Info(common.MakeStringer("Skipping rule %s.", n.Name+"-allow-rdp-ssh"))
 	}
 
 	if err := d.Emit(nil, &compute.Firewall{

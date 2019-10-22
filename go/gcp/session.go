@@ -23,9 +23,10 @@ import (
 )
 
 type Session struct {
-	ctx             context.Context
-	client          *http.Client
-	HostEnvironment *host.HostEnvironment
+	ctx                 context.Context
+	client              *http.Client
+	AllowExternalRdpSsh bool
+	HostEnvironment     *host.HostEnvironment
 
 	computeService *compute.Service
 	computeOnce    sync.Once

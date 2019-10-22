@@ -13,8 +13,9 @@ import (
 )
 
 type DeployCommand struct {
-	UseBuiltins bool
-	Timeout     int
+	UseBuiltins         bool
+	Timeout             int
+	AllowExternalRdpSsh bool
 }
 
 func init() {
@@ -27,6 +28,7 @@ func init() {
 	}
 	cmd.Flags().BoolVarP(&dc.UseBuiltins, "builtins", "B", false, "Use builtin assets")
 	cmd.Flags().IntVarP(&dc.Timeout, "timeout", "T", 3600, "Timeout in seconds to wait for onhost configuration")
+	cmd.Flags().BoolVarP(&dc.AllowExternalRdpSsh, "allow_external_rdp_ssh", "A", true, "Whether to allow external RDP & SSH access (debug only).")
 	app.AddCommand(cmd, dc)
 }
 
@@ -38,10 +40,13 @@ func (d *DeployCommand) Run(ctx context.Context, a *Application, cmd *cobra.Comm
 		return err
 	}
 
+	sessionBackend := session.GetBackend()
+	sessionBackend.AllowExternalRdpSsh = d.AllowExternalRdpSsh
+
 	err = deploy.Deploy(session)
 	if err != nil {
 		return err
 	}
 
-	return deploy.WaitForAllAssetsReady(session.GetBackend(), time.Duration(d.Timeout)*time.Second)
+	return deploy.WaitForAllAssetsReady(sessionBackend, time.Duration(d.Timeout)*time.Second)
 }
