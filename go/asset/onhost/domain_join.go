@@ -10,6 +10,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
+	"chromium.googlesource.com/enterprise/cel/go/host"
 	"github.com/pkg/errors"
 )
 
@@ -40,6 +41,10 @@ func (*DomainJoinResolver) ResolveOnHost(ctx common.Context, m *asset.WindowsMac
 const maxRetries = 5
 
 func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
+	if d.machineType.Os != host.OperatingSystem_WINDOWS {
+		return errors.New("Domain join is only supported on Windows")
+	}
+
 	depVar := onhost.GetActiveDirectoryRuntimeConfigVariableName(ad.Name)
 
 	err := d.waitForDependency(depVar, time.Duration(60)*time.Minute)

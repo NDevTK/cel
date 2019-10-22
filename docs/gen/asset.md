@@ -1914,7 +1914,9 @@ Container for the group. A container must be specified for a WindowsGroup.
 
 ## Message `WindowsMachine` {#WindowsMachine}
 
-A Windows machine.
+A machine. Most machines are Windows machines, but it can also be Linux
+or ChromeOS (run as nested VM) machines. So it is a misnomer now.
+Unfortunately we have to keep this name.
 
 WindowsMachine messages are located under the "asset.windows_machine"
 collection.  When authoring, leave out the "asset." prefix. E.g.:

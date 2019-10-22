@@ -120,7 +120,9 @@ message Image {
 }
 
 message NestedVM {
-  // The image to use. It's a gs://path.
+  // The image to use. It's a gs://path. The image file can be
+  // a compressed file. The following types are supported:
+  //   .tar.xz
   string image = 1 [(common.v).type = REQUIRED];
 
   // The user name & password used to log in through ssh.
@@ -135,6 +137,14 @@ message NestedVM {
   uint64 diskSizeGb = 5;
 }
 
+// Operating System
+enum OperatingSystem {
+  // Microsoft Windows
+  WINDOWS = 0;
+  LINUX = 1;
+  CHROMEOS = 2;
+}
+
 // Describes a type of machine (virtual or otherwise).
 //
 // Not to be confused with GCE machine type. I.e.
@@ -142,6 +152,11 @@ message NestedVM {
 message MachineType {
   // Name is used to match machine type name from asset description.
   string name = 1;
+
+  // The operating system of the machine. If the machine is a nested VM,
+  // then this is the operating system of the nested VM.
+  // Default value is WINDOWS.
+  OperatingSystem os = 2;
 
   // One of the following will be used to resolve this machine type.
   oneof base {

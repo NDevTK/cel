@@ -75,6 +75,9 @@ type deployer struct {
 
 	configuration *cel.Configuration
 
+	// the machine type of the current instance
+	machineType *host.MachineType
+
 	// The nested VM if this instance is a host.
 	nestedVM *host.NestedVM
 
@@ -281,9 +284,8 @@ func (d *deployer) Deploy(manifestFile string) {
 	}
 
 	m := d.getWindowsMachine()
-	if mt, ok := d.getMachineType(m.MachineType).Base.(*host.MachineType_NestedVm); ok {
-		d.nestedVM = mt.NestedVm
-	}
+	d.machineType = d.getMachineType(m.MachineType)
+	d.nestedVM = d.machineType.GetNestedVm()
 
 	if err := d.SaveSupportingFilesToDisk(); err != nil {
 		if IsRestarting(d) {
@@ -405,6 +407,18 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 
 			d.Logf("Failed image download (will retry): %s", err)
 		}
+
+		// if the image file is a zip file, unzip it.
+		if strings.HasSuffix(imageFile, "tar.xz") {
+			if output, err := d.RunLocalCommandWithOutput(
+				"tar", "xvf", imageFile, "--directory", d.directory); err != nil {
+				return err
+			} else {
+				// output of the tar command is the file name of the uncompressed
+				// file. Update imageFile.
+				imageFile = path.Join(d.directory, strings.TrimSpace(output))
+			}
+		}
 	}
 
 	fileToRun := d.GetLocalSupportingFilePath("setup_vm_host.sh")
@@ -413,12 +427,24 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 	}
 
 	// start the VM
-	err := d.RunLocalCommandWithoutWait("sudo", "kvm", "-m", "5120", "-net", "nic",
+	cmd := []string{"kvm", "-m", "4096",
 		"-net", "tap,ifname=tap0,script=no", "-usbdevice", "tablet",
 		"-cpu", "host",
 		// the monitor so that we can tell kvm to cleanly shutdown the VM.
 		"-qmp", "tcp:127.0.0.1:25555,server,nowait",
-		"-vnc", ":20100", imageFile)
+		"-vnc", ":20100", imageFile}
+
+	if d.machineType.Os == host.OperatingSystem_CHROMEOS {
+		cmd = append(cmd,
+			"-net", "nic,model=virtio",
+			"-vga", "virtio")
+
+	} else {
+		cmd = append(cmd,
+			"-net", "nic,model=e1000",
+			"-vga", "std")
+	}
+	err := d.RunLocalCommandWithoutWait("sudo", cmd...)
 	if err != nil {
 		return err
 	}
@@ -516,6 +542,10 @@ func (d *deployer) SaveSupportingFilesToDisk() error {
 }
 
 func (d *deployer) PrepareInstance() error {
+	if d.machineType.Os != host.OperatingSystem_WINDOWS {
+		return nil
+	}
+
 	ver, err := d.getWindowsVersionByVerCommand()
 	if err != nil {
 		return errors.WithStack(err)
@@ -906,6 +936,17 @@ func (d *deployer) sshConnect() (*ssh.Client, error) {
 		User: d.nestedVM.UserName,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(d.nestedVM.Password),
+
+			// ChromeOS test image uses interactive auth method
+			ssh.KeyboardInteractive(
+				func(user, instruction string, questions []string, echos []bool) (answers []string, err error) {
+					answers = make([]string, len(questions))
+					for n := range questions {
+						answers[n] = d.nestedVM.Password
+					}
+
+					return answers, nil
+				}),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         10 * time.Second,
@@ -926,7 +967,7 @@ func (d *deployer) waitUntilSshIsAlive() error {
 			return nil
 		}
 
-		d.Logf("Retry")
+		d.Logf("Error: %s. Retry", err)
 		time.Sleep(1 * time.Minute)
 	}
 
@@ -1000,6 +1041,10 @@ func (d *deployer) commonSetupOnNestedVM() error {
 	err := d.waitUntilSshIsAlive()
 	if err != nil {
 		return errors.WithStack(err)
+	}
+
+	if d.machineType.Os != host.OperatingSystem_WINDOWS {
+		return nil
 	}
 
 	err = d.uploadSupportingFilesToNestedVM()

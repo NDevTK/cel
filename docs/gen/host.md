@@ -283,6 +283,7 @@ These are not https://cloud.google.com/compute/docs/machine-types
 ### Inputs for `MachineType`
 
 * `string` [`name`](#MachineType.name) = 1 (**Required**)
+* [`host.OperatingSystem`](host.md#OperatingSystem) [`os`](#MachineType.os) = 2
 * [`compute.InstanceProperties`](gcp_compute.md#InstanceProperties) [`instance_properties`](#MachineType.instance_properties) = 5
 * `string` [`instance_template`](#MachineType.instance_template) = 6 (**Required**)
 * [`host.NestedVM`](host.md#NestedVM) [`nested_vm`](#MachineType.nested_vm) = 7
@@ -296,6 +297,17 @@ These are not https://cloud.google.com/compute/docs/machine-types
 | Required | This field is required. It is an error to omit this field. |
 
 Name is used to match machine type name from asset description.
+
+### `os` {#MachineType.os}
+
+| Property | Comments |
+|----------|----------|
+| Field Name | `os` |
+| Type | [`host.OperatingSystem`](host.md#OperatingSystem) |
+
+The operating system of the machine. If the machine is a nested VM,
+then this is the operating system of the nested VM.
+Default value is WINDOWS.
 
 ### `instance_properties` {#MachineType.instance_properties}
 
@@ -348,7 +360,9 @@ be a full or a partial URL.
 | Type | `string` |
 | Required | This field is required. It is an error to omit this field. |
 
-The image to use. It's a gs://path.
+The image to use. It's a gs://path. The image file can be
+a compressed file. The following types are supported:
+  .tar.xz
 
 ### `user_name` {#NestedVM.user_name}
 
@@ -604,6 +618,21 @@ string.
 
 
 # Enumerations
+
+## Enumeration `OperatingSystem` {#OperatingSystem}
+
+Operating System
+
+
+Values:
+* ["`WINDOWS`"](#OperatingSystem.WINDOWS)
+* "`LINUX`"
+* "`CHROMEOS`"
+
+### "`WINDOWS`" {#OperatingSystem.WINDOWS}
+
+Microsoft Windows
+
 
 
 ---
