@@ -84,8 +84,10 @@ HOST_GOOS = {
 # Used by _GetCustomBuildEnv to cache the generated build environment.
 CACHED_BUILD_ENV = None
 
-# Supported target environments. Tuple of GOOS / GOARCH
-TARGET_ARCHS = [
+# Supported target environments for cel_agent & cel_ui_agent which run on GCE
+# instances. We will build all of them under `bin/resources/`. The architecture
+# used for cel_ctl is the one used to build the project.Tuple of GOOS / GOARCH.
+TARGET_ARCHS_AGENT = [
     # This list should include all our supported target platforms. For
     # example, once we start supporting 32-bit Windows environments, we'd
     # add something like this:
@@ -95,7 +97,6 @@ TARGET_ARCHS = [
     #   ("windows", "386"),
     ("windows", "amd64"),
     ("linux", "amd64"),
-    ("darwin", "amd64"),
 ]
 
 
@@ -693,7 +694,7 @@ missing.
 
   env = _MergeEnv(args)
   out_dir = os.path.join(_GetBuildDir(env), 'resources')
-  for goos, goarch in TARGET_ARCHS:
+  for goos, goarch in TARGET_ARCHS_AGENT:
     env['GOOS'] = goos
     env['GOARCH'] = goarch
     _BuildCommand('cel_agent', './go/cmd/cel_agent', env, out_dir=out_dir)
@@ -801,6 +802,7 @@ Why not just run "go build" ?
   with open("VERSION", 'r') as file:
     build_version = file.read()
 
+  # Build cel_ctl with the current architecture
   for command in commands:
     _BuildCommand(
         command,
