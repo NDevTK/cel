@@ -95,6 +95,7 @@ TARGET_ARCHS = [
     #   ("windows", "386"),
     ("windows", "amd64"),
     ("linux", "amd64"),
+    ("darwin", "amd64"),
 ]
 
 
