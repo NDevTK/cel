@@ -4,4 +4,13 @@
 
 package common
 
-func (s *Secret) Validate() error { return nil }
+import (
+	"chromium.googlesource.com/enterprise/cel/go/schema"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
+)
+
+func validateSecret(s *commonpb.Secret) error { return nil }
+
+func init() {
+	schema.RegisterValidateFunction(validateSecret)
+}

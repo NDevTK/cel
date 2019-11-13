@@ -909,4 +909,4 @@ https://chromium.googlesource.com/enterprise/cel/+/HEAD/docs/deployment.md#Pruni
 
 
 ---
-Generated from `schema/common/validation.proto`, `schema/common/file_reference.proto`, `schema/common/secret.proto`, `go/common/testdata/testmsgs.proto`.
+Generated from `schema/common/validation.proto`, `schema/common/file_reference.proto`, `schema/common/secret.proto`, `schema/common/testmsgs.proto`.

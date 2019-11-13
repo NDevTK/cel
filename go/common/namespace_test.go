@@ -5,12 +5,13 @@
 package common
 
 import (
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"strings"
 	"testing"
 )
 
 func TestNamespace_Graft_basic(t *testing.T) {
-	m := TestMessageWithOptions{
+	m := commonpb.TestMessageWithOptions{
 		Name:        "from.here",
 		Key:         "foo",
 		OptionalKey: "bar",
@@ -53,7 +54,7 @@ func TestNamespace_Graft_basic(t *testing.T) {
 }
 
 func TestNamespace_Graft_again(t *testing.T) {
-	m := TestMessageWithOptions{
+	m := commonpb.TestMessageWithOptions{
 		Name:  "x",
 		Label: "${foo.output}",
 	}
@@ -71,7 +72,7 @@ func TestNamespace_Graft_again(t *testing.T) {
 }
 
 func TestNamespace_Graft_recursive(t *testing.T) {
-	m := TestMessageWithOptions{
+	m := commonpb.TestMessageWithOptions{
 		Name:  "x",
 		Label: "${foo.label}",
 	}
@@ -84,13 +85,13 @@ func TestNamespace_Graft_recursive(t *testing.T) {
 }
 
 func TestNamespace_ExpandString_basic(t *testing.T) {
-	m := TestMessageWithOptions{Fqdn: "${bar.repeated_field.a.name}${bar.repeated_field.b.name}${bar.repeated_field.c}${bar.repeated_field.c.name}"}
-	w := TestMessageWithTypes{
+	m := commonpb.TestMessageWithOptions{Fqdn: "${bar.repeated_field.a.name}${bar.repeated_field.b.name}${bar.repeated_field.c}${bar.repeated_field.c.name}"}
+	w := commonpb.TestMessageWithTypes{
 		Name: "to",
-		RepeatedField: []*TestGoodProto{
-			&TestGoodProto{Name: "a"},
-			&TestGoodProto{Name: "b"},
-			&TestGoodProto{Name: "c"},
+		RepeatedField: []*commonpb.TestGoodProto{
+			&commonpb.TestGoodProto{Name: "a"},
+			&commonpb.TestGoodProto{Name: "b"},
+			&commonpb.TestGoodProto{Name: "c"},
 		}}
 
 	var r Namespace
@@ -141,7 +142,7 @@ func TestNamespace_ExpandString_basic(t *testing.T) {
 }
 
 func TestNamespace_SetOutput_good(t *testing.T) {
-	w := TestMessageWithOptions{
+	w := commonpb.TestMessageWithOptions{
 		Name:  "my-name-is-foo",
 		Label: "${a.b.foo.output}",
 	}
@@ -192,7 +193,7 @@ func TestNamespace_SetOutput_good(t *testing.T) {
 		t.Error("unresolved output field reported as available")
 	}
 
-	err = r.PublishOutput(RefPathMust("a.b.foo.output_proto"), &TestGoodProto{})
+	err = r.PublishOutput(RefPathMust("a.b.foo.output_proto"), &commonpb.TestGoodProto{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +218,7 @@ func TestNamespace_SetOutput_good(t *testing.T) {
 }
 
 func TestNamespace_SetOutput_partial(t *testing.T) {
-	w := TestMessageWithOptions{
+	w := commonpb.TestMessageWithOptions{
 		Label: "${a.b.c.output}",
 		Fqdn:  "${a.b.c.output} ${a.b.c.output_alt}!",
 	}
@@ -265,7 +266,7 @@ func TestNamespace_SetOutput_partial(t *testing.T) {
 }
 
 func TestNamespace_SetOutput_duplicate(t *testing.T) {
-	w := TestMessageWithOptions{}
+	w := commonpb.TestMessageWithOptions{}
 
 	var r Namespace
 	r.Graft(&w, RefPathMust("a.b.c"))
@@ -282,12 +283,12 @@ func TestNamespace_SetOutput_duplicate(t *testing.T) {
 }
 
 func TestNamespace_SetOutput_otherTypes(t *testing.T) {
-	w := TestMessageWithOptions{}
+	w := commonpb.TestMessageWithOptions{}
 
 	var r Namespace
 	r.Graft(&w, RefPathMust("a.b.c"))
 
-	err := r.PublishOutput(RefPathMust("a.b.c.output_proto"), &TestGoodProto{
+	err := r.PublishOutput(RefPathMust("a.b.c.output_proto"), &commonpb.TestGoodProto{
 		Name: "just-added",
 	})
 
@@ -319,7 +320,7 @@ func TestNamespace_SetOutput_otherTypes(t *testing.T) {
 }
 
 func TestNamespace_SetOutput_notOutput(t *testing.T) {
-	w := TestMessageWithOptions{
+	w := commonpb.TestMessageWithOptions{
 		Name:  "foo",
 		Label: "${foo.output}",
 	}
@@ -334,7 +335,7 @@ func TestNamespace_SetOutput_notOutput(t *testing.T) {
 }
 
 func TestNamespace_SetOutput_notKnown(t *testing.T) {
-	w := TestMessageWithOptions{
+	w := commonpb.TestMessageWithOptions{
 		Name:  "foo",
 		Label: "${foo.output}",
 	}
@@ -349,7 +350,7 @@ func TestNamespace_SetOutput_notKnown(t *testing.T) {
 }
 
 func TestNamespace_SetOutput_badType(t *testing.T) {
-	w := TestMessageWithOptions{
+	w := commonpb.TestMessageWithOptions{
 		Name:  "foo",
 		Label: "${foo.output}",
 	}
@@ -366,7 +367,7 @@ func TestNamespace_SetOutput_badType(t *testing.T) {
 }
 
 func TestNamespace_VisitUnresolved_basic(t *testing.T) {
-	w := TestMessageWithOptions{
+	w := commonpb.TestMessageWithOptions{
 		Label: "${a.b.c.output}",
 		Fqdn:  "${a.b.c.output} ${a.b.c.output_alt}!",
 	}
@@ -423,15 +424,15 @@ func TestNamespace_asAssetGraph_sanityCheck(t *testing.T) {
 	zPath := RefPathMust("a.b.z")
 	nPath := RefPathMust("a.b.z.output_proto")
 
-	err := r.Graft(&TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
+	err := r.Graft(&commonpb.TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.Graft(&TestMessageWithOptions{Name: "y", Label: "y-label"}, yPath)
+	err = r.Graft(&commonpb.TestMessageWithOptions{Name: "y", Label: "y-label"}, yPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.Graft(&TestMessageWithOptions{Name: "z", OutputProto: &TestGoodProto{Name: "nested"}}, zPath)
+	err = r.Graft(&commonpb.TestMessageWithOptions{Name: "z", OutputProto: &commonpb.TestGoodProto{Name: "nested"}}, zPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -478,10 +479,10 @@ func TestNamespace_asTopologicalList_noCycles(t *testing.T) {
 	yPath := RefPathMust("a.b.y")
 	zPath := RefPathMust("a.b.z")
 
-	r.Graft(&TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
-	r.Graft(&TestMessageWithOptions{Name: "y", Label: "${a.b.z.output_proto.name}"}, yPath)
-	r.Graft(&TestMessageWithOptions{Name: "z", Label: "${a.b.x.label}",
-		OutputProto: &TestGoodProto{Name: "nested"}}, zPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "y", Label: "${a.b.z.output_proto.name}"}, yPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "z", Label: "${a.b.x.label}",
+		OutputProto: &commonpb.TestGoodProto{Name: "nested"}}, zPath)
 
 	l, err := r.asTopologicalList()
 	if err != nil {
@@ -509,10 +510,10 @@ func TestNamespace_asTopologicalList_cycles(t *testing.T) {
 	yPath := RefPathMust("a.b.y")
 	zPath := RefPathMust("a.b.z")
 
-	r.Graft(&TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
-	r.Graft(&TestMessageWithOptions{Name: "y", Label: "${a.b.z.label}"}, yPath)
-	r.Graft(&TestMessageWithOptions{Name: "z", Label: "${a.b.x.label}",
-		OutputProto: &TestGoodProto{Name: "nested"}}, zPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "y", Label: "${a.b.z.label}"}, yPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "z", Label: "${a.b.x.label}",
+		OutputProto: &commonpb.TestGoodProto{Name: "nested"}}, zPath)
 
 	_, err := r.asTopologicalList()
 	if err == nil {
@@ -532,9 +533,9 @@ func TestNamespace_nearestMessage(t *testing.T) {
 	yPath := RefPathMust("a.b.y")
 	zPath := RefPathMust("a.b.z")
 
-	r.Graft(&TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
-	r.Graft(&TestMessageWithOptions{Name: "y", Label: "${a.b.x.label}"}, yPath)
-	r.Graft(&TestMessageWithOptions{Name: "z", Label: "${a.b.n.label}"}, zPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "x", Label: "${a.b.y.label}"}, xPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "y", Label: "${a.b.x.label}"}, yPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "z", Label: "${a.b.n.label}"}, zPath)
 
 	xLabel, ok := r.getNode(xPath.Append("label"))
 	if !ok {
@@ -565,7 +566,7 @@ func TestNamespace_TopLevel(t *testing.T) {
 	var r Namespace
 	xPath := RefPathMust("a.b.x")
 
-	g := &TestContainer{B: []*TestMessageWithOptions{
+	g := &commonpb.TestContainer{B: []*commonpb.TestMessageWithOptions{
 		{Name: "x", Label: "${a.b.y.label}"},
 		{Name: "y", Label: "y-label"},
 		{Name: "z"},
@@ -610,7 +611,7 @@ func TestNamespace_Prune_basic(t *testing.T) {
 	yPath := RefPathMust("a.b.y")
 	zPath := RefPathMust("a.b.z")
 
-	g := &TestContainer{B: []*TestMessageWithOptions{
+	g := &commonpb.TestContainer{B: []*commonpb.TestMessageWithOptions{
 		{Name: "x", Label: "${a.b.y.label}"},
 		{Name: "y", Label: "y-label"},
 		{Name: "z"},
@@ -642,9 +643,9 @@ func TestNamespace_anneal(t *testing.T) {
 	yPath := RefPathMust("a.b.y")
 	zPath := RefPathMust("a.b.z")
 
-	r.Graft(&TestMessageWithOptions{Name: "x", Label: "x-${a.b.y.label}"}, xPath)
-	r.Graft(&TestMessageWithOptions{Name: "y", Label: "y-label"}, yPath)
-	r.Graft(&TestMessageWithOptions{Name: "z", Label: "z-${a.b.x.label}"}, zPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "x", Label: "x-${a.b.y.label}"}, xPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "y", Label: "y-label"}, yPath)
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "z", Label: "z-${a.b.x.label}"}, zPath)
 
 	if o, err := r.Get(xPath.Append("label")); err == nil {
 		if o.(string) != "x-y-label" {
@@ -672,14 +673,14 @@ func TestNamespace_IndirectReference(t *testing.T) {
 	xPath := RefPathMust("a.b.options")
 	yPath := RefPathMust("a.b.with_types")
 
-	r.Graft(&TestMessageWithOptions{Name: "options", Key: "foo", OptionalKey: "baz"}, xPath)
-	r.Graft(&TestMessageWithTypes{Name: "with_types", RepeatedField: []*TestGoodProto{
+	r.Graft(&commonpb.TestMessageWithOptions{Name: "options", Key: "foo", OptionalKey: "baz"}, xPath)
+	r.Graft(&commonpb.TestMessageWithTypes{Name: "with_types", RepeatedField: []*commonpb.TestGoodProto{
 		{Name: "foo"},
 		{Name: "bar"},
 	}}, yPath)
 
 	if o, err := r.IndirectReference(RefPathMust("a.b.options.key")); err == nil {
-		if v, ok := o.(*TestGoodProto); ok {
+		if v, ok := o.(*commonpb.TestGoodProto); ok {
 			if v.Name != "foo" {
 				t.Error("incorrect reference")
 			}

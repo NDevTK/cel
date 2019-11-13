@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
+	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	google_iam_admin_v1 "google.golang.org/genproto/googleapis/iam/admin/v1"
 )
 
@@ -33,15 +34,15 @@ type windowsMachine struct{}
 
 // ResolveAdditionalDependencies adds depedencies on the windows startup
 // scripts and windows agent binaries to a machine.
-func (*windowsMachine) ResolveAdditionalDependencies(ctx common.Context, m *asset.WindowsMachine) error {
-	mt := common.Must(ctx.Indirect(m, "machine_type")).(*host.MachineType)
+func (*windowsMachine) ResolveAdditionalDependencies(ctx common.Context, m *assetpb.WindowsMachine) error {
+	mt := common.Must(ctx.Indirect(m, "machine_type")).(*hostpb.MachineType)
 
 	err := ctx.PublishDependency(m, projectPath)
 	if err != nil {
 		return err
 	}
 
-	_, ok := mt.Base.(*host.MachineType_NestedVm)
+	_, ok := mt.Base.(*hostpb.MachineType_NestedVm)
 	if ok {
 		// nested VM
 		err = ctx.PublishDependency(m, linuxStartupScriptPath)
@@ -61,7 +62,7 @@ func (*windowsMachine) ResolveAdditionalDependencies(ctx common.Context, m *asse
 	}
 }
 
-func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.WindowsMachine) error {
+func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *assetpb.WindowsMachine) error {
 	d := GetDeploymentManifest()
 
 	// add runtime config variable for this windows machine
@@ -75,18 +76,18 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *asset.Win
 		return err
 	}
 
-	mt := common.Must(ctx.Indirect(m, "machine_type")).(*host.MachineType)
+	mt := common.Must(ctx.Indirect(m, "machine_type")).(*hostpb.MachineType)
 
-	nestedVm, ok := mt.Base.(*host.MachineType_NestedVm)
+	nestedVm, ok := mt.Base.(*hostpb.MachineType_NestedVm)
 	if ok {
 		return resolveNestedVM(ctx, m, nestedVm)
 	}
 	return resolveNormalMachineType(ctx, m)
 }
 
-func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host.MachineType_NestedVm) error {
+func resolveNestedVM(ctx common.Context, m *assetpb.WindowsMachine, nestedVm *hostpb.MachineType_NestedVm) error {
 	d := GetDeploymentManifest()
-	p := common.Must(ctx.Get(projectPath)).(*host.Project)
+	p := common.Must(ctx.Get(projectPath)).(*hostpb.Project)
 	si := common.Must(ctx.Get(serviceAccountPath)).(*google_iam_admin_v1.ServiceAccount)
 
 	diskSizeGb := nestedVm.NestedVm.DiskSizeGb
@@ -94,7 +95,7 @@ func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host
 		diskSizeGb = 70
 	}
 
-	if err := d.Emit(nil, &compute.Disk{
+	if err := d.Emit(nil, &computepb.Disk{
 		Name:        m.Name + "-disk",
 		Zone:        p.Zone,
 		SourceImage: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts",
@@ -106,18 +107,18 @@ func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host
 		return err
 	}
 
-	var cni []*compute.NetworkInterface
+	var cni []*computepb.NetworkInterface
 	for _, ni := range m.NetworkInterface {
 		if ni.FixedAddress != nil {
-			return common.NewNotImplementedError("support for fixed_address in asset.Network")
+			return common.NewNotImplementedError("support for fixed_address in assetpb.Network")
 		}
-		np := common.Must(ctx.Indirect(ni, "network")).(*asset.Network)
-		cni = append(cni, &compute.NetworkInterface{
+		np := common.Must(ctx.Indirect(ni, "network")).(*assetpb.Network)
+		cni = append(cni, &computepb.NetworkInterface{
 			Network: fmt.Sprintf("$(ref.%s.selfLink)", d.Ref(np)),
 
 			// Enables external IP. For some reason, this is needed for instances
 			// to download start up scripts.
-			AccessConfigs: []*compute.AccessConfig{
+			AccessConfigs: []*computepb.AccessConfig{
 				{
 					Type: "ONE_TO_ONE_NAT",
 					Name: "External NAT",
@@ -125,7 +126,7 @@ func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host
 			},
 
 			// Add the IPAlias. The alias IP will be assigned to the nested VM.
-			AliasIpRanges: []*compute.AliasIpRange{
+			AliasIpRanges: []*computepb.AliasIpRange{
 				{
 					IpCidrRange: "/32",
 				},
@@ -135,7 +136,7 @@ func resolveNestedVM(ctx common.Context, m *asset.WindowsMachine, nestedVm *host
 
 	ss := gcp.AbsoluteReference(
 		common.Must(ctx.Get(storageBucketPath)).(string),
-		common.Must(ctx.Get(linuxStartupScriptPath)).(*common.FileReference).ObjectReference)
+		common.Must(ctx.Get(linuxStartupScriptPath)).(*commonpb.FileReference).ObjectReference)
 
 	// script to tell KVM to shutdown the VM
 	shutdownScript := `#!/bin/bash
@@ -157,8 +158,8 @@ while true; do
   sleep 1
 done
 `
-	md := &compute.Metadata{
-		Items: []*compute.Metadata_Items{
+	md := &computepb.Metadata{
+		Items: []*computepb.Metadata_Items{
 			{
 				Key:   linuxStartupScriptUrlMetadataKey,
 				Value: ss,
@@ -180,14 +181,14 @@ done
 		machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-2", p.Name, p.Zone)
 	}
 
-	return d.Emit(m, &compute.Instance{
+	return d.Emit(m, &computepb.Instance{
 		Name:              m.Name,
 		Description:       "CEL VM",
 		MachineType:       machineType,
 		Zone:              p.Zone,
 		CanIpForward:      true,
 		NetworkInterfaces: cni,
-		Disks: []*compute.AttachedDisk{
+		Disks: []*computepb.AttachedDisk{
 			{
 				AutoDelete: true,
 				Boot:       true,
@@ -196,7 +197,7 @@ done
 			},
 		},
 		Metadata: md,
-		ServiceAccounts: []*compute.ServiceAccount{
+		ServiceAccounts: []*computepb.ServiceAccount{
 			{
 				Email: si.Email,
 				Scopes: []string{
@@ -210,24 +211,24 @@ done
 	})
 }
 
-func resolveNormalMachineType(ctx common.Context, m *asset.WindowsMachine) error {
+func resolveNormalMachineType(ctx common.Context, m *assetpb.WindowsMachine) error {
 	d := GetDeploymentManifest()
-	p := common.Must(ctx.Get(projectPath)).(*host.Project)
-	mt := common.Must(ctx.Indirect(m, "machine_type")).(*host.MachineType)
+	p := common.Must(ctx.Get(projectPath)).(*hostpb.Project)
+	mt := common.Must(ctx.Indirect(m, "machine_type")).(*hostpb.MachineType)
 	si := common.Must(ctx.Get(serviceAccountPath)).(*google_iam_admin_v1.ServiceAccount)
 
-	var cni []*compute.NetworkInterface
+	var cni []*computepb.NetworkInterface
 	for _, ni := range m.NetworkInterface {
 		if ni.FixedAddress != nil {
-			return common.NewNotImplementedError("support for fixed_address in asset.Network")
+			return common.NewNotImplementedError("support for fixed_address in assetpb.Network")
 		}
-		np := common.Must(ctx.Indirect(ni, "network")).(*asset.Network)
-		cni = append(cni, &compute.NetworkInterface{
+		np := common.Must(ctx.Indirect(ni, "network")).(*assetpb.Network)
+		cni = append(cni, &computepb.NetworkInterface{
 			Network: fmt.Sprintf("$(ref.%s.selfLink)", d.Ref(np)),
 
 			// Enables external IP. For some reason, this is needed for instances
 			// to download start up scripts.
-			AccessConfigs: []*compute.AccessConfig{
+			AccessConfigs: []*computepb.AccessConfig{
 				{
 					Type: "ONE_TO_ONE_NAT",
 					Name: "External NAT",
@@ -238,11 +239,11 @@ func resolveNormalMachineType(ctx common.Context, m *asset.WindowsMachine) error
 
 	ss := gcp.AbsoluteReference(
 		common.Must(ctx.Get(storageBucketPath)).(string),
-		common.Must(ctx.Get(winStartupScriptPath)).(*common.FileReference).ObjectReference)
+		common.Must(ctx.Get(winStartupScriptPath)).(*commonpb.FileReference).ObjectReference)
 
-	md := &compute.Metadata{
-		Items: []*compute.Metadata_Items{
-			&compute.Metadata_Items{
+	md := &computepb.Metadata{
+		Items: []*computepb.Metadata_Items{
+			&computepb.Metadata_Items{
 				Key:   windowsStartupScriptUrlMetadataKey,
 				Value: ss,
 			},
@@ -253,7 +254,7 @@ func resolveNormalMachineType(ctx common.Context, m *asset.WindowsMachine) error
 		md.Items = append(md.Items, i)
 	}
 
-	return d.Emit(m, &compute.Instance{
+	return d.Emit(m, &computepb.Instance{
 		Name:              m.Name,
 		Description:       "CEL VM",
 		MachineType:       mt.GetInstanceProperties().MachineType,
@@ -262,7 +263,7 @@ func resolveNormalMachineType(ctx common.Context, m *asset.WindowsMachine) error
 		NetworkInterfaces: cni,
 		Disks:             mt.GetInstanceProperties().Disks,
 		Metadata:          md,
-		ServiceAccounts: []*compute.ServiceAccount{
+		ServiceAccounts: []*computepb.ServiceAccount{
 			{
 				Email: si.Email,
 				Scopes: []string{

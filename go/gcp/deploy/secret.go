@@ -9,12 +9,13 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 )
 
 type secret struct{}
 
-func (*secret) ResolveIndexedObjects(ctx common.Context, secret *common.Secret) error {
+func (*secret) ResolveIndexedObjects(ctx common.Context, secret *commonpb.Secret) error {
 	s, err := gcp.SessionFromContext(ctx)
 	if err != nil {
 		return err

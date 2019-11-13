@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 package asset;
-option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/schema/asset";
 
 import "schema/asset/network.proto";
 import "schema/common/validation.proto";
@@ -13,10 +13,7 @@ import "schema/common/validation.proto";
 message NetworkInterface {
   // Name of Network entry describing the network that this interface is
   // attached to.
-  string network = 1 [(common.v) = {
-    ref: "asset.network",
-    type: REQUIRED
-  }];
+  string network = 1 [(common.v) = { ref: "asset.network", type: REQUIRED }];
 
   // Fixed address, if this interface is to have one. Leave undefined if the
   // interface should obatain an address automatically.

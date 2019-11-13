@@ -1,6 +1,5 @@
 # Schema `asset` {#asset}
 
-Asset manifest.
 
 
 Messages that are valid in package `asset` are as follows:

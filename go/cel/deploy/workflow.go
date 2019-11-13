@@ -8,8 +8,6 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 
-	// The following must be imported here for side-effects.
-	_ "chromium.googlesource.com/enterprise/cel/go/asset/deploy"
 	gcpDeploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
 )
 
@@ -230,7 +228,7 @@ func VerifyCompletedAssetManifest(d *Session) (err error) {
 		return
 	}
 
-	return d.config.Manifest.StoreFile(d.GetContext(), manifest)
+	return common.StoreFile(d.GetContext(), &d.config.Manifest, manifest)
 }
 
 // UpdateProjectMetadata sets the project scoped metadata.

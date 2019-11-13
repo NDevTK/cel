@@ -655,7 +655,7 @@ func (r *Namespace) collectFrom(l RefPath, m proto.Message) error {
 		}
 
 		v := GetValidationForField(f)
-		err := node.bind(av, &v)
+		err := node.bind(av, v)
 		if err != nil {
 			return true, err
 		}
@@ -680,11 +680,11 @@ func (r *Namespace) collectFrom(l RefPath, m proto.Message) error {
 		}
 
 		// If the field does not contain a named reference, we are done with this field.
-		if !v.IsNamedReference() {
+		if !IsNamedReference(v) {
 			return true, nil
 		}
 
-		node.referenceRoot, err = v.ReferenceRoot()
+		node.referenceRoot, err = ReferenceRoot(v)
 		if err != nil {
 			return true, errors.Wrapf(err, "invalid reference in validation string %#v", v.Ref)
 		}

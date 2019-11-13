@@ -5,14 +5,14 @@
 package deploy
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 )
 
 type adDomain struct{}
 
-func (*adDomain) ResolveConstructedAssets(ctx common.Context, d *asset.ActiveDirectoryDomain) error {
+func (*adDomain) ResolveConstructedAssets(ctx common.Context, d *assetpb.ActiveDirectoryDomain) error {
 	m := GetDeploymentManifest()
 	variableName := onhost.GetActiveDirectoryRuntimeConfigVariableName(d.Name)
 	return m.Emit(nil,

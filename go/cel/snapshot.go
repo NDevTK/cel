@@ -38,9 +38,9 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	gcpCompute "chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
+	gcpCompute "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
 	"github.com/golang/protobuf/proto"
 	compute "google.golang.org/api/compute/v1"
 )

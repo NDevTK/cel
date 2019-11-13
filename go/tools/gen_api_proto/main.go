@@ -41,7 +41,8 @@ type RestDescription struct {
 
 	Schemas map[string]*Property `json:"schemas"`
 
-	GoPackage string `json:"-"`
+	GoPackage              string `json:"-"`
+	SchemaValidatorPackage string `json:"-"`
 }
 
 // Property represents both a Property in a Google Discovery Document and also
@@ -64,10 +65,11 @@ type Property struct {
 }
 
 type Arguments struct {
-	DiscoveryJsonFile   string
-	OutputProtoFile     string
-	OutputValidatorFile string
-	GoPackage           string
+	DiscoveryJsonFile      string
+	OutputProtoFile        string
+	OutputValidatorFile    string
+	GoPackage              string
+	SchemaValidatorPackage string
 }
 
 const kIndentSpaces = 2
@@ -231,6 +233,7 @@ func emitMessage(level int, parentId string, p *Property, w io.Writer) (string, 
 
 func GenerateProtoFile(desc *RestDescription, args *Arguments) error {
 	desc.GoPackage = args.GoPackage + "/" + desc.Name
+	desc.SchemaValidatorPackage = args.SchemaValidatorPackage
 
 	f, err := os.Create(args.OutputProtoFile)
 	if err != nil {
@@ -323,7 +326,13 @@ func GenerateValidatorFile(desc *RestDescription, args *Arguments) error {
 
 package {{.Name}}
 
+import (
+	schema "{{.SchemaValidatorPackage}}"
+	pb "{{.GoPackage}}"
+)
+
 // All trivial validators.
+var validateFunctions = []interface{}{
 
 `
 	err = template.Must(template.New("").Parse(kHeading)).Execute(f, desc)
@@ -332,9 +341,22 @@ package {{.Name}}
 	}
 
 	const kValidators = `{{range . -}}
-func (*{{.}}) Validate() error { return nil }
+func (*pb.{{.}}) error { return nil },
 {{end}}`
-	return template.Must(template.New("").Parse(kValidators)).Execute(f, messages)
+	err = template.Must(template.New("").Parse(kValidators)).Execute(f, messages)
+	if err != nil {
+		return err
+	}
+
+	const kFooter = `
+}
+
+func init() {
+	schema.RegisterAllValidateFunctions(validateFunctions)
+}
+
+`
+	return template.Must(template.New("").Parse(kFooter)).Execute(f, desc)
 }
 
 func DoIt(args *Arguments) error {
@@ -404,6 +426,8 @@ func main() {
 	flagset.StringVar(&args.OutputValidatorFile, "g", "", "ouput .go validator filename")
 	flagset.StringVar(&args.GoPackage, "p", "chromium.googlesource.com/enterprise/cel/go/gcp",
 		"root of go_package option to emit")
+	flagset.StringVar(&args.SchemaValidatorPackage, "s", "chromium.googlesource.com/enterprise/cel/schema",
+		"package where the validator registry lives")
 	flagset.Usage = func() {
 		PrintUsage()
 		flagset.PrintDefaults()

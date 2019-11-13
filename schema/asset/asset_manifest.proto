@@ -3,11 +3,8 @@
 // found in the LICENSE file.
 
 syntax = "proto3";
-
-// Asset manifest.
 package asset;
-
-option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/schema/asset";
 
 // Keep list sorted.
 import "schema/asset/active_directory.proto";

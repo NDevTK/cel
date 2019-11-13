@@ -7,6 +7,8 @@ package common
 import (
 	"archive/zip"
 	"bytes"
+	"chromium.googlesource.com/enterprise/cel/go/schema"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	pd "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/pkg/errors"
 	"io"
@@ -18,7 +20,7 @@ import (
 	"strings"
 )
 
-func (c *FileReference) Validate() error {
+func validateFileReference(c *commonpb.FileReference) error {
 	if c.Source == "" && c.ObjectReference == "" {
 		return errors.New("'source' is required")
 	}
@@ -39,7 +41,7 @@ func (c *FileReference) Validate() error {
 	return nil
 }
 
-func (c *FileReference) ResolveRelativePath(basePath string) error {
+func ResolveRelativePath(c *commonpb.FileReference, basePath string) error {
 	if c.Source == "" {
 		errors.New("source is empty")
 	}
@@ -47,7 +49,7 @@ func (c *FileReference) ResolveRelativePath(basePath string) error {
 	return nil
 }
 
-func (c *FileReference) Store(ctx Context) (err error) {
+func Store(ctx Context, c *commonpb.FileReference) (err error) {
 	defer Action(&err, "storing FileReference with source \"%s\"", c.FullPath)
 
 	if c.FullPath == "" {
@@ -60,17 +62,17 @@ func (c *FileReference) Store(ctx Context) (err error) {
 	}
 
 	if fi.IsDir() {
-		return c.storeArchive(ctx)
+		return storeArchive(ctx, c)
 	}
-	return c.storeFile(ctx)
+	return storeFile(ctx, c)
 }
 
-func (c *FileReference) StoreFile(ctx Context, contents []byte) (err error) {
+func StoreFile(ctx Context, c *commonpb.FileReference, contents []byte) (err error) {
 	defer Action(&err, "storing blob of length %d", len(contents))
 
-	c.ResolvedType = FileReference_FILE
+	c.ResolvedType = commonpb.FileReference_FILE
 	c.FullPath = "/?"
-	return c.storeBlob(ctx, contents)
+	return storeBlob(ctx, c, contents)
 }
 
 func GetPathResolver(basePath string) WalkProtoFunc {
@@ -79,27 +81,27 @@ func GetPathResolver(basePath string) WalkProtoFunc {
 			return true, nil
 		}
 
-		fr, ok := av.Interface().(*FileReference)
+		fr, ok := av.Interface().(*commonpb.FileReference)
 		if !ok {
 			return true, nil
 		}
 
-		return true, fr.ResolveRelativePath(basePath)
+		return true, ResolveRelativePath(fr, basePath)
 	}
 }
 
-func (c *FileReference) storeFile(ctx Context) (err error) {
+func storeFile(ctx Context, c *commonpb.FileReference) (err error) {
 	defer Action(&err, "storing file at \"%s\"", c.FullPath)
 
 	contents, err := ioutil.ReadFile(c.FullPath)
 	if err != nil {
 		return
 	}
-	c.ResolvedType = FileReference_FILE
-	return c.storeBlob(ctx, contents)
+	c.ResolvedType = commonpb.FileReference_FILE
+	return storeBlob(ctx, c, contents)
 }
 
-func (c *FileReference) storeBlob(ctx Context, contents []byte) (err error) {
+func storeBlob(ctx Context, c *commonpb.FileReference, contents []byte) (err error) {
 	c.Integrity = IntegrityToken(contents)
 	if c.TargetPath != "" {
 		last := path.Base(c.TargetPath)
@@ -110,7 +112,7 @@ func (c *FileReference) storeBlob(ctx Context, contents []byte) (err error) {
 	return
 }
 
-func (c *FileReference) storeArchive(ctx Context) (err error) {
+func storeArchive(ctx Context, c *commonpb.FileReference) (err error) {
 	defer Action(&err, "storing directory at \"%s\"", c.FullPath)
 
 	buf := new(bytes.Buffer)
@@ -126,8 +128,8 @@ func (c *FileReference) storeArchive(ctx Context) (err error) {
 	}
 
 	contents := buf.Bytes()
-	c.ResolvedType = FileReference_ZIP_ARCHIVE
-	return c.storeBlob(ctx, contents)
+	c.ResolvedType = commonpb.FileReference_ZIP_ARCHIVE
+	return storeBlob(ctx, c, contents)
 }
 
 func addDirectoryToZip(w *zip.Writer, fullPath, base string) error {
@@ -167,4 +169,8 @@ func addDirectoryToZip(w *zip.Writer, fullPath, base string) error {
 		}
 	}
 	return nil
+}
+
+func init() {
+	schema.RegisterValidateFunction(validateFileReference)
 }

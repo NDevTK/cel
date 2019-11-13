@@ -5,6 +5,7 @@
 package common
 
 import (
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,70 +14,70 @@ import (
 func TestFileReference_Validate(t *testing.T) {
 	p := RefPath{}
 	t.Run("Empty", func(t *testing.T) {
-		v := &FileReference{}
+		v := &commonpb.FileReference{}
 		if err := ValidateProto(v, p); err == nil {
 			t.Fail()
 		}
 	})
 
 	t.Run("Absolute", func(t *testing.T) {
-		v := &FileReference{Source: "/foo/bar"}
+		v := &commonpb.FileReference{Source: "/foo/bar"}
 		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "cannot be absolute") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("Backslash", func(t *testing.T) {
-		v := &FileReference{Source: "foo\\bar"}
+		v := &commonpb.FileReference{Source: "foo\\bar"}
 		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "backslash") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefPrefix", func(t *testing.T) {
-		v := &FileReference{Source: "../bar"}
+		v := &commonpb.FileReference{Source: "../bar"}
 		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefSuffix", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar/.."}
+		v := &commonpb.FileReference{Source: "foo/bar/.."}
 		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("ParentRefInfix", func(t *testing.T) {
-		v := &FileReference{Source: "foo/../bar"}
+		v := &commonpb.FileReference{Source: "foo/../bar"}
 		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "parent path reference") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("OutputParam", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar", FullPath: "foo/bar"}
+		v := &commonpb.FileReference{Source: "foo/bar", FullPath: "foo/bar"}
 		if err := ValidateProto(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("Valid", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar"}
+		v := &commonpb.FileReference{Source: "foo/bar"}
 		if err := ValidateProto(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("NoSource", func(t *testing.T) {
-		v := &FileReference{}
+		v := &commonpb.FileReference{}
 		if err := ValidateProto(v, p); err == nil || !strings.Contains(err.Error(), "'source' is required") {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 	})
 
 	t.Run("NoSourceWithObjectReference", func(t *testing.T) {
-		v := &FileReference{ObjectReference: "foo"}
+		v := &commonpb.FileReference{ObjectReference: "foo"}
 		if err := ValidateProto(v, p); err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -85,8 +86,8 @@ func TestFileReference_Validate(t *testing.T) {
 
 func TestFileReference_Resolve(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar"}
-		err := v.ResolveRelativePath("")
+		v := &commonpb.FileReference{Source: "foo/bar"}
+		err := ResolveRelativePath(v, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -97,8 +98,8 @@ func TestFileReference_Resolve(t *testing.T) {
 	})
 
 	t.Run("Rel", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar"}
-		err := v.ResolveRelativePath("a/b")
+		v := &commonpb.FileReference{Source: "foo/bar"}
+		err := ResolveRelativePath(v, "a/b")
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -109,8 +110,8 @@ func TestFileReference_Resolve(t *testing.T) {
 	})
 
 	t.Run("RelSlash", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar"}
-		err := v.ResolveRelativePath("a/b/")
+		v := &commonpb.FileReference{Source: "foo/bar"}
+		err := ResolveRelativePath(v, "a/b/")
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -121,8 +122,8 @@ func TestFileReference_Resolve(t *testing.T) {
 	})
 
 	t.Run("Abs", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar"}
-		err := v.ResolveRelativePath("/a/b/c")
+		v := &commonpb.FileReference{Source: "foo/bar"}
+		err := ResolveRelativePath(v, "/a/b/c")
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -133,8 +134,8 @@ func TestFileReference_Resolve(t *testing.T) {
 	})
 
 	t.Run("AbsSlash", func(t *testing.T) {
-		v := &FileReference{Source: "foo/bar"}
-		err := v.ResolveRelativePath("/a/b/c/")
+		v := &commonpb.FileReference{Source: "foo/bar"}
+		err := ResolveRelativePath(v, "/a/b/c/")
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -147,8 +148,8 @@ func TestFileReference_Resolve(t *testing.T) {
 
 func TestFileReference_Resolver(t *testing.T) {
 	t.Run("Basic", func(t *testing.T) {
-		v := &TestFileRefProto{}
-		v.Ref = &FileReference{Source: "foo/bar"}
+		v := &commonpb.TestFileRefProto{}
+		v.Ref = &commonpb.FileReference{Source: "foo/bar"}
 		err := WalkProtoMessage(v, RefPath{}, GetPathResolver("/a/b/c"))
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
@@ -160,7 +161,7 @@ func TestFileReference_Resolver(t *testing.T) {
 	})
 
 	t.Run("Empty", func(t *testing.T) {
-		v := &TestFileRefProto{}
+		v := &commonpb.TestFileRefProto{}
 		err := WalkProtoMessage(v, RefPath{}, GetPathResolver("/a/b/c"))
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
@@ -168,7 +169,7 @@ func TestFileReference_Resolver(t *testing.T) {
 	})
 
 	t.Run("EmptyPath", func(t *testing.T) {
-		v := &TestFileRefProto{Ref: &FileReference{Source: ""}}
+		v := &commonpb.TestFileRefProto{Ref: &commonpb.FileReference{Source: ""}}
 		err := WalkProtoMessage(v, RefPath{}, GetPathResolver("/a/b/c"))
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
@@ -176,18 +177,18 @@ func TestFileReference_Resolver(t *testing.T) {
 	})
 }
 
-func TestFileReference_Store_unnamedBlob(t *testing.T) {
+func TestReference_Store_unnamedBlob(t *testing.T) {
 	o := &fakeObjectStore{}
 	ctx := &fakeContext{
 		objectStore: o,
 	}
 
-	v := &FileReference{Source: filepath.Join("testdata", "tiny.bin")}
-	err := v.ResolveRelativePath(".")
+	v := &commonpb.FileReference{Source: filepath.Join("testdata", "tiny.bin")}
+	err := ResolveRelativePath(v, ".")
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
-	err = v.Store(ctx)
+	err = Store(ctx, v)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
@@ -205,8 +206,8 @@ func TestFileReference_StoreFile(t *testing.T) {
 		objectStore: o,
 	}
 
-	v := &FileReference{}
-	err := v.StoreFile(ctx, []byte("abcd"))
+	v := &commonpb.FileReference{}
+	err := StoreFile(ctx, v, []byte("abcd"))
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
@@ -224,15 +225,15 @@ func TestFileReference_Store_withTarget(t *testing.T) {
 		objectStore: o,
 	}
 
-	v := &FileReference{
+	v := &commonpb.FileReference{
 		Source:     filepath.Join("testdata", "tiny.bin"),
 		TargetPath: "foo/targetfn.png",
 	}
-	err := v.ResolveRelativePath(".")
+	err := ResolveRelativePath(v, ".")
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
-	err = v.Store(ctx)
+	err = Store(ctx, v)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}

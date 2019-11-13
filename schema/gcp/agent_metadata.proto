@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 package gcp;
-option go_package = "chromium.googlesource.com/enterprise/cel/go/gcp";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/schema/gcp";
 
 // Cel-Agent metadata format.
 message CelAgentMetadata {

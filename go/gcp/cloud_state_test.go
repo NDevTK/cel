@@ -5,7 +5,7 @@
 package gcp
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	th "chromium.googlesource.com/enterprise/cel/go/testhelpers"
 	"context"
 	"testing"
@@ -42,8 +42,8 @@ func TestQueryGceState(t *testing.T) {
 		th.RestRequest{Url: "https://iam.googleapis.com/v1/projects/test-project/serviceAccounts"},
 		th.RestResponse{BodyObject: `{}`})
 
-	env := host.HostEnvironment{
-		Project: &host.Project{Name: "test-project", Zone: "test-zone"},
+	env := hostpb.HostEnvironment{
+		Project: &hostpb.Project{Name: "test-project", Zone: "test-zone"},
 	}
 
 	_, err := QueryCloudState(context.Background(), f.NewClient(), &env)

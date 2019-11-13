@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"strings"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	"github.com/pkg/errors"
 )
 
 type WindowsRegistryResolver struct{}
 
-func (w *WindowsRegistryResolver) ResolveOnHost(ctx common.Context, m *asset.WindowsMachine) error {
+func (w *WindowsRegistryResolver) ResolveOnHost(ctx common.Context, m *assetpb.WindowsMachine) error {
 	d, ok := ctx.(*deployer)
 	if !ok {
 		return errors.New("ctx is not Deployer")
@@ -33,7 +33,7 @@ func (w *WindowsRegistryResolver) ResolveOnHost(ctx common.Context, m *asset.Win
 	return nil
 }
 
-func (w *WindowsRegistryResolver) SetupRegistryKey(d *deployer, registry_key *asset.RegistryKey) error {
+func (w *WindowsRegistryResolver) SetupRegistryKey(d *deployer, registry_key *assetpb.RegistryKey) error {
 	for _, value := range registry_key.Value {
 		value_type, value_data, err := w.GetRegistryValueTypeAndData(value)
 
@@ -56,23 +56,23 @@ func (w *WindowsRegistryResolver) SetupRegistryKey(d *deployer, registry_key *as
 	return nil
 }
 
-func (w *WindowsRegistryResolver) GetRegistryValueTypeAndData(value *asset.RegistryValue) (value_type string, value_data string, err error) {
-	if x, ok := value.GetValueType().(*asset.RegistryValue_StringValue); ok {
+func (w *WindowsRegistryResolver) GetRegistryValueTypeAndData(value *assetpb.RegistryValue) (value_type string, value_data string, err error) {
+	if x, ok := value.GetValueType().(*assetpb.RegistryValue_StringValue); ok {
 		value_type = "REG_SZ"
 		value_data = x.StringValue
-	} else if x, ok := value.GetValueType().(*asset.RegistryValue_ExpandStringValue); ok {
+	} else if x, ok := value.GetValueType().(*assetpb.RegistryValue_ExpandStringValue); ok {
 		value_type = "REG_EXPAND_SZ"
 		value_data = x.ExpandStringValue
-	} else if x, ok := value.GetValueType().(*asset.RegistryValue_BinaryValue); ok {
+	} else if x, ok := value.GetValueType().(*assetpb.RegistryValue_BinaryValue); ok {
 		value_type = "REG_BINARY"
 		value_data = hex.EncodeToString(x.BinaryValue)
-	} else if x, ok := value.GetValueType().(*asset.RegistryValue_DwordValue); ok {
+	} else if x, ok := value.GetValueType().(*assetpb.RegistryValue_DwordValue); ok {
 		value_type = "REG_DWORD"
 		value_data = fmt.Sprintf("%d", x.DwordValue)
-	} else if x, ok := value.GetValueType().(*asset.RegistryValue_QwordValue); ok {
+	} else if x, ok := value.GetValueType().(*assetpb.RegistryValue_QwordValue); ok {
 		value_type = "REG_QWORD"
 		value_data = fmt.Sprintf("%d", x.QwordValue)
-	} else if x, ok := value.GetValueType().(*asset.RegistryValue_MultiStringValue); ok {
+	} else if x, ok := value.GetValueType().(*assetpb.RegistryValue_MultiStringValue); ok {
 		value_type = "REG_MULTI_SZ"
 		value_data = strings.Join(x.MultiStringValue.Value, "\\0")
 	} else {

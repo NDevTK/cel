@@ -15,7 +15,8 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	cloudkmspb "chromium.googlesource.com/enterprise/cel/go/gcp/cloudkms"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
+	cloudkmspb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/cloudkms"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 	"google.golang.org/api/cloudresourcemanager/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
@@ -366,10 +367,10 @@ func uploadLocalResource(ctx common.Context, s *gcp.Session, localResource, fiel
 		return err
 	}
 
-	fr := &common.FileReference{
+	fr := &commonpb.FileReference{
 		TargetPath: path.Join("/cel", path.Base(localResource)),
 	}
-	if err = fr.StoreFile(ctx, data); err != nil {
+	if err = common.StoreFile(ctx, fr, data); err != nil {
 		return err
 	}
 
@@ -389,10 +390,10 @@ func uploadNamedResource(ctx common.Context, s *gcp.Session, embeddedResource, f
 
 	data := _escFSMustByte(false, embeddedResource)
 
-	fr := &common.FileReference{
+	fr := &commonpb.FileReference{
 		TargetPath: path.Join("/cel", path.Base(embeddedResource)),
 	}
-	err = fr.StoreFile(ctx, data)
+	err = common.StoreFile(ctx, fr, data)
 	if err != nil {
 		return err
 	}

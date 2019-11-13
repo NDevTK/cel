@@ -6,7 +6,7 @@ package gcp
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	"context"
 	"github.com/pkg/errors"
 	compute "google.golang.org/api/compute/v1"
@@ -89,7 +89,7 @@ type CloudState struct {
 	// HostEnvironment corresponding to this CloudState instance. The project
 	// and some of the cached metadata are specific to the host environment.
 	// Should not be modified.
-	HostEnvironment *host.HostEnvironment `json:"-"`
+	HostEnvironment *hostpb.HostEnvironment `json:"-"`
 }
 
 func (g *CloudState) FetchServiceAccounts(ctx context.Context, client *http.Client) (err error) {
@@ -323,7 +323,7 @@ func (g *CloudState) FetchAll(ctx context.Context, client *http.Client) (err err
 // The |images| map should be a mapping from an arbitrary string to a
 // config.SourceImage object. The same key will be used as the mapping key to
 // strong the corresopnding compute.Image record.
-func QueryCloudState(ctx context.Context, client *http.Client, env *host.HostEnvironment) (*CloudState, error) {
+func QueryCloudState(ctx context.Context, client *http.Client, env *hostpb.HostEnvironment) (*CloudState, error) {
 
 	g := CloudState{HostEnvironment: env}
 

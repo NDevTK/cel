@@ -4,8 +4,7 @@
 
 syntax = "proto3";
 package asset;
-
-option go_package = "chromium.googlesource.com/enterprise/cel/go/asset";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/schema/asset";
 
 import "schema/asset/machine.proto";
 import "schema/common/validation.proto";

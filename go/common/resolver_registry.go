@@ -106,8 +106,12 @@ func (r *resolverRegistry) addResolverFunction(kind ResolverKind, function refle
 	}
 	targetType := fType.In(1)
 
-	if !ContextType.AssignableTo(fType.In(0)) || !targetType.Implements(ProtoMessageType) ||
-		fType.NumOut() != 1 || !fType.Out(0).Implements(ErrorType) {
+	if !targetType.Implements(ProtoMessageType) {
+		return errors.New("invalid resolver function: target doesn't implement ProtoMessageType")
+	}
+
+	if !ContextType.AssignableTo(fType.In(0)) || fType.NumOut() != 1 ||
+		!fType.Out(0).Implements(ErrorType) {
 		return errors.New("invalid resolver function")
 	}
 

@@ -4,22 +4,26 @@
 
 package common
 
-func (v Validation) IsNamedReference() bool {
+import (
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
+)
+
+func IsNamedReference(v *commonpb.Validation) bool {
 	return v.Ref != ""
 }
 
-func (v Validation) IsOutput() bool {
-	return v.Type == Validation_OUTPUT
+func IsOutput(v *commonpb.Validation) bool {
+	return v.Type == commonpb.Validation_OUTPUT
 }
 
-func (v Validation) IsRuntime() bool {
-	return v.Type == Validation_RUNTIME
+func IsRuntime(v *commonpb.Validation) bool {
+	return v.Type == commonpb.Validation_RUNTIME
 }
 
-func (v Validation) IsTopLevelCollection() bool {
-	return v.Type == Validation_TOPLEVEL
+func IsTopLevelCollection(v *commonpb.Validation) bool {
+	return v.Type == commonpb.Validation_TOPLEVEL
 }
 
-func (v Validation) ReferenceRoot() (RefPath, error) {
+func ReferenceRoot(v *commonpb.Validation) (RefPath, error) {
 	return RefPathFromString(v.Ref)
 }

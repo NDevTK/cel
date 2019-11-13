@@ -6,7 +6,7 @@ package gcp
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	iam "cloud.google.com/go/iam/admin/apiv1"
 	"cloud.google.com/go/logging"
 	"context"
@@ -26,7 +26,7 @@ type Session struct {
 	ctx                 context.Context
 	client              *http.Client
 	AllowExternalRdpSsh bool
-	HostEnvironment     *host.HostEnvironment
+	HostEnvironment     *hostpb.HostEnvironment
 
 	computeService *compute.Service
 	computeOnce    sync.Once
@@ -58,7 +58,7 @@ type gcpSessionKeyType int
 
 var gcpSessionKey = gcpSessionKeyType(1)
 
-func NewSession(ctx context.Context, client *http.Client, env *host.HostEnvironment, genId string) (s *Session, err error) {
+func NewSession(ctx context.Context, client *http.Client, env *hostpb.HostEnvironment, genId string) (s *Session, err error) {
 	s = &Session{ctx: nil, client: client, HostEnvironment: env}
 	s.ctx = context.WithValue(ctx, gcpSessionKey, s)
 

@@ -7,12 +7,13 @@ package onhost
 import (
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	"github.com/pkg/errors"
 )
 
 type RemoteDesktopHostResolver struct{}
 
-func (*RemoteDesktopHostResolver) ResolveOnHost(ctx common.Context, rd *asset.RemoteDesktopHost) error {
+func (*RemoteDesktopHostResolver) ResolveOnHost(ctx common.Context, rd *assetpb.RemoteDesktopHost) error {
 	d, ok := ctx.(*deployer)
 	if !ok {
 		return errors.New("ctx is not Deployer")
@@ -32,7 +33,7 @@ func (*RemoteDesktopHostResolver) ResolveOnHost(ctx common.Context, rd *asset.Re
 
 // Add ActiveDirectory dependency to RemoteDesktopHost. This is needed because
 // the dependency is not represented in the completed asset manifest.
-func (*RemoteDesktopHostResolver) ResolveAdditionalDependencies(ctx common.Context, rd *asset.RemoteDesktopHost) (err error) {
+func (*RemoteDesktopHostResolver) ResolveAdditionalDependencies(ctx common.Context, rd *assetpb.RemoteDesktopHost) (err error) {
 	if rd == nil {
 		return nil
 	}
@@ -42,13 +43,13 @@ func (*RemoteDesktopHostResolver) ResolveAdditionalDependencies(ctx common.Conte
 		return errors.New("ctx is not Deployer")
 	}
 
-	manifest := d.configuration.AssetManifest
-	machine, err := manifest.FindWindowsMachine(rd.WindowsMachine)
+	manifest := &d.configuration.AssetManifest
+	machine, err := asset.FindWindowsMachine(manifest, rd.WindowsMachine)
 	if err != nil {
 		return errors.New("Couldn't find WindowsMachine in RemoteDesktopHost.")
 	}
 
-	ad, err := manifest.FindActiveDirectoryDomainFor(machine)
+	ad, err := asset.FindActiveDirectoryDomainFor(manifest, machine)
 	if err != nil {
 		return common.NewNotImplementedError("non domain-joined servers is not supported")
 	}
@@ -57,7 +58,7 @@ func (*RemoteDesktopHostResolver) ResolveAdditionalDependencies(ctx common.Conte
 	return ctx.PublishDependency(rd, adRef)
 }
 
-func setupRemoteDesktopHost(d *deployer, ad *asset.ActiveDirectoryDomain, rd *asset.RemoteDesktopHost) error {
+func setupRemoteDesktopHost(d *deployer, ad *assetpb.ActiveDirectoryDomain, rd *assetpb.RemoteDesktopHost) error {
 	fileToRun := ""
 	if d.IsWindows2012() || d.IsWindows2016() {
 		if len(rd.CollectionName) <= 0 {

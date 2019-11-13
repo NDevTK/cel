@@ -5,6 +5,7 @@
 package common
 
 import (
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"reflect"
 	"testing"
 )
@@ -19,7 +20,7 @@ func TestNamespaceNode_assign_obj(t *testing.T) {
 
 	r := &namespaceNode{location: RefPathMust("a.b.c"), isPlaceholder: true}
 
-	err := r.bind(reflect.ValueOf(&v).Elem(), &Validation{Type: Validation_OUTPUT})
+	err := r.bind(reflect.ValueOf(&v).Elem(), &commonpb.Validation{Type: commonpb.Validation_OUTPUT})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +40,7 @@ func TestNamespaceNode_bind_availability_nonNil(t *testing.T) {
 
 	r := &namespaceNode{location: RefPathMust("a.b.c"), isPlaceholder: true}
 
-	err := r.bind(reflect.ValueOf(&v).Elem(), &Validation{Type: Validation_OUTPUT})
+	err := r.bind(reflect.ValueOf(&v).Elem(), &commonpb.Validation{Type: commonpb.Validation_OUTPUT})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +55,7 @@ func TestNamespaceNode_bind_availability_nil(t *testing.T) {
 
 	r := &namespaceNode{location: RefPathMust("a.b.c"), isPlaceholder: true}
 
-	err := r.bind(reflect.ValueOf(&v).Elem(), &Validation{Type: Validation_OUTPUT})
+	err := r.bind(reflect.ValueOf(&v).Elem(), &commonpb.Validation{Type: commonpb.Validation_OUTPUT})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +67,7 @@ func TestNamespaceNode_bind_availability_nil(t *testing.T) {
 
 func TestNamespaceNode_bind_emptyString(t *testing.T) {
 	r := &namespaceNode{location: RefPathMust("a.b.c"), isPlaceholder: true}
-	err := r.bind(reflect.ValueOf(""), &Validation{Type: Validation_OUTPUT})
+	err := r.bind(reflect.ValueOf(""), &commonpb.Validation{Type: commonpb.Validation_OUTPUT})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +78,7 @@ func TestNamespaceNode_bind_emptyString(t *testing.T) {
 
 func TestNamespaceNode_bind_nonEmptyString(t *testing.T) {
 	r := &namespaceNode{location: RefPathMust("a.b.c"), isPlaceholder: true}
-	err := r.bind(reflect.ValueOf("foo"), &Validation{Type: Validation_OUTPUT})
+	err := r.bind(reflect.ValueOf("foo"), &commonpb.Validation{Type: commonpb.Validation_OUTPUT})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +89,7 @@ func TestNamespaceNode_bind_nonEmptyString(t *testing.T) {
 
 func TestNamespaceNode_bind_int(t *testing.T) {
 	r := &namespaceNode{location: RefPathMust("a.b.c"), isPlaceholder: true}
-	err := r.bind(reflect.ValueOf(3), &Validation{Type: Validation_OUTPUT})
+	err := r.bind(reflect.ValueOf(3), &commonpb.Validation{Type: commonpb.Validation_OUTPUT})
 	if err != nil {
 		t.Fatal(err)
 	}

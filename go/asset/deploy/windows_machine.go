@@ -5,13 +5,13 @@
 package deploy
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 )
 
 type windowsMachine struct{}
 
-func (*windowsMachine) ResolvePreManifestCompletion(ctx common.Context, m *asset.WindowsMachine) error {
+func (*windowsMachine) ResolvePreManifestCompletion(ctx common.Context, m *assetpb.WindowsMachine) error {
 	features := m.GetWindowsFeature()
 	if features == nil {
 		features = []string{}

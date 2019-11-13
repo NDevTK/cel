@@ -6,12 +6,13 @@ package asset
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	"reflect"
 	"testing"
 )
 
 func TestAssetManifest_validateFields(t *testing.T) {
-	var a AssetManifest
+	var a assetpb.AssetManifest
 	err := common.ValidateProto(&a, common.EmptyPath)
 	if err != nil {
 		t.Fatal("unexpected error ", err)
@@ -28,8 +29,8 @@ func TestAssetManifest_validateFields(t *testing.T) {
 // Note: If any new machine types are added to the schema, they should also
 // have a <new-machine-type>IsMachine test like this one.
 func TestActiveDirectory_windowsMachineIsMachine(t *testing.T) {
-	mt := reflect.TypeOf(&Machine{})
-	wmt := reflect.TypeOf(&WindowsMachine{})
+	mt := reflect.TypeOf(&assetpb.Machine{})
+	wmt := reflect.TypeOf(&assetpb.WindowsMachine{})
 
 	for i := 0; i < mt.NumMethod(); i++ {
 		m := mt.Method(i)

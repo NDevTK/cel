@@ -6,7 +6,7 @@ package common_test
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 )
 
 // exampleImmediateResolver is an example resolver.
@@ -18,7 +18,7 @@ import (
 // argument is a pointer to a concrete type that implements proto.Message, the
 // RegisterResolverFunc() invocation correctly deduces the tyep of resources
 // that the resolver is expected to handle.
-func exampleImmediateResolver(ctx common.Context, i *host.Image) error {
+func exampleImmediateResolver(ctx common.Context, i *hostpb.Image) error {
 	// Do stuff
 	return nil
 }

@@ -7,15 +7,15 @@ package deploy
 import (
 	"fmt"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
+	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
 )
 
 type network struct{}
 
-func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) error {
+func (*network) ResolveConstructedAssets(ctx common.Context, n *assetpb.Network) error {
 	d := GetDeploymentManifest()
 
 	if n.AddressRange != nil {
@@ -29,12 +29,12 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) e
 
 	if s.AllowExternalRdpSsh {
 		s.Logger.Info(common.MakeStringer("Creating rule %s.", n.Name+"-allow-rdp-ssh"))
-		if err := d.Emit(nil, &compute.Firewall{
+		if err := d.Emit(nil, &computepb.Firewall{
 			Name:      n.Name + "-allow-rdp-ssh",
 			Network:   fmt.Sprintf("$(ref.%s.selfLink)", n.Name),
 			Direction: "INGRESS",
-			Allowed: []*compute.Firewall_Allowed{
-				&compute.Firewall_Allowed{
+			Allowed: []*computepb.Firewall_Allowed{
+				&computepb.Firewall_Allowed{
 					IPProtocol: "tcp",
 					Ports:      []string{"3389", "22"},
 				},
@@ -46,20 +46,20 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) e
 		s.Logger.Info(common.MakeStringer("Skipping rule %s.", n.Name+"-allow-rdp-ssh"))
 	}
 
-	if err := d.Emit(nil, &compute.Firewall{
+	if err := d.Emit(nil, &computepb.Firewall{
 		Name:         n.Name + "-allow-internal",
 		Description:  "Allow internal traffic on the network",
 		Network:      fmt.Sprintf("$(ref.%s.selfLink)", n.Name),
 		Direction:    "INGRESS",
 		SourceRanges: []string{"10.128.0.0/9"},
-		Allowed: []*compute.Firewall_Allowed{
-			&compute.Firewall_Allowed{
+		Allowed: []*computepb.Firewall_Allowed{
+			&computepb.Firewall_Allowed{
 				IPProtocol: "tcp",
 			},
-			&compute.Firewall_Allowed{
+			&computepb.Firewall_Allowed{
 				IPProtocol: "udp",
 			},
-			&compute.Firewall_Allowed{
+			&computepb.Firewall_Allowed{
 				IPProtocol: "icmp",
 			},
 		},
@@ -67,7 +67,7 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *asset.Network) e
 		return err
 	}
 
-	return d.Emit(n, &compute.Network{
+	return d.Emit(n, &computepb.Network{
 		Name:                  n.Name,
 		Description:           "",
 		AutoCreateSubnetworks: true,

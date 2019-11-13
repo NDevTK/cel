@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 package host;
-option go_package = "chromium.googlesource.com/enterprise/cel/go/host";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/schema/host";
 
 import "schema/asset/network.proto";
 import "schema/common/file_reference.proto";

@@ -4,15 +4,26 @@
 
 package common
 
-func (*TestBadOneOf) Validate() error           { return nil }
-func (*TestBadReturnType) Validate() int        { return 0 }
-func (*TestBadValidateArgs) Validate(int) error { return nil }
-func (*TestGoodOneOf) Validate() error          { return nil }
-func (*TestGoodProto) Validate() error          { return nil }
-func (*TestHasBadField) Validate() error        { return nil }
-func (*TestHasBadSlice) Validate() error        { return nil }
-func (*TestHasGoodField) Validate() error       { return nil }
-func (*TestHasGoodSlice) Validate() error       { return nil }
-func (*TestMessageWithOptions) Validate() error { return nil }
+import (
+	"chromium.googlesource.com/enterprise/cel/go/schema"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
+)
 
-// Intentionally leaving out BadProto which shouldn't have a Validator().
+var validateFunctions = []interface{}{
+	func(*commonpb.TestBadOneOf) error { return nil },
+	func(*commonpb.TestGoodOneOf) error { return nil },
+	func(*commonpb.TestGoodProto) error { return nil },
+	func(*commonpb.TestHasBadField) error { return nil },
+	func(*commonpb.TestHasBadSlice) error { return nil },
+	func(*commonpb.TestHasGoodField) error { return nil },
+	func(*commonpb.TestHasGoodSlice) error { return nil },
+	func(*commonpb.TestMessageWithOptions) error { return nil },
+	// Intentionally leaving out BadProto which shouldn't have a validate method.
+}
+
+func Validate_TestBadReturnType(*commonpb.TestBadReturnType) int            { return 0 }
+func Validate_TestBadValidateArgs(*commonpb.TestBadValidateArgs, int) error { return nil }
+
+func init() {
+	schema.RegisterAllValidateFunctions(validateFunctions)
+}

@@ -5,19 +5,20 @@
 package deploy
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 )
 
 type adDomain struct{}
 
-func (*adDomain) ResolveGeneratedContent(ctx common.Context, d *asset.ActiveDirectoryDomain) error {
+func (*adDomain) ResolveGeneratedContent(ctx common.Context, d *assetpb.ActiveDirectoryDomain) error {
 	p, err := generatePassword()
 	if err != nil {
 		return err
 	}
 
-	return ctx.Publish(d, "safe_mode_admin_password", &common.Secret{Final: []byte(p)})
+	return ctx.Publish(d, "safe_mode_admin_password", &commonpb.Secret{Final: []byte(p)})
 }
 
 func init() {

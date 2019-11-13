@@ -7,15 +7,15 @@ package deploy
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	computepb "chromium.googlesource.com/enterprise/cel/go/gcp/compute"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 )
 
 // Resolvers
 
 type ProjectResolver struct{}
 
-func (*ProjectResolver) ResolveImmediate(ctx common.Context, p *host.Project) (err error) {
+func (*ProjectResolver) ResolveImmediate(ctx common.Context, p *hostpb.Project) (err error) {
 	session, err := gcp.SessionFromContext(ctx)
 	if err != nil {
 		return err

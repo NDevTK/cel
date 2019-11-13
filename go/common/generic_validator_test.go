@@ -5,6 +5,8 @@
 package common
 
 import (
+	"chromium.googlesource.com/enterprise/cel/go/schema"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"github.com/golang/protobuf/descriptor"
 	"reflect"
 	"strings"
@@ -16,7 +18,7 @@ import (
 func TestInvokeValidate_Good(t *testing.T) {
 	p := RefPath{}
 	t.Run("Good", func(t *testing.T) {
-		v := TestGoodProto{Name: "foo"}
+		v := commonpb.TestGoodProto{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -24,9 +26,9 @@ func TestInvokeValidate_Good(t *testing.T) {
 	})
 
 	t.Run("GoodSlice", func(t *testing.T) {
-		v := TestHasGoodSlice{Name: "foo"}
+		v := commonpb.TestHasGoodSlice{Name: "foo"}
 		// If the slice is empty, the test will vavuously pass.
-		v.Field = []*TestGoodProto{&TestGoodProto{Name: "foo"}}
+		v.Field = []*commonpb.TestGoodProto{&commonpb.TestGoodProto{Name: "foo"}}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -34,7 +36,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 	})
 
 	t.Run("BadSliceIsEmpty", func(t *testing.T) {
-		v := TestHasBadSlice{Name: "foo"}
+		v := commonpb.TestHasBadSlice{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -42,9 +44,9 @@ func TestInvokeValidate_Good(t *testing.T) {
 	})
 
 	t.Run("GoodField", func(t *testing.T) {
-		v := TestHasGoodField{Name: "foo"}
+		v := commonpb.TestHasGoodField{Name: "foo"}
 		// If the field is nil, the test will vavuously pass.
-		v.Field = &TestGoodProto{Name: "foo"}
+		v.Field = &commonpb.TestGoodProto{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -52,8 +54,8 @@ func TestInvokeValidate_Good(t *testing.T) {
 	})
 
 	t.Run("GoodOneOf", func(t *testing.T) {
-		v := TestGoodOneOf{Name: "foo"}
-		v.Opt = &TestGoodOneOf_Field{&TestGoodProto{Name: "foo"}}
+		v := commonpb.TestGoodOneOf{Name: "foo"}
+		v.Opt = &commonpb.TestGoodOneOf_Field{Field: &commonpb.TestGoodProto{Name: "foo"}}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -61,7 +63,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 	})
 
 	t.Run("BadOneOfIsEmpty", func(t *testing.T) {
-		v := TestBadOneOf{Name: "foo"}
+		v := commonpb.TestBadOneOf{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -69,7 +71,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 	})
 
 	t.Run("BadFieldIsEmpty", func(t *testing.T) {
-		v := TestHasBadField{Name: "foo"}
+		v := commonpb.TestHasBadField{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("valid proto failed on InvokeValidate: %#v", err)
@@ -82,7 +84,7 @@ func TestInvokeValidate_Good(t *testing.T) {
 func TestInvokeValidate_Bad(t *testing.T) {
 	p := RefPath{}
 	t.Run("Bad", func(t *testing.T) {
-		v := TestBadProto{Name: "foo"}
+		v := commonpb.TestBadProto{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
@@ -93,30 +95,30 @@ func TestInvokeValidate_Bad(t *testing.T) {
 	})
 
 	t.Run("BadArgs", func(t *testing.T) {
-		v := TestBadValidateArgs{Name: "foo"}
+		v := commonpb.TestBadValidateArgs{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
-		if !strings.Contains(err.Error(), `BadValidateArgs has an incorrect type`) {
+		if !strings.Contains(err.Error(), `No "Validate" method found for type *common.TestBadValidateArgs`) {
 			t.Fatalf("bad error message: %s", err.Error())
 		}
 	})
 
 	t.Run("BadReturnType", func(t *testing.T) {
-		v := TestBadReturnType{Name: "foo"}
+		v := commonpb.TestBadReturnType{Name: "foo"}
 		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
 		}
-		if !strings.Contains(err.Error(), `BadReturnType has an incorrect type`) {
+		if !strings.Contains(err.Error(), `No "Validate" method found for type *common.TestBadReturnType`) {
 			t.Fatalf("bad error message: %s", err.Error())
 		}
 	})
 
 	t.Run("BadField", func(t *testing.T) {
-		v := TestHasBadField{Name: "foo"}
-		v.Field = &TestBadProto{}
+		v := commonpb.TestHasBadField{Name: "foo"}
+		v.Field = &commonpb.TestBadProto{}
 		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
@@ -127,8 +129,8 @@ func TestInvokeValidate_Bad(t *testing.T) {
 	})
 
 	t.Run("BadSlice", func(t *testing.T) {
-		v := TestHasBadSlice{Name: "foo"}
-		v.Field = []*TestBadProto{&TestBadProto{}}
+		v := commonpb.TestHasBadSlice{Name: "foo"}
+		v.Field = []*commonpb.TestBadProto{&commonpb.TestBadProto{}}
 		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
@@ -139,8 +141,8 @@ func TestInvokeValidate_Bad(t *testing.T) {
 	})
 
 	t.Run("BadOneOf", func(t *testing.T) {
-		v := TestBadOneOf{Name: "foo"}
-		v.Opt = &TestBadOneOf_Field{&TestBadProto{}}
+		v := commonpb.TestBadOneOf{Name: "foo"}
+		v.Opt = &commonpb.TestBadOneOf_Field{Field: &commonpb.TestBadProto{}}
 		err := ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid proto succeeded InvokeValidate")
@@ -153,7 +155,7 @@ func TestInvokeValidate_Bad(t *testing.T) {
 
 func TestVerifyValidatableType_Good(t *testing.T) {
 	t.Run("Good", func(t *testing.T) {
-		v := TestGoodProto{}
+		v := commonpb.TestGoodProto{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err != nil {
 			t.Fatalf("valid proto failed on VerifyValidatableType: %#v", err)
@@ -161,7 +163,7 @@ func TestVerifyValidatableType_Good(t *testing.T) {
 	})
 
 	t.Run("GoodSlice", func(t *testing.T) {
-		v := TestHasGoodSlice{}
+		v := commonpb.TestHasGoodSlice{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err != nil {
 			t.Fatalf("valid proto failed on VerifyValidatableType: %#v", err)
@@ -169,7 +171,7 @@ func TestVerifyValidatableType_Good(t *testing.T) {
 	})
 
 	t.Run("GoodField", func(t *testing.T) {
-		v := TestHasGoodField{}
+		v := commonpb.TestHasGoodField{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err != nil {
 			t.Fatalf("valid proto failed on VerifyValidatableType: %#v", err)
@@ -177,7 +179,7 @@ func TestVerifyValidatableType_Good(t *testing.T) {
 	})
 
 	t.Run("GoodOneOf", func(t *testing.T) {
-		v := TestGoodOneOf{}
+		v := commonpb.TestGoodOneOf{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err != nil {
 			t.Fatalf("valid proto failed on VerifyValidatableType: %#v", err)
@@ -187,7 +189,7 @@ func TestVerifyValidatableType_Good(t *testing.T) {
 
 func TestVerifyValidatableType_Bad(t *testing.T) {
 	t.Run("Bad", func(t *testing.T) {
-		v := TestBadProto{}
+		v := commonpb.TestBadProto{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err == nil {
 			t.Fatalf("invalid proto succeeded VerifyValidatableType")
@@ -198,29 +200,27 @@ func TestVerifyValidatableType_Bad(t *testing.T) {
 	})
 
 	t.Run("BadArgs", func(t *testing.T) {
-		v := TestBadValidateArgs{}
-		err := VerifyValidatableType(reflect.TypeOf(&v))
+		err := schema.VerifyValidateFunction(reflect.ValueOf(Validate_TestBadValidateArgs))
 		if err == nil {
 			t.Fatalf("invalid proto succeeded VerifyValidatableType")
 		}
-		if !strings.Contains(err.Error(), `BadValidateArgs has an incorrect type`) {
+		if !strings.Contains(err.Error(), `incorrect number of arguments`) {
 			t.Fatalf("bad error message: %s", err.Error())
 		}
 	})
 
 	t.Run("BadReturnType", func(t *testing.T) {
-		v := TestBadReturnType{}
-		err := VerifyValidatableType(reflect.TypeOf(&v))
+		err := schema.VerifyValidateFunction(reflect.ValueOf(Validate_TestBadReturnType))
 		if err == nil {
 			t.Fatalf("invalid proto succeeded VerifyValidatableType")
 		}
-		if !strings.Contains(err.Error(), `BadReturnType has an incorrect type`) {
+		if !strings.Contains(err.Error(), `incorrect return type`) {
 			t.Fatalf("bad error message: %s", err.Error())
 		}
 	})
 
 	t.Run("BadField", func(t *testing.T) {
-		v := TestHasBadField{}
+		v := commonpb.TestHasBadField{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err == nil {
 			t.Fatalf("invalid proto succeeded VerifyValidatableType")
@@ -231,7 +231,7 @@ func TestVerifyValidatableType_Bad(t *testing.T) {
 	})
 
 	t.Run("BadSlice", func(t *testing.T) {
-		v := TestHasBadSlice{}
+		v := commonpb.TestHasBadSlice{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err == nil {
 			t.Fatalf("invalid proto succeeded VerifyValidatableType")
@@ -242,7 +242,7 @@ func TestVerifyValidatableType_Bad(t *testing.T) {
 	})
 
 	t.Run("BadOneOf", func(t *testing.T) {
-		v := TestBadOneOf{}
+		v := commonpb.TestBadOneOf{}
 		err := VerifyValidatableType(reflect.TypeOf(&v))
 		if err == nil {
 			t.Fatalf("invalid proto succeeded VerifyValidatableType")
@@ -254,7 +254,7 @@ func TestVerifyValidatableType_Bad(t *testing.T) {
 }
 
 func TestExtractExtension(t *testing.T) {
-	tm := TestMessageWithOptions{}
+	tm := commonpb.TestMessageWithOptions{}
 	fd, md := descriptor.ForMessage(&tm)
 	if fd == nil || md == nil {
 		t.Fatalf("can't determine fd and md")
@@ -274,7 +274,7 @@ This test was written based on the expectation that the message was:
 	}
 
 	v := GetValidationForField(md.Field[1])
-	if v.Type != Validation_REQUIRED {
+	if v.Type != commonpb.Validation_REQUIRED {
 		t.Fatalf("failed to query validation information for field \"%s\"", md.Field[1].GetName())
 	}
 	if v.Ref != "a.b.with_types.repeated_field" {
@@ -288,7 +288,7 @@ func TestValidateOptions(t *testing.T) {
 	// TestMessageWithOptions is annotated with various requirements. First
 	// populate it with valid values and see what happens when we replace each
 	// valid value with an invalid one, one value at a time.
-	v := TestMessageWithOptions{
+	v := commonpb.TestMessageWithOptions{
 		Name:           "Foo",
 		Key:            "Key",
 		Label:          "Label",

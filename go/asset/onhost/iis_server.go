@@ -7,14 +7,14 @@ package onhost
 import (
 	"fmt"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	"github.com/pkg/errors"
 )
 
 type IisServerResolver struct{}
 
-func (*IisServerResolver) ResolveOnHost(ctx common.Context, iis *asset.IISServer) error {
+func (*IisServerResolver) ResolveOnHost(ctx common.Context, iis *assetpb.IISServer) error {
 	d, ok := ctx.(*deployer)
 	if !ok {
 		return errors.New("ctx is not Deployer")
@@ -50,7 +50,7 @@ func (*IisServerResolver) ResolveOnHost(ctx common.Context, iis *asset.IISServer
 	}
 }
 
-func createIisServer(d *deployer, iis *asset.IISServer) error {
+func createIisServer(d *deployer, iis *assetpb.IISServer) error {
 	fileToRun := ""
 	if d.IsWindows2008() || d.IsWindows2012() || d.IsWindows2016() {
 		fileToRun = d.GetSupportingFilePath("create_iis_server.ps1")
@@ -66,7 +66,7 @@ func createIisServer(d *deployer, iis *asset.IISServer) error {
 	return nil
 }
 
-func createIisSite(d *deployer, iisSite *asset.IISSite) error {
+func createIisSite(d *deployer, iisSite *assetpb.IISSite) error {
 	fileToRun := ""
 	if d.IsWindows2008() || d.IsWindows2012() || d.IsWindows2016() {
 		fileToRun = d.GetSupportingFilePath("create_iis_site.ps1")
@@ -78,9 +78,9 @@ func createIisSite(d *deployer, iisSite *asset.IISSite) error {
 
 	if port == 0 {
 		switch iisSite.Bindings.Protocol {
-		case asset.Protocol_HTTP:
+		case assetpb.Protocol_HTTP:
 			port = 80
-		case asset.Protocol_HTTPS:
+		case assetpb.Protocol_HTTPS:
 			port = 443
 		default:
 			return errors.New("can't find default port for unsupported protocol")

@@ -5,42 +5,42 @@
 package onhost
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/asset"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	"testing"
 )
 
 func TestWindowsRegistryResolver_getRegistryValueTypeAndData(t *testing.T) {
-	registry_value := &asset.RegistryValue{Name: "DwordValue", ValueType: &asset.RegistryValue_DwordValue{DwordValue: 123}}
+	registry_value := &assetpb.RegistryValue{Name: "DwordValue", ValueType: &assetpb.RegistryValue_DwordValue{DwordValue: 123}}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_DWORD", "123")
 
-	registry_value = &asset.RegistryValue{Name: "DwordValueZeroIsNotUndefined", ValueType: &asset.RegistryValue_DwordValue{DwordValue: 0}}
+	registry_value = &assetpb.RegistryValue{Name: "DwordValueZeroIsNotUndefined", ValueType: &assetpb.RegistryValue_DwordValue{DwordValue: 0}}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_DWORD", "0")
 
-	registry_value = &asset.RegistryValue{Name: "QwordValue", ValueType: &asset.RegistryValue_QwordValue{QwordValue: 123}}
+	registry_value = &assetpb.RegistryValue{Name: "QwordValue", ValueType: &assetpb.RegistryValue_QwordValue{QwordValue: 123}}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_QWORD", "123")
 
-	registry_value = &asset.RegistryValue{Name: "QwordValueZeroIsNotUndefined", ValueType: &asset.RegistryValue_QwordValue{QwordValue: 0}}
+	registry_value = &assetpb.RegistryValue{Name: "QwordValueZeroIsNotUndefined", ValueType: &assetpb.RegistryValue_QwordValue{QwordValue: 0}}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_QWORD", "0")
 
-	registry_value = &asset.RegistryValue{Name: "StringValue", ValueType: &asset.RegistryValue_StringValue{StringValue: "Some string"}}
+	registry_value = &assetpb.RegistryValue{Name: "StringValue", ValueType: &assetpb.RegistryValue_StringValue{StringValue: "Some string"}}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_SZ", "Some string")
 
-	registry_value = &asset.RegistryValue{Name: "ExpandStringValue", ValueType: &asset.RegistryValue_ExpandStringValue{ExpandStringValue: "Some string"}}
+	registry_value = &assetpb.RegistryValue{Name: "ExpandStringValue", ValueType: &assetpb.RegistryValue_ExpandStringValue{ExpandStringValue: "Some string"}}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_EXPAND_SZ", "Some string")
 
-	registry_value = &asset.RegistryValue{Name: "BinaryValue", ValueType: &asset.RegistryValue_BinaryValue{BinaryValue: []byte{0x46, 0x6f, 0x6f, 0x00, 0x01, 0x02}}}
+	registry_value = &assetpb.RegistryValue{Name: "BinaryValue", ValueType: &assetpb.RegistryValue_BinaryValue{BinaryValue: []byte{0x46, 0x6f, 0x6f, 0x00, 0x01, 0x02}}}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_BINARY", "466f6f000102")
 
-	multiStringValue := &asset.RegistryValue_MultiStringValue{MultiStringValue: &asset.RegistryValue_MultiString{Value: []string{"First", "Second", "Third"}}}
-	registry_value = &asset.RegistryValue{Name: "MultiStringValueSeparatedByNulls", ValueType: multiStringValue}
+	multiStringValue := &assetpb.RegistryValue_MultiStringValue{MultiStringValue: &assetpb.RegistryValue_MultiString{Value: []string{"First", "Second", "Third"}}}
+	registry_value = &assetpb.RegistryValue{Name: "MultiStringValueSeparatedByNulls", ValueType: multiStringValue}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_MULTI_SZ", "First\\0Second\\0Third")
 
-	multiStringValue = &asset.RegistryValue_MultiStringValue{MultiStringValue: &asset.RegistryValue_MultiString{Value: []string{"First"}}}
-	registry_value = &asset.RegistryValue{Name: "MultiStringValueSingleStringNoNull", ValueType: multiStringValue}
+	multiStringValue = &assetpb.RegistryValue_MultiStringValue{MultiStringValue: &assetpb.RegistryValue_MultiString{Value: []string{"First"}}}
+	registry_value = &assetpb.RegistryValue{Name: "MultiStringValueSingleStringNoNull", ValueType: multiStringValue}
 	testGetRegistryValueTypeAndData(t, registry_value, "REG_MULTI_SZ", "First")
 }
 
-func testGetRegistryValueTypeAndData(t *testing.T, registry_value *asset.RegistryValue, expected_type string, expected_data string) {
+func testGetRegistryValueTypeAndData(t *testing.T, registry_value *assetpb.RegistryValue, expected_type string, expected_data string) {
 	r := &WindowsRegistryResolver{}
 
 	value_type, value_data, err := r.GetRegistryValueTypeAndData(registry_value)

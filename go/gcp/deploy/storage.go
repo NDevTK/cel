@@ -7,7 +7,7 @@ package deploy
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 	"time"
@@ -15,7 +15,7 @@ import (
 
 type StorageResolver struct{}
 
-func (StorageResolver) ResolveImmediate(ctx common.Context, s *host.Storage) error {
+func (StorageResolver) ResolveImmediate(ctx common.Context, s *hostpb.Storage) error {
 	session, err := gcp.SessionFromContext(ctx)
 	if err != nil {
 		return err

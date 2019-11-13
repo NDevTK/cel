@@ -7,16 +7,16 @@ package deploy
 import (
 	"reflect"
 
-	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
+	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
 	"github.com/golang/protobuf/proto"
 )
 
 var typeToResourceName = map[reflect.Type]string{
-	reflect.TypeOf(&compute.Network{}):                    "compute.beta.network",
-	reflect.TypeOf(&compute.Disk{}):                       "compute.beta.disk",
-	reflect.TypeOf(&compute.Firewall{}):                   "compute.beta.firewall",
-	reflect.TypeOf(&compute.Instance{}):                   "compute.beta.instance",
+	reflect.TypeOf(&computepb.Network{}):                  "compute.beta.network",
+	reflect.TypeOf(&computepb.Disk{}):                     "compute.beta.disk",
+	reflect.TypeOf(&computepb.Firewall{}):                 "compute.beta.firewall",
+	reflect.TypeOf(&computepb.Instance{}):                 "compute.beta.instance",
 	reflect.TypeOf(&onhost.RuntimeConfigConfigVariable{}): "runtimeconfig.v1beta1.variable",
 	reflect.TypeOf(&onhost.RuntimeConfigConfig{}):         "runtimeconfig.v1beta1.config",
 }

@@ -8,14 +8,15 @@ import (
 	"crypto/rand"
 	"strings"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"github.com/pkg/errors"
 )
 
 type windowsUser struct{}
 
-func (*windowsUser) ResolveGeneratedContent(ctx common.Context, u *asset.WindowsUser) (err error) {
+func (*windowsUser) ResolveGeneratedContent(ctx common.Context, u *assetpb.WindowsUser) (err error) {
 	var p string
 	if u.HardcodedPassword != "" {
 		p = u.HardcodedPassword
@@ -29,7 +30,7 @@ func (*windowsUser) ResolveGeneratedContent(ctx common.Context, u *asset.Windows
 		}
 	}
 
-	s := &common.Secret{Final: []byte(p)}
+	s := &commonpb.Secret{Final: []byte(p)}
 	return ctx.Publish(u, "password", s)
 }
 

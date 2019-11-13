@@ -6,11 +6,12 @@ package deploy
 
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 )
 
 type secret struct{}
 
-func (secret) ResolvePreManifestCompletion(ctx common.Context, s *common.Secret) error {
+func (secret) ResolvePreManifestCompletion(ctx common.Context, s *commonpb.Secret) error {
 	s.Hardcoded = ""
 	s.Final = nil
 	return nil

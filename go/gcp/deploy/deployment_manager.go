@@ -10,8 +10,8 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
+	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
 	"github.com/pkg/errors"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 )
@@ -145,7 +145,7 @@ See logs for more info:
 
 func cleanupFirewallRules(ctx common.Context, s *gcp.Session) error {
 	networks := make(map[string]bool)
-	ntype, _ := getResourceType(&compute.Network{})
+	ntype, _ := getResourceType(&computepb.Network{})
 
 	dm, err := s.GetDeploymentManagerService()
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 )
@@ -20,7 +21,7 @@ func TestWrapGenericResolverFunction_identity(t *testing.T) {
 		return expectedErr
 	}), ProtoMessageType)
 
-	err := f(&fakeContext{}, &TestMessageWithOptions{})
+	err := f(&fakeContext{}, &commonpb.TestMessageWithOptions{})
 
 	if !gotCalled {
 		t.Error("wrapped function did not get called")
@@ -35,13 +36,13 @@ func TestWrapGenericResolverFunction_conversion(t *testing.T) {
 	expectedErr := errors.New("mock")
 	gotCalled := false
 	gotLabel := ""
-	f := wrapGenericResolverFunction(reflect.ValueOf(func(ctx Context, t *TestMessageWithOptions) error {
+	f := wrapGenericResolverFunction(reflect.ValueOf(func(ctx Context, t *commonpb.TestMessageWithOptions) error {
 		gotCalled = true
 		gotLabel = t.Label
 		return expectedErr
 	}), ProtoMessageType)
 
-	err := f(&fakeContext{}, &TestMessageWithOptions{Label: "knock-knock"})
+	err := f(&fakeContext{}, &commonpb.TestMessageWithOptions{Label: "knock-knock"})
 
 	if !gotCalled {
 		t.Error("wrapped function did not get called")

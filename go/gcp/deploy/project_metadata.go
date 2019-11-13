@@ -9,10 +9,12 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
+	gcpPb "chromium.googlesource.com/enterprise/cel/go/schema/gcp"
 	compute "google.golang.org/api/compute/v1"
 )
 
-func UpdateProjectMetadata(ctx common.Context, s *gcp.Session, manifest *common.FileReference) (err error) {
+func UpdateProjectMetadata(ctx common.Context, s *gcp.Session, manifest *commonpb.FileReference) (err error) {
 	cs, err := s.GetComputeService()
 	if err != nil {
 		return err
@@ -55,20 +57,20 @@ func UpdateProjectMetadata(ctx common.Context, s *gcp.Session, manifest *common.
 }
 
 func computeAgentMetadata(s *gcp.Session) ([]byte, error) {
-	md := &gcp.CelAgentMetadata{}
-	md.WinAgentX64 = &gcp.CelAgentMetadata_GCSObject{}
+	md := &gcpPb.CelAgentMetadata{}
+	md.WinAgentX64 = &gcpPb.CelAgentMetadata_GCSObject{}
 	md.WinAgentX64.AbsPath = gcp.AbsoluteReference(
 		s.HostEnvironment.Storage.Bucket,
 		s.HostEnvironment.Resources.Startup.WinAgentX64.ObjectReference)
 	md.WinAgentX64.Integrity = s.HostEnvironment.Resources.Startup.WinAgentX64.Integrity
 
-	md.WinUiAgentX64 = &gcp.CelAgentMetadata_GCSObject{}
+	md.WinUiAgentX64 = &gcpPb.CelAgentMetadata_GCSObject{}
 	md.WinUiAgentX64.AbsPath = gcp.AbsoluteReference(
 		s.HostEnvironment.Storage.Bucket,
 		s.HostEnvironment.Resources.Startup.WinUiAgentX64.ObjectReference)
 	md.WinUiAgentX64.Integrity = s.HostEnvironment.Resources.Startup.WinUiAgentX64.Integrity
 
-	md.LinuxAgentX64 = &gcp.CelAgentMetadata_GCSObject{}
+	md.LinuxAgentX64 = &gcpPb.CelAgentMetadata_GCSObject{}
 	md.LinuxAgentX64.AbsPath = gcp.AbsoluteReference(
 		s.HostEnvironment.Storage.Bucket,
 		s.HostEnvironment.Resources.Startup.LinuxAgentX64.ObjectReference)

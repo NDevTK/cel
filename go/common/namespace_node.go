@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -88,7 +89,7 @@ type namespaceNodeSet map[*namespaceNode]bool
 
 // bind binds this namespaceNode to the specified value. For all practical
 // purposes, a node can only be bound once.
-func (v *namespaceNode) bind(rv reflect.Value, validation *Validation) error {
+func (v *namespaceNode) bind(rv reflect.Value, validation *commonpb.Validation) error {
 	if v.isNodeRemoved {
 		return errors.Errorf("attempt to bind a value to a deleted location at %s", v.location)
 	}
@@ -117,9 +118,9 @@ func (v *namespaceNode) bind(rv reflect.Value, validation *Validation) error {
 	v.value = rv
 	v.isPlaceholder = false
 	if validation != nil {
-		v.isOutput = validation.IsOutput()
-		v.isRuntime = validation.IsRuntime()
-		v.isTopLevelCollection = validation.IsTopLevelCollection()
+		v.isOutput = IsOutput(validation)
+		v.isRuntime = IsRuntime(validation)
+		v.isTopLevelCollection = IsTopLevelCollection(validation)
 	}
 
 	wasAvailable := v.isValueAvailable

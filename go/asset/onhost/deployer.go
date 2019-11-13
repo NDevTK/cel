@@ -21,13 +21,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"chromium.googlesource.com/enterprise/cel/go/host"
-
 	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
-	"chromium.googlesource.com/enterprise/cel/go/lab"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
+	labpb "chromium.googlesource.com/enterprise/cel/go/schema/lab"
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/logging"
 	"github.com/golang/protobuf/proto"
@@ -76,10 +76,10 @@ type deployer struct {
 	configuration *cel.Configuration
 
 	// the machine type of the current instance
-	machineType *host.MachineType
+	machineType *hostpb.MachineType
 
 	// The nested VM if this instance is a host.
-	nestedVM *host.NestedVM
+	nestedVM *hostpb.NestedVM
 
 	// The internal IP addresses for hosted VM. E.g. 192.168.122.89
 	internalIP string
@@ -275,7 +275,7 @@ func (d *deployer) Deploy(manifestFile string) {
 
 	d.configuration.AssetManifest = *d.configuration.Lab.AssetManifest
 	d.configuration.HostEnvironment = *d.configuration.Lab.HostEnvironment
-	d.configuration.Lab = lab.Lab{}
+	d.configuration.Lab = labpb.Lab{}
 
 	if err := d.configuration.Validate(); err != nil {
 		d.Logf("Error validating configuration : %s", err)
@@ -434,7 +434,7 @@ func (d *deployer) setupNestedVM(manifestFile string) error {
 		"-qmp", "tcp:127.0.0.1:25555,server,nowait",
 		"-vnc", ":20100", imageFile}
 
-	if d.machineType.Os == host.OperatingSystem_CHROMEOS {
+	if d.machineType.Os == hostpb.OperatingSystem_CHROMEOS {
 		cmd = append(cmd,
 			"-net", "nic,model=virtio",
 			"-vga", "virtio")
@@ -495,7 +495,7 @@ func (d *deployer) waitForVMToStart() (string, error) {
 	return "", errors.New("Time out")
 }
 
-func (d *deployer) getWindowsMachine() *asset.WindowsMachine {
+func (d *deployer) getWindowsMachine() *assetpb.WindowsMachine {
 	// find the instance
 	for _, m := range d.configuration.AssetManifest.WindowsMachine {
 		if m.Name == d.instanceName {
@@ -505,10 +505,10 @@ func (d *deployer) getWindowsMachine() *asset.WindowsMachine {
 	return nil
 }
 
-func (d *deployer) getActiveDirectoryDomain() *asset.ActiveDirectoryDomain {
+func (d *deployer) getActiveDirectoryDomain() *assetpb.ActiveDirectoryDomain {
 	m := d.getWindowsMachine()
 
-	ad, err := d.configuration.AssetManifest.FindActiveDirectoryDomainFor(m)
+	ad, err := asset.FindActiveDirectoryDomainFor(&d.configuration.AssetManifest, m)
 	if err == nil {
 		return ad
 	}
@@ -516,7 +516,7 @@ func (d *deployer) getActiveDirectoryDomain() *asset.ActiveDirectoryDomain {
 	return nil
 }
 
-func (d *deployer) getMachineType(machineType string) *host.MachineType {
+func (d *deployer) getMachineType(machineType string) *hostpb.MachineType {
 	for _, mt := range d.configuration.HostEnvironment.MachineType {
 		if mt.Name == machineType {
 			return mt
@@ -542,7 +542,7 @@ func (d *deployer) SaveSupportingFilesToDisk() error {
 }
 
 func (d *deployer) PrepareInstance() error {
-	if d.machineType.Os != host.OperatingSystem_WINDOWS {
+	if d.machineType.Os != hostpb.OperatingSystem_WINDOWS {
 		return nil
 	}
 
@@ -834,8 +834,8 @@ func (d *deployer) RunConfigCommand(name string, arg ...string) error {
 }
 
 // getAdDomainAsset returns the ActiveDirectoryDomain asset of the given domain.
-func (d *deployer) getAdDomainAsset(domainName string) (*asset.ActiveDirectoryDomain, error) {
-	return d.configuration.AssetManifest.FindActiveDirectoryDomain(domainName)
+func (d *deployer) getAdDomainAsset(domainName string) (*assetpb.ActiveDirectoryDomain, error) {
+	return asset.FindActiveDirectoryDomain(&d.configuration.AssetManifest, domainName)
 }
 
 // waitForDependency waits for the dependency to be ready.
@@ -1043,7 +1043,7 @@ func (d *deployer) commonSetupOnNestedVM() error {
 		return errors.WithStack(err)
 	}
 
-	if d.machineType.Os != host.OperatingSystem_WINDOWS {
+	if d.machineType.Os != hostpb.OperatingSystem_WINDOWS {
 		return nil
 	}
 

@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 package lab;
-option go_package = "chromium.googlesource.com/enterprise/cel/go/lab";
+option go_package = "chromium.googlesource.com/enterprise/cel/go/schema/lab";
 
 import "schema/common/validation.proto";
 import "schema/asset/asset_manifest.proto";

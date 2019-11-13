@@ -7,7 +7,7 @@ package gcp
 import (
 	"bytes"
 	"chromium.googlesource.com/enterprise/cel/go/common"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	"cloud.google.com/go/storage"
 	"context"
 	"crypto/md5"
@@ -32,7 +32,7 @@ const (
 	ContextIndexedObjectNamespace = "/o/"
 )
 
-func NewObjectStore(ctx context.Context, hc *http.Client, env *host.HostEnvironment) (*ObjectStore, error) {
+func NewObjectStore(ctx context.Context, hc *http.Client, env *hostpb.HostEnvironment) (*ObjectStore, error) {
 	if env.GetStorage() == nil {
 		return nil, errors.New("host_environment does not specify storage parameters")
 	}

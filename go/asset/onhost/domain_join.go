@@ -7,23 +7,23 @@ package onhost
 import (
 	"time"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	"github.com/pkg/errors"
 )
 
 type DomainJoinResolver struct{}
 
-func (*DomainJoinResolver) ResolveOnHost(ctx common.Context, m *asset.WindowsMachine) error {
+func (*DomainJoinResolver) ResolveOnHost(ctx common.Context, m *assetpb.WindowsMachine) error {
 	d, ok := ctx.(*deployer)
 	if !ok {
 		return errors.New("ctx is not Deployer")
 	}
 
 	if m.Name == d.instanceName && m.Container != nil {
-		adContainer, ok := m.Container.Container.(*asset.WindowsContainer_AdDomain)
+		adContainer, ok := m.Container.Container.(*assetpb.WindowsContainer_AdDomain)
 		if ok {
 			adAsset, err := d.getAdDomainAsset(adContainer.AdDomain)
 			if err != nil {
@@ -40,8 +40,8 @@ func (*DomainJoinResolver) ResolveOnHost(ctx common.Context, m *asset.WindowsMac
 
 const maxRetries = 5
 
-func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
-	if d.machineType.Os != host.OperatingSystem_WINDOWS {
+func joinDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
+	if d.machineType.Os != hostpb.OperatingSystem_WINDOWS {
 		return errors.New("Domain join is only supported on Windows")
 	}
 
@@ -98,7 +98,7 @@ func joinDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 }
 
 // Handles NestedVM reboot (special case).
-func onRebootNeededForNestedVM(d *deployer, ad *asset.ActiveDirectoryDomain, fileToRun string, dnsServerAddress string) error {
+func onRebootNeededForNestedVM(d *deployer, ad *assetpb.ActiveDirectoryDomain, fileToRun string, dnsServerAddress string) error {
 	d.Logf("Reboot needed. Continue configuration after reboot.")
 	if err := d.Reboot(); err != nil {
 		return err

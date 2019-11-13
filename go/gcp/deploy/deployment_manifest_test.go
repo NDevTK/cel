@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
-	"chromium.googlesource.com/enterprise/cel/go/gcp/compute"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
+	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
 )
 
 func TestDeploymentManifest_Ref_unnamed(t *testing.T) {
-	m := &asset.NetworkInterface{}
+	m := &assetpb.NetworkInterface{}
 
 	d := newDeploymentManifest()
 	n := d.Ref(m)
@@ -26,7 +26,7 @@ func TestDeploymentManifest_Ref_unnamed(t *testing.T) {
 		t.Errorf("duplicate id issued for same asset")
 	}
 
-	m = &asset.NetworkInterface{}
+	m = &assetpb.NetworkInterface{}
 	nn = d.Ref(m)
 	if nn == n {
 		t.Errorf("same id issued for different asset")
@@ -34,7 +34,7 @@ func TestDeploymentManifest_Ref_unnamed(t *testing.T) {
 }
 
 func TestDeploymentManifest_Ref_named(t *testing.T) {
-	m := &asset.Machine{Name: "foo"}
+	m := &assetpb.Machine{Name: "foo"}
 
 	d := newDeploymentManifest()
 	n := d.Ref(m)
@@ -47,7 +47,7 @@ func TestDeploymentManifest_Ref_named(t *testing.T) {
 		t.Errorf("duplicate id issued for same asset")
 	}
 
-	m = &asset.Machine{Name: "foo"}
+	m = &assetpb.Machine{Name: "foo"}
 	nn = d.Ref(m)
 	if nn == n {
 		t.Errorf("same id issued for different asset")
@@ -56,11 +56,11 @@ func TestDeploymentManifest_Ref_named(t *testing.T) {
 
 func TestDeploymentManifest_GetYaml(t *testing.T) {
 	d := newDeploymentManifest()
-	d.Emit(nil, &compute.Instance{
+	d.Emit(nil, &computepb.Instance{
 		Name:        "foo",
 		Description: "description of foo instance",
-		Metadata: &compute.Metadata{
-			Items: []*compute.Metadata_Items{
+		Metadata: &computepb.Metadata{
+			Items: []*computepb.Metadata_Items{
 				{
 					Key:   "this is the key",
 					Value: "this is the value",

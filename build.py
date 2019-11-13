@@ -518,12 +518,20 @@ missing.
 
   descriptor_path = os.path.join(OUT_PATH, 'schema')
   _EnsureDir(descriptor_path)
+  _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'schema'))
 
   gen_api_command = _BuildCommand('gen_api_proto', './go/tools/gen_api_proto',
                                   _MergeEnv(args, target_host=True))
   gen_api_invocation = [
-      gen_api_command, '-i', '{inp[0]}', '-o', '{out}', '-p',
-      'chromium.googlesource.com/enterprise/cel/go/gcp'
+      gen_api_command,
+      '-i',
+      '{inp[0]}',
+      '-o',
+      '{out}',
+      '-s',
+      'chromium.googlesource.com/enterprise/cel/go/schema',
+      '-p',
+      'chromium.googlesource.com/enterprise/cel/go/schema/gcp',
   ]
 
   _EnsureDir(os.path.join(SOURCE_PATH, 'schema', 'gcp', 'compute'))
@@ -557,8 +565,9 @@ missing.
       protoc_command,
       inp=[
           'schema/common/validation.proto',
-          'schema/common/file_reference.proto', 'schema/common/secret.proto',
-          'go/common/testdata/testmsgs.proto'
+          'schema/common/file_reference.proto',
+          'schema/common/secret.proto',
+          'schema/common/testmsgs.proto',
       ],
       out=os.path.join(descriptor_path, 'common.pb'),
       outpy=python_proto_path,

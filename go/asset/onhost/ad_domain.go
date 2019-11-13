@@ -8,15 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	"github.com/pkg/errors"
 )
 
 type AdDomainResolver struct{}
 
-func (*AdDomainResolver) ResolveOnHost(ctx common.Context, ad *asset.ActiveDirectoryDomain) error {
+func (*AdDomainResolver) ResolveOnHost(ctx common.Context, ad *assetpb.ActiveDirectoryDomain) error {
 	d, ok := ctx.(*deployer)
 	if !ok {
 		return errors.New("ctx is not Deployer")
@@ -29,7 +29,7 @@ func (*AdDomainResolver) ResolveOnHost(ctx common.Context, ad *asset.ActiveDirec
 	}
 }
 
-func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
+func setupADDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
 	d.Logf("Configuring Ad Domain: %+v\n", *ad)
 
 	configVar := onhost.GetActiveDirectoryRuntimeConfigVariableName(ad.Name)
@@ -53,7 +53,7 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 	if ad.Ancestor == nil {
 		err = createRootDomain(d, ad)
 	} else {
-		parent, ok := ad.Ancestor.(*asset.ActiveDirectoryDomain_ParentName)
+		parent, ok := ad.Ancestor.(*assetpb.ActiveDirectoryDomain_ParentName)
 		if ok {
 			err = createChildDomain(d, ad, parent.ParentName)
 		} else {
@@ -71,7 +71,7 @@ func setupADDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 
 const maxRetriesCreateActiveDirectory = 5
 
-func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
+func createRootDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
 	fileToRun := ""
 	addDnsForwardFile := ""
 	if d.IsWindows2012() || d.IsWindows2016() {
@@ -103,7 +103,7 @@ func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 
 	// create DNS forwarder for tree domains whose root is this domain.
 	for _, dn := range d.configuration.AssetManifest.GetAdDomain() {
-		_, ok := dn.Ancestor.(*asset.ActiveDirectoryDomain_Forest)
+		_, ok := dn.Ancestor.(*assetpb.ActiveDirectoryDomain_Forest)
 		if !ok {
 			continue
 		}
@@ -129,13 +129,13 @@ func createRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
 }
 
 // Returns the root domain of the forest
-func getRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) (*asset.ActiveDirectoryDomain, error) {
+func getRootDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) (*assetpb.ActiveDirectoryDomain, error) {
 	for {
 		if ad.Ancestor == nil {
 			return ad, nil
 		}
 
-		parent, ok := ad.Ancestor.(*asset.ActiveDirectoryDomain_ParentName)
+		parent, ok := ad.Ancestor.(*assetpb.ActiveDirectoryDomain_ParentName)
 		if ok {
 			parentAd, err := d.getAdDomainAsset(parent.ParentName)
 			if err != nil {
@@ -144,7 +144,7 @@ func getRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) (*asset.ActiveD
 
 			ad = parentAd
 		} else {
-			forest := ad.Ancestor.(*asset.ActiveDirectoryDomain_Forest)
+			forest := ad.Ancestor.(*assetpb.ActiveDirectoryDomain_Forest)
 			forestAd, err := d.getAdDomainAsset(forest.Forest)
 			if err != nil {
 				return nil, err
@@ -155,7 +155,7 @@ func getRootDomain(d *deployer, ad *asset.ActiveDirectoryDomain) (*asset.ActiveD
 	}
 }
 
-func createChildDomain(d *deployer, ad *asset.ActiveDirectoryDomain, parentAdName string) error {
+func createChildDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain, parentAdName string) error {
 	parentAd, err := d.getAdDomainAsset(parentAdName)
 	if err != nil {
 		return err
@@ -219,7 +219,7 @@ func createChildDomain(d *deployer, ad *asset.ActiveDirectoryDomain, parentAdNam
 	return err
 }
 
-func createTreeDomain(d *deployer, ad *asset.ActiveDirectoryDomain) error {
+func createTreeDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
 	rootAd, err := getRootDomain(d, ad)
 	if err != nil {
 		return err

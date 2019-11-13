@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
@@ -317,13 +318,13 @@ func (g *generator) extractFromField(md *MessageData, p []int32, f *descriptor.F
 	}
 
 	v := common.GetValidationForField(d)
-	fd.IsOutput = v.IsOutput()
-	fd.IsRuntime = v.IsRuntime()
-	fd.IsLabel = (v.Type == common.Validation_LABEL)
-	fd.IsRequired = (v.Type == common.Validation_REQUIRED || (fd.IsLabel && !v.GetOptional()))
-	fd.IsOrgLabel = (v.Type == common.Validation_ORGLABEL)
-	fd.IsFQDN = (v.Type == common.Validation_FQDN)
-	fd.IsReference = v.IsNamedReference()
+	fd.IsOutput = common.IsOutput(v)
+	fd.IsRuntime = common.IsRuntime(v)
+	fd.IsLabel = (v.Type == commonpb.Validation_LABEL)
+	fd.IsRequired = (v.Type == commonpb.Validation_REQUIRED || (fd.IsLabel && !v.GetOptional()))
+	fd.IsOrgLabel = (v.Type == commonpb.Validation_ORGLABEL)
+	fd.IsFQDN = (v.Type == commonpb.Validation_FQDN)
+	fd.IsReference = common.IsNamedReference(v)
 	fd.Reference = v.Ref
 
 	if d.Label != nil && *d.Label == descriptor.FieldDescriptorProto_LABEL_REPEATED {

@@ -5,6 +5,7 @@
 package common
 
 import (
+	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"reflect"
 	"strings"
@@ -67,9 +68,9 @@ func TestWalkProto_Order(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		var accumulator []Invocation
 
-		v := TestHasGoodSlice{}
+		v := commonpb.TestHasGoodSlice{}
 		v.Name = "root"
-		v.Field = []*TestGoodProto{&TestGoodProto{Name: "child1"}, &TestGoodProto{Name: "child2"}}
+		v.Field = []*commonpb.TestGoodProto{&commonpb.TestGoodProto{Name: "child1"}, &commonpb.TestGoodProto{Name: "child2"}}
 
 		err := WalkProtoMessage(&v, EmptyPath,
 			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) (bool, error) {
@@ -100,9 +101,9 @@ func TestWalkProto_Order(t *testing.T) {
 	t.Run("skipSome", func(t *testing.T) {
 		var accumulator []Invocation
 
-		v := TestHasGoodSlice{}
+		v := commonpb.TestHasGoodSlice{}
 		v.Name = "root"
-		v.Field = []*TestGoodProto{&TestGoodProto{Name: "child1"}, &TestGoodProto{Name: "child2"}}
+		v.Field = []*commonpb.TestGoodProto{&commonpb.TestGoodProto{Name: "child1"}, &commonpb.TestGoodProto{Name: "child2"}}
 
 		err := WalkProtoMessage(&v, EmptyPath,
 			func(v reflect.Value, p RefPath, d *descriptor.FieldDescriptorProto) (bool, error) {
@@ -135,15 +136,15 @@ func TestWalkProto_Order(t *testing.T) {
 	t.Run("complicated", func(t *testing.T) {
 		var accumulator []Invocation
 
-		v := TestMessageWithTypes{
+		v := commonpb.TestMessageWithTypes{
 			Name:      "myname",
 			BoolValue: true,
 			IntValue:  3,
-			Field:     &TestGoodProto{Name: "field-value"},
-			RepeatedField: []*TestGoodProto{&TestGoodProto{Name: "repeated-one"},
-				&TestGoodProto{Name: "repeated-two"}},
-			Optional:  &TestMessageWithTypes_OptionalField{OptionalField: &TestGoodProto{Name: "opt"}},
-			MapField:  map[string]*TestGoodProto{"map-key": &TestGoodProto{Name: "map-value"}},
+			Field:     &commonpb.TestGoodProto{Name: "field-value"},
+			RepeatedField: []*commonpb.TestGoodProto{&commonpb.TestGoodProto{Name: "repeated-one"},
+				&commonpb.TestGoodProto{Name: "repeated-two"}},
+			Optional:  &commonpb.TestMessageWithTypes_OptionalField{OptionalField: &commonpb.TestGoodProto{Name: "opt"}},
+			MapField:  map[string]*commonpb.TestGoodProto{"map-key": &commonpb.TestGoodProto{Name: "map-value"}},
 			MapString: map[string]string{"map-string-key": "map-string-value"}}
 
 		root := RefPath{"abc", "def"}
@@ -185,14 +186,14 @@ func TestWalkProto_Order(t *testing.T) {
 }
 
 func TestWalkProto_ResolvePath(t *testing.T) {
-	v := TestMessageWithTypes{
+	v := commonpb.TestMessageWithTypes{
 		Name:      "myname",
 		BoolValue: true,
 		IntValue:  3,
-		RepeatedField: []*TestGoodProto{&TestGoodProto{Name: "repeated-one"},
-			&TestGoodProto{Name: "repeated-two"}},
-		Optional:  &TestMessageWithTypes_OptionalField{OptionalField: &TestGoodProto{Name: "opt"}},
-		MapField:  map[string]*TestGoodProto{"map-key": &TestGoodProto{Name: "map-value"}, "map-empty": nil},
+		RepeatedField: []*commonpb.TestGoodProto{&commonpb.TestGoodProto{Name: "repeated-one"},
+			&commonpb.TestGoodProto{Name: "repeated-two"}},
+		Optional:  &commonpb.TestMessageWithTypes_OptionalField{OptionalField: &commonpb.TestGoodProto{Name: "opt"}},
+		MapField:  map[string]*commonpb.TestGoodProto{"map-key": &commonpb.TestGoodProto{Name: "map-value"}, "map-empty": nil},
 		MapString: map[string]string{"map-string-key": "map-string-value"}}
 
 	t.Run("pod-field", func(t *testing.T) {
@@ -218,7 +219,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if v, ok := iv.(*TestGoodProto); !ok || v != nil {
+		if v, ok := iv.(*commonpb.TestGoodProto); !ok || v != nil {
 			t.Fatalf("unexpected value %#v", iv)
 		}
 	})
@@ -228,7 +229,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if s, ok := iv.(*TestGoodProto); !ok || s.GetName() != "repeated-one" {
+		if s, ok := iv.(*commonpb.TestGoodProto); !ok || s.GetName() != "repeated-one" {
 			t.Fatal()
 		}
 	})
@@ -275,7 +276,7 @@ func TestWalkProto_ResolvePath(t *testing.T) {
 }
 
 func TestWalkProto_NamedProtoType(t *testing.T) {
-	m := &TestMessageWithTypes{}
+	m := &commonpb.TestMessageWithTypes{}
 	v := reflect.ValueOf(m)
 	ty := v.Type()
 	if !ty.Implements(NamedProtoType) {

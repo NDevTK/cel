@@ -5,20 +5,20 @@
 package onhost
 
 import (
-	"chromium.googlesource.com/enterprise/cel/go/asset"
 	"chromium.googlesource.com/enterprise/cel/go/common"
+	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	"github.com/pkg/errors"
 )
 
 type windowsUser struct{}
 
-func (*windowsUser) ResolveOnHost(ctx common.Context, u *asset.WindowsUser) error {
+func (*windowsUser) ResolveOnHost(ctx common.Context, u *assetpb.WindowsUser) error {
 	d, ok := ctx.(*deployer)
 	if !ok {
 		return errors.New("ctx is not Deployer")
 	}
 
-	adContainer, ok := u.Container.Container.(*asset.WindowsContainer_AdDomain)
+	adContainer, ok := u.Container.Container.(*assetpb.WindowsContainer_AdDomain)
 	if ok {
 		adAsset, err := d.getAdDomainAsset(adContainer.AdDomain)
 		if err != nil {
@@ -35,7 +35,7 @@ func (*windowsUser) ResolveOnHost(ctx common.Context, u *asset.WindowsUser) erro
 	}
 }
 
-func createUser(d *deployer, ad *asset.ActiveDirectoryDomain, u *asset.WindowsUser) error {
+func createUser(d *deployer, ad *assetpb.ActiveDirectoryDomain, u *assetpb.WindowsUser) error {
 	fileToRun := ""
 	if d.IsWindows2008() || d.IsWindows2012() || d.IsWindows2016() {
 		fileToRun = d.GetSupportingFilePath("create_user.ps1")

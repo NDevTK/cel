@@ -7,11 +7,11 @@ package deploy
 import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
-	"chromium.googlesource.com/enterprise/cel/go/host"
+	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	"github.com/pkg/errors"
 )
 
-func ImageResolver(ctx common.Context, i *host.Image) error {
+func ImageResolver(ctx common.Context, i *hostpb.Image) error {
 	session, err := gcp.SessionFromContext(ctx)
 	if err != nil {
 		return err
@@ -19,7 +19,7 @@ func ImageResolver(ctx common.Context, i *host.Image) error {
 
 	// Fixed URL. Nothing more to do. If the URL was invalid, the deployment
 	// will fail. Not a whole lot we are going to do about it.
-	if fixed, ok := i.GetSource().(*host.Image_Fixed); ok {
+	if fixed, ok := i.GetSource().(*hostpb.Image_Fixed); ok {
 		return ctx.Publish(i, "url", fixed.Fixed)
 	}
 
