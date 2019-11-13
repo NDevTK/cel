@@ -41,7 +41,7 @@ func (*DomainJoinResolver) ResolveOnHost(ctx common.Context, m *assetpb.WindowsM
 const maxRetries = 5
 
 func joinDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
-	if d.machineType.Os != hostpb.OperatingSystem_WINDOWS {
+	if d.GetOs() != hostpb.OperatingSystem_WINDOWS {
 		return errors.New("Domain join is only supported on Windows")
 	}
 
@@ -77,7 +77,12 @@ func joinDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
 			"-adminPassword", string(ad.SafeModeAdminPassword.Final))
 
 		if d.IsNestedVM() && err == ErrRebootNeeded {
-			err = onRebootNeededForNestedVM(d, ad, fileToRun, dnsServerAddress)
+			// for nested VM, we need to handle the reboot ourselves.
+			d.Logf("Reboot needed. Continue configuration after reboot.")
+			err = d.Reboot()
+			if err != nil {
+				return err
+			}
 		}
 
 		if err == nil {
@@ -95,34 +100,6 @@ func joinDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
 
 	d.Logf("Domain join finished")
 	return nil
-}
-
-// Handles NestedVM reboot (special case).
-func onRebootNeededForNestedVM(d *deployer, ad *assetpb.ActiveDirectoryDomain, fileToRun string, dnsServerAddress string) error {
-	d.Logf("Reboot needed. Continue configuration after reboot.")
-	if err := d.Reboot(); err != nil {
-		return err
-	}
-
-	// After domain join, on Win7, local user login thru ssh stops working.
-	// So switch to domain admin account for log in.
-	d.nestedVM.UserName = ad.Name + "\\administrator"
-	d.nestedVM.Password = string(ad.SafeModeAdminPassword.Final)
-	if err := d.WaitForNestedVMRebootComplete(); err != nil {
-		return err
-	}
-
-	// fix dns record. For some reason, this can fail (e.g. on Win7) so we
-	// need retry logic here
-	fileToRun = d.GetSupportingFilePath("add_dns_entry.ps1")
-	return d.RunConfigCommand("powershell.exe",
-		"-File", fileToRun,
-		"-adminName", ad.Name+"\\administrator",
-		"-adminPassword", string(ad.SafeModeAdminPassword.Final),
-		"-dnsServerName", ad.DomainController[0].WindowsMachine,
-		"-domainName", ad.Name,
-		"-computerName", d.instanceName,
-		"-ipAddress", d.externalIP)
 }
 
 func init() {

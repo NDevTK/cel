@@ -167,19 +167,24 @@ func (c *commander) ProcessRunCommandEntry(runCommand *gcp.RunCommandMetadataEnt
 		}
 	}
 
-	// We assume that non-windows machines are Linux boxes hosting a NestedVM.
-	// We make the same assumption in deployer.go.
-	if runtime.GOOS == "windows" {
-		exitCode = c.processRunCommandEntryOnWindows(runCommand, logFn)
-	} else {
-		exitCode = c.processRunCommandEntryOnNestedVM(runCommand, logFn)
-	}
+	exitCode = c.processRunCommandEntryOnWindows(runCommand, logFn)
 }
 
 func (c *commander) processRunCommandEntryOnWindows(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
-	command := exec.Command("powershell.exe", "-Command", runCommand.Command)
+	if c.deployer.IsNestedVM() && strings.HasPrefix(runCommand.Command, "gsutil ") {
+		// gsutil is not installed on nested VMs, but it's a common command
+		// used during tests. The host will act as a proxy to support gsutil.
+		return c.processGsutilOnNestedVM(runCommand, logFn)
+	} else {
+		output, err := c.deployer.instance.RunCommand("powershell.exe", "-Command", runCommand.Command)
+		logFn(strings.NewReader(output))
 
-	return c.runCommand(command, logFn)
+		if err != nil {
+			return -1
+		}
+
+		return 0
+	}
 }
 
 func (c *commander) runCommand(command *exec.Cmd, logFn func(io.Reader)) int {
@@ -215,25 +220,10 @@ func (c *commander) runCommand(command *exec.Cmd, logFn func(io.Reader)) int {
 	return 0
 }
 
-func (c *commander) processRunCommandEntryOnNestedVM(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
-	// gsutil is not installed on nested VMs, but it's a common command
-	// used during tests. The host will act as a proxy to support gsutil.
-	if strings.HasPrefix(runCommand.Command, "gsutil ") {
-		return c.processGsutilOnNestedVM(runCommand, logFn)
-	}
-
-	output, err := c.deployer.RunCommandWithOutput("powershell.exe", "-Command", runCommand.Command)
-
-	logFn(strings.NewReader(output))
-
-	if err != nil {
-		return -1
-	}
-
-	return 0
-}
-
 func (c *commander) processGsutilOnNestedVM(runCommand *gcp.RunCommandMetadataEntry, logFn func(io.Reader)) int {
+	runCommand.Command = strings.TrimSpace(runCommand.Command)
+	logFn(strings.NewReader(fmt.Sprintf("Processing gsutil command: [%s]", runCommand.Command)))
+
 	// We currently only support "gsutil cp"
 	re := regexp.MustCompile("^gsutil (cp|copy) (.*) (.*)$")
 	match := re.FindStringSubmatch(runCommand.Command)
@@ -255,13 +245,13 @@ func (c *commander) processGsutilOnNestedVM(runCommand *gcp.RunCommandMetadataEn
 
 	// create destination directory on nested VM
 	cmd := fmt.Sprintf("md -Force %s ", cpDestVm)
-	err := c.deployer.RunCommand("powershell.exe", "-Command", cmd)
+	_, err := c.deployer.instance.RunCommand("powershell.exe", "-Command", cmd)
 	if err != nil {
 		return -1
 	}
 
 	// Upload the file to our nested VM
-	err = c.deployer.UploadFileToNestedVM(cpDestLocal, cpDestVm)
+	err = UploadFileToNestedVM(c.deployer.instance.(nestedVMInstanceInterface), cpDestLocal, cpDestVm)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error during UploadFileToNestedVM: %+v", err)
 
