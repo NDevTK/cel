@@ -738,14 +738,7 @@ def _BuildCommand(command,
   if out_dir is None:
     out_dir = _GetBuildDir(build_env)
   _EnsureDir(out_dir)
-
-  # the executables have suffix on non-linux platforms
-  suffix = ''
-  if build_env['GOOS'] == 'windows':
-    suffix = '.exe'
-  if build_env['GOOS'] == 'darwin':
-    suffix = '.darwin'
-
+  suffix = '.exe' if build_env['GOOS'] == 'windows' else ''
   out = os.path.join(out_dir, command + suffix)
   _RunCommand(
       ['go', 'build'] + flags + ['-o', out, package],
