@@ -18,7 +18,8 @@ flags.DEFINE_string('input_file', None, 'The path of the celab build')
 
 flags.mark_flag_as_required('input_file')
 
-flags.DEFINE_enum('platform', None, ['windows-amd64', 'linux-amd64'],
+flags.DEFINE_enum('platform', None,
+                  ['windows-amd64', 'linux-amd64', 'darwin-amd64'],
                   'The platform of the build')
 flags.mark_flag_as_required('platform')
 

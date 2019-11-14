@@ -8,6 +8,7 @@ infra/celab                      The root of everything celab related
      ├── celab
      │     ├── windows-amd64     celab release for Windows
      │     └── linux-amd64       celab release for Linux
+     │     └── darwin-amd64      celab release for MacOS
 ```
 
 In the future, there will be other directories to contain 3rd party dependecies, e.g.
