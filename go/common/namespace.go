@@ -811,7 +811,7 @@ func (r *Namespace) asAssetGraph() (graph.Directed, error) {
 			})
 		}
 
-		if !g.Has(from.ID()) {
+		if g.Node(from.ID()) == nil {
 			g.AddNode(from)
 		}
 
@@ -876,7 +876,7 @@ func (r *Namespace) AsSerializedDOTGraph() (string, error) {
 		return "", err
 	}
 
-	b, err := dot.Marshal(g, "", "", "  ", false)
+	b, err := dot.Marshal(g, "", "", "  ")
 	if err != nil {
 		return "", err
 	}

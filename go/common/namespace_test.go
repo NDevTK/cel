@@ -459,9 +459,9 @@ func TestNamespace_asAssetGraph_sanityCheck(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !g.Has(xNode.ID()) || !g.Has(yNode.ID()) || !g.Has(zNode.ID()) || !g.Has(nNode.ID()) {
+	if g.Node(xNode.ID()) == nil || g.Node(yNode.ID()) == nil || g.Node(zNode.ID()) == nil || g.Node(nNode.ID()) == nil {
 		t.Errorf("nodes missing from graph: x(%v), y(%v), z(%v), n(%v)",
-			g.Has(xNode.ID()), g.Has(yNode.ID()), g.Has(zNode.ID()), g.Has(nNode.ID()))
+			g.Node(xNode.ID()), g.Node(yNode.ID()), g.Node(zNode.ID()), g.Node(nNode.ID()))
 	}
 
 	if !g.HasEdgeFromTo(xNode.ID(), yNode.ID()) {

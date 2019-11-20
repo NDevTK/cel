@@ -27,3 +27,7 @@ required = ["github.com/mjibson/esc"]
 [[constraint]]
   name = "go.chromium.org/luci"
   revision = "c3e2432858d88fef07a863d8d087c707737c8c7b"
+
+[[constraint]]
+  name = "gonum.org/v1/gonum"
+  revision = "454e9ef3f4d8c720da408224aeada7cbb13591cf"

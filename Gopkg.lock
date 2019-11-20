@@ -14,7 +14,6 @@
     "logging",
     "logging/apiv2",
     "logging/internal",
-    "logging/logadmin",
     "storage",
   ]
   pruneopts = ""
@@ -249,12 +248,12 @@
   version = "v0.3.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:ad0f86daae7be807bed607de3d7e10ffdd9bfa0ea5970a35f07537b9f7ff5a14"
+  digest = "1:1f0541b34dcffea964b413567dd0d8618508c9f25568efd1a29ae9423803d856"
   name = "gonum.org/v1/gonum"
   packages = [
     "blas",
     "blas/blas64",
+    "blas/cblas128",
     "blas/gonum",
     "floats",
     "graph",
@@ -271,6 +270,7 @@
     "graph/internal/ordered",
     "graph/internal/set",
     "graph/internal/uid",
+    "graph/iterator",
     "graph/simple",
     "graph/topo",
     "graph/traverse",
@@ -284,7 +284,7 @@
     "mat",
   ]
   pruneopts = ""
-  revision = "8b277688f55484af354d345d25f4c17bcd0e41a7"
+  revision = "454e9ef3f4d8c720da408224aeada7cbb13591cf"
 
 [[projects]]
   branch = "master"
@@ -345,8 +345,6 @@
     "googleapis/api/label",
     "googleapis/api/metric",
     "googleapis/api/monitoredres",
-    "googleapis/appengine/logging/v1",
-    "googleapis/cloud/audit",
     "googleapis/iam/admin/v1",
     "googleapis/iam/v1",
     "googleapis/logging/type",
@@ -407,7 +405,6 @@
     "cloud.google.com/go/compute/metadata",
     "cloud.google.com/go/iam/admin/apiv1",
     "cloud.google.com/go/logging",
-    "cloud.google.com/go/logging/logadmin",
     "cloud.google.com/go/storage",
     "github.com/ghodss/yaml",
     "github.com/golang/protobuf/descriptor",
@@ -435,14 +432,10 @@
     "google.golang.org/api/deploymentmanager/v2beta",
     "google.golang.org/api/googleapi",
     "google.golang.org/api/iam/v1",
-    "google.golang.org/api/iterator",
     "google.golang.org/api/option",
     "google.golang.org/api/runtimeconfig/v1beta1",
     "google.golang.org/api/servicemanagement/v1",
     "google.golang.org/genproto/googleapis/iam/admin/v1",
-    "google.golang.org/genproto/googleapis/logging/v2",
-    "google.golang.org/grpc/codes",
-    "google.golang.org/grpc/status",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
