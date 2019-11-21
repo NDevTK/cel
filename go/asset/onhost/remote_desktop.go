@@ -64,6 +64,9 @@ func setupRemoteDesktopHost(d *deployer, ad *assetpb.ActiveDirectoryDomain, rd *
 		if len(rd.CollectionName) <= 0 {
 			return errors.New("collection_name is required for RDS on Windows Server >= 2012.")
 		}
+		if len(rd.CollectionDescription) <= 0 {
+			return errors.New("collection_description is required for RDS on Windows Server >= 2012.")
+		}
 		fileToRun = d.GetSupportingFilePath("create_remote_desktop_win2012.ps1")
 	} else if d.IsWindows2008() {
 		fileToRun = d.GetSupportingFilePath("create_remote_desktop_win2008.ps1")

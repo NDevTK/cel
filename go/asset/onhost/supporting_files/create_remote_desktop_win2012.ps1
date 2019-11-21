@@ -45,12 +45,6 @@ Configuration RemoteDesktopSessionHost
             Name = "RDS-RD-Server"
         }
 
-        WindowsFeature Desktop-Experience
-        {
-            Ensure = "Present"
-            Name = "Desktop-Experience"
-        }
-
         WindowsFeature RSAT-RDS-Tools
         {
             Ensure = "Present"
@@ -121,6 +115,14 @@ $ConfigData = @{
 $localhost = [System.Net.Dns]::GetHostByName((hostname)).HostName
 
 $cred = New-Object System.Management.Automation.PSCredential ($adminName, (ConvertTo-SecureString $adminPassword -AsPlainText -Force))
+
+# On Win2012, RDS configuration can end up in a state before reboot that causes
+# the configuration to fail after this script is called to resume configuration after
+# reboot. The error is "Remote Desktop Session Host cannot be found for the collection".
+#
+# Deleting the collection will fix this problem: the collection will be
+# recreated, and this time no reboot is required.
+Remove-RDSessionCollection -CollectionName $collectionName -ConnectionBroker $localhost -Force -ErrorAction SilentlyContinue
 
 RemoteDesktopSessionHost -ConfigurationData $ConfigData -Credential $cred -localhost $localhost -CollectionName $collectionName -CollectionDescription $collectionDescription
 
