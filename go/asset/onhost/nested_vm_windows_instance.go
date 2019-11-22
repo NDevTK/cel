@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	"github.com/pkg/errors"
@@ -90,7 +91,7 @@ func prepareInstance(instance *nestedVMWindowsInstance) error {
 }
 
 func setupWindowsNestedVM(instance *nestedVMWindowsInstance) error {
-	err := waitUntilSshIsAlive(instance)
+	err := waitUntilSshIsAlive(instance, 5*time.Minute)
 	if err != nil {
 		return errors.WithStack(err)
 	}

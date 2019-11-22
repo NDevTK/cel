@@ -22,6 +22,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+const timeOutError = "ssh timeout"
+
 // nestedVMInstanceInterface is the interface that represents an instance running as a nested VM.
 type nestedVMInstanceInterface interface {
 	instanceInterface
@@ -86,9 +88,8 @@ func sshRunCommand(instance nestedVMInstanceInterface, name string, arg ...strin
 }
 
 // waitUntilSshIsAlive waits until ssh connection can be made.
-func waitUntilSshIsAlive(instance nestedVMInstanceInterface) error {
+func waitUntilSshIsAlive(instance nestedVMInstanceInterface, timeOut time.Duration) error {
 	instance.Logf("Try ssh connecting to nested VM")
-	timeOut := 20 * time.Minute
 	for start := time.Now(); time.Since(start) < timeOut; {
 		conn, err := sshConnect(instance)
 		if err == nil {
@@ -101,7 +102,7 @@ func waitUntilSshIsAlive(instance nestedVMInstanceInterface) error {
 		time.Sleep(1 * time.Minute)
 	}
 
-	return errors.New("ssh timeout")
+	return errors.New(timeOutError)
 }
 
 func ensureWorkingDirOnNestedVmExists(instance nestedVMInstanceInterface) error {
@@ -155,11 +156,56 @@ func uploadSupportingFilesToNestedVM(instance nestedVMInstanceInterface) error {
 	return nil
 }
 
+func isTimeOut(err error) bool {
+	return err.Error() == timeOutError
+}
+
 func waitForNestedVMRebootComplete(instance nestedVMInstanceInterface) error {
 	// Wait a while to give shutdown enough time to finish.
 	time.Sleep(1 * time.Minute)
 
-	return waitUntilSshIsAlive(instance)
+	err := waitUntilSshIsAlive(instance, 5*time.Minute)
+
+	// Sometimes, for unknown reason, a Win10 VM could freeze after reboot:
+	// we see the message "Getting Windows ready. Don't turn off your computer."
+	// on the screen, but the animation is totally frozen. Since the VM is unresponse,
+	// there is nothing we can do to figure out what is going. When this happens,
+	// the only thing we can do is to kill and then restart kvm and hope that the
+	// VM can boot up successfully this time.
+	if err != nil && isTimeOut(err) {
+		return killAndRestartKvm(instance)
+	}
+
+	return err
+}
+
+func killAndRestartKvm(instance nestedVMInstanceInterface) error {
+	// find the current qemu/kvm process
+	output, err := instance.RunLocalCommand("pgrep", "-a", "qemu")
+	if err != nil {
+		return err
+	}
+
+	// The output has the format:
+	//   PID command args ...
+	m := strings.Split(strings.TrimSpace(output), " ")
+
+	// kill it. m[0] is the PID of the qemu process.
+	_, err = instance.RunLocalCommand("sudo", "kill", "-9", m[0])
+	if err != nil {
+		return err
+	}
+
+	// wait a little bit for qemu to exit
+	time.Sleep(5 * time.Second)
+
+	// restart qemu/kvm
+	err = runLocalCommandWithoutWait(instance, "sudo", m[1:]...)
+	if err != nil {
+		return err
+	}
+
+	return waitUntilSshIsAlive(instance, 5*time.Minute)
 }
 
 func nestedVmInitialSetup(instance nestedVMInstanceInterface, kvmArgs []string) bool {

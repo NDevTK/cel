@@ -126,8 +126,8 @@ message NestedVM {
   string image = 1 [(common.v).type = REQUIRED];
 
   // The user name & password used to log in through ssh.
-  string user_name = 2;
-  string password = 3;
+  string user_name = 2 [(common.v).type = REQUIRED];
+  string password = 3 [(common.v).type = REQUIRED];
 
   // The GCE machine type used for the host. Default is n1-standard-2.
   string machineType = 4;

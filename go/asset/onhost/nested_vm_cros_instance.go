@@ -2,6 +2,7 @@ package onhost
 
 import (
 	"path"
+	"time"
 )
 
 type nestedVMCrosInstance struct {
@@ -33,7 +34,7 @@ func (instance *nestedVMCrosInstance) GetSupportingFilePath(filename string) str
 }
 
 func (instance *nestedVMCrosInstance) OneTimeSetup() bool {
-	if err := waitUntilSshIsAlive(instance); err != nil {
+	if err := waitUntilSshIsAlive(instance, 2*time.Minute); err != nil {
 		instance.d.Logf("Cros nested VM setup failed: %+v", err)
 		instance.d.setRuntimeConfigVariable(instance.machineConfigVar, statusError)
 		return true
