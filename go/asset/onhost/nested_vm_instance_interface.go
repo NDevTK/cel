@@ -72,13 +72,13 @@ func sshRunCommand(instance nestedVMInstanceInterface, name string, arg ...strin
 	instance.Logf("Run command on nested VM: %s", cmd)
 	conn, err := sshConnect(instance)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "ssh connect failed")
 	}
 	defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "cannot create ssh session.")
 	}
 
 	output, err := session.CombinedOutput(cmd)

@@ -440,6 +440,13 @@ func (d *deployer) Reboot() error {
 		return err
 	}
 
+	if d.IsNestedVM() {
+		err = waitForNestedVMRebootComplete(d.instance.(nestedVMInstanceInterface))
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
