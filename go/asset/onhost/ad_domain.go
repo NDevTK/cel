@@ -190,7 +190,7 @@ func createChildDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain, parentAdN
 		return errors.New("unsupported windows version")
 	}
 
-	for count := 1; count <= 3; count++ {
+	for count := 1; count <= 5; count++ {
 		err = d.RunConfigCommand("powershell.exe", "-File", fileToRun,
 			"-domainName", ad.Name[0:len(ad.Name)-len(parentAd.Name)-1],
 			"-netbiosName", ad.NetbiosName,
@@ -213,7 +213,7 @@ func createChildDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain, parentAdN
 		// retry
 		d.Logf("Child domain creation failed. This might be caused " +
 			"by DNS replication not done yet. Retry")
-		time.Sleep(3 * time.Minute)
+		time.Sleep(5 * time.Minute)
 	}
 
 	return err
