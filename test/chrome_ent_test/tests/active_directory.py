@@ -10,9 +10,7 @@ class DomainJoinTest(EnterpriseTestCase):
 
   @test
   def VerifyDomainJoined(self):
-    for client in [
-        'client2008', 'client2012', 'client2016', 'clientwin7', 'clientwin10'
-    ]:
+    for client in ['client2012', 'client2016', 'clientwin7', 'clientwin10']:
       output = self.clients[client].RunCommand("systeminfo")
 
       domain = ADTestHelper._GetDomainFromSystemInfo(output)
@@ -26,31 +24,19 @@ class DomainTreeTest(EnterpriseTestCase):
 
   @test
   def VerifyDomainTreeExists(self):
-    # There are 2 AD trees.
-    #
-    # The first one looks like this:
+    # The AD tree looks like this:
     #            a1-2012.com
     #         /             \
     #     b1.a1-2012.com   a2-2012.com
     #         |
     #    c1.b1.a1-2012.com
-
-    # The second one looks like this:
-    #            a1-2008.com
-    #         /              \
-    #     b1.a1-2008.com   a2-2008.com
-    #         |
-    #    c1.b1.a1-2008.com
+    #
+    # TODO(crbug.com/1028735): Add cases for Win2016 domains
     cases = []
     cases.append(('a1-2012dc', 'a1-2012.com'))
     cases.append(('a2-2012dc', 'a2-2012.com'))
     cases.append(('b1-2012dc', 'b1.a1-2012.com'))
     cases.append(('c1-2012dc', 'c1.b1.a1-2012.com'))
-
-    cases.append(('a1-2008dc', 'a1-2008.com'))
-    cases.append(('a2-2008dc', 'a2-2008.com'))
-    cases.append(('b1-2008dc', 'b1.a1-2008.com'))
-    cases.append(('c1-2008dc', 'c1.b1.a1-2008.com'))
 
     for client, expectedDomain in cases:
       output = self.clients[client].RunCommand("systeminfo")

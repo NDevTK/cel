@@ -14,7 +14,7 @@ class MachineRegistryTest(EnterpriseTestCase):
   def VerifyRegistryKeys(self):
     """Verify that the registry keys were set correctly."""
     self.assertRegistryContains(
-        "win2008-regkeys", "HKLM:\\System\\Foo", {
+        "win2016-regkeys", "HKLM:\\System\\Foo", {
             'SomeStringKey': 'Some string value',
             'SomeExpandStringKey': 'Another string value',
             'SomeBinaryKey': '{1, 2, 3}',
@@ -23,7 +23,7 @@ class MachineRegistryTest(EnterpriseTestCase):
             'SomeMultiStringKey': '{First, Second, Third}'
         })
 
-    self.assertRegistryContains("win2008-regkeys", "HKLM:\\System\\Bar",
+    self.assertRegistryContains("win2016-regkeys", "HKLM:\\System\\Bar",
                                 {'FooBar': '1'})
 
     self.assertRegistryContains("win10-regkeys", "HKLM:\\System\\Bar",

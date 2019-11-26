@@ -50,43 +50,43 @@ remote_desktop_host {
 
 
 #######################################
-# Remote Desktop Services in a Windows Server 2008 domain
+# Remote Desktop Services in a Windows Server 2016 domain
 
 ad_domain {
-  name: 'domain2008.com'
-  netbios_name: 'domain2008'
+  name: 'domain2016.com'
+  netbios_name: 'domain2016'
 
   domain_controller {
-    windows_machine: 'win2008-dc'
+    windows_machine: 'win2016-dc'
   }
 }
 
 windows_user {
-  name: 'domain2008-user'
+  name: 'domain2016-user'
   hardcoded_password: 'AAAaaa111!!!'
-  container { ad_domain: 'domain2008.com' }
+  container { ad_domain: 'domain2016.com' }
 }
 
 # A Windows machine.
 windows_machine {
-  name: 'win2008-dc'
-  machine_type: 'win2008r2'
+  name: 'win2016-dc'
+  machine_type: 'win2016'
   network_interface { network: 'primary' }
 }
 
 remote_desktop_host {
-  windows_machine: 'win2008-dc'
+  windows_machine: 'win2016-dc'
 }
 
 # A client
 windows_machine {
-  name: 'win2008-client'
-  machine_type: 'win2008r2'
+  name: 'win2016-client'
+  machine_type: 'win2016'
   network_interface { network: 'primary' }
 
-  container { ad_domain: 'domain2008.com' }
+  container { ad_domain: 'domain2016.com' }
 }
 
 remote_desktop_host {
-  windows_machine: 'win2008-client'
+  windows_machine: 'win2016-client'
 }
