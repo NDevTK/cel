@@ -71,12 +71,12 @@ windows_machine {
 }
 
 #######################################
-# Windows Server 2016 clients
+# Windows Server 2008 clients
 
 # A client to access the website. Will use NTLMv1 (via policy).
 windows_machine {
-  name: 'win2016-ntlm1'
-  machine_type: 'win2016'
+  name: 'win2008-ntlm1'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
   container { ad_domain: 'test.com' }
 
@@ -95,8 +95,8 @@ windows_machine {
 
 # A client to access the website. Will use NTLMv2 (default).
 windows_machine {
-  name: 'win2016-ntlm2'
-  machine_type: 'win2016'
+  name: 'win2008-ntlm2'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
   container { ad_domain: 'test.com' }
 }

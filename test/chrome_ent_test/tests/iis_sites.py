@@ -20,8 +20,8 @@ class IISSitesTest(EnterpriseTestCase):
         IISTestHelper._TestCase('no-domain-2012',
                                 'http://no-domain-2012:8082/test.aspx'))
     cases.append(
-        IISTestHelper._TestCase('no-domain-2016',
-                                'http://no-domain-2016:8082/test.aspx'))
+        IISTestHelper._TestCase('no-domain-2008',
+                                'http://no-domain-2008:8082/test.aspx'))
 
     for case in cases:
       logging.info("Verify %s can reach %s" % (case.client, case.target))
@@ -70,10 +70,10 @@ class IISSitesTest(EnterpriseTestCase):
     IISTestHelper._VerifyAnonymousAccessFails(self, case)
 
   def _GetDomainTestCases(self, port):
-    """Get a list of _TestCases to verify for IISSites on 2016/2012 domains."""
+    """Get a list of _TestCases to verify for IISSites on 2008/2012 domains."""
     cases = []
 
-    for version in ['2012', '2016']:
+    for version in ['2012', '2008']:
       domainPrefix = 'domain%s' % version
       for clientSuffix in ['dc', 'web', 'clt']:
         clientName = '%s-%s' % (domainPrefix, clientSuffix)
@@ -100,7 +100,7 @@ class IISNTLMTest(EnterpriseTestCase):
 
   @test
   def VerifyNTLM1Site(self):
-    for version in ["win2012", "win2016"]:
+    for version in ["win2012", "win2008"]:
       case = IISTestHelper._TestCase('%s-ntlm1' % version,
                                      'http://website.test.com/test.aspx')
       case.SetCredential('joe', 'AAAaaa111!!!')
@@ -108,7 +108,7 @@ class IISNTLMTest(EnterpriseTestCase):
 
   @test
   def VerifyNTLM2Site(self):
-    for version in ["win2012", "win2016"]:
+    for version in ["win2012", "win2008"]:
       case = IISTestHelper._TestCase('%s-ntlm2' % version,
                                      'http://website.test.com/test.aspx')
       case.SetCredential('joe', 'AAAaaa111!!!')

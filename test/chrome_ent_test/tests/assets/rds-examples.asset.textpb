@@ -3,22 +3,35 @@ network {
 }
 
 #######################################
-# Remote Desktop Services in a Windows Server 2012 domain
+# Remote Desktop Services in a Windows Server 2008 domain
 
 ad_domain {
-  name: 'domain2012.com'
-  netbios_name: 'domain2012'
+  name: 'domain2008.com'
+  netbios_name: 'domain2008'
 
   domain_controller {
-    windows_machine: 'win2012-dc'
+    windows_machine: 'win2008-dc'
   }
 }
 
 # Domain controller.
 windows_machine {
-  name: 'win2012-dc'
-  machine_type: 'win2012r2'
+  name: 'win2008-dc'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
+}
+
+# Remote Desktop on Win2008
+windows_machine {
+  name: 'win2008-rds'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+
+  container { ad_domain: 'domain2008.com' }
+}
+
+remote_desktop_host {
+  windows_machine: 'win2008-rds'
 }
 
 # Remote Desktop on Win2012 
@@ -27,7 +40,7 @@ windows_machine {
   machine_type: 'win2012r2'
   network_interface { network: 'primary' }
 
-  container { ad_domain: 'domain2012.com' }
+  container { ad_domain: 'domain2008.com' }
 }
 
 remote_desktop_host {
@@ -42,7 +55,7 @@ windows_machine {
   machine_type: 'win2016'
   network_interface { network: 'primary' }
 
-  container { ad_domain: 'domain2012.com' }
+  container { ad_domain: 'domain2008.com' }
 }
 
 remote_desktop_host {

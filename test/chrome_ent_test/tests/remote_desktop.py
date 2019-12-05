@@ -10,9 +10,9 @@ class RemoteDesktopTest(EnterpriseTestCase):
 
   @test
   def VerifyRDS(self):
-    for rds_host in ['win2012-rds', 'win2016-rds']:
+    for rds_host in ['win2008-rds', 'win2012-rds', 'win2016-rds']:
       script = "query termserver %s" % rds_host
-      ret, output = self.clients['win2012-dc'].RunPowershellNoThrow(script)
+      ret, output = self.clients['win2008-dc'].RunPowershellNoThrow(script)
 
       # This doesn't return 0 when it finds the RDS host. Parse the output.
       successMsg = "Known Remote Desktop Session Host servers"

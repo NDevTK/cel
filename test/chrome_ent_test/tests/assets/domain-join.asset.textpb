@@ -21,6 +21,13 @@ windows_machine {
 
 # clients
 windows_machine {
+  name: 'client2008'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+  container { ad_domain: 'test1.com' }
+}
+
+windows_machine {
   name: 'client2012'
   machine_type: 'win2012r2'
   network_interface { network: 'primary' }

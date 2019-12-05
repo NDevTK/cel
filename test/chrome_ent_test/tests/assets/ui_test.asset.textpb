@@ -3,6 +3,12 @@ network {
 }
 
 windows_machine {
+  name: 'win2008'
+  machine_type: 'win2008r2'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
   name: 'win2012'
   machine_type: 'win2012r2'
   network_interface { network: 'primary' }

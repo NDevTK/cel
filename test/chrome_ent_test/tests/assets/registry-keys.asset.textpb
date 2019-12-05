@@ -4,8 +4,8 @@ network {
 
 # A client with a few registry_key examples
 windows_machine {
-  name: 'win2016-regkeys'
-  machine_type: 'win2016'
+  name: 'win2008-regkeys'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
 
   registry_key {

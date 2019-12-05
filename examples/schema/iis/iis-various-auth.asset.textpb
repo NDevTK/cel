@@ -90,55 +90,55 @@ iis_site {
 }
 
 #######################################
-# IIS Sites in a Windows Server 2016 domain
+# IIS Sites in a Windows Server 2008 domain
 
-# An ActiveDirectory domain where all Win2016 machines are hosted
+# An ActiveDirectory domain where all Win2008r2 machines are hosted
 ad_domain {
-  name: 'domain2016.com'
-  netbios_name: 'domain2016'
+  name: 'domain2008.com'
+  netbios_name: 'domain2008'
 
   domain_controller {
-    windows_machine: 'domain2016-dc'
+    windows_machine: 'domain2008-dc'
   }
 }
 
 windows_user {
-  name: 'joe2016'
-  description: 'A user that can authenticate on domain2016.com'
+  name: 'joe2008'
+  description: 'A user that can authenticate on domain2008.com'
   hardcoded_password: 'AAAaaa111!!!'
-  container { ad_domain: 'domain2016.com' }
+  container { ad_domain: 'domain2008.com' }
 }
 
 windows_machine {
-  name: 'domain2016-dc'
-  machine_type: 'win2016'
+  name: 'domain2008-dc'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
 }
 
 # A client to access the websites
 windows_machine {
-  name: 'domain2016-clt'
-  machine_type: 'win2016'
+  name: 'domain2008-clt'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
-  container { ad_domain: 'domain2016.com' }
+  container { ad_domain: 'domain2008.com' }
 }
 
 # The machine where all IIS Sites are hosted
 windows_machine {
-  name: 'domain2016-web'
-  machine_type: 'win2016'
+  name: 'domain2008-web'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
-  container { ad_domain: 'domain2016.com' }
+  container { ad_domain: 'domain2008.com' }
 }
 
 iis_server {
-  name: 'iis-domain-2016'
-  windows_machine: 'domain2016-web'
+  name: 'iis-domain-2008'
+  windows_machine: 'domain2008-web'
 }
 
 iis_site {
   name: 'iis-site-kerberos'
-  iis_server: 'iis-domain-2016'
+  iis_server: 'iis-domain-2008'
   bindings: {
     protocol: HTTP
     # Use default port (80)
@@ -148,7 +148,7 @@ iis_site {
 
 iis_site {
   name: 'iis-site-kerberos2'
-  iis_server: 'iis-domain-2016'
+  iis_server: 'iis-domain-2008'
   bindings: {
     protocol: HTTP
     port: 8080
@@ -158,7 +158,7 @@ iis_site {
 
 iis_site {
   name: 'iis-site-ntlm'
-  iis_server: 'iis-domain-2016'
+  iis_server: 'iis-domain-2008'
   bindings: {
     protocol: HTTP
     port: 8081
@@ -168,7 +168,7 @@ iis_site {
 
 iis_site {
   name: 'iis-site-no-auth'
-  iis_server: 'iis-domain-2016'
+  iis_server: 'iis-domain-2008'
   bindings: {
     protocol: HTTP
     port: 8082
@@ -222,23 +222,23 @@ iis_site {
 }
 
 #######################################
-# IIS Sites outside a domain (Win2016)
+# IIS Sites outside a domain (Win2008r2)
 
 windows_machine {
-  name: 'no-domain-2016'
-  machine_type: 'win2016'
+  name: 'no-domain-2008'
+  machine_type: 'win2008r2'
   network_interface { network: 'primary' }
 }
 
 iis_server {
-  name: 'iis-no-domain-2016'
-  windows_machine: 'no-domain-2016'
+  name: 'iis-no-domain-2008'
+  windows_machine: 'no-domain-2008'
 }
 
 # Kerberos is not supported outside of a domain
 #iis_site {
 #  name: 'iis-site-kerberos'
-#  iis_server: 'iis-no-domain-2016'
+#  iis_server: 'iis-no-domain-2008'
 #  bindings: {
 #    protocol: HTTP
 #    # Use default port (80)
@@ -248,7 +248,7 @@ iis_server {
 
 iis_site {
   name: 'iis-site-ntlm'
-  iis_server: 'iis-no-domain-2016'
+  iis_server: 'iis-no-domain-2008'
   bindings: {
     protocol: HTTP
     port: 8081
@@ -258,7 +258,7 @@ iis_site {
 
 iis_site {
   name: 'iis-site-no-auth'
-  iis_server: 'iis-no-domain-2016'
+  iis_server: 'iis-no-domain-2008'
   bindings: {
     protocol: HTTP
     port: 8082
