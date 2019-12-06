@@ -5,7 +5,7 @@
 package gcp
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	compute "google.golang.org/api/compute/v1"
@@ -49,7 +49,7 @@ func (e *RunCommandMetadataEntry) Expired() bool {
 func NewRunCommand(command string) *RunCommandMetadataEntry {
 	expireOn := time.Now().Add(RunCommandLifetime).Format(time.RFC3339)
 
-	h := sha1.New()
+	h := sha256.New()
 	h.Write([]byte(expireOn))
 	h.Write([]byte(command))
 	id := hex.EncodeToString(h.Sum(nil))

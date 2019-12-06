@@ -7,7 +7,7 @@ package gcp
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -24,6 +24,7 @@ type PasswordResetLogEntry struct {
 	UserName          string `json:"userName"`
 	EncryptedPassword string `json:"encryptedPassword,omitempty"`
 	ErrorMessage      string `json:"errorMessage,omitempty"`
+	HashFunction      string `json:"hashFunction,omitempty"`
 }
 
 // DecryptPassword uses |private_key| to decrypt the |EncryptedPassword|. This
@@ -35,7 +36,7 @@ func (c *PasswordResetLogEntry) DecryptPassword(private_key *rsa.PrivateKey) (st
 		return "", err
 	}
 
-	plaintext, err := rsa.DecryptOAEP(sha1.New(), rand.Reader, private_key, ciphertext, nil)
+	plaintext, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, private_key, ciphertext, nil)
 	if err != nil {
 		return "", fmt.Errorf("error decrypting password: %v", err)
 	}

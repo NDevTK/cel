@@ -41,13 +41,16 @@ type WindowsKeyMetadataEntry struct {
 	UserName string `json:"userName"`
 
 	PrivateKey *rsa.PrivateKey `json:"-"`
+
+	HashFunction string `json:"hashFunction,omitempty"`
 }
 
 func NewWindowsKey(username, email string) (*WindowsKeyMetadataEntry, error) {
 	k := WindowsKeyMetadataEntry{
-		UserName:  username,
-		Email:     email,
-		ExpiresOn: time.Now().Add(WindowsKeysLifetime).Format(time.RFC3339)}
+		UserName:     username,
+		Email:        email,
+		ExpiresOn:    time.Now().Add(WindowsKeysLifetime).Format(time.RFC3339),
+		HashFunction: "sha256"}
 	private_key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, err
