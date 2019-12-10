@@ -7,18 +7,18 @@ package deploy
 import (
 	"reflect"
 
-	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
 	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
+	runtimeconfigpb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/runtimeconfig"
 	"github.com/golang/protobuf/proto"
 )
 
 var typeToResourceName = map[reflect.Type]string{
-	reflect.TypeOf(&computepb.Network{}):                  "compute.beta.network",
-	reflect.TypeOf(&computepb.Disk{}):                     "compute.beta.disk",
-	reflect.TypeOf(&computepb.Firewall{}):                 "compute.beta.firewall",
-	reflect.TypeOf(&computepb.Instance{}):                 "compute.beta.instance",
-	reflect.TypeOf(&onhost.RuntimeConfigConfigVariable{}): "runtimeconfig.v1beta1.variable",
-	reflect.TypeOf(&onhost.RuntimeConfigConfig{}):         "runtimeconfig.v1beta1.config",
+	reflect.TypeOf(&computepb.Network{}):        "compute.beta.network",
+	reflect.TypeOf(&computepb.Disk{}):           "compute.beta.disk",
+	reflect.TypeOf(&computepb.Firewall{}):       "compute.beta.firewall",
+	reflect.TypeOf(&computepb.Instance{}):       "compute.beta.instance",
+	reflect.TypeOf(&runtimeconfigpb.Variable{}): "runtimeconfig.v1beta1.variable",
+	reflect.TypeOf(&runtimeconfigpb.Config{}):   "runtimeconfig.v1beta1.config",
 }
 
 func getResourceType(m proto.Message) (string, bool) {

@@ -14,6 +14,7 @@ import (
 	assetpb "chromium.googlesource.com/enterprise/cel/go/schema/asset"
 	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
+	runtimeconfigpb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/runtimeconfig"
 	hostpb "chromium.googlesource.com/enterprise/cel/go/schema/host"
 	google_iam_admin_v1 "google.golang.org/genproto/googleapis/iam/admin/v1"
 )
@@ -67,7 +68,7 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *assetpb.W
 
 	// add runtime config variable for this windows machine
 	variableName := onhost.GetWindowsMachineRuntimeConfigVariableName(m.Name)
-	if err := d.Emit(nil, &onhost.RuntimeConfigConfigVariable{
+	if err := d.Emit(nil, &runtimeconfigpb.Variable{
 		Name:     "runtimeconfigVariable_" + variableName,
 		Parent:   onhost.RuntimeconfigVariableParent,
 		Variable: variableName,

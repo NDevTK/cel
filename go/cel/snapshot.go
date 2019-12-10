@@ -39,8 +39,8 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
-	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
-	gcpCompute "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
+	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
+	runtimeconfigpb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/runtimeconfig"
 	"github.com/golang/protobuf/proto"
 	compute "google.golang.org/api/compute/v1"
 )
@@ -240,7 +240,7 @@ func RestoreDeploymentConfigurationFromSnapshot(ctx common.Context, snapshot *En
 
 	resources := manifest.GetResources()
 	for _, resource := range resources {
-		if instance, ok := resource.Properties.(*gcpCompute.Instance); ok {
+		if instance, ok := resource.Properties.(*computepb.Instance); ok {
 			// Instances need to be modified to use the snapshot images and their original internal IP.
 			instanceSnapshot, err := getInstanceInSnapshot(snapshot, instance.Name)
 			if err != nil {
@@ -253,7 +253,7 @@ func RestoreDeploymentConfigurationFromSnapshot(ctx common.Context, snapshot *En
 
 			// Instances in the manifest share machine_type definitions, so we must create/edit a copy.
 			diskProto := proto.Clone(instance.Disks[0])
-			disk, ok := diskProto.(*gcpCompute.AttachedDisk)
+			disk, ok := diskProto.(*computepb.AttachedDisk)
 			if !ok {
 				return fmt.Errorf("Failed to copy AttachedDisk for %s", instance.Name)
 			}
@@ -262,12 +262,12 @@ func RestoreDeploymentConfigurationFromSnapshot(ctx common.Context, snapshot *En
 			// where we'll inject the image (below).
 			if disk.InitializeParams != nil {
 				disk.InitializeParams.SourceImage = instanceSnapshot.Image
-				instance.Disks = []*gcpCompute.AttachedDisk{disk}
+				instance.Disks = []*computepb.AttachedDisk{disk}
 			}
 
 			// Both normal instances and NestedVMs have own network interfaces, so we modify that directly.
 			instance.NetworkInterfaces[0].NetworkIP = instanceSnapshot.Metadata.NetworkIP
-		} else if disk, ok := resource.Properties.(*gcpCompute.Disk); ok {
+		} else if disk, ok := resource.Properties.(*computepb.Disk); ok {
 			// NestedVMs have separate disk entries where we must inject the image.
 			parts := strings.Split(disk.Name, "-disk")
 			if len(parts) != 2 || parts[1] != "" {
@@ -281,7 +281,7 @@ func RestoreDeploymentConfigurationFromSnapshot(ctx common.Context, snapshot *En
 			}
 
 			disk.SourceImage = instanceSnapshot.Image
-		} else if variable, ok := resource.Properties.(*onhost.RuntimeConfigConfigVariable); ok {
+		} else if variable, ok := resource.Properties.(*runtimeconfigpb.Variable); ok {
 			// All asset runtimeconfig variables should be set to "ready".
 			variable.Text = "ready"
 		}

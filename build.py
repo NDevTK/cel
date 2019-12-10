@@ -630,6 +630,14 @@ missing.
 
   _BuildStep(
       protoc_command,
+      inp=['schema/gcp/runtimeconfig/runtimeconfig-api.proto'],
+      out=os.path.join(descriptor_path, 'gcp_runtimeconfig.pb'),
+      outpy=python_proto_path,
+      env=_MergeEnv(args, target_host=True),
+      cwd=SOURCE_PATH)
+
+  _BuildStep(
+      protoc_command,
       inp=['go/tools/gen_doc_proto/testdata/test.proto'],
       out=os.path.join(SOURCE_PATH, 'go', 'tools', 'gen_doc_proto', 'testdata',
                        'test.pb'),

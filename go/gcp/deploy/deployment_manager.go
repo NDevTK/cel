@@ -12,6 +12,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"chromium.googlesource.com/enterprise/cel/go/gcp/onhost"
 	computepb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/compute"
+	runtimeconfigpb "chromium.googlesource.com/enterprise/cel/go/schema/gcp/runtimeconfig"
 	"github.com/pkg/errors"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 )
@@ -79,7 +80,7 @@ Underlying error:`)
 	m := GetDeploymentManifest()
 
 	// Add the RuntimeConfig config resource
-	if err := m.Emit(nil, &onhost.RuntimeConfigConfig{
+	if err := m.Emit(nil, &runtimeconfigpb.Config{
 		Name:        onhost.RuntimeconfigConfigName,
 		Config:      onhost.CelConfigName,
 		Description: "Runtime Config used by CEL",
