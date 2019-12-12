@@ -22,7 +22,8 @@ class SingleTestController:
                hostFile,
                cel_ctl,
                test_filter=None,
-               skip_before_all=False):
+               skip_before_all=False,
+               no_external_access=False):
     """Initializes a controller.
 
     Args:
@@ -53,6 +54,7 @@ class SingleTestController:
     self._testClass = testClass
     self._testFilter = test_filter
     self._skip_before_all = skip_before_all
+    self._no_external_access = no_external_access
     self._hostFile = hostFile
     self._assetFile = asset_file
     self._deployTimeout = testClass.DEPLOY_TIMEOUT
@@ -65,7 +67,7 @@ class SingleTestController:
 
   def DeployNewEnvironment(self):
     """Deploys the test environment. Returns only when it is ready."""
-    self._celCtlRunner.Deploy(self._deployTimeout)
+    self._celCtlRunner.Deploy(self._deployTimeout, self._no_external_access)
 
   def ExecuteTestCase(self):
     """Runs all the @test methods for this TestCase.
@@ -161,13 +163,13 @@ class CelCtlRunner:
     self._hostFile = hostFile
     self._assetFile = assetFile
 
-  def Deploy(self, deployTimeout):
+  def Deploy(self, deployTimeout, blockExternalRdpSsh):
     cmd = [
         self._cel_ctl, 'deploy', '--builtins', self._hostFile, self._assetFile
     ]
 
-    # Don't create the RDP/SSH firewall rule on LUCI deployments.
-    if "LUCI_CONTEXT" in os.environ:
+    # Don't create the RDP/SSH firewall rule during automated tests.
+    if blockExternalRdpSsh:
       cmd += ['--allow_external_rdp_ssh=False']
 
     if deployTimeout != None:
