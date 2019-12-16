@@ -541,7 +541,7 @@ missing.
       gen_api_invocation + ['-g', 'go/gcp/compute/validate.go'],
       env=_MergeEnv(args, target_host=True),
       cwd=SOURCE_PATH,
-      inp=['vendor/google.golang.org/api/compute/v0.beta/compute-api.json'],
+      inp=['vendor/google.golang.org/api/compute/v1/compute-api.json'],
       out='schema/gcp/compute/compute-api.proto')
 
   _EnsureDir(os.path.join(SOURCE_PATH, 'go', 'gcp', 'cloudkms'))

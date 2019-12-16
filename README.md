@@ -29,9 +29,12 @@ head start on the code in this repository.
     Remember that you need to copy the contents of the `include`
     directory of the zip file into `/usr/local/include/` as well, i.e.
     ```
-    sudo cp -r <unzipped_protoc_release>/include /usr/local
-
-    sudo chmod -R a+rX /usr/local/include/
+    >> cd tmp
+    >> wget https://github.com/protocolbuffers/protobuf/releases/download/v3.9.1/protoc-3.9.1-linux-x86_64.zip
+    >> unzip protoc-3.9.1-linux-x86_64.zip -d protoc
+    >> sudo cp protoc/bin/protoc /usr/local/bin/protoc
+    >> sudo mv include/* /usr/local/include/
+    >> rm -rf protoc3 protoc-3.9.1-linux-x86_64.zip
     ```
 
 * [Dep][] : Used for Go depedency management. This can be installed
@@ -75,6 +78,8 @@ mentions the managed dependency workflow.
    ``` sh
    python build.py deps --install
    ```
+   If you see an error message complaining about protoc missing, see the protoc
+   prerequisites above.
 
 ### Build It
 
@@ -83,6 +88,9 @@ mentions the managed dependency workflow.
    ``` sh
    python build.py build
    ```
+
+   If you see an error message like `google/protobuf/descriptor.proto: File not found`,
+   see the protoc prerequisites (specifically the includes step).
 
 2. Also make sure the tests pass.
 
