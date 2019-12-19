@@ -14,6 +14,7 @@ import (
 	"chromium.googlesource.com/enterprise/cel/go/common"
 	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	gcpDeploy "chromium.googlesource.com/enterprise/cel/go/gcp/deploy"
+	"google.golang.org/api/option"
 )
 
 type Session struct {
@@ -23,7 +24,7 @@ type Session struct {
 	backend *gcp.Session
 }
 
-func NewSession(ctx context.Context, client *http.Client, inputs []string, includeBuiltins bool) (*Session, error) {
+func NewSession(ctx context.Context, client *http.Client, clientOption option.ClientOption, inputs []string, includeBuiltins bool) (*Session, error) {
 	gen, err := createGenerationId()
 	if err != nil {
 		return nil, err
@@ -49,7 +50,7 @@ func NewSession(ctx context.Context, client *http.Client, inputs []string, inclu
 		return nil, err
 	}
 
-	b, err := gcp.NewSession(ctx, client, &c.HostEnvironment, gen)
+	b, err := gcp.NewSession(ctx, client, clientOption, &c.HostEnvironment, gen)
 	if err != nil {
 		return nil, err
 	}

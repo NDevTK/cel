@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
-	"chromium.googlesource.com/enterprise/cel/go/gcp"
 	"github.com/spf13/cobra"
+	"google.golang.org/api/option"
 )
 
 // Runner is an interface used for invoking a command with a Context, an
@@ -55,11 +55,15 @@ func (a *Application) setFlags() {
 // CreateSession creates a DeployerSession based on a set of configuration
 // files.
 func (a *Application) CreateSession(ctx context.Context, inputs []string, useBuiltins bool) (session *deploy.Session, err error) {
-	a.Client, err = gcp.GetDefaultClient(ctx)
+	a.Client, err = GetDefaultClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	a.Session, err = deploy.NewSession(ctx, a.Client, inputs, useBuiltins)
+	ts, err := GetDefaultTokenSource(ctx)
+	if err != nil {
+		return nil, err
+	}
+	a.Session, err = deploy.NewSession(ctx, a.Client, option.WithTokenSource(ts), inputs, useBuiltins)
 	if err != nil {
 		return nil, err
 	}

@@ -25,6 +25,7 @@ import (
 type Session struct {
 	ctx                 context.Context
 	client              *http.Client
+	clientOption        option.ClientOption
 	AllowExternalRdpSsh bool
 	HostEnvironment     *hostpb.HostEnvironment
 
@@ -58,16 +59,12 @@ type gcpSessionKeyType int
 
 var gcpSessionKey = gcpSessionKeyType(1)
 
-func NewSession(ctx context.Context, client *http.Client, env *hostpb.HostEnvironment, genId string) (s *Session, err error) {
-	s = &Session{ctx: nil, client: client, HostEnvironment: env}
+func NewSession(ctx context.Context, client *http.Client, clientOption option.ClientOption, env *hostpb.HostEnvironment, genId string) (s *Session, err error) {
+	s = &Session{ctx: nil, client: client, clientOption: clientOption, HostEnvironment: env}
 	s.ctx = context.WithValue(ctx, gcpSessionKey, s)
 
 	if env.LogSettings.GetAdminLog() != "" {
-		ts, err := GetDefaultTokenSource(ctx)
-		if err != nil {
-			return s, err
-		}
-		s.logClient, err = logging.NewClient(s.ctx, env.Project.Name, option.WithTokenSource(ts))
+		s.logClient, err = logging.NewClient(s.ctx, env.Project.Name, clientOption)
 		if err != nil {
 			return s, err
 		}
@@ -117,12 +114,7 @@ func (s *Session) GetCloudKmsService() (*cloudkms.Service, error) {
 
 func (s *Session) GetIamClient() (*iam.IamClient, error) {
 	s.iamClientOnce.Do(func() {
-		ts, err := GetDefaultTokenSource(s.ctx)
-		if err != nil {
-			s.iamClient, s.iamResult = nil, err
-			return
-		}
-		s.iamClient, s.iamResult = iam.NewIamClient(s.ctx, option.WithTokenSource(ts))
+		s.iamClient, s.iamResult = iam.NewIamClient(s.ctx, s.clientOption)
 	})
 	return s.iamClient, s.iamResult
 }

@@ -14,7 +14,6 @@ import (
 
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"
-	"chromium.googlesource.com/enterprise/cel/go/gcp"
 )
 
 type CreateSnapshotCommand struct {
@@ -181,7 +180,7 @@ func (rsc *RestoreSnapshotCommand) Run(ctx context.Context, a *Application, cmd 
 }
 
 func (lsc *ListSnapshotCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
-	client, err := gcp.GetDefaultClient(ctx)
+	client, err := GetDefaultClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -218,7 +217,7 @@ func (lsc *ListSnapshotCommand) Run(ctx context.Context, a *Application, cmd *co
 }
 
 func (dsc *DeleteSnapshotCommand) Run(ctx context.Context, a *Application, cmd *cobra.Command, args []string) error {
-	client, err := gcp.GetDefaultClient(ctx)
+	client, err := GetDefaultClient(ctx)
 	if err != nil {
 		return err
 	}
