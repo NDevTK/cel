@@ -7,6 +7,7 @@ package common
 import (
 	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -184,7 +185,12 @@ func TestReference_Store_unnamedBlob(t *testing.T) {
 	}
 
 	v := &commonpb.FileReference{Source: filepath.Join("testdata", "tiny.bin")}
-	err := ResolveRelativePath(v, ".")
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("Failed to execute runtime.Caller(0).")
+	}
+	baseDir := filepath.Dir(currentFile)
+	err := ResolveRelativePath(v, baseDir)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
@@ -229,7 +235,12 @@ func TestFileReference_Store_withTarget(t *testing.T) {
 		Source:     filepath.Join("testdata", "tiny.bin"),
 		TargetPath: "foo/targetfn.png",
 	}
-	err := ResolveRelativePath(v, ".")
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("Failed to execute runtime.Caller(0).")
+	}
+	baseDir := filepath.Dir(currentFile)
+	err := ResolveRelativePath(v, baseDir)
 	if err != nil {
 		t.Fatal("unexpected error: ", err)
 	}
