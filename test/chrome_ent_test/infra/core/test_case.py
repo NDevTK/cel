@@ -54,7 +54,7 @@ class EnterpriseTestCase(unittest.TestCase):
       logging.info("Running: %s", cmd)
       output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
       logging.info("Output: %s", output)
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
       logging.info("Command run failed with error code %s: %s" % (e.returncode,
                                                                   e.output))
       raise

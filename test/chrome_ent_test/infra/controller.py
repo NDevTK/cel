@@ -193,7 +193,7 @@ class CelCtlRunner:
       output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
       logging.info("cel_ctl run output: %s" % output)
       return output
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
       logging.info("cel_ctl run returned %s: %s" % (e.returncode, e.output))
       raise
 
@@ -221,7 +221,7 @@ class CelCtlRunner:
       logging.info("cel_ctl upload output: %s" % output)
       file_name = os.path.basename(file)
       return os.path.join(dest_directory, file_name).replace('/', '\\')
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
       logging.info("cel_ctl upload returned %s: %s" % (e.returncode, e.output))
       raise
 

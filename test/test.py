@@ -48,7 +48,7 @@ try:
 except ImportError as e:
   nonDefaultModules = ['googleapiclient.discovery', 'google.iam.admin.v1']
   for module in nonDefaultModules:
-    if module in e.message:
+    if module in str(e):
       print('Failed to import %s in test.py.' % module)
       print('Try running  `python ./scripts/tests/setup.py`.\n')
   raise

@@ -30,7 +30,7 @@ class TestClient:
     try:
       output = self.RunPowershell(script)
       return 0, output
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
       return e.returncode, e.output
 
   def RunCommand(self, cmd, args=[]):

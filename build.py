@@ -427,7 +427,7 @@ def _Deps(args):
                      stdout=f,
                      stderr=f)
 
-  o = subprocess.check_output(['protoc', '--version']).strip()
+  o = subprocess.check_output(['protoc', '--version']).decode().strip()
   if o.startswith('libprotoc '):
     if LooseVersion(o[len('libprotoc '):]) < LooseVersion("3.5.1"):
       raise Exception(
