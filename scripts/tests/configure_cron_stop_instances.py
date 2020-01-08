@@ -101,7 +101,8 @@ if __name__ == '__main__':
 
   p = subprocess.Popen([
       'gcloud', 'functions', 'deploy', 'StopOldInstances', '--trigger-topic',
-      'cron-stop-instances', '--runtime', 'python37', '--source', tempDir
+      'cron-stop-instances', '--runtime', 'python37', '--source', tempDir,
+      '--quiet'
   ],
                        env=env)
   output, err = p.communicate()

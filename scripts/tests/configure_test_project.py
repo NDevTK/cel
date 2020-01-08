@@ -101,7 +101,7 @@ if __name__ == '__main__':
   # Enable the required services to "warm up" projects before the first test.
   services = [
       'compute', 'cloudresourcemanager', 'iam', 'runtimeconfig', 'monitoring',
-      'cloudkms', 'deploymentmanager'
+      'cloudkms', 'deploymentmanager', 'servicemanagement'
   ]
   for service in services:
     p = subprocess.Popen(
