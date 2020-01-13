@@ -15,7 +15,7 @@ import (
 )
 
 // the default time out, in seconds
-const defalutTimeout int = 5 * 60
+const defaultTimeout int = 5 * 60
 
 type RunCommand struct {
 	UseBuiltins bool
@@ -95,7 +95,7 @@ The environment must exist and match the one described in the asset file.
 	f.BoolVarP(&p.UseBuiltins, "builtins", "B", false, "Use builtin assets")
 	f.StringVar(&p.Instance, "instance", "", "short instance name of VM")
 	f.StringVar(&p.Command, "command", "", "command to execute")
-	f.IntVar(&p.Timeout, "timeout", defalutTimeout, "timeout, in seconds")
+	f.IntVar(&p.Timeout, "timeout", defaultTimeout, "timeout, in seconds")
 
 	app.AddCommand(c, p)
 }

@@ -71,7 +71,7 @@ func (uc *UploadCommand) Run(ctx context.Context, a *Application, cmd *cobra.Com
 	if uc.Instance != "" {
 		log.Printf("Downloading file from storage to '%v'.", uc.Instance)
 		command := fmt.Sprintf("gsutil copy %s %s", path, uc.Destination)
-		return RunCommandOnInstance(ctx, a, session, uc.Instance, command, defalutTimeout)
+		return RunCommandOnInstance(ctx, a, session, uc.Instance, command, defaultTimeout)
 	}
 
 	return nil
