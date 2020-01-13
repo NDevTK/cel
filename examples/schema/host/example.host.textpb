@@ -83,7 +83,7 @@ machine_type {
       boot: true
 
       initializeParams {
-        sourceImage: '${host.image.windows-2008-r2.url}'
+        sourceImage: 'projects/celab-images/global/images/win2008r2'
       }
     }
   }
