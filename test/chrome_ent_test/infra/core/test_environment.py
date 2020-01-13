@@ -33,10 +33,11 @@ class TestClient:
     except subprocess.CalledProcessError as e:
       return e.returncode, e.output
 
-  def RunCommand(self, cmd, args=[]):
+  def RunCommand(self, cmd, args=[], timeout=None):
     # TODO: Escape arguments
     commandString = '%s %s' % (cmd, ' '.join(args))
-    return self._celCtlRunner.RunCommand(self.name, commandString)
+    return self._celCtlRunner.RunCommand(
+        self.name, commandString, timeout=timeout)
 
   def UploadFile(self, file, destination):
     return self._celCtlRunner.UploadFile(self.name, file, destination)

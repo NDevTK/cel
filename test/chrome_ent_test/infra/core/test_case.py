@@ -44,9 +44,9 @@ class EnterpriseTestCase(unittest.TestCase):
         methods.append(elem)
     return methods
 
-  def RunCommand(self, instance_name, cmd):
+  def RunCommand(self, instance_name, cmd, timeout=None):
     """Run a command on the specified instance."""
-    return self.clients[instance_name].RunCommand(cmd)
+    return self.clients[instance_name].RunCommand(cmd, timeout=timeout)
 
   def _runCommand(self, cmd):
     """Run a command."""

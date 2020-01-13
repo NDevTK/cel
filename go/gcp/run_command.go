@@ -20,12 +20,6 @@ import (
 // How long to wait between GetSerialPortOutput calls. No known quota.
 const waitTimeBetweenLogReads = 1 * time.Second
 
-// How long before we timeout the operation when there're no new logs.
-// This can be caused by cel_agent crashing or the command hanging.
-// TODO: cel_agent should emit periodic type='processing' entries that are not
-//       printed out, similar to what we do with type='result'.
-const timeoutNoSignal = 5 * time.Minute
-
 // RunCommand runs a command on a Windows VM hosted on Google Compute Engine.
 //
 // It uses a similar flow to GCE Windows Agent's password reset mechanism
@@ -55,15 +49,22 @@ const timeoutNoSignal = 5 * time.Minute
 //
 // If the request is successful, the function prints the output of the command
 // and returns the exit code. Otherwise, it will return an error.
+//
+// timeout is the value of how long before we timeout the operation when
+// there're no new logs. This can be caused by cel_agent crashing or the command hanging.
+// TODO: cel_agent should emit periodic type='processing' entries that are not
+//       printed out, similar to what we do with type='result'.
 func RunCommandOnInstance(ctx context.Context, client *http.Client,
 	project, zone, instance string,
-	runCommand *RunCommandMetadataEntry) (int, error) {
+	runCommand *RunCommandMetadataEntry,
+	timeout int) (int, error) {
 	operation := &runCommandOperation{
 		ctx:        ctx,
 		project:    project,
 		zone:       zone,
 		instance:   instance,
 		runCommand: runCommand,
+		timeout:    timeout,
 	}
 
 	err := operation.setRunCommandMetadata(client)
@@ -80,6 +81,7 @@ type runCommandOperation struct {
 	zone       string
 	instance   string
 	runCommand *RunCommandMetadataEntry
+	timeout    int
 
 	lastOutputPosition int64
 	timeoutAt          time.Time
@@ -243,7 +245,7 @@ func parseLogEntryMessage(message string) (*logEntry, error) {
 }
 
 func (r *runCommandOperation) resetTimeout() {
-	r.timeoutAt = time.Now().Add(timeoutNoSignal)
+	r.timeoutAt = time.Now().Add(time.Duration(r.timeout) * time.Second)
 }
 
 func (r *runCommandOperation) timedout() bool {

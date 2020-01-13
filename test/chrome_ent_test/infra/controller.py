@@ -182,11 +182,13 @@ class CelCtlRunner:
     if code != 0:
       raise CelCtlError("Deployment failed.")
 
-  def RunCommand(self, instance, command):
+  def RunCommand(self, instance, command, timeout=None):
     cmd = [
         self._cel_ctl, 'run', '--instance', instance, '--command', command,
         '--builtins', self._hostFile, self._assetFile
     ]
+    if timeout is not None:
+      cmd += ['--timeout', str(timeout)]
 
     logging.info("Running on %s: %s" % (instance, command))
     try:

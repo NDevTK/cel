@@ -14,9 +14,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// the default time out, in seconds
+const defalutTimeout int = 5 * 60
+
 type RunCommand struct {
 	UseBuiltins bool
 	Instance    string
+
+	// timeout, in seconds
+	Timeout int
 
 	// The command to execute.
 	// Metadata entries are limited to 256KB and have a total limit (512KB).
@@ -34,10 +40,10 @@ func (p *RunCommand) Run(ctx context.Context, c *Application, cmd *cobra.Command
 		return err
 	}
 
-	return RunCommandOnInstance(ctx, c, session, p.Instance, p.Command)
+	return RunCommandOnInstance(ctx, c, session, p.Instance, p.Command, p.Timeout)
 }
 
-func RunCommandOnInstance(ctx context.Context, c *Application, session *deploy.Session, instanceName, command string) error {
+func RunCommandOnInstance(ctx context.Context, c *Application, session *deploy.Session, instanceName, command string, timeout int) error {
 	cs, err := session.GetBackend().GetComputeService()
 	if err != nil {
 		return err
@@ -61,7 +67,7 @@ func RunCommandOnInstance(ctx context.Context, c *Application, session *deploy.S
 	runCommand := gcp.NewRunCommand(command)
 	exitCode, err := gcp.RunCommandOnInstance(ctx, c.Client,
 		session.GetConfiguration().HostEnvironment.Project.Name,
-		zone, instance.Name, runCommand)
+		zone, instance.Name, runCommand, timeout)
 	if err != nil {
 		return fmt.Errorf("failed to execute command: %v", err)
 	}
@@ -89,6 +95,7 @@ The environment must exist and match the one described in the asset file.
 	f.BoolVarP(&p.UseBuiltins, "builtins", "B", false, "Use builtin assets")
 	f.StringVar(&p.Instance, "instance", "", "short instance name of VM")
 	f.StringVar(&p.Command, "command", "", "command to execute")
+	f.IntVar(&p.Timeout, "timeout", defalutTimeout, "timeout, in seconds")
 
 	app.AddCommand(c, p)
 }
