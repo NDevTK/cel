@@ -41,16 +41,16 @@ windows_machine {
   container { ad_domain: 'test1.com' }
 }
 
-windows_machine {
-  name: 'clientwin7'
-  machine_type: 'win7'
-  network_interface { network: 'primary' }
-  container { ad_domain: 'test1.com' }
-}
+# windows_machine {
+#   name: 'clientwin7'
+#   machine_type: 'win7'
+#   network_interface { network: 'primary' }
+#   container { ad_domain: 'test1.com' }
+# }
 
-windows_machine {
-  name: 'clientwin10'
-  machine_type: 'win10'
-  network_interface { network: 'primary' }
-  container { ad_domain: 'test1.com' }
-}
+# windows_machine {
+#   name: 'clientwin10'
+#   machine_type: 'win10'
+#   network_interface { network: 'primary' }
+#   container { ad_domain: 'test1.com' }
+# }

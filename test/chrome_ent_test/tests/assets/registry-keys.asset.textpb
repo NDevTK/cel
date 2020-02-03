@@ -55,19 +55,18 @@ windows_machine {
     }
   }
 }
-
 # A NestedVM with a registry_key
-windows_machine {
-  name: 'win10-regkeys'
-  machine_type: 'win10'
-  network_interface { network: 'primary' }
+# windows_machine {
+#   name: 'win10-regkeys'
+#   machine_type: 'win10'
+#   network_interface { network: 'primary' }
 
-  registry_key {
-    path: 'HKEY_LOCAL_MACHINE\\System\\Bar'
+#   registry_key {
+#     path: 'HKEY_LOCAL_MACHINE\\System\\Bar'
 
-    value: {
-      name: 'FooBar10'
-      dword_value: 1
-    }
-  }
-}
+#     value: {
+#       name: 'FooBar10'
+#       dword_value: 1
+#     }
+#   }
+# }

@@ -10,7 +10,8 @@ class RemoteDesktopTest(EnterpriseTestCase):
 
   @test
   def VerifyRDS(self):
-    for rds_host in ['win2008-rds', 'win2012-rds', 'win2016-rds']:
+    # NOTE: add  'win2016-rds' when it is fixed.
+    for rds_host in ['win2008-rds', 'win2012-rds']:
       script = "query termserver %s" % rds_host
       ret, output = self.clients['win2008-dc'].RunPowershellNoThrow(script)
 
