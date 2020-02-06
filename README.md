@@ -102,3 +102,12 @@ mentions the managed dependency workflow.
 
 See [CONTRIBUTING](./CONTRIBUTING.md).
 
+## Release
+
+The framework is uploaded into [CIPD](https://github.com/luci/luci-go/tree/master/cipd) as a package.
+
+Here are the general steps to release the package.
+1. After the code review, merge in the change
+2. Wait for windows CI build finished (https://ci.chromium.org/p/celab/g/main/console)
+3. Run upload_to_cipd with the link to binaries in the CI build (instructions here: https://chromium.googlesource.com/enterprise/cel/+/refs/heads/master/scripts/cipd)
+4. (Optional) Check the output of that command and update the infra version in the .vpython file for your app
