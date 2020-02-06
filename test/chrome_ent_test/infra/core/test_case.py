@@ -71,7 +71,7 @@ class EnterpriseTestCase(unittest.TestCase):
     if instance_name in self._chocolateyInstalled:
       return
 
-    cmd = "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
+    cmd = "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
     self.clients[instance_name].RunPowershell(cmd)
 
     self._chocolateyInstalled[instance_name] = True
