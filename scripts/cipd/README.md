@@ -19,7 +19,7 @@ where PowerShell DSC packages are stored, etc.
 
 The script relies on `cipd` so make sure that `depot_tools` is already installed.
 
-- To upload a build to CIPD and mark it as the latest, run:
+- To upload a build to CIPD and mark it as the latest(Please replace the zip file with the latest CI build, the file name can be found at execution details of LUCI step "gsutil upload CELab Test Logs"), please run:
   ```
   python upload_to_cipd.py \
     --input_file=gs://celab/Windows/2019/05/24/8912558978083449328/cel.zip \
