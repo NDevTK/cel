@@ -1,0 +1,20 @@
+package: infra/celab/third_party/chocolatey_packages/chocolatey
+description: files for installing Chocolatey offline.
+# IMPORTANT:
+# After uploading a new Chocolatey package in CIPD, please remember to run the
+# 'cipd set-ref' command to set the package version number and 'latest'
+# ref on the new CIPD package instance.
+install_mode: copy
+# This package instance must contain the following files:
+# - An 'install.chocolatey.ps1' (note the HARD-CODED file name) Powershell
+#   script.
+#     Celab invokes this script to install Chocolatey. Chocolatey's official
+#     offline installation guide contains an example for how to craft this
+#     script.
+#     https://chocolatey.org/docs/installation#completely-offline-install
+# - The Chocolatey nupkg package.
+#     New Chocolatey package should be obtained from the official source:
+#     https://chocolatey.org/packages/chocolatey
+data:
+  - file: install.chocolatey.ps1
+  - file: chocolatey.0.10.15.nupkg

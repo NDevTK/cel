@@ -1,0 +1,12 @@
+package: infra/celab/third_party/chocolatey_packages/python2
+description: the nupkg that Chocolatey uses to install python2 offline.
+# IMPORTANT:
+# After uploading a new python2 package in CIPD, please remember to run the
+# 'cipd set-ref' command to set the package version number and 'latest'
+# ref on the new CIPD package instance.
+install_mode: copy
+# This CIPD package should contain a single nupkg or a single nuspec file.
+# Official source for downloading Python2:
+# https://www.nuget.org/packages/python2/
+data:
+  - file: python2.2.7.17.nupkg

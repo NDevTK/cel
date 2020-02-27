@@ -1,0 +1,7 @@
+package: infra/celab/third_party/powershell_package_providers/nuget
+# Celab copies the binaries in this directory to install the NuGet package
+# provider to Windows test client machines.
+description: the NuGet Powershell Package Provider.
+install_mode: copy
+data:
+  - dir: nuget

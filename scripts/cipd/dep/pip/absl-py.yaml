@@ -1,0 +1,17 @@
+package: infra/celab/third_party/pip-packages/absl-py
+description: files for installing the absl-py package offline.
+# IMPORTANT:
+# After uploading a pip package in CIPD, please remember to run the
+# 'cipd set-ref' command to set the package version number and 'latest'
+# ref on the new CIPD package instance.
+install_mode: copy
+# This package instance should contain the following files:
+# - An 'absl-py.txt' file (note the HARD-CODED file name).that specifies the
+#   name of the absl-py package and any of its dependencies, as well as a
+#   version for each package.
+# - Wheels or zips for each package.
+data:
+  - file: absl-py.txt
+  - file: absl-py-0.9.0.tar.gz
+  - file: enum34-1.1.6-py2-none-any.whl
+  - file: six-1.14.0-py2.py3-none-any.whl

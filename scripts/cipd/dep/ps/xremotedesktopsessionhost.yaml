@@ -1,0 +1,9 @@
+package: infra/celab/third_party/powershell_modules/xremotedesktopsessionhost
+# Celab uses this nupkg install the xRemoteDesktopSessionHost Powershell
+# module on a test client machine.
+# IMPORTANT: After uploading a new package, please remember to run the
+# "cipd set-ref" command to add the package version as a ref.
+description: the xremotedesktopsessionhost nupkg.
+install_mode: copy
+data:
+  - file: xremotedesktopsessionhost.1.8.0.nupkg

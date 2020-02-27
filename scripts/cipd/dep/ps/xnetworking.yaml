@@ -1,0 +1,9 @@
+package: infra/celab/third_party/powershell_modules/xnetworking
+# Celab uses this nupkg install the XNetworking Powershell module on a test
+# client machine.
+# IMPORTANT: After uploading a new package, please remember to run the
+# "cipd set-ref" command to add the package version as a ref.
+description: the XNetworking nupkg that celab.
+install_mode: copy
+data:
+  - file: xnetworking.5.7.0.nupkg

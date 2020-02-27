@@ -1,0 +1,18 @@
+package: infra/celab/third_party/pip-packages/pywinauto
+description: files for installing the pywinauto package offline.
+# IMPORTANT:
+# After uploading a pip package in CIPD, please remember to run the
+# 'cipd set-ref' command to set the package version number and 'latest'
+# ref on the new CIPD package instance.
+install_mode: copy
+# This package instance should contain the following files:
+# - An 'pywinauto.txt' file (note the HARD-CODED file name).that specifies the
+#   name of the pywinauto package and any of its dependencies, as well as a
+#   version for each package.
+# - Wheels or zips for each package.
+data:
+  - file: pywinauto.txt
+  - file: comtypes-1.1.7.zip
+  - file: pywin32-227-cp27-cp27m-win_amd64.whl
+  - file: pywinauto-0.6.8-py2.py3-none-any.whl
+  - file: six-1.14.0-py2.py3-none-any.whl

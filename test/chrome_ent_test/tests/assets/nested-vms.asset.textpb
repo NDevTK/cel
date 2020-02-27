@@ -3,16 +3,16 @@ network {
 }
 
 # A Windows 7 machine (nested VM).
-# windows_machine {
-#  name: 'win7-client'
-#   machine_type: 'win7'
-#   network_interface { network: 'primary' }
-# }
+windows_machine {
+  name: 'win7-client'
+  machine_type: 'win7'
+  network_interface { network: 'primary' }
+}
 
 # A Windows 10 machine (nested VM).
-# windows_machine {
-#  name: 'win10-client'
-#   machine_type: 'win10'
-#   network_interface { network: 'primary' }
-# }
+windows_machine {
+  name: 'win10-client'
+  machine_type: 'win10'
+  network_interface { network: 'primary' }
+}
 

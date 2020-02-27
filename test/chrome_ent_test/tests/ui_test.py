@@ -22,11 +22,14 @@ class UITest(EnterpriseTestCase):
 
   def _enableUITest(self, instance_name):
     """Configures the instance so that UI tests can be run on it."""
-    self.InstallChocolateyPackageLatest(instance_name, 'sysinternals')
+    self.RunCommand(instance_name, r'md -Force c:\temp')
+
+    self.InstallChocolateyPackage(instance_name, 'chocolatey_core_extension',
+                                  '1.3.3')
+    self.InstallChocolateyPackage(instance_name, 'sysinternals',
+                                  '2019.6.12.20190614')
     self.InstallPipPackagesLatest(instance_name,
                                   ['absl-py', 'requests', 'pywinauto'])
-
-    self.RunCommand(instance_name, r'md -Force c:\temp')
 
     password = self._generatePassword()
     user_name = 'ui_user'
@@ -93,9 +96,12 @@ class UITest(EnterpriseTestCase):
     # get any output from stdout because the output is buffered. When this
     # happens it makes debugging really hard.
     args = subprocess.list2cmdline(args)
-    ui_test_cmd = r'c:\Python27\python.exe -u %s %s' % (file_name, args)
-    cmd = (r'python c:\cel\supporting_files\run_ui_test.py --timeout %s -- %s'
-          ) % (timeout, ui_test_cmd)
+    ui_test_cmd = r'{0} -u {1} {2}'.format(
+        self._pythonExecutablePath[instance_name], file_name, args)
+    cmd = (r'{0} '
+           r'c:\cel\supporting_files\run_ui_test.py '
+           r'--timeout {1} -- {2}').format(
+               self._pythonExecutablePath[instance_name], timeout, ui_test_cmd)
     return self.RunCommand(instance_name, cmd)
 
   def _runUITestOnInstance(self, instance_name, error):

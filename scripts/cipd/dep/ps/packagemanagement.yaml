@@ -1,0 +1,14 @@
+package: infra/celab/third_party/powershell_modules/package_management
+description: The installer for Powershell Package Management Cmdlets.
+# IMPORTANT:
+# After uploading a pip package in CIPD, please remember to run the
+# 'cipd set-ref' command to set the package version number and 'latest'
+# ref on the new CIPD package instance.
+install_mode: copy
+# This package instance should contain the following files:
+# - An 'PackageManagement.msi' file (note the HARD-CODED file name).that
+#   installs the PowerShell Package Management cmdlets. Windows Server
+#   2008, Windows 7 and Windows 8 machines need to run this installer to
+#   access the cmdlets. Later versions of Windows comes with the cmdlets.
+data:
+  - file: PackageManagement.msi

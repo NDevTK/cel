@@ -13,9 +13,8 @@ class NestedVMsTest(EnterpriseTestCase):
   def VerifyNestedVMsAreUp(self):
     """Verify that the nested VMs are up and able to run commands."""
     # Successfully exit until the nested issues are addressed.
-    self.assertTrue(True)
-    # self._VerifyMachineNameMatch("win7-client", "win7-client\\win7")
-    # self._VerifyMachineNameMatch("win10-client", "win10-client\\win10")
+    self._VerifyMachineNameMatch("win7-client", "win7-client\\win7")
+    self._VerifyMachineNameMatch("win10-client", "win10-client\\win10")
 
   def _VerifyMachineNameMatch(self, machine, expected_name):
     try:

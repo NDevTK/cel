@@ -1,0 +1,12 @@
+package: infra/celab/third_party/chocolatey_packages/sysinternals
+description: the nupkg that Chocolatey uses to install sysinternals offline.
+# IMPORTANT:
+# After uploading a new sysinternals package in CIPD, please remember to run
+# the 'cipd set-ref' command to set the package version number and 'latest'
+# ref on the new CIPD package instance.
+install_mode: copy
+# This CIPD package should contain a single nupkg or a single nuspec file.
+# Official source for downloading sysinternals:
+# https://www.nuget.org/packages/rb.sysinternals/
+data:
+  - file: rb.sysinternals.2019.6.12.20190614.nupkg
