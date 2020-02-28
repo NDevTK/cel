@@ -51,6 +51,7 @@ func WaitForAllAssetsReady(s *gcp.Session, timeout time.Duration) (err error) {
 			return err
 		}
 
+		hasNotSetVars := len(variables) == 0
 		initAssets, hasInit := assetStates["init"]
 		inProgressAssets, hasInProgress := assetStates["in-progress"]
 		errorAssets, hasError := assetStates["error"]
@@ -61,6 +62,10 @@ func WaitForAllAssetsReady(s *gcp.Session, timeout time.Duration) (err error) {
 
 See instance console logs for more info:
 * https://console.cloud.google.com/compute/instances?project=%s`, errorAssets, s.GetProject())
+		} else if hasNotSetVars {
+			s.Logger.Info(common.MakeStringer("The assets have yet to communicate their status"))
+
+			time.Sleep(pollDuration)
 		} else if hasInit || hasInProgress {
 			// Only print progress once in a while so it's not too spammy
 			if i++; i%printProgressFrequency == 0 {
