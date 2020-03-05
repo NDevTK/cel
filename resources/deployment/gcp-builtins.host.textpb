@@ -144,6 +144,22 @@ image {
 }
 
 image {
+  name: 'windows-2019'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2019'
+  }
+}
+
+image {
+  name: 'windows-2019-core'
+  latest {
+    project: 'windows-cloud'
+    family: 'windows-2019-core'
+  }
+}
+
+image {
   name: 'windows-2016'
   latest {
     project: 'windows-cloud'
