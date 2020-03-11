@@ -127,8 +127,7 @@ class UITest(EnterpriseTestCase):
     # one instance, so, it'll take 50 minutes to run them in parallel.
     threads = []
     error = []
-    # NOTE: add 'win-7', 'win-10' when they are fixed.
-    for client in ['win2008', 'win2012', 'win2016']:
+    for client in ['win2008', 'win2012', 'win2016', 'win-7', 'win-10']:
       threads += [
           threading.Thread(
               target=self._runUITestOnInstance, args=(client, error))

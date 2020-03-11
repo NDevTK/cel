@@ -10,8 +10,9 @@ class DomainJoinTest(EnterpriseTestCase):
 
   @test
   def VerifyDomainJoined(self):
-    # NOTE: add 'clientwin7', 'clientwin10' when they are fixed.
-    for client in ['client2008', 'client2012', 'client2016']:
+    for client in [
+        'client2008', 'client2012', 'client2016', 'clientwin7', 'clientwin10'
+    ]:
       output = self.clients[client].RunCommand("systeminfo")
 
       domain = ADTestHelper._GetDomainFromSystemInfo(output)
