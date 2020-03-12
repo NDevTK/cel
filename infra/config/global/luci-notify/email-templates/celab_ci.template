@@ -3,6 +3,8 @@
 luci-notify detected a status change for CELab builder "{{ .Build.Builder | formatBuilderID }}"
 at {{ .Build.EndTime | time }}.
 
+<br/><br/>
+
 <table>
   <tr>
     <td>New status:</td>
@@ -30,13 +32,9 @@ at {{ .Build.EndTime | time }}.
   </tr>
 </table>
 
-Full details are available
-<a href="https://ci.chromium.org/b/{{.Build.Id}}">here</a>.
 <br/>
 
-<hr/>
-
-Failed steps: 
+<b>Failed steps:</b>
 <table>
 {{range $s := .Build.Steps}}
   {{/*
@@ -59,3 +57,8 @@ Failed steps: 
   {{end}}
 {{end}}
 </table>
+
+<br/>
+
+Full details are available
+<a href="https://ci.chromium.org/b/{{.Build.Id}}">here</a>.
