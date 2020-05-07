@@ -151,13 +151,13 @@ the rest of the document.
 
 *   ![PowerShell](images/Chrome-Enterprise4.png) **Microsoft Powershell
     Desired State Configuration**
-    ([docs](https://msdn.microsoft.com/en-us/powershell/dsc/overview)): "A
+    ([docs](https://docs.microsoft.com/en-us/powershell/scripting/dsc/overview/overview)): "A
     declarative platform used for configuration, deployment, and management of
     systems."
 
     Used for deploying Microsoft Windows Active Directory assets. Desired State
     Configuration will often be referred to in this document as **DSC**. [This
-    page](https://msdn.microsoft.com/en-us/powershell/dsc/dscforengineers)
+    page](https://docs.microsoft.com/en-us/powershell/scripting/dsc/overview/dscforengineers)
     provides a good overview of how DSC works and what DSC scripts look like.
 
 *   ![Selenium](images/Chrome-Enterprise5.png) **Selenium**
