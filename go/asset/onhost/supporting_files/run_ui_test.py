@@ -60,7 +60,7 @@ def RunUITest(cmd):
     status = r['Status']
     if status == 0:
       # finish without error
-      print r['Output']
+      print r['Output'].encode('utf-8')
       break
     elif status == 2:
       # command is still running. Wait for a while before rechecking
