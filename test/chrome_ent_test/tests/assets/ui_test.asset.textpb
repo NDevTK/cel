@@ -21,6 +21,12 @@ windows_machine {
 }
 
 windows_machine {
+  name: 'win2019'
+  machine_type: 'win2019'
+  network_interface { network: 'primary' }
+}
+
+windows_machine {
   name: 'win-7'
   machine_type: 'win7'
   network_interface { network: 'primary' }

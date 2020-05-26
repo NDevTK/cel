@@ -48,8 +48,8 @@ def StopOldInstances(data, context):
 
 def ParseArgs():
   parser = argparse.ArgumentParser(
-      description=
-      'Configures a GCP project to stop old compute instances automatically.')
+      description='Configures a GCP project to stop old compute instances automatically.'
+  )
 
   parser.add_argument(
       '--project',

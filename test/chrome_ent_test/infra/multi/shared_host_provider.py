@@ -168,13 +168,13 @@ class SharedHostProvider:
       lastUpdate = datetime.strptime(lock['updated'], "%Y-%m-%dT%H:%M:%S.%fZ")
       delta = datetime.utcnow() - lastUpdate
       if delta.total_seconds() > staleTimeout:
-        logging.debug(
-            "Found stale lock (%s) (%s). Deleting." % (lock['name'], delta))
+        logging.debug("Found stale lock (%s) (%s). Deleting." %
+                      (lock['name'], delta))
         try:
           self._storage.DeleteObject(lock['name'], lock['generation'])
         except Exception as e:
-          logging.warning(
-              "Failed to delete stale lock for %s: %s" % (lock['name'], e))
+          logging.warning("Failed to delete stale lock for %s: %s" %
+                          (lock['name'], e))
           activeLocks.append(lock)
       else:
         activeLocks.append(lock)

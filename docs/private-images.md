@@ -81,6 +81,8 @@ Windows Server 2016 is currently a [public
 image](https://cloud.google.com/compute/docs/images#os-compute-support)
 supported on GCE.
 
+Windows Server 2019 is the latest supported Windows Server based on Windows 10.
+
 <!-- INCLUDE index.md (56 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in

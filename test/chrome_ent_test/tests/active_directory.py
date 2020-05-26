@@ -11,7 +11,8 @@ class DomainJoinTest(EnterpriseTestCase):
   @test
   def VerifyDomainJoined(self):
     for client in [
-        'client2008', 'client2012', 'client2016', 'clientwin7', 'clientwin10'
+        'client2008', 'client2012', 'client2016', 'client2019', 'clientwin7',
+        'clientwin10'
     ]:
       output = self.clients[client].RunCommand("systeminfo")
 

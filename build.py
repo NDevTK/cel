@@ -1377,8 +1377,8 @@ def main():
       '--check',
       '-n',
       action='store_true',
-      help=
-      'check if files are correctly formatted, but don\'t modify files on disk')
+      help='check if files are correctly formatted, but don\'t modify files on disk'
+  )
   format_command.set_defaults(closure=FormatCommand)
 
   # ----------------------------------------------------------------------------

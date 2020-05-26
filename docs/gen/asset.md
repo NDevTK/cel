@@ -2239,7 +2239,6 @@ functional level.
 
 Values:
 * ["`DEFAULT`"](#ActiveDirectoryDomain.FunctionalLevel.DEFAULT)
-* "`Win2003`"
 * "`Win2008`"
 * "`Win2008R2`"
 * "`Win2012`"

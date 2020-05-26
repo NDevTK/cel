@@ -42,6 +42,13 @@ windows_machine {
 }
 
 windows_machine {
+  name: 'client2019'
+  machine_type: 'win2019'
+  network_interface { network: 'primary' }
+  container { ad_domain: 'test1.com' }
+}
+
+windows_machine {
   name: 'clientwin7'
   machine_type: 'win7'
   network_interface { network: 'primary' }
