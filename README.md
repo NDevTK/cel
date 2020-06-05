@@ -92,7 +92,7 @@ mentions the managed dependency workflow.
    If you see an error message like `google/protobuf/descriptor.proto: File not found`,
    see the protoc prerequisites (specifically the includes step).
 
-2. Also make sure the tests pass.
+2. Also make sure that all unit tests for the Go source files are passing.
 
    ``` sh
    python build.py test
