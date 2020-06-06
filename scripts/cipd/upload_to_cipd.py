@@ -49,7 +49,8 @@ data:
     zip_file.extractall(bin_dir)
 
     yaml_file = tempfile.NamedTemporaryFile(delete=False)
-    yaml_file.write(yaml_template.format(package, bin_dir))
+    yaml_file.write(
+        bytes(yaml_template.format(package, bin_dir).encode('utf8')))
     yaml_file.close()
     try:
       # run command 'create' to create & upload the package.
@@ -59,7 +60,7 @@ data:
       # the pattern we're looking for looks like this:
       # infra/celab/celab/windows-amd64:eMXP1ODJ6X2xxxx
       pattern = re.compile(r'{}:([^\s]+)'.format(package))
-      m = pattern.search(output)
+      m = pattern.search(str(output.decode('utf8')))
 
       if m is None:
         raise "Cannot find the pattern"

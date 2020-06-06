@@ -10,6 +10,6 @@ app = Application(backend="uia").start("notepad.exe")
 try:
   # Send Atl+F then X to exit notepad
   app.UntitledNotepad.type_keys("%FX")
-  print "SUCCESS"
+  print("SUCCESS")
 except:
-  print "FAILED: cannot run UI test"
+  print("FAILED: cannot run UI test")
