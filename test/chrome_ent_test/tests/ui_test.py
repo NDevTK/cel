@@ -28,8 +28,8 @@ class UITest(EnterpriseTestCase):
                                   '1.3.3')
     self.InstallChocolateyPackage(instance_name, 'sysinternals',
                                   '2019.6.12.20190614')
-    self.InstallPipPackagesLatest(instance_name,
-                                  ['absl-py', 'requests', 'pywinauto'])
+    self.InstallPipPackagesLatest(
+        instance_name, ['absl-py', 'requests', 'pyperclip', 'pywinauto'])
 
     password = self._generatePassword()
     user_name = 'ui_user'
@@ -118,6 +118,7 @@ class UITest(EnterpriseTestCase):
       test_file = os.path.join(dir, 'ui_test_on_instance.py')
       output = self._runUITest(instance_name, test_file)
       self.assertIn('SUCCESS', output)
+      self.assertIn('PASTE', output)
     except:
       error += ["UI test failed on %s" % instance_name]
 

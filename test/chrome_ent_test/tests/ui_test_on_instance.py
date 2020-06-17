@@ -4,6 +4,7 @@
 
 # A super simple UI test using pywinauto
 from pywinauto.application import Application
+import pyperclip
 
 app = Application(backend="uia").start("notepad.exe")
 
@@ -13,3 +14,10 @@ try:
   print("SUCCESS")
 except:
   print("FAILED: cannot run UI test")
+
+try:
+  # Set text in system clipboard
+  pyperclip.copy('PASTE')
+  print(pyperclip.paste())
+except:
+  print("FAILED: cannot paste in UI test")

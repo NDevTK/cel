@@ -1,0 +1,15 @@
+package: infra/celab/third_party/pip-packages/pyperclip
+description: files for installing the pyperclip package offline.
+# IMPORTANT:
+# After uploading a pip package in CIPD, please remember to run the
+# 'cipd set-ref' command to set the package version number and 'latest'
+# ref on the new CIPD package instance.
+install_mode: copy
+# This package instance should contain the following files:
+# - An 'pyperclip.txt' file (note the HARD-CODED file name).that specifies the
+#   name of the pyperclip package and any of its dependencies, as well as a
+#   version for each package.
+# - Wheels or zips for each package.
+data:
+  - file: pyperclip.txt
+  - file: pyperclip-1.8.0.tar.gz
