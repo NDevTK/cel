@@ -187,7 +187,7 @@ func (s *uiServer) timeoutHandler() {
 	log.Printf("Timeout")
 
 	// kill the process
-	err := exec.Command("taskkill", "/PID", string(s.command.Process.Pid), "/T", "/F").Run()
+	err := exec.Command("taskkill", "/PID", string(rune(s.command.Process.Pid)), "/T", "/F").Run()
 	if err != nil {
 		log.Printf("Error: %s", err)
 	}

@@ -30,11 +30,13 @@ head start on the code in this repository.
     directory of the zip file into `/usr/local/include/` as well, i.e.
     ```
     >> cd tmp
-    >> wget https://github.com/protocolbuffers/protobuf/releases/download/v3.9.1/protoc-3.9.1-linux-x86_64.zip
-    >> unzip protoc-3.9.1-linux-x86_64.zip -d protoc
+    >> wget https://github.com/protocolbuffers/protobuf/releases/download/v3.13.0/protoc-3.13.0-linux-x86_64.zip
+    >> unzip protoc-3.13.0-linux-x86_64.zip -d protoc
     >> sudo cp protoc/bin/protoc /usr/local/bin/protoc
+    >> sudo chmod 751 /usr/local/bin/protoc
+    >> cp protoc/
     >> sudo mv include/* /usr/local/include/
-    >> rm -rf protoc3 protoc-3.9.1-linux-x86_64.zip
+    >> rm -rf protoc3 protoc-3.13.0-linux-x86_64.zip
     ```
 
 * [Dep][] : Used for Go depedency management. This can be installed
