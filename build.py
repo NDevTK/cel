@@ -1247,7 +1247,7 @@ def CleanCommand(args):
 
 def CreatePackageCommand(args):
   '''Create package.'''
-  _RunCommand(['python', 'setup.py', 'bdist_wheel',
+  _RunCommand(['python3', 'setup.py', 'bdist_wheel',
                '--dist-dir=%s' % OUT_PATH],
               cwd=os.path.join(SOURCE_PATH, 'test'))
 
