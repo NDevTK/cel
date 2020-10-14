@@ -85,6 +85,11 @@ func prepareInstance(instance *nestedVMWindowsInstance) error {
 		_, err = instance.RunCommand("powershell.exe", "-ExecutionPolicy", "ByPass",
 			"-File", instance.GetSupportingFilePath("prepare_win2008.ps1"))
 		return err
+	} else if instance.d.IsWindows2016() {
+		// Nested Windows 10 also has extra setup steps to optimize the responsiveness of the nested VM.
+		_, err = instance.RunCommand("powershell.exe", "-ExecutionPolicy", "ByPass",
+			"-File", instance.GetSupportingFilePath("prepare_win10_nested_vm.ps1"))
+		return err
 	}
 
 	return err
