@@ -67,6 +67,25 @@ func (*network) ResolveConstructedAssets(ctx common.Context, n *assetpb.Network)
 		return err
 	}
 
+	vncServerRuleName := n.Name + "-allow-vnc-server"
+	s.Logger.Info(common.MakeStringer("Creating rule %s.", vncServerRuleName))
+	if err := d.Emit(nil, &computepb.Firewall{
+		Name:         vncServerRuleName,
+		Description:  "Allow VNC server access from external IP",
+		Network:      fmt.Sprintf("$(ref.%s.selfLink)", n.Name),
+		Direction:    "INGRESS",
+		SourceRanges: []string{"0.0.0.0/0"},
+		TargetTags:   []string{"vnc-server"},
+		Allowed: []*computepb.Firewall_Allowed{
+			{
+				IPProtocol: "tcp",
+				Ports:      []string{"5901"},
+			},
+		},
+	}); err != nil {
+		return err
+	}
+
 	return d.Emit(n, &computepb.Network{
 		Name:                  n.Name,
 		Description:           "",

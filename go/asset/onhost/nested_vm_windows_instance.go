@@ -18,7 +18,10 @@ type nestedVMWindowsInstance struct {
 
 func (instance *nestedVMWindowsInstance) OnBoot() bool {
 	return nestedVmInitialSetup(instance, []string{
+		"-cpu", "host",
+		"-m", "4096",
 		"-net", "nic,model=e1000",
+		"-usbdevice", "tablet",
 		"-vga", "std",
 	})
 }

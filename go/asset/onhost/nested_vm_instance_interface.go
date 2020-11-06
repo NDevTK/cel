@@ -48,7 +48,7 @@ func sshConnect(instance nestedVMInstanceInterface) (*ssh.Client, error) {
 		Auth: []ssh.AuthMethod{
 			ssh.Password(nestedVM.Password),
 
-			// ChromeOS test image uses interactive auth method
+			// ChromeOS test image uses interactive auth method.
 			ssh.KeyboardInteractive(
 				func(user, instruction string, questions []string, echos []bool) (answers []string, err error) {
 					answers = make([]string, len(questions))
@@ -63,6 +63,7 @@ func sshConnect(instance nestedVMInstanceInterface) (*ssh.Client, error) {
 		Timeout:         10 * time.Second,
 	}
 
+	instance.Logf("ssh connecting to %s", instance.GetInternalIP()+":22")
 	return ssh.Dial("tcp", instance.GetInternalIP()+":22", sshConfig)
 }
 
@@ -272,18 +273,18 @@ func setupNestedVM(instance nestedVMInstanceInterface, kvmArgs []string) error {
 
 			instance.Logf("Failed image download (will retry): %s", err)
 		}
+	}
 
-		// if the image file is a zip file, unzip it.
-		if strings.HasSuffix(imageFile, "tar.xz") {
-			if output, err := instance.RunLocalCommand(
-				"tar", "xvf", imageFile,
-				"--directory", instance.GetCurrentDirectory()); err != nil {
-				return err
-			} else {
-				// output of the tar command is the file name of the uncompressed
-				// file. Update imageFile.
-				imageFile = path.Join(instance.GetCurrentDirectory(), strings.TrimSpace(output))
-			}
+	// if the image file is a zip file, unzip it.
+	if strings.HasSuffix(imageFile, "tar.xz") {
+		if output, err := instance.RunLocalCommand(
+			"tar", "xvf", imageFile,
+			"--directory", instance.GetCurrentDirectory()); err != nil {
+			return err
+		} else {
+			// output of the tar command is the file name of the uncompressed
+			// file. Update imageFile.
+			imageFile = path.Join(instance.GetCurrentDirectory(), strings.TrimSpace(output))
 		}
 	}
 
@@ -293,9 +294,8 @@ func setupNestedVM(instance nestedVMInstanceInterface, kvmArgs []string) error {
 	}
 
 	// start the VM
-	cmd := []string{"kvm", "-m", "4096",
-		"-net", "tap,ifname=tap0,script=no", "-usbdevice", "tablet",
-		"-cpu", "host",
+	cmd := []string{"kvm",
+		"-net", "tap,ifname=tap0,script=no",
 		// the monitor so that we can tell kvm to cleanly shutdown the VM.
 		"-qmp", "tcp:127.0.0.1:25555,server,nowait",
 		"-vnc", ":20100", imageFile}
@@ -325,6 +325,17 @@ func setupNestedVM(instance nestedVMInstanceInterface, kvmArgs []string) error {
 		instance.GetLocalSupportingFilePath("setup_iptables.sh"),
 		externalIP, internalIP)
 	return err
+}
+
+// Install Gnome Desktop and VNC Server on the machine hosting the VM.
+// This allows a user to VNC into the host machine.
+func setupVncServerWithGnomeDesktop(instance nestedVMInstanceInterface) (bool, error) {
+	fileToRun := instance.GetLocalSupportingFilePath("setup_vnc_server.sh")
+	output, err := instance.RunLocalCommand("bash", fileToRun)
+	// If the script is restarting the machine, the output should contain the following
+	// line:
+	// ==== Rebooting ====
+	return strings.Contains(output, "==== Rebooting ===="), err
 }
 
 // The output will look like this:

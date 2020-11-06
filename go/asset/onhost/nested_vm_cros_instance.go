@@ -11,8 +11,26 @@ type nestedVMCrosInstance struct {
 }
 
 func (instance *nestedVMCrosInstance) OnBoot() bool {
+	if restart, err := setupVncServerWithGnomeDesktop(instance); err != nil || restart {
+		return true
+	}
+
 	return nestedVmInitialSetup(instance, []string{
+		// Please see go/cros-vm on starting a CrOS VM.
+		// CeLab stands up CrOS using images from the Simple Chrome SDK.
+		// The Qemu flags below are obtained by obtained by copying the
+		// flags that the Simple Chrome SDK uses.
+		"-cpu", "SandyBridge,-invpcid,-tsc-deadline,check,vmx=on",
+		"-daemonize",
+		"-device", "usb-tablet",
+		"-device", "virtio-scsi-pci,id=scsi",
+		"-device", "virtio-net,netdev=eth0",
+		"-enable-kvm",
+		"-m", "8G",
 		"-net", "nic,model=virtio",
+		"-netdev", "user,id=eth0,net=10.0.2.0/27,hostfwd=tcp:127.0.0.1:9222-:22",
+		"-smp", "8",
+		"-usb",
 		"-vga", "virtio",
 	})
 }

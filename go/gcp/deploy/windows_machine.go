@@ -81,12 +81,12 @@ func (*windowsMachine) ResolveConstructedAssets(ctx common.Context, m *assetpb.W
 
 	nestedVm, ok := mt.Base.(*hostpb.MachineType_NestedVm)
 	if ok {
-		return resolveNestedVM(ctx, m, nestedVm)
+		return resolveNestedVM(ctx, m, nestedVm, mt.Os)
 	}
 	return resolveNormalMachineType(ctx, m)
 }
 
-func resolveNestedVM(ctx common.Context, m *assetpb.WindowsMachine, nestedVm *hostpb.MachineType_NestedVm) error {
+func resolveNestedVM(ctx common.Context, m *assetpb.WindowsMachine, nestedVm *hostpb.MachineType_NestedVm, os hostpb.OperatingSystem) error {
 	d := GetDeploymentManifest()
 	p := common.Must(ctx.Get(projectPath)).(*hostpb.Project)
 	si := common.Must(ctx.Get(serviceAccountPath)).(*google_iam_admin_v1.ServiceAccount)
@@ -179,7 +179,22 @@ done
 
 	machineType := nestedVm.NestedVm.MachineType
 	if machineType == "" {
-		machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-2", p.Name, p.Zone)
+		// Chrome OS VMs should run with 8G of memory. For the host machine, we will chose the spec
+		// closest with that of a specialized cloudtop for running KVM:
+		// 8 cores, 100GB RAM.
+		if os == hostpb.OperatingSystem_CHROMEOS {
+			machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-32", p.Name, p.Zone)
+		} else {
+			machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-2", p.Name, p.Zone)
+		}
+	}
+
+	tags := &computepb.Tags{}
+	if os == hostpb.OperatingSystem_CHROMEOS {
+		tags = &computepb.Tags{
+			Fingerprint: "vnc-server",
+			Items:       []string{"vnc-server"},
+		}
 	}
 
 	return d.Emit(m, &computepb.Instance{
@@ -209,6 +224,7 @@ done
 				},
 			},
 		},
+		Tags: tags,
 	})
 }
 
