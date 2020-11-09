@@ -185,7 +185,7 @@ done
 		if os == hostpb.OperatingSystem_CHROMEOS {
 			machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-32", p.Name, p.Zone)
 		} else {
-			machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-2", p.Name, p.Zone)
+			machineType = fmt.Sprintf("projects/%s/zones/%s/machineTypes/n1-standard-4", p.Name, p.Zone)
 		}
 	}
 
