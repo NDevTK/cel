@@ -4,59 +4,54 @@
 
 ## Using the Chromium waterfall
 
-
 ### Trigger existing tests
 
-This is basically what a non-Windows-using developer would use to verify that their code doesn't break some enterprise use case.
-
-
+This is basically what a non-Windows-using developer would use to verify that
+their code doesn't break some enterprise use case.
 
 1.  Hack hack hack.
 1.  `git cl upload`
 1.  `git cl try -B luci.chrome.enterprise -b win`
 1.  Wait for results to show up on Gerrit.
 
-
 ### Trigger existing tests using locally built binary
 
-Expected to be used by someone who has built their binary on Windows and would like to quickly run a test case or two in the lab.
-
-
+Expected to be used by someone who has built their binary on Windows and would
+like to quickly run a test case or two in the lab.
 
 1.  Hack hack hack.
 1.  Build binaries locally.
 1.  `mb.py isolate out/win-foo system_tests`
-1.  `isolate.py archive -i out/win-foo/system_tests.isolate -s out/win-foo/system_tests.isolated`
+1.  `isolate.py archive -i out/win-foo/system_tests.isolate -s
+    out/win-foo/system_tests.isolated`
 1.  `swarming.py …` or some other script to trigger builds.
-
 
 ## Using a private lab
 
 TODO(asanka): Fill these out
 
-
 ### Creating a private lab
-
 
 ### Adding "permanent" fixtures
 
-
 ### Interactive development and debugging
 
-Once they run into problems and printf is no longer their friend, it's perhaps time to login to a user VM and debug their binary. Shuttling of debug symbols is TBD.
+Once they run into problems and printf is no longer their friend, it's perhaps
+time to login to a user VM and debug their binary. Shuttling of debug symbols is
+TBD.
 
-This may also be used by a developer who hasn't written a system level test yet and would just like to manually verify that the fix works.
-
+This may also be used by a developer who hasn't written a system level test yet
+and would just like to manually verify that the fix works.
 
 1.  Hack hack hack.
 1.  Build binaries locally.
 1.  `mb.py isolate out/win-foo enterprise_system_tests`
-1.  `isolate.py archive -i out/win-foo/enterprise_system_tests.isolate -s out/win-foo/enterprise_system_tests.isolated`
+1.  `isolate.py archive -i out/win-foo/enterprise_system_tests.isolate -s
+    out/win-foo/enterprise_system_tests.isolated`
 1.  On VM: `isolateserver.py download -s <hash>`
 1.  On VM: Run and debug binary manually.
 
-
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -112,4 +107,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-

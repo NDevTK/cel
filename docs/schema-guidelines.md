@@ -8,22 +8,22 @@ This document specifies guidelines for authoring schema changes for the Chrome
 Enterprise Lab.
 
 The schema is defined by the set of `.proto` files in directories named `asset`
-and `host` under the [schema][] directory.  See [Protocol Buffers][] for details
+and `host` under the [schema][] directory. See [Protocol Buffers][] for details
 on the syntax for `.proto` files. These `.proto` files are used to generate Go
 code which are included in the libraries and tools.
 
 Refer to the [design document][Design] for overall design. Specifically, readers
-are expected to be familiar with the [ASSET MANIFEST][] section and the [HOST
-ENVIRONMENT][] sections of the design doc. For convenience, the Chrome Enterprise
-Lab may be abbreviated as **CEL** in this document.
+are expected to be familiar with the [ASSET MANIFEST][] section and the
+[HOST ENVIRONMENT][] sections of the design doc. For convenience, the Chrome
+Enterprise Lab may be abbreviated as **CEL** in this document.
 
-*** note
-**The Schema Is a Living Specification.** The asset schema defines the types of
-assets that are supported in the Chrome Enterprise Lab. It's expected that this
-will evolve with the requirements of the Chromium project. Hence it'll never be
-complete and must be designed in such a way that new asset types can be added
-without too much churn.
-***
+*** note **The Schema Is a Living Specification.** The asset schema defines the
+types of assets that are supported in the Chrome Enterprise Lab. It's expected
+that this will evolve with the requirements of the Chromium project. Hence it'll
+never be complete and must be designed in such a way that new asset types can be
+added without too much churn.
+
+********************************************************************************
 
 ## Concepts
 
@@ -40,7 +40,6 @@ VM instances, AD domains, IIS servers, MCS servers, authenticated proxies, etc.
 The Asset Manifest is rooted at the `AssetManifest` message
 ([source](../schema/asset/asset_manifest.proto)). All messages that appear in
 `AssetManifest` are called top level assets.
-
 
 ### Asset Inventory
 
@@ -72,11 +71,11 @@ environment is currently specific GCP.
 All host environment parameters are rooted at the `HostEnvironment` message
 defined in [`host_environment.proto`](../schema/host/host_environment.proto).
 
-### Naming And References                                          {#references}
+### Naming And References {#references}
 
 For the ease of identifying different objects, every object is given a name in
-the conveniently named `name` field. You can see the names in the [asset][Asset
-Example] and [host][Host Example] configuration examples.
+the conveniently named `name` field. You can see the names in the
+[asset][Asset Example] and [host][Host Example] configuration examples.
 
 The object being named can be referenced using familiar dot separated paths from
 elsewhere in the configuration. The references are constructed as follows:
@@ -95,7 +94,7 @@ elsewhere in the configuration. The references are constructed as follows:
     E.g. The `machine_type` field of the following message in the asset manifest
     is `asset.windows_machine.dc.machine_type`.
 
-    ``` conf
+    ```conf
     # A Windows machine.
     windows_machine {
       name: 'dc'
@@ -107,16 +106,16 @@ elsewhere in the configuration. The references are constructed as follows:
     This implies that an object in a collection must have a `name` field to be
     addressable.
 
-### Validation                                                     {#validation}
+### Validation {#validation}
 
 The validation is performed based on the annotations that are specified in the
 ProtoBuf schema. The validation rules are defined and explained in
-[validation.proto][]. When defining schema, the
-validation options can be specified as in the examples below:
+[validation.proto][]. When defining schema, the validation options can be
+specified as in the examples below:
 
 From [active_directory.proto](/schema/asset/active_directory.proto):
 
-``` proto
+```proto
 message WindowsContainer {
   oneof container {
     // Domain name.
@@ -137,12 +136,12 @@ object in a collection. The value of the `ad_domain` field of a
 `ActiveDirectoryDomain` object in `asset.ad_domain` colleciton.
 
 There are additional parameters that you can use to restrict how a field is
-validated. Refer to the [validation.proto][] file for complete list. The validator
-recognizes several field types and attributes:
+validated. Refer to the [validation.proto][] file for complete list. The
+validator recognizes several field types and attributes:
 
-*   **`REQUIRED`**: The field must not be empty. Additionally, if this field type
-    is applied to a `repeated`, `oneof`, or `map`, requires that at least one
-    instance be specified.
+*   **`REQUIRED`**: The field must not be empty. Additionally, if this field
+    type is applied to a `repeated`, `oneof`, or `map`, requires that at least
+    one instance be specified.
 
 *   **`LABEL`**: The field must be a `string` that matches the `<label>`
     production in [RFC 1035][].
@@ -160,13 +159,13 @@ though they can be explicitly qualified to be of a different type like `FQDN` or
 [validation.proto]: /schema/common/validation.proto
 [RFC 1035]: https://www.ietf.org/rfc/rfc1035.txt
 
-### Inline References                                       {#inline-references}
+### Inline References {#inline-references}
 
 String values in configuration files may contain inline references to other
 string fields in the configuration. E.g.: A name of a source disk image may
 refer to the project name of the host environment as follows:
 
-``` conf
+```conf
 image {
   name: 'win2012r2'
   latest {
@@ -186,7 +185,7 @@ fields. The latter are only available after the corresponding asset has been
 resolved. For example, the `Image` host resource contains a `url` field that's
 annotated as `OUTPUT`:
 
-``` proto
+```proto
 message Image {
   ...
   // Output. Will contain the resolved base image URL on success.
@@ -204,14 +203,13 @@ definition, then The [DEPLOYER][] creates an implicit dependency from the
 See [Deployment Overview][] for details on *when* inline string references are
 resolved.
 
-
 ## Guidelines For Authoring Schema
 
-### A Few DOs and DON'Ts                                          {#do-and-dont}
+### A Few DOs and DON'Ts {#do-and-dont}
 
-*   **Take future growth into consideration.** Some of the guidelines below
-    are the result of such considerations. Growth in the asset catalog or any
-    asset inventory shouldn't require inordinate refactoring.
+*   **Take future growth into consideration.** Some of the guidelines below are
+    the result of such considerations. Growth in the asset catalog or any asset
+    inventory shouldn't require inordinate refactoring.
 
 *   **Keep the asset schema independent of the hosting environment.** I.e. it
     should be possible for the same asset schema to be used if the hosting
@@ -231,9 +229,10 @@ resolved.
     repository.
 
 |||---|||
+
 #### Yes
 
-``` proto
+```proto
 message Machine {
 string name = 1;
 string os = 2;
@@ -247,30 +246,29 @@ different operating systems map to specific base image types.
 
 #### No
 
-``` proto
+```proto
 message Instance {
 string base_image_url = 1;
 ...
 }
 ```
 
-Base image URLs are specific to hosting environment, and may even be
-specific to a GCP project.
-|||---|||
+Base image URLs are specific to hosting environment, and may even be specific to
+a GCP project. |||---|||
 
-*   **Be consistent with developer nomenclature**. The asset schema should
-    map comfortably to how testers and developers think of networks.
+*   **Be consistent with developer nomenclature**. The asset schema should map
+    comfortably to how testers and developers think of networks.
 
-*   **Be minimalistic.**  The Asset Schema *should only include* properties
-    that are **material** to the tests being considered, and *should exclude
-    anything else*. Any additional required properties that are not material to
-    the test can be specified via the Host Environment Schema. Avoid over
-    specifying assets. Don't add knobs we don't plan on turning. I.e.  don't add
-    asset attributes that don't have a known use case.
+*   **Be minimalistic.** The Asset Schema *should only include* properties that
+    are **material** to the tests being considered, and *should exclude anything
+    else*. Any additional required properties that are not material to the test
+    can be specified via the Host Environment Schema. Avoid over specifying
+    assets. Don't add knobs we don't plan on turning. I.e. don't add asset
+    attributes that don't have a known use case.
 
 *   **Don't expose implementation details of the deployment process or the
-    toolchain.** Avoid introducing asset definitions for intermediate objects that
-    are only used during deployment. In other words, once again, the schema
+    toolchain.** Avoid introducing asset definitions for intermediate objects
+    that are only used during deployment. In other words, once again, the schema
     should allow the test developer to describe their requirements in a minimal
     fashion.
 
@@ -280,9 +278,10 @@ specific to a GCP project.
     without changing the parent asset.
 
 |||---|||
+
 #### Yes
 
-``` proto
+```proto
 message Network {
   ...
 }
@@ -295,7 +294,7 @@ message Machine {
 
 #### No
 
-``` proto
+```proto
 message Network {
   ...
   repeated string machines = 1;
@@ -305,21 +304,22 @@ message Machine {
   ...
 }
 ```
+
 |||---|||
 
 *   **Stick to [Protobuf Style Guide][] for style** with the following
     exceptions:
 
     *   Naming convention for repeated elements is to use the **singular** form
-	instead of the *plural* form encouraged in the style guide. Using the
-	singular form results in more readable `textpb` files which is how the
-	assets will be specified in Chromium and other labs.
+        instead of the *plural* form encouraged in the style guide. Using the
+        singular form results in more readable `textpb` files which is how the
+        assets will be specified in Chromium and other labs.
     *   Ignore the stuff about Google3 and `BUILD` files. These are not
-	applicable to the CEL project.
+        applicable to the CEL project.
 
-*   **Keep proto files manageable.** Group asset schemas sensibly and move
-    them into separate files. E.g. Keep Active Directory specific asset schemas
-    in a single file and import that file from other protos.
+*   **Keep proto files manageable.** Group asset schemas sensibly and move them
+    into separate files. E.g. Keep Active Directory specific asset schemas in a
+    single file and import that file from other protos.
 
 *   **Avoid nesting messages.** Nested message make the protos less readable and
     produces unreasonably large identifiers when generating stub code in Go.
@@ -327,13 +327,13 @@ message Machine {
 *   **Anchor all imports at the root of the source tree.** See existing files
     for more examples:
 
-    ``` proto
+    ```proto
     import "schema/common/file_reference.proto";
     ```
 
-*   **Top level messages must have a `name` field**: Every top level asset
-    must have a name so that they can be referred to from other assets or tests.
-    If the scope of the name isn't spelled out explicitly, it should be assumed
+*   **Top level messages must have a `name` field**: Every top level asset must
+    have a name so that they can be referred to from other assets or tests. If
+    the scope of the name isn't spelled out explicitly, it should be assumed
     that the name has global scope and case insensitive.
 
 *   **Use RFC 1035 <label>s for names that are used in cross-references**. This
@@ -361,7 +361,7 @@ message Machine {
     E.g.: Let's say we want to associate an IIS site with an IIS server. These
     are both top level assets defined in `asset_manifest.proto` as follows:
 
-    ``` proto
+    ```proto
     message AssetManifest {
       ...
       repeated IISServer iis_server =301;
@@ -373,7 +373,7 @@ message Machine {
     The `IISServer` message, being a top level asset, has a `name` attribute
     identifies it.
 
-    ``` proto
+    ```proto
     message IISServer {
       ...
       string name = 1;
@@ -385,7 +385,7 @@ message Machine {
     field name as that is used in `AssetManifest`. In this case it would be
     `iis_server`.
 
-    ``` proto
+    ```proto
     message IISSite {
       ...
       string name = 1;
@@ -409,17 +409,16 @@ message Machine {
     `based_on` attribute which names another asset with the same type and in the
     same namespace.
 
-*** promo
-Overall, be internally consistent.
-***
+*** promo Overall, be internally consistent.
 
+********************************************************************************
 
-### Boilerplate                                                   {#boilerplate}
+### Boilerplate {#boilerplate}
 
-All schemas use Protocol Buffers Version 3, with a suitable package name.  I.e.
+All schemas use Protocol Buffers Version 3, with a suitable package name. I.e.
 Every `.proto` file should start with:
 
-``` proto
+```proto
 // Copyright $YEAR The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -429,14 +428,14 @@ package $ASSET_OR_HOST;
 option go_package="chromium.googlesource.com/enterprise/cel/go/$ASSET_OR_HOST";
 ```
 
-Where `$YEAR` should be the year you introduce the proto file.  `$ASSET_OR_HOST`
+Where `$YEAR` should be the year you introduce the proto file. `$ASSET_OR_HOST`
 is either `asset` or `host` depending on whether you are authoring a proto for
 the asset manifest or the host manifest. Don't forget to import any dependencies
 and properly document your messages.
 
 For ease of copy&paste, use the following for asset protos:
 
-``` proto
+```proto
 // Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -448,7 +447,7 @@ option go_package="chromium.googlesource.com/enterprise/cel/go/asset";
 
 ... and the following for host environment protos:
 
-``` proto
+```proto
 // Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -484,9 +483,10 @@ E.g.: The following schema can describe a fixed service such as a web server
 that runs on a specific host.
 
 |||---|||
+
 #### Asset Schema
 
-``` proto
+```proto
 message FixedService {
   string name;
 }
@@ -494,12 +494,13 @@ message FixedService {
 
 #### Host Environment Schema
 
-``` proto
+```proto
 message FixedServiceInstance {
   string name;
   repeated DNSRecord dns_record;
 }
 ```
+
 |||---|||
 
 ### 2. On Demand Assets
@@ -523,9 +524,10 @@ Host Environment Schema
 E.g.:
 
 |||---|||
+
 #### Asset Schema
 
-``` proto
+```proto
 message Machine {
   string name;
   string machine_type;
@@ -535,30 +537,29 @@ message Machine {
 
 #### Host Environment Schema
 
-``` proto
+```proto
 message MachineType {
   string name;
   GCEInstanceOptions instance_options;
 }
 ```
-|||---|||
 
+|||---|||
 
 Details like base image URL, zone, disk size, CPUs etc. will all go into the
 Host Environment Schema. This way, each additional machine that's added to the
 asset inventory can conveniently refer to a machine type via its name without
 having to list out all the properties understood by GCP.
 
-
 ### 3. Script Assets
 
 These are pretty much the same as On-Demand Assets, with the following
 exceptions:
 
-* A Script Asset must be independent of deployment strategy.
+*   A Script Asset must be independent of deployment strategy.
 
-* A Script Asset must not directly depend on a Host Environment Schema
-  component.
+*   A Script Asset must not directly depend on a Host Environment Schema
+    component.
 
 ## Asset Validation
 
@@ -578,8 +579,7 @@ classes are missing a `Validate()` method.
 [schema/asset]: ../schema/asset
 [schema/host]: ../schema/host
 
-
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -635,4 +635,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-

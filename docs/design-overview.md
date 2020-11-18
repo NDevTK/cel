@@ -6,40 +6,42 @@ information on why we did this, and how the labs work.
 
 ## Contents
 
-* [Background][]
-  * [Use Cases][]
-  * [Additional Considerations][]
-  * [Frameworks/Tools Used][]
+*   [Background][]
 
-* [Design Summary][Design]
-  * [Objective][]
-  * [The Product][]
-  * [Concepts][]
-    * [The Isolate][ISOLATE]
-    * [The Asset Manifest][ASSET MANIFEST]
-    * [The Host Environment][HOST ENVIRONMENT]
-    * [The System Test Runner][SYSTEM TEST RUNNER]
-    * [The Deployer][DEPLOYER]
-    * [The Test Host][TEST HOST]
-    * [The `cel_bot` tool][cel_bot]
-    * [The Host Test Runner][HOST TEST RUNNER]
-    * [The Test][TEST]
-    * [The `cel_py` library][cel_py]
+    *   [Use Cases][]
+    *   [Additional Considerations][]
+    *   [Frameworks/Tools Used][]
 
-* Design Details
-  * [Deployment Details][]
-  * [Google Services][]
-  * [On-Premise Fixtures][]
-  * [Scalability][]
-  * [Bootstrapping][]
-  * [Private Google Compute Images][]
-  * [Source Locations][]
-  * [Asset Description Schema][]
-  * [Integration With Chromium Waterfall][]
-  * [Workflows][]
+*   [Design Summary][Design]
 
+    *   [Objective][]
+    *   [The Product][]
+    *   [Concepts][]
+    *   [The Isolate][ISOLATE]
+    *   [The Asset Manifest][ASSET MANIFEST]
+    *   [The Host Environment][HOST ENVIRONMENT]
+    *   [The System Test Runner][SYSTEM TEST RUNNER]
+    *   [The Deployer][DEPLOYER]
+    *   [The Test Host][TEST HOST]
+    *   [The `cel_bot` tool][cel_bot]
+    *   [The Host Test Runner][HOST TEST RUNNER]
+    *   [The Test][TEST]
+    *   [The `cel_py` library][cel_py]
 
-<!-- INCLUDE index.md (56 lines) -->
+*   Design Details
+
+    *   [Deployment Details][]
+    *   [Google Services][]
+    *   [On-Premise Fixtures][]
+    *   [Scalability][]
+    *   [Bootstrapping][]
+    *   [Private Google Compute Images][]
+    *   [Source Locations][]
+    *   [Asset Description Schema][]
+    *   [Integration With Chromium Waterfall][]
+    *   [Workflows][]
+
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -95,4 +97,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-

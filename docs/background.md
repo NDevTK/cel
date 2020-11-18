@@ -36,9 +36,7 @@ efficiently construct enterprise labs, and how such a lab can be integrated into
 the Chromium continuous integration workflow. The use cases and considerations
 that went into the design are discussed below.
 
-
 ## Use Cases
-
 
 *   **Continuous integration tests on the build waterfall.** We'd need a robust
     set of automated tests run periodically to catch regressions whether caused
@@ -81,7 +79,6 @@ that went into the design are discussed below.
     a regression range could be done by bisecting continuous builds against a
     set of tests.
 
-
 ## Additional Considerations
 
 *   **Focus on Windows**. Deploying and configuring Active Directory services in
@@ -93,9 +90,9 @@ that went into the design are discussed below.
     of our Posix clients against enterprise fixtures. It would be great to also
     support macOS clients, but it is not one of the short term goals.
 
-    *** note
-    Note that Posix test fixtures are already in scope to be supported.
-    ***
+    *** note Note that Posix test fixtures are already in scope to be supported.
+
+    ****************************************************************************
 
 *   **Easily Instantiated/Cloned**. Automated tests, interactive debugging
     sessions, and development of new test fixtures or new test configurations
@@ -122,8 +119,7 @@ that went into the design are discussed below.
     policies. Ideally, the test would run with profile data in the default
     location.
 
-
-## Frameworks/Tools Used                                         {#tools-used}
+## Frameworks/Tools Used {#tools-used}
 
 In addition to staples like ProtoBufs, the lab makes use of the following
 frameworks and tools. Some familiarity of these would be helpful while perusing
@@ -149,15 +145,15 @@ the rest of the document.
     ([docs](https://github.com/luci/luci-go/blob/master/cipd/README.md)): "CIPD
     is package deployment infrastructure". Used for deploying software into VMs.
 
-*   ![PowerShell](images/Chrome-Enterprise4.png) **Microsoft Powershell
-    Desired State Configuration**
-    ([docs](https://docs.microsoft.com/en-us/powershell/scripting/dsc/overview/overview)): "A
-    declarative platform used for configuration, deployment, and management of
-    systems."
+*   ![PowerShell](images/Chrome-Enterprise4.png) **Microsoft Powershell Desired
+    State Configuration**
+    ([docs](https://docs.microsoft.com/en-us/powershell/scripting/dsc/overview/overview)):
+    "A declarative platform used for configuration, deployment, and management
+    of systems."
 
     Used for deploying Microsoft Windows Active Directory assets. Desired State
-    Configuration will often be referred to in this document as **DSC**. [This
-    page](https://docs.microsoft.com/en-us/powershell/scripting/dsc/overview/dscforengineers)
+    Configuration will often be referred to in this document as **DSC**.
+    [This page](https://docs.microsoft.com/en-us/powershell/scripting/dsc/overview/dscforengineers)
     provides a good overview of how DSC works and what DSC scripts look like.
 
 *   ![Selenium](images/Chrome-Enterprise5.png) **Selenium**
@@ -169,7 +165,7 @@ the rest of the document.
 *   ![Go](images/Chrome-Enterprise6.png) **Go**
     ([website](https://golang.org/)): A popular scripting language.
 
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -225,4 +221,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-

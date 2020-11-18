@@ -7,32 +7,29 @@ Cloud project to a functioning enterprise lab.
 
 There are two types of bootstrapping:
 
+1.  **Full**: The full enterprise lab with its physical counterparts and
+    manually provisioned fixtures that is integrated into the waterfall and
+    provides continuous integration testing. Following the sale of Boston
+    Dynamics, we are no longer in a position to automate the deployment of
+    physical lab components. Physical labs and some virtual assets are expected
+    to be not automated at least in the short term.
 
-1.   **Full**: The full enterprise lab with its physical counterparts and
-     manually provisioned fixtures that is integrated into the waterfall and
-     provides continuous integration testing. Following the sale of Boston
-     Dynamics, we are no longer in a position to automate the deployment of
-     physical lab components.  Physical labs and some virtual assets are
-     expected to be not automated at least in the short term.
-
-1.   **Standalone**: An independent lab sans some of the physical components and
-     manually provisioned fixtures.
+1.  **Standalone**: An independent lab sans some of the physical components and
+    manually provisioned fixtures.
 
 Given that one of the key use cases is the ability to *partially* clone the
 environment for individual or team use, the bootstrapping process needs to be
 streamlined and easily reproducible.
-
 
 ## Bootstrapping A New Instance Of The Lab
 
 The process for establishing an instance of an enterprise lab hosted at a new
 Google Cloud project follows:
 
-
 1.  Start by building the Chrome Enterprise Lab infrastructure tools. See
     [Source Locations][] for `cel` repository location. The build process
     generates all the scripts and binaries that are needed for the remainder of
-    this process.  The files are copied out to a `staging` directory. This
+    this process. The files are copied out to a `staging` directory. This
     directory will be needed by the `cel_admin bootstrap` command later.
 
 1.  Create a Google Cloud project
@@ -56,25 +53,25 @@ Google Cloud project follows:
 
     1.  Verifies or enables the necessary Google Cloud APIs for the project.
     1.  Verifies or creates the Google Cloud Storage bucket needed for
-    bootstrapping.
+        bootstrapping.
     1.  Copies the build artifacts from `staging` to the Google Cloud Storage
-    bucket.
+        bucket.
     1.  Copies the HOST ENVIRONMENT to a Google Cloud Storage bucket. The
-    storage location is available to all VMs in the lab in project metadata
-    `cel-host-environment`.
+        storage location is available to all VMs in the lab in project metadata
+        `cel-host-environment`.
     1.  Purge all existing GCP resources that are of the types that are deployed
-    by the lab. This should wipe out and reset the state for a Google Cloud
-    project that had been previously used for a lab deployment. Purging also
-    ensures that any resources that were orphaned during previous runs are
-    cleaned up.
+        by the lab. This should wipe out and reset the state for a Google Cloud
+        project that had been previously used for a lab deployment. Purging also
+        ensures that any resources that were orphaned during previous runs are
+        cleaned up.
     1.  Starts deploying the intrinsic enterprise lab assets. This process is
-	equivalent to what the DEPLOYER does, but instead the `cel_admin`
-	command uses a list of builtin assets. The list of assets deployed here
-	include:
-	1.  Administrative network which hosts the GREETER and DEPLOYER
-	1.  Service accounts for used for automated deployment
-	1.  GREETER
-	1.  DEPLOYER
+        equivalent to what the DEPLOYER does, but instead the `cel_admin`
+        command uses a list of builtin assets. The list of assets deployed here
+        include:
+    1.  Administrative network which hosts the GREETER and DEPLOYER
+    1.  Service accounts for used for automated deployment
+    1.  GREETER
+    1.  DEPLOYER
 
 1.  Start -- or restart -- the GREETER and DEPLOYER services so that they pick
     up the new configuration.
@@ -82,12 +79,10 @@ Google Cloud project follows:
 1.  At this point, the lab's GREETER can start accepting test runs and asset
     deployment requests. For Standalone use cases, this is sufficient.
 
-
 ## Updating An Existing Lab
 
 Updates must currently be deployed manually and follow a similar workflow as
 what's described above.
-
 
 1.  Drain the lab using `cel_admin drain`. This notifies the lab's GREETER that
     it should no longer accept new requests to run tests or deploy assets. Any
@@ -100,15 +95,14 @@ what's described above.
 1.  Invoke `cel_admin start` with the new HOST ENVIRONMENT. This command
     performs the same set of operations as described above for a new deployment.
 
-
-
 ## References
 
-*   [tools/build](https://chromium.googlesource.com/chromium/tools/build/): Repository containing build configurations for Chromium waterfalls.
-*   [Create a new builder](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipe_modules/chromium_tests/chromium_recipe.md): Document on how to add a new builder to the waterfall.
+*   [tools/build](https://chromium.googlesource.com/chromium/tools/build/):
+    Repository containing build configurations for Chromium waterfalls.
+*   [Create a new builder](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipe_modules/chromium_tests/chromium_recipe.md):
+    Document on how to add a new builder to the waterfall.
 
-
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -164,4 +158,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-
