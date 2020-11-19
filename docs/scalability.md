@@ -10,11 +10,10 @@ In practice, this isn't perfect since there's too much room for two tests to
 interact with each other. For example, a change made to an IIS Web Application
 can affect a test suite from a prior revision that's running concurrently.
 Fortunately, such changes should be infrequent and the lab should be able to
-parallelize multiple test session as long as their [ASSET MANIFEST][]s are the
-same.
+parallelize multiple test session as long as their [ASSET MANIFEST][]s are the same.
 
-When a change is detected to the [ASSET MANIFEST][], the [GREETER][] can request
-all other test suites to be drained so that the ambient asset definitions can be
+When a change is detected to the [ASSET MANIFEST][], the [GREETER][] can request all
+other test suites to be drained so that the ambient asset definitions can be
 rotated to the new version. Once this is done, all new test runs based on the
 new asset definition can once again be parallelized.
 
@@ -23,16 +22,16 @@ further along in the implementation. It's not something that's being considered
 for the initial deployment.
 
 A more reliable (less flaky or complicated) means of scaling would be to allow
-multiple deployments of the lab, each into its own GCP project. A [GREETER][]
-from each instance could be registered with Luci Isolate effectively providing
-load balancing for enterprise tests.
+multiple deployments of the lab, each into its own GCP project. A [GREETER][] from
+each instance could be registered with Luci Isolate effectively providing load
+balancing for enterprise tests.
 
 The number of such labs that can be integrated with the waterfall is limited by
 the availability of physical resources as described in [On-Premise Fixtures][].
 Each instance of the lab must have a set of identically configured physical
 devices for tests to be reliable.
 
-<!-- INCLUDE index.md (55 lines) -->
+<!-- INCLUDE index.md (56 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -88,3 +87,4 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
+

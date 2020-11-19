@@ -1,12 +1,13 @@
 # DESIGN SUMMARY
 
-*** promo Instead of building a lab, build a toolchain for building labs.
-
-********************************************************************************
+*** promo
+Instead of building a lab, build a toolchain for building labs.
+***
 
 [TOC]
 
-## OBJECTIVE {#objective}
+
+## OBJECTIVE                                                        {#objective}
 
 *   Make it feasible for testers to replicate new and exciting\* enterprise
     configurations.
@@ -18,15 +19,18 @@
     enterprise fixtures and test cases that together publicly describe the scope
     of Google Chrome's enterprise support.
 
-*** aside \* Edge case that break Chrome sometimes turn out to be bewildering,
-strange and counterintuitive. Replicating such configurations can be equal parts
+*** aside
+\* Edge case that break Chrome sometimes turn out to be bewildering, strange and
+counterintuitive. Replicating such configurations can be equal parts
 frustrating, confusing and, exciting.
+***
 
-********************************************************************************
 
 #### The Product
 
 The final product of this exercise will be:
+
+
 
 1.  **A mechanism for textually describing an enterprise environment**,
     including the network topology, servers and their services, clients, users,
@@ -34,43 +38,50 @@ The final product of this exercise will be:
     devices, Windows services, Windows Active Directory (AD) domains, AD users,
     AD groups, Windows Certificate Services, PKI, various flavors of proxies,
     and anything else we'd need to describe in order to replicate enterprise
-    environments. See [Asset Description Schema][] and [ASSET MANIFEST][].
+    environments.  See [Asset Description Schema][]
+    and [ASSET MANIFEST][].
+
+[Asset Description Schema]: schema-guidelines.md
 
 1.  **A mechanism for textually describing the concrete details for how the
     enterprise environment should be realized**. For a lab that's hosted in GCP,
     this will include the GCP project name, instance images to use when creating
     VMs for each operating system, external static IPs to use, and locations of
-    fixed assets like physical appliances. See [HOST ENVIRONMENT][], and
+    fixed assets like physical appliances.  See [HOST ENVIRONMENT][], and
     [On-Premise Fixtures][].
 
-1.  **A set of tools for taking the above textual descriptions and constructing
-    a lab in a GCP project**, in whole or in part. See [DEPLOYER][].
+[On-Premise Fixtures]: on-premise-fixtures.md
 
-1.  **A mechanism for running a set of tests within a lab**. See [ISOLATE][],
-    [GREETER][], [SYSTEM TEST RUNNER][], [HOST TEST RUNNER][], and last but not
-    least the [TEST][].
+1.  **A set of tools for taking the above textual descriptions and constructing
+    a lab in a GCP project**, in whole or in part.  See [DEPLOYER][].
+
+1.  **A mechanism for running a set of tests within a lab**.  See [ISOLATE][],
+    [GREETER][], [SYSTEM TEST RUNNER][], [HOST TEST RUNNER][], and last but not least
+    the [TEST][].
 
 1.  **A basic set of end-to-end tests for Chromium, including the descriptions
     of the required resources**. These tests will live in the Chromium source
     tree and will become part of our CI suite.
 
 1.  **A mechanism by which these end-to-end tests can be invoked manually using
-    binaries built on a developer workstation**. See [Expected Workflows][].
+    binaries built on a developer workstation**.  See [Expected Workflows][].
+
+[Expected Workflows]: workflows.md
 
 1.  **A mechanism by which these end-to-end tests can be invoked via the
-    Chromium waterfalls**. See [Integration With Chromium Waterfall][].
+    Chromium waterfalls**.  See [Integration With Chromium Waterfall][].
+
+[Integration With Chromium Waterfall]: chrome-ci-integration.md
 
 1.  And finally, **at least one instance of the enterprise lab hosted on Google
     Cloud Platform that's integrated with the Chromium waterfall as an FYI bot
     for continuous integration testing, and another instance integrated as a try
     bot**.
 
-[Asset Description Schema]: schema-guidelines.md
-[On-Premise Fixtures]: on-premise-fixtures.md
-[Expected Workflows]: workflows.md
-[Integration With Chromium Waterfall]: chrome-ci-integration.md
 
 #### 10000 Foot View
+
+
 
 *   The Chrome Enterprise Lab comprises of a toolchain for building labs.
 *   Each such lab consists of virtual and physical devices. The virtual devices
@@ -86,11 +97,12 @@ The final product of this exercise will be:
     used for automating the browser, and the tests are formulated as Python unit
     tests.
 
+
 #### Life of a System Test
 
-There can be multiple types of tests. The one referred to here is a system test
-which is written in Python and uses Selenium + ChromeDriver to automate a Chrome
-binary.
+There can be multiple types of tests. The one referred to here is a system test which is written in Python and uses Selenium + ChromeDriver to automate a Chrome binary.
+
+
 
 1.  A developer or the waterfall produces candidate test binaries.
 1.  Test binaries along with test scripts, dependencies, and a description of
@@ -120,11 +132,14 @@ binary.
     they are aggregated and funneled back to the test invoker which is either a
     waterfall, or a developer's machine.
 
+
 ![Sequence diagram summarizing the above workflow](images/Chrome-Enterprise7.png)
+
 
 ## Concepts
 
-### The ISOLATE (A Collection of Files) {#isolate}
+
+### The ISOLATE (A Collection of Files)                               {#isolate}
 
 We start our story when a build has completed and the build artifacts needed for
 running the test are ready. These artifacts may be produced on the waterfall or
@@ -139,11 +154,13 @@ The contents of the isolate (i.e. the files contained therein) are as follows
 (Note that the exact layout may be different, but the content should be as
 described below):
 
+
 ![drawing](images/isolate-contents.png)
 
+
 1.  `system_tests/` is the contents of the similarly named directory under in
-    the Chromium source tree. See [Source Locations][] for details. The isolate
-    includes the entire contents of the directory excluding the `doc/`
+    the Chromium source tree. See [Source Locations][] for details. The
+    isolate includes the entire contents of the directory excluding the `doc/`
     subdirectory. These files will be transferred over to the enterprise lab for
     execution.
 
@@ -168,34 +185,36 @@ described below):
     be executed in the lab using Selenium. For example, the `a_basic_test.py`
     and `another_test.py`. Described in [TEST][].
 
-1.  Last, but not least, the
-    [browser binary](https://www.google.com/chrome/browser/desktop/index.html?brand=CHBD)
+1.  Last, but not least, the [browser
+    binary](https://www.google.com/chrome/browser/desktop/index.html?brand=CHBD)
     being tested.
 
 Once the isolate is uploaded to an
 [isolateserver](https://github.com/luci/luci-py/blob/master/appengine/isolate/README.md),
 it is ready to be downloaded and used by the bots.
 
-*** note **Note:** The ISOLATE described above is specific to the Selenium based
-tests that are proposed in this document. In addition to those, the design
-allows for additional types of tests as described in the [Source Locations][]
-section.
+*** note
+**Note:** The ISOLATE described above is specific to the Selenium based tests
+that are proposed in this document. In addition to those, the design allows for
+additional types of tests as described in the [Source Locations][] section.
+***
 
-********************************************************************************
 
-### The ASSET MANIFEST (An inventory of assets in text form) {#asset-manifest}
+
+
+### The ASSET MANIFEST (An inventory of assets in text form)   {#asset-manifest}
 
 All assets required by the test suite are described in the ASSET MANIFEST. In
 this document the asset manifest is often referred to as `assets.textpb`, but in
 reality it will be a collection of files.
 
-The manifest takes the form of a `textproto` file conforming to the
-[Asset Description Schema][]. By virtue of the chosen schema, the file can
-trivially be broken into multiple files. This aspect is important since it is
-expected that some of the asset manifest fragments will be programmatically
-generated to account for the matrices of configurations that need to be
-supported. The lab does not care how or where the files were generated, but just
-that all the required pieces are there by the time the [DEPLOYER][] is invoked.
+The manifest takes the form of a `textproto` file conforming to the [Asset
+Description Schema]. By virtue of the chosen schema, the file can trivially be
+broken into multiple files. This aspect is important since it is expected that
+some of the asset manifest fragments will be programmatically generated to
+account for the matrices of configurations that need to be supported. The lab
+does not care how or where the files were generated, but just that all the
+required pieces are there by the time the [DEPLOYER][] is invoked.
 
 To the fullest extent possible, the asset manifest also aims to be independent
 of the specifics of the Google Cloud Platform. A different implementation of the
@@ -206,7 +225,7 @@ solution without changing the asset manifests.
 be specified in order for the test fixtures to be unambiguously deployed. Assets
 include descriptions of networks including subnets and address ranges, peering
 between these networks, VPNs, virtual machines including parameters required to
-provision them, Windows Active directory domains, domain users, domain groups,
+provision them, Windows Active directory domains, domain users,  domain groups,
 Active Directory containers, trust relationships between the domains, Windows AD
 group policy templates, group policy objects that should be deployed to each AD
 container, and so on.
@@ -222,16 +241,14 @@ parameters like static external IPs, SSL certificates, references to Google
 Cloud Storage buckets, and StackDriver logging parameters. Such parameters are
 defined in the [HOST ENVIRONMENT][] as described below.
 
-*** note **Note**: The [ASSET MANIFEST][]s describing Chromium end-to-end test
-requirements is public. It is expected to be checked into the Chromium
-repository.
-
-********************************************************************************
+*** note
+**Note**: The [ASSET MANIFEST][]s describing Chromium end-to-end test requirements
+is public. It is expected to be checked into the Chromium repository.
+***
 
 Examples of assets include:
 
-*   VM instances running specific operating systems. E.g. A client VM running
-    Windows 10, a server VM running Windows Server 2016.
+*   VM instances running specific operating systems. E.g. A client VM running Windows 10, a server VM running Windows Server 2016.
 *   Virtual networks, including per instance firewall rules.
 *   Windows Active Directory domains, containers, users, machines.
 *   Windows Active Directory Group Policy templates and policy objects.
@@ -240,57 +257,56 @@ Examples of assets include:
 *   Windows Certificate services.
 *   Certificates to be issued by Windows Certificate Services.
 *   DNS zones, CNAME records, ...
-*   Test host VMs ([TEST HOST][]) which are a subset of the VM instances
-    described in the file.
+*   Test host VMs ([TEST HOST][]) which are a subset of the VM instances described in the file.
 
-For more information about the structure of assets, see [ASSET MANIFEST][]
-below.
+For more information about the structure of assets, see [ASSET MANIFEST][] below.
+
+
 
 ### The HOST ENVIRONMENT (The foundation upon which the lab sits) {#host-environment}
 
-While the ASSET MANIFEST describes what goes into the enterprise lab, the HOST
-ENVIRONMENT describes the environment in which the lab itself sits. For example,
-the HOST ENVIRONMENT defines:
+While the ASSET MANIFEST describes what goes into the enterprise lab, the HOST ENVIRONMENT describes the environment in which the lab itself sits. For example, the HOST ENVIRONMENT defines:
 
-*   The **Google Cloud Project** where the enterprise lab is to be instantiated.
-    All cloud resources described in the ASSET MANIFEST will be created within
-    this single project.
 
-*   **Google Cloud Storage buckets** to use during deployment. These storage
-    buckets are used for transferring files to be used by GCE instances during
-    startup and for configuration.
+* The **Google Cloud Project** where the enterprise lab is to be instantiated.
+  All cloud resources described in the ASSET MANIFEST will be created within
+  this single project.
 
-*   **External IPs**. When GCE instances need to be externally visible, they
-    need to be assigned external IPs. The ASSET MANIFEST refers to such external
-    IPs by name, and the HOST ENVIRONMENT maps these names to IP addresses.
+* **Google Cloud Storage buckets** to use during deployment. These storage
+  buckets are used for transferring files to be used by GCE instances during
+  startup and for configuration.
 
-*   **GCE Instance Images**. These are the images that are used as source disks
-    when creating GCE instances. E.g. An ASSET MANIFEST might declare that an
-    instance be based on `win10`. The HOST ENVIRONMENT describes the image
-    family and project that should be used to locate the image, e.g.:
-    `windows-cloud/windows-2016`.
+* **External IPs**. When GCE instances need to be externally visible, they
+  need to be assigned external IPs. The ASSET MANIFEST refers to such external
+  IPs by name, and the HOST ENVIRONMENT maps these names to IP addresses.
 
-    Google Compute Engine has a growing
-    [inventory of public images](https://cloud.google.com/compute/docs/images#os-compute-support).
-    However the enterprise lab will need to rely on private images for the
-    purpose of testing against Windows 7 and Windows 10 which are currently
-    popular in enterprise but not supported on GCE. Source images for these
-    operating systems cannot be made available publicly due to licensing issues.
-    Hence the HOST ENVIRONMENT needs to specify how these images are to be
-    located. See [Private Google Compute Images][].
+* **GCE Instance Images**. These are the images that are used as source disks
+  when creating GCE instances. E.g. An ASSET MANIFEST might declare that an
+  instance be based on `win10`. The HOST ENVIRONMENT describes the image family
+  and project that should be used to locate the image, e.g.:
+  `windows-cloud/windows-2016`.
 
-*   **Permanent Assets**. These are assets that can't be deployed automatically.
-    Such assets must already exist by the time the DEPLOYER gets around to
-    constructing assets. Permanent assets include external physical labs, and
-    virtual machine instances that need to be deployed manually due to licensing
-    and activation requirements.
+  Google Compute Engine has a growing [inventory of public
+  images](https://cloud.google.com/compute/docs/images#os-compute-support).
+  However the enterprise lab will need to rely on private images for the purpose
+  of testing against Windows 7 and Windows 10 which are currently popular in
+  enterprise but not supported on GCE. Source images for these operating systems
+  cannot be made available publicly due to licensing issues. Hence the HOST
+  ENVIRONMENT needs to specify how these images are to be located. See [Private
+  Google Compute Images].
+
+* **Permanent Assets**. These are assets that can't be deployed automatically.
+  Such assets must already exist by the time the DEPLOYER gets around to
+  constructing assets. Permanent assets include external physical labs, and
+  virtual machine instances that need to be deployed manually due to licensing
+  and activation requirements.
 
 Unlike the ASSET MANIFEST, the HOST ENVIRONMENT is necessarily private. Each
 instantiation of the enterprise lab needs to specify its own HOST ENVIRONMENT
 during the [Bootstrapping][] process.
 
 The HOST ENVIRONMENT takes the form of a textproto file that is made available
-during Bootstrapping. It conforms to the `HostEnvironment` message in the
+during Bootstrapping. It conforms to the `HostEnvironment` message  in the
 [Asset Description Schema][].
 
 Between the HOST ENVIRONMENT and the ASSET MANIFEST, these files contain all the
@@ -298,14 +314,15 @@ information necessary to construct an instance of the enterprise lab from
 scratch. The details of how this deployment happens is described in the
 [Deployment Details][] section.
 
-### The GREETER (A Swarming Bot) {#greeter}
+
+### The GREETER (A Swarming Bot)                                      {#greeter}
 
 Test execution proper starts when a GREETER VM receives a notification that a
 test is ready to be deployed to the test machines. This notification includes
 the identifier of the ISOLATE containing the files needed to run the test suite.
 
-A GREETER is a swarming bot
-([described here](https://github.com/luci/luci-py/blob/master/appengine/swarming/doc/Bot.md)).
+A GREETER is a swarming bot ([described
+here](https://github.com/luci/luci-py/blob/master/appengine/swarming/doc/Bot.md)).
 As such, a notification for a new test run takes the form of a `run` command
 issued to the bot from the swarming server.
 
@@ -330,12 +347,13 @@ is possible for any and all other test fixtures and [TEST HOST][] VMs to not
 exist, in which case they will be created by the [DEPLOYER][]. GREETERs are the
 only VMs that can be exposed externally.
 
-*** note **Note:** Since the entire test lab environment is customized to run a
-single test suite during a test run, a lab can only reliably run a single test
-suite at a time. Hence it doesn't make sense to have more than one GREETER per
-lab. See the [Scalability][] section.
+*** note
+**Note:** Since the entire test lab environment is customized to run a single
+test suite during a test run, a lab can only reliably run a single test suite at
+a time. Hence it doesn't make sense to have more than one GREETER per lab. See
+the [Scalability][] section.
+***
 
-********************************************************************************
 
 ### The SYSTEM TEST RUNNER (The `system_test_runner.py` Script)
 
@@ -346,13 +364,13 @@ in the [ISOLATE][] and exists in the Chromium source tree. It is extracted and
 invoked by the swarming bot code running on GREETER. The script itself also runs
 on the GREETER.
 
-*** note **Note**: There could be other types of test runners in the ISOLATE,
-but the only type that's currently planned to be supported is the system test
-runner described in this section. Any other type of test would need to deal with
+*** note
+**Note**: There could be other types of test runners in the ISOLATE, but the
+only type that's currently planned to be supported is the system test runner
+described in this section. Any other type of test would need to deal with
 deploying the test fixtures and test runners by invoking the `cel_py` library (
 [described below][cel_py]).
-
-********************************************************************************
+***
 
 The SYSTEM TEST RUNNER needs access to the test environment specific code for
 invoking the [DEPLOYER][] and setting up the communication channels between the
@@ -362,72 +380,73 @@ which is installed on GREETERs as well as TEST HOSTs.
 
 This SYSTEM TEST RUNNER performs the following operations:
 
-1.  Invokes [DEPLOYER][] with the [ASSET MANIFEST][] as input and waits for the
-    deployment phase to finish successfully. The DEPLOYER ensures that all
-    required assets are present in the lab.
 
-    If this step completes successfully, then all the TEST HOSTs described in
-    the ASSET MANIFEST can be assumed to exist and be operational.
+1. Invokes [DEPLOYER][] with the [ASSET MANIFEST][] as input and waits for the
+   deployment phase to finish successfully. The DEPLOYER ensures that all
+   required assets are present in the lab.
 
-    As a part of the deployment results, the DEPLOYER sends back a comprehensive
-    inventory of the software that's running in the lab. This inventory includes
-    software versions and hotfix information. The SYSTEM TEST RUNNER passes
-    along this information to `stdout`.
+   If this step completes successfully, then all the TEST HOSTs described in the
+   ASSET MANIFEST can be assumed to exist and be operational.
 
-2.  Deploys the tests to *all* the [TEST HOST][]s identified in the ASSET
-    MANIFEST as follows:
+   As a part of the deployment results, the DEPLOYER sends back a comprehensive
+   inventory of the software that's running in the lab. This inventory includes
+   software versions and hotfix information. The SYSTEM TEST RUNNER passes along
+   this information to `stdout`.
+
+2.  Deploys the tests to *all* the [TEST HOST][]s identified in the ASSET MANIFEST
+    as follows:
 
     1.  Constructs an archive containing `host_test_runner.py` (described in the
-        [HOST TEST RUNNER][] section) and the contents of the `system_tests`
-        folder from the ISOLATE.
+	[HOST TEST RUNNER][] section) and the contents of the `system_tests`
+	folder from the ISOLATE.
 
     2.  Write the archive to a Google Cloud Storage bucket.
 
-    3.  Publishes a message to
-        [Google Cloud Pub/Sub](https://cloud.google.com/pubsub/) topic `tests`
-        that includes the location in Google Cloud Storage of the archive.
+    3.  Publishes a message to [Google Cloud
+	Pub/Sub](https://cloud.google.com/pubsub/) topic `tests` that includes
+	the location in Google Cloud Storage of the archive.
 
-    The TEST HOSTs created by the DEPLOYER subscribe to this Pub/Sub topic and
-    start their tests accordingly.
+	The TEST HOSTs created by the DEPLOYER subscribe to this Pub/Sub topic
+	and start their tests accordingly.
 
-    SYSTEM TEST RUNNER must subscribe to topics named `results-<hostname>` for
-    each hostname corresponding to the known TEST HOSTs. This is the mechanism
-    by which TEST HOSTs communicate test results.
+	SYSTEM TEST RUNNER must subscribe to topics named `results-<hostname>`
+	for each hostname corresponding to the known TEST HOSTs. This is the
+	mechanism by which TEST HOSTs communicate test results.
 
-    1.  Streams all incoming messages from TEST RUNNERs to the embedding script
-        (i.e. the SYSTEM TEST RUNNER).
+    4.  Streams all incoming messages from TEST RUNNERs to the embedding script
+	(i.e. the SYSTEM TEST RUNNER).
 
-3.  Collects the test results passed along via `cel_py`, and streams it back to
-    `stdout`.
+3.  Collects the test results passed along via `cel_py`, and streams it back to `stdout`.
 
 4.  Constructs aggregate test results and streams these via `stdout`.
 
     These results include:
+	1.  Counts of tests that were run along with the times taken for each.
+	2.  Tests that were skipped on all TEST RUNNERs.
+	3.  TEST RUNNERs that stalled. In the future, we could retry these tests
+	    inline instead of requiring another test run.
 
-    1.  Counts of tests that were run along with the times taken for each.
-    2.  Tests that were skipped on all TEST RUNNERs.
-    3.  TEST RUNNERs that stalled. In the future, we could retry these tests
-        inline instead of requiring another test run.
-
-*** aside **Why not use Chrome infra's Isolate instance or another Isolate
-instance running inside the lab project for transferring files?**
+*** aside
+**Why not use Chrome infra's Isolate instance or another Isolate instance
+running inside the lab project for transferring files?**
 
 One of the goals of this effort is to make it possible for an individual
 developer or a team to easily clone the environment for the purpose of
-developing new tests or running manual tests. In that regard it is desirable to
-keep the set of dependencies minimal. Running an Isolate server is makes sense
-for distributing binaries in the scale at which Chrome infra in general
-operates, but isn't feasible for a small scale such as this lab.
+developing new tests or running manual tests. In that regard it is
+desirable to keep the set of dependencies minimal. Running an Isolate
+server is makes sense for distributing binaries in the scale at which
+Chrome infra in general operates, but isn't feasible for a small scale
+such as this lab.
+***
 
-********************************************************************************
+*** note
+**Note**: *All* tests are scheduled on *all* the test runners.  See the [TEST][]
+section below for details on how an individual test is expected to pick which.
+***
 
-*** note **Note**: *All* tests are scheduled on *all* the test runners. See the
-[TEST][] section below for details on how an individual test is expected to pick
-which.
 
-********************************************************************************
 
-### The DEPLOYER (A Service) {#deployer}
+### The DEPLOYER (A Service)                                         {#deployer}
 
 The DEPLOYER is a service that takes an ASSET MANIFEST as input and deploys the
 specified assets to the Google Compute Engine environment based on it. The
@@ -448,10 +467,9 @@ The DEPLOYER does the following:
     Engine instance named `win-client`.
 
 1.  Traverses the dependency graph in topological order and:
-
     1.  Creates the asset if the the asset does not exist.
     1.  Purges and re-creates the asset if the existing asset does not meet the
-        requirements set forth in the ASSET MANIFEST.
+	requirements set forth in the ASSET MANIFEST.
 
 The assets that are handled by DEPLOYER are not just assets known to Google
 Compute Engine. They are also things that exist within the lab environment like
@@ -464,15 +482,18 @@ deployed.
 Upon successful completion of deployment,
 
 *   All [TEST HOST][]s can be assumed to exist.
-*   Pub/Sub topics `results-<hostname>` can be assumed to exist for each
-    [TEST HOST][].
+*   Pub/Sub topics `results-<hostname>` can be assumed to exist for each [TEST
+    HOST].
 *   Each [TEST HOST][] can be assumed to have created a subscription for Pub/Sub
     topic `tests`.
 
-Subsequently when the [SYSTEM TEST RUNNER][] announces the new tests, all
-[TEST HOST][]s should be ready to respond.
+Subsequently when the [SYSTEM TEST RUNNER][] announces the new tests, all [TEST
+HOST]s should be ready to respond.
 
-### The TEST HOST (A Virtual Machine) {#test-host}
+
+
+
+### The TEST HOST (A Virtual Machine)                               {#test-host}
 
 The TEST HOST is a VM that runs a test. These VMs are deployed by the DEPLOYER
 based on the ASSET MANIFEST included in an ISOLATE.
@@ -480,6 +501,7 @@ based on the ASSET MANIFEST included in an ISOLATE.
 The TEST HOST must have all the software necessary to run the test with the
 exception of the code that's included in the ISOLATE. At a minimum, the TEST
 HOST has:
+
 
 *   The bot controller `cel_bot` ([described below][cel_bot]).
 *   Selenium, along with WebDriver implementations - ChromeDriver and
@@ -496,7 +518,8 @@ authentication scheme NTLM was applied to the TEST HOST.
 
 The TEST section describes how these tags are used in tests.
 
-### The `cel_bot` Tool {#cel_bot}
+
+### The `cel_bot` Tool                                                {#cel_bot}
 
 When a TEST HOST instance starts up, it runs a program named `cel_bot`. It:
 
@@ -515,7 +538,9 @@ When a TEST HOST instance starts up, it runs a program named `cel_bot`. It:
     collecting logs and other test artifacts and making them available to the
     SYSTEM TEST RUNNER.
 
-### The HOST TEST RUNNER (The `host_test_runner.py` Script) {#host-test-runner}
+
+
+### The HOST TEST RUNNER (The `host_test_runner.py` Script)  {#host-test-runner}
 
 This script is responsible for running the tests on one of the TEST HOST
 instances. The script itself lives in `/TBD/` and depends on a `system_tests`
@@ -530,7 +555,8 @@ Once invoked, the HOST TEST RUNNER:
     Pub/Sub topic.
 
 *   Announces the test host properties including software versions, and
-    [Resultant Set of Policy](https://technet.microsoft.com/en-us/library/cc758010\(v=ws.10\).aspx).
+    [Resultant Set of
+    Policy](https://technet.microsoft.com/en-us/library/cc758010(v=ws.10).aspx).
     The software versions including hotfix information for test fixtures are
     reported during the deployment phase by the DEPLOYER and passed along by the
     SYSTEM TEST RUNNER. The HOST TEST RUNNER only needs to concern itself with
@@ -539,7 +565,10 @@ Once invoked, the HOST TEST RUNNER:
 *   Invokes `unittest` along with a custom Python `TestRunner` class which
     publishes test results via the `results-<hostname>` topic.
 
-### The TEST (A Python `unittest`) {#test}
+
+
+
+### The TEST (A Python `unittest`)                                       {#test}
 
 Tests live under `/TBD/` and are structured as Python `unittest`s. They are
 invoked on a candidate TEST HOST via a HOST TEST RUNNER.
@@ -581,7 +610,8 @@ running the test.
 Contents of a hypothetical example test file follows:
 `//chrome/test/enterprise/system_tests/basic_test.py`...
 
-```py
+
+``` py
 import unittest
 import cel  # cel_py client library
 from selenium import webdriver
@@ -602,6 +632,7 @@ class TestFoo(unittest.TestCase):
     driver.close()
 ```
 
+
 In `test_basic()`, the `cel.ChromeDriver()` call binds to a WebDriver instance
 that's invoking the Chrome binary under test. Currently we are not planning on
 using remote WebDriver instances.
@@ -612,7 +643,8 @@ addition, the `cel.NamedUrl()` call looks up a named URL from the test
 environment. The mapping from a named URL to a URL that can be used within the
 lab is defined in the ASSET MANIFEST.
 
-### The `cel_py` Library (A Python Library) {#cel_py}
+
+### The `cel_py` Library (A Python Library)                            {#cel_py}
 
 The `cel_py` library (Chrome Enterprise Lab Python library) exists on the
 GREETER and TEST HOST and encapsulates the logic for…
@@ -648,7 +680,8 @@ TEST HOST (HOST TEST RUNNER) level.
 This separation allows the TEST to be written such that it's independent of how
 the test lab is constructed.
 
-<!-- INCLUDE index.md (55 lines) -->
+
+<!-- INCLUDE index.md (56 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -704,3 +737,4 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
+

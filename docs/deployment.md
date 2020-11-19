@@ -11,44 +11,45 @@ fulfilling the following goals:
 
 The deployment process should …
 
-*   … account for user error. Configuration files should be easy to write by
-    hand. The tooling should allow users to diagnose and fix errors quickly.
+* … account for user error. Configuration files should be easy to write by
+  hand. The tooling should allow users to diagnose and fix errors quickly.
 
-*   … be observable, both from the POV of an operator manually triggering the
-    deployment, and also from the POV of a service that may provide a secondary
-    UI for an in-progress deployment.
+* … be observable, both from the POV of an operator manually triggering the
+  deployment, and also from the POV of a service that may provide a secondary UI
+  for an in-progress deployment.
 
-*   … be observable by an entity that begins observing _after_ the deployment
-    process has started.
+* … be observable by an entity that begins observing _after_ the deployment
+  process has started.
 
-*   … facilitate forensic debugging. Important for deployments that are
-    triggered as a part of another automated process.
+* … facilitate forensic debugging. Important for deployments that are triggered
+  as a part of another automated process.
 
-*   … tolerate third party outages. In particular, outages for Github or package
-    management repositories like Chocolatey should not cause the enterprise lab
-    to become non-functional.
+* … tolerate third party outages. In particular, outages for Github or package
+  management repositories like Chocolatey should not cause the enterprise lab to
+  become non-functional.
 
-*   … tolerate existing infrastructure. It should not be a requirement that each
-    deployment be preceded by removing all Google Cloud Platform (**GCP**)
-    assets from a project, or start with a new GCP project.
+* … tolerate existing infrastructure. It should not be a requirement that each
+  deployment be preceded by removing all Google Cloud Platform (**GCP**) assets
+  from a project, or start with a new GCP project.
 
-    That goal also implies that deployment is necessarily incremental in that a
-    failed deployment can be resumed — within reason — after correcting for the
-    factors that caused the initial failure, thus lending itself to edit-deploy
-    iterations. It also implies that the deployment process is forgiving of
-    hosting environment errors such as transient failures in GCP infrastructure.
+  That goal also implies that deployment is necessarily incremental in that a
+  failed deployment can be resumed — within reason — after correcting for the
+  factors that caused the initial failure, thus lending itself to edit-deploy
+  iterations. It also implies that the deployment process is forgiving of
+  hosting environment errors such as transient failures in GCP infrastructure.
 
-*   … be amenable to easy addition of new asset types to the asset catalog.
+* … be amenable to easy addition of new asset types to the asset catalog.
 
-*   … be self documenting in terms of asset types, asset catalogs, and builtins.
+* … be self documenting in terms of asset types, asset catalogs, and builtins.
 
-*   … support additional tooling where appropriate. Operators and developers
-    should be able to build tools to automate their workflows. In particular,
-    the test team should expend reasonable efforts towards building UIs.
+* … support additional tooling where appropriate. Operators and developers
+  should be able to build tools to automate their workflows. In particular, the
+  test team should expend reasonable efforts towards building UIs.
 
-*   … be atomic much as possible. This means that when deploying a lab into a
-    GCP project, the lab toolchain should deploy all required pieces -- within
-    reason -- without assistance. Once started, there should be no manual steps.
+* … be atomic much as possible. This means that when deploying a lab into a GCP
+  project, the lab toolchain should deploy all required pieces -- within reason
+  -- without assistance. Once started, there should be no manual steps.
+
 
 ## Background
 
@@ -57,24 +58,23 @@ described in the [Design][]. This document supersedes the main design where the
 two differ.
 
 The schema for assets and host environment is as described in the design
-document and further specified in code ([Asset Description Schema][],
-[Asset Schema][], [Host Environment Schema][]).
+document and further specified in code ([Asset Description Schema][], [Asset
+Schema][], [Host Environment Schema][]).
 
-In addition, the automated deployment phase makes use of the following
-technologies:
+In addition, the automated deployment phase makes use of the following technologies:
 
-*   Google Cloud Storage
-    ([Documentation](https://cloud.google.com/storage/docs/)). Cloud Storage is
-    used for communicating files and other resources to instances. Cloud Storage
-    buckets aren't created by the lab, but must be specified in the Host
-    Environment.
+* Google Cloud Storage
+  ([Documentation](https://cloud.google.com/storage/docs/)).  Cloud Storage is
+  used for communicating files and other resources to instances. Cloud Storage
+  buckets aren't created by the lab, but must be specified in the Host
+  Environment.
 
-*   Google Cloud Deployment Manager
-    ([Documentation](https://cloud.google.com/deployment-manager/docs/)).
-    Deploys all GCP assets and keeps track of individual deployments.
-    Nomenclature caveat: The Deployment Manager refers to deployable things as
-    "resources", while CEL calls them "assets." The two terms should be
-    considered equivalent.
+* Google Cloud Deployment Manager
+  ([Documentation](https://cloud.google.com/deployment-manager/docs/)). Deploys
+  all GCP assets and keeps track of individual deployments. Nomenclature caveat:
+  The Deployment Manager refers to deployable things as "resources", while CEL
+  calls them "assets." The two terms should be considered equivalent.
+
 
 ## Overview
 
@@ -137,7 +137,6 @@ windows_user {
   # groups since there are no member_of entries.
   container { ad_domain: 'foo.example' }
 }
-```
 ```
 
 The `HOST ENVIRONMENT` is:
@@ -214,7 +213,6 @@ machine_type {
 }
 
 ```
-```
 
 The host environment is dependent on the builtin host assets which currently
 define image locators for the set of public images supported by GCP.
@@ -223,21 +221,24 @@ Assuming that the operator has the correct set of credentials to initiate the
 deployment, they could start a deployment using a command-line such as the
 following:
 
-```sh
+``` sh
 cel_ctl deploy --builtins mylab.asset.textpb mylab.host.textpb
 ```
 
+
 The `--builtins` argument tells `cel_ctl` to pull in the set of built-in assets.
 Without this, the `${host.image.windows-2012-r2.url}` reference will not be
-resolved. Built-in assets are defined in
-[this source file](../schema/gcp/builtins.textpb). Builtins may not always be
-suitable in cases where the images that are needed for assets are custom or not
-the latest public images.
+resolved. Built-in assets are defined in [this source
+file](../schema/gcp/builtins.textpb).  Builtins may not always be suitable in
+cases where the images that are needed for assets are custom or not the latest
+public images.
 
 Alright, this is probably a good time to explain what
 `${host.image.windows-2012-r2.url}` means…
 
-*** aside **Quick Aside on References**
+
+*** aside
+**Quick Aside on References**
 
 Defining an asset hierarchy necessarily involves stating relationships between
 assets. This can be done explicitly as is the case with the `windows_machine`
@@ -249,8 +250,8 @@ the relationship. For example, the `windows_machine` entry needs to specify a
 interface is connected. The nature of the dependency can be readily inferred
 from context.
 
-In the implicit case, an output of an asset is used as an input for another
-asset.
+In the implicit case, an output of an asset is used as an input
+for another asset.
 
 Currently such a dependency relationship is limited to string fields. This is
 done by referencing the `OUTPUT` field name from any string field in an asset.
@@ -260,13 +261,13 @@ details about references can be found in the [Inline References][] section.
 Basically an implicit (or inline, if you prefer) reference looks like structure
 reference with the only difference being that the field names are allowed to be
 [RFC 1035](https://www.ietf.org/rfc/rfc1035.txt) labels.
-
-********************************************************************************
+***
 
 Implicit and explicit references between assets can be used to infer a
 dependency relationship between all assets. This is currently the only mechanism
 for expressing dependencies between assets though that might change in the
 future.
+
 
 ### Parsing And Validation
 
@@ -276,7 +277,7 @@ based on the validation annotations in the schema.
 
 These validation annotations look like this:
 
-```proto
+``` proto
 message ActiveDirectoryDomainController {
   // Name of the domain. Must match the `name` field of an
   // ActiveDirectoryDomain entry.
@@ -286,10 +287,11 @@ message ActiveDirectoryDomainController {
 ```
 
 The `(common.v).ref` is defining a field option of type `common.v` which is an
-[ProtoBuf extension](https://developers.google.com/protocol-buffers/docs/proto#extensions)
+[ProtoBuf
+extension](https://developers.google.com/protocol-buffers/docs/proto#extensions)
 type defined in [schema/common/options.proto](../schema/common/options.proto).
-Learn more on how this works at
-[ProtoBuf Custom Options](https://developers.google.com/protocol-buffers/docs/proto#customoptions).
+Learn more on how this works at [ProtoBuf Custom
+Options](https://developers.google.com/protocol-buffers/docs/proto#customoptions).
 
 This specific annotation declares that the value of the `ad_domain` field of the
 `ActiveDirectoryDomainController` message is a named reference to a `ad_domain`
@@ -298,22 +300,25 @@ asset. I.e. The value of the `ad_domain` field in this message must match the
 
 I.e. Consider the following `ActiveDirectoryDomainController` definition:
 
-```textproto
+``` textproto
 ad_domain_controller {
   ad_domain: "mydomain.example.com"
   ...
 }
 ```
 
+
 It would be valid only if there was an `ActiveDirectoryDomain` that's named
 `mydomain` like so:
 
-```textproto
+
+``` textproto
 ad_domain {
   name : "mydomain.example.com"
   ...
 }
 ```
+
 
 Guided by these annotations, `cel_ctl` reads and ensures that all explicit and
 implicit references are sound. If any reference is not resolvable, then the
@@ -329,9 +334,9 @@ Pruning is the process by which assets that are not used during a deployment
 process are discarded.
 
 By default the set of assets that are slated for deployment includes everything
-in the [ASSET MANIFEST][]. However there may be entries in the
-[HOST ENVIRONMENT][] that are not referenced by any asset. Such entries are
-candidates for pruning.
+in the [ASSET MANIFEST][]. However there may be entries in the [HOST
+ENVIRONMENT][] that are not referenced by any asset. Such entries are candidates
+for pruning.
 
 In addition, in the future `cel_ctl` should be able to deploy a named subset of
 assets in the ASSET MANIFEST. This would allow a user to maintain a large
@@ -342,6 +347,7 @@ In our example, the only entities that will be dropped are those that are
 included as built-ins but not referenced by any assets. I.e. everything in
 [builtins.textpb](../schema/gcp/builtins.textpb) will be removed except the
 `image` entry for `windows-2012-r2`.
+
 
 ### The Asset Graph
 
@@ -362,7 +368,7 @@ things in the host environment need to already exist.
 In the case of the `image` resource, the `cel_ctl` binary (or equivalent in the
 case of an automated deployment) would still need to do additional work to
 figure out the URL of the latest image, but the image ultimately has to exist
-prior to the deployment. Hence everything in the host environment (in yellow)
+prior to the deployment.  Hence everything in the host environment (in yellow)
 needs to be fully resolved prior to proceeding with the rest of the process.
 
 The relationship of the `ad_domain_controller` to the `ad_domain` and
@@ -372,6 +378,7 @@ the domain isn't discoverable until a DNS server publishes the AD and Kerberos
 resource records. In most AD deployments, the DNS server deployment is
 concurrent with the promotion of a server to a domain controller. Hence the
 `ad_domain_controller` entry is folded into the `ad_domain` entry.
+
 
 ### Division Of Labor
 
@@ -383,11 +390,11 @@ a GCP project. Some assets such as networks can be constructed entirely within
 the GCP, while others like `windows_machine` need to be constructed by GCP but
 then configured using our own custom code.
 
-The `cel_ctl` design aims to use the
-[GCP Deployment Manager](https://cloud.google.com/deployment-manager/) for doing
-most of the work of creating and updating supported assets, or _resources_ in
-Deployment Manager nomenclature. The list of resource types that are currently
-supported by the Deployment Manager can be found
+The `cel_ctl` design aims to use the [GCP Deployment
+Manager](https://cloud.google.com/deployment-manager/) for doing most of the
+work of creating and updating supported assets, or _resources_ in Deployment
+Manager nomenclature. The list of resource types that are currently supported by
+the Deployment Manager can be found
 [here](https://cloud.google.com/deployment-manager/docs/configuration/supported-resource-types).
 
 Once the base images are instantiated by the Deployment Manager, the instance
@@ -398,23 +405,24 @@ per-instance startup scripts.
 
 Therefore, for each asset that must be deployed, we need to determine:
 
-*   **Who** deploys it: Deployment Manager, or a specific Instance, or both.
-    Some resources like `windows_machine` as mentioned above will be split
-    across DM and the Instance since they involve deploying a GCP resource as
-    well as doing instance configuration.
+* **Who** deploys it: Deployment Manager, or a specific Instance, or both. Some
+  resources like `windows_machine` as mentioned above will be split across DM
+  and the Instance since they involve deploying a GCP resource as well as doing
+  instance configuration.
 
-    All host environment entities are resolved by the deployer at the time of
-    deployment. Hence the host environment is not a part of the deployment plan.
+  All host environment entities are resolved by the deployer at the time of
+  deployment. Hence the host environment is not a part of the deployment plan.
 
-*   **When** is it deployed: This only applies to assets that need to be
-    deployed from within an instance. _When_ is a function of the dependencies
-    of the asset. Deployment of an asset must wait until its dependent assets
-    are ready.
+* **When** is it deployed: This only applies to assets that need to be deployed
+  from within an instance. _When_ is a function of the dependencies of the
+  asset. Deployment of an asset must wait until its dependent assets are ready.
 
 Conceptually, the deployment graph can be adjusted to indicate the division of
 deployment responsibility thusly:
 
-![Asset graph with division of labor](images/asset-graph-with-division-of-labor.png)
+![Asset graph with division of
+labor](images/asset-graph-with-division-of-labor.png)
+
 
 The assets that need to be resolved on a VM instance (coloured blue in the
 diagram) need to be assigned to a specific VM instance at deployment time. This
@@ -435,6 +443,7 @@ dependencies flow from the top to the bottom. Dependency ordering violations
 including cycles are detected during the [Asset Validation](#asset-validation)
 phase.
 
+
 ### Preparation Stage
 
 Once the division of labor has been established, it is now time to start laying
@@ -442,13 +451,15 @@ out the deployment plan. The deployer now visits the assets in topological order
 in multiple phases as described below and invokes "resolvers" on each asset in
 topological order.
 
-*** note Note that this stage does not make any material change to the GCP
-projects. This stage is only concerned with organizing the deployment based on
-the asset manifest and the host environment.
+*** note
+Note that this stage does not make any material change to the GCP projects. This
+stage is only concerned with organizing the deployment based on the asset
+manifest and the host environment.
+***
 
-********************************************************************************
 
-*** aside **What's a Resolver?**
+*** aside
+**What's a Resolver?**
 
 Glad you asked. A resolver is something that takes a single asset description as
 input, and does whatever it needs to deploy, verify the existence and
@@ -463,8 +474,8 @@ specified under host.image) may resolve the resource by looking up the URL for
 the latest image for a specific GCP project and GCE image family. As another
 example, the resolver for a FileReference resource may resolve by uploading the
 contents of the file to Object Storage and acquiring an object reference.
+***
 
-********************************************************************************
 
 ##### Host Environment Resolution Phase
 
@@ -482,10 +493,10 @@ addresses.
 
 In our example, the immediate resolver does the following:
 
-*   Query properties for GCP project `my-test-gcp-project`.
-*   Query image URL for GCP project `windows-cloud` and image family
-    `windows-2012-r2`.
-*   Query properties for log sink `admin`.
+* Query properties for GCP project `my-test-gcp-project`.
+* Query image URL for GCP project `windows-cloud` and image family
+  `windows-2012-r2`.
+* Query properties for log sink `admin`.
 
 ##### Deployment Manifest Generation
 
@@ -498,11 +509,13 @@ Generator (described in the [Coding Patterns for Resolvers][] section). These
 resolvers are expected to generate deployment manifest resource descriptions for
 each asset that must be created.
 
-An example configuration can be found in the
-[Deployment Manager documentation](https://cloud.google.com/deployment-manager/docs/configuration/create-basic-configuration),
+
+An example configuration can be found in the [Deployment Manager
+documentation](https://cloud.google.com/deployment-manager/docs/configuration/create-basic-configuration),
 and looks like this:
 
-```yaml
+
+``` yaml
 ## Copyright 2016 Google Inc. All rights reserved.
 ##
 ## Licensed under the Apache License, Version 2.0 (the "License");
@@ -534,6 +547,7 @@ resources:
     - network: global/networks/default
 ```
 
+
 Thus each asset visited by the resolver will result in one or more "resources"
 being added to the deployment configuration. Later during the deployment
 process, this list can be used to generate the overall YAML formatted
@@ -543,6 +557,7 @@ configuration that is then used to create a GCP Deployment Manager
 
 The Deployment thus created is persistent, and can be used to (for example):
 
+
 *   Preview what would be deployed.
 *   Track progress of the ongoing deployment, including handling cancellations.
 *   Update and re-deploy when making incremental changes.
@@ -551,7 +566,7 @@ The Deployment thus created is persistent, and can be used to (for example):
 
 The deployment configuration that would be generated for our example would be:
 
-```yaml
+``` yaml
 resources:
   - name: my-test-gcp-project
     type: cloudresourcemanager.v1.project
@@ -613,11 +628,12 @@ resources:
           Value: <<placeholder.cel-startup-ps1>>
 ```
 
+
 In addition to the assets that were explicitly mentioned in the manifest, the
 deployment process adds dependent assets like service accounts and project
 references. Astute readers will spot a few caveats of mapping the CEL schema to
-Deployment Manager configuration. These are addressed in the
-[Use of GCP Deployment Manager](#use-of-gcp-deployment-manager) section.
+Deployment Manager configuration. These are addressed in the [Use of GCP
+Deployment Manager](#use-of-gcp-deployment-manager) section.
 
 Field values that haven't been resolved yet are represented by the
 `<<placeholder.cel-start-ps1>>` type values. These will be filled in during the
@@ -625,34 +641,38 @@ Field values that haven't been resolved yet are represented by the
 the `<<foo>>` syntax is just for documentation purposes and not indicative of
 how placeholders are implemented.
 
+
 ##### Instance Configuration Generation Phase
 
 During this phase the deployer determines the configuration information that
 must be made available to each of the VM instances. The resolver invoked during
-this phase is called _Configuration Generator_ in the
-[Coding Patterns for Resolvers][] section.
+this phase is called _Configuration Generator_ in the [Coding Patterns for
+Resolvers][] section.
 
 This resolver visits each asset that must be constructed, provisioned, or
 configured within the lab and:
 
-*   Assigns the asset to a VM instance. This instance is called the **_host_**
-    for the asset. Conversely the asset is a **_tenant_** of the instance. Thus
-    the instance configuration scripts on this host are responsible for ensuring
-    the existence and correctness of this asset. The choice of host is pretty
-    obvious for assets that are explicitly bound to an instance (e.g. a service
-    that runs on a specific machine), but isn't quite obvious for non-instance
-    bound assets (AD Domain Users).
 
-*   Ensures that the VM instance's configuration inherits instance dependencies
-    as requirements for hosting its tenant assets. For example, hosting a
-    website implies that the host have the `Web-Server` feature.
 
-*   Identifies external resources that must be copied over to the target VM
-    instance. For example, an instance hosting a website needs the files that
-    collectively define the website.
+* Assigns the asset to a VM instance. This instance is called the **_host_** for
+  the asset. Conversely the asset is a **_tenant_** of the instance. Thus the
+  instance configuration scripts on this host are responsible for ensuring the
+  existence and correctness of this asset. The choice of host is pretty obvious
+  for assets that are explicitly bound to an instance (e.g. a service that runs
+  on a specific machine), but isn't quite obvious for non-instance bound assets
+  (AD Domain Users).
 
-In our example, the following configuration steps need to happen on each
-instance:
+* Ensures that the VM instance's configuration inherits instance dependencies as
+  requirements for hosting its tenant assets. For example, hosting a website
+  implies that the host have the `Web-Server` feature.
+
+* Identifies external resources that must be copied over to the target VM
+  instance. For example, an instance hosting a website needs the files that
+  collectively define the website.
+
+In our example, the following configuration steps need to happen on each instance:
+
+
 
 *   **«ad»**
     *   CEL Windows instance setup. See [Windows Instances](#windows-instances).
@@ -666,6 +686,7 @@ On-instance configuration typically relies on on the Completed Asset Manifest.
 The latter won't be available at this point of the deployment process, but will
 be uploaded during the **Execution** stage below.
 
+
 ### Execution Stage
 
 At this point the deployer has the Deployment Manager configuration, and the
@@ -677,94 +698,93 @@ The next steps are:
 *   [Deployment Manager Invocation Phase](#deployment-manager-invocation-phase).
 *   [Instance Configuration Phase](#instance-configuration-phase).
 
-##### GCP Prep Phase {#gcp-prep-phase}
+##### GCP Prep Phase                                           {#gcp-prep-phase}
 
 Prior to launching anything, the deployer needs to make sure that global
 resources and metadata required for the lab are up-to-date. Thus the deployer:
 
-*   **Constructs a new Generation ID for this deployment**. This is akin to the
-    ID of the deployment that will be created later, but is one that is created
-    by `cel_ctl` prior to invoking the GCP Deployment Manager. The Generation ID
-    is unique even across deployments and uniquely identifies this specific
-    deployment attempt. The Generation ID must also be updated in the Completed
-    Asset Manifest.
 
-    Currently the Generation ID is a 128-bit random number expressed as a
-    lowercase hex string. E.g. `e8d53a36e8d08bdba2551365d5a1db67`.
+* **Constructs a new Generation ID for this deployment**. This is akin to the ID
+  of the deployment that will be created later, but is one that is created by
+  `cel_ctl` prior to invoking the GCP Deployment Manager. The Generation ID is
+  unique even across deployments and uniquely identifies this specific
+  deployment attempt. The Generation ID must also be updated in the Completed
+  Asset Manifest.
 
-*   **Deletes obsolete deployments**. This step is only necessary if there are
-    existing deployments in the GCP project other than the one used by CEL. CEL
-    only supports one active deployment per GCP project. This is a destructive
-    operation and one that should only be performed by `cel_ctl` with user
-    confirmation.
+  Currently the Generation ID is a 128-bit random number expressed as a
+  lowercase hex string. E.g. `e8d53a36e8d08bdba2551365d5a1db67`.
 
-*   **Stops all running VM instances**. This is a hard stop and is necessary
-    because instance configuration changes cannot be applied while an instance
-    is running. Obviously only applies to instances that still exist after the
-    obsolete deployments were removed.
+* **Deletes obsolete deployments**. This step is only necessary if there are
+  existing deployments in the GCP project other than the one used by CEL. CEL
+  only supports one active deployment per GCP project. This is a destructive
+  operation and one that should only be performed by `cel_ctl` with user
+  confirmation.
 
-    This step also implicitly stops any instance configuration steps that may
-    have been running from a recent incomplete deployment.
+* **Stops all running VM instances**. This is a hard stop and is necessary
+  because instance configuration changes cannot be applied while an instance is
+  running. Obviously only applies to instances that still exist after the
+  obsolete deployments were removed.
 
-*   **Creates or verifies VM instance service account**. The service accounts
-    are required for setting up proper ACLs. The following service accounts are
-    required:
+  This step also implicitly stops any instance configuration steps that may have
+  been running from a recent incomplete deployment.
 
-    *   `cel-instance-service` (See [Service Account](#service-account)).
+* **Creates or verifies VM instance service account**. The service accounts are
+  required for setting up proper ACLs. The following service accounts are
+  required:
 
-*   **Creates or verifies Google Cloud KMS CryptoKeys**. Key management requires
-    the following CryptoKey to be present:
+  * `cel-instance-service` (See [Service Account](#service-account)).
 
-    *   `cel-manifest-key` (See `cel-manifest-key` in [Key Management][]).
+* **Creates or verifies Google Cloud KMS CryptoKeys**. Key management requires
+  the following CryptoKey to be present:
 
-*   **Uploads Instance Scripts and Binaries to Object Storage.**
+  * `cel-manifest-key` (See `cel-manifest-key` in [Key Management][]).
 
-    *   **Uploads the CEL startup scripts to Object Storage**. For windows, this
-        is a set of PowerShell scripts.
+* **Uploads Instance Scripts and Binaries to Object Storage.**
+  * **Uploads the CEL startup scripts to Object Storage**. For windows, this is
+    a set of PowerShell scripts.
 
-    *   **Uploads the CEL_Agent binary**. This compiled binary handles part of
-        the on-host configuration.
+  * **Uploads the CEL_Agent binary**. This compiled binary handles part of the
+    on-host configuration.
 
-*   **Resolves Secrets**. This encrypts and stores secrets using the CryptoKey
-    `cel-manifest-key`. The deployer stores the resulting ciphertext in Object
-    Storage and writes the resulting storage reference into the Completed Asset
-    Manifest.
+* **Resolves Secrets**. This encrypts and stores secrets using the CryptoKey
+  `cel-manifest-key`. The deployer stores the resulting ciphertext in Object
+  Storage and writes the resulting storage reference into the Completed Asset
+  Manifest.
 
-*   **Resolves FileReferences**. The deployer reads in files and folders that
-    are required for instance configuration and stores them in Object Storage.
-    It also updates the resulting storage reference in the Completed Asset
-    Manifest.
+* **Resolves FileReferences**. The deployer reads in files and folders that are
+  required for instance configuration and stores them in Object Storage. It also
+  updates the resulting storage reference in the Completed Asset Manifest.
 
-*   **Uploads [Completed Asset Manifest](#completed-asset-manifest) to Object
-    Storage**. There should be no unresolved `OUTPUT` type resources after
-    `Secret` objects and `FileReference` objects are resolved.
+* **Uploads [Completed Asset Manifest](#completed-asset-manifest) to Object
+  Storage**. There should be no unresolved `OUTPUT` type resources after
+  `Secret` objects and `FileReference` objects are resolved.
 
-*   **Constructs new GCP Deployment Manager Runtime Configuration for this
-    deployment**. Currently there should be at most one active Runtime
-    Configuration per GCP project. We don't and don't plan on supporting
-    multiple deployments in a single project. See
-    [Runtime Configuration documentation](https://cloud.google.com/deployment-manager/runtime-configurator/create-and-delete-runtimeconfig-resources)
-    in GCP.
+* **Constructs new GCP Deployment Manager Runtime Configuration for this
+  deployment**. Currently there should be at most one active Runtime
+  Configuration per GCP project. We don't and don't plan on supporting multiple
+  deployments in a single project. See [Runtime Configuration
+  documentation](https://cloud.google.com/deployment-manager/runtime-configurator/create-and-delete-runtimeconfig-resources)
+  in GCP.
 
-    The Runtime Configuration shall be named `cel-runtime`.
+  The Runtime Configuration shall be named `cel-runtime`.
 
-    If the Runtime Configuration already exists, it should be purged of all its
-    values. Otherwise the new deployment may use stale data from a prior
-    deployment.
+  If the Runtime Configuration already exists, it should be purged of all its
+  values. Otherwise the new deployment may use stale data from a prior
+  deployment.
 
-*   **Updates project scoped metadata**.
+* **Updates project scoped metadata**.
 
-    *   `cel-manifest` ← reference to Completed Asset Manifest. The contents is
-        a JSON encoded `FileReference` object with the `object_reference` and
-        `integrity` values populated at a minimum. The manifest itself should be
-        expected to be encoded as a text protobuf.
+  * `cel-manifest` ← reference to Completed Asset Manifest. The contents is a
+    JSON encoded `FileReference` object with the `object_reference` and
+    `integrity` values populated at a minimum. The manifest itself should be
+    expected to be encoded as a text protobuf.
 
-    *   `cel-agent` ← JSON encoded object mapping the string `$GOOS_$GOARCH` to
-        the corresponding reference to the uploaded CEL agent binary. The mapped
-        value is a JSON encoded `FileReference` object which specifies the
-        `object_reference` and `integrity` values at a minimum.
+  * `cel-agent` ← JSON encoded object mapping the string `$GOOS_$GOARCH` to the
+    corresponding reference to the uploaded CEL agent binary. The mapped value
+    is a JSON encoded `FileReference` object which specifies the
+    `object_reference` and `integrity` values at a minimum.
 
-    ```json
+    ``` json
     {
       "windows_amd64": {
         "object_reference": "gs://my-test-project-bucket/cel/objects/f2342535",
@@ -778,16 +798,17 @@ resources and metadata required for the lab are up-to-date. Thus the deployer:
     }
     ```
 
-    *   `cel-admin-log` ← Name of Stackdriver log to use for administrative
-        messages during deployment.
+  * `cel-admin-log` ←  Name of Stackdriver log to use for administrative
+    messages during deployment.
 
     Log settings are a part of the Completed Asset Manifest as well, but it's
     exposed as a separate entry so that entities in the lab can correctly
     configure logging without having to parse the entire manifest.
 
-*   **Resolves placeholders in deployment manifest**. If there are any
-    `<<placeholder.*>>` strings in the deployment manifest, these can all be
-    resolved at this point.
+* **Resolves placeholders in deployment manifest**. If there are any
+  `<<placeholder.*>>` strings in the deployment manifest, these can all be
+  resolved at this point.
+
 
 ##### Deployment Manager Invocation Phase
 
@@ -807,6 +828,7 @@ deployment should be the equivalent of creating a deployment with `preview` set
 to `false`. I.e. resuming the deployment in preview should continue the
 deployment.
 
+
 ##### Instance Configuration Phase
 
 Each instance that is brought up after provisioning via the Deployment Manager
@@ -824,6 +846,7 @@ deployment as long as they have the appropriate permissions.
 See the [Windows Instances](#windows-instances) section for more details on how
 a Windows VM instance startup and configuration is performed.
 
+
 ### Wrapping Up
 
 Once the GCP Deployment Manager finishes deploying all GCP resources, and once
@@ -832,7 +855,11 @@ lab deployment is done.
 
 The lab is now ready for use.
 
+
+
+
 ## Detailed Design
+
 
 ### Foundation Services
 
@@ -840,6 +867,7 @@ The deployment process, once launched, needs to be self sustaining. Hence all
 the required infrastructure for managing communication and coordination should
 be deployed by the deployment process prior to them being needed. The set of
 services that the DEPLOYER is going to depend on are as follows:
+
 
 *   **[Object Storage](#object-storage)** (Content Addressed): Stores large
     objects like files that need to be installed onto lab machines, and
@@ -849,16 +877,16 @@ services that the DEPLOYER is going to depend on are as follows:
     metadata and provides mechanisms for waiting for state changes. \
 
 *   **[Logging](#logging)**: An abstract mechanisms where log information is
-
 *   generated and aggregated across the entire lab. \
 
-*   **[Key Management][]**: Some objects need to be encrypted during transit.
-    The Key Management service is used for controlling access to who can encrypt
-    and decrypt objects. Needed for privilege separation within the lab.
+*   **[Key Management][]**: Some objects need to be encrypted
+    during transit. The Key Management service is used for controlling access to
+    who can encrypt and decrypt objects. Needed for privilege separation within
+    the lab.
 
 These topics are covered below after a few more prerequisites are explained.
 
-### Internal References (a.k.a. Inline References) {#inline-references}
+### Internal References (a.k.a. Inline References)          {#inline-references}
 
 Assets sometimes need to refer to properties of other assets. These
 relationships are represented in the `textpb` files using internal or inline
@@ -909,9 +937,10 @@ configuration refers to a valid asset or a string field. Currently only string
 fields can appear as the target of an inline reference.
 
 Logic for storing and manipulating reference paths can be found in
-[ref_path.go](../go/common/ref_path.go). Code for generating and resolving
+[ref_path.go](../go/common/ref_path.go).  Code for generating and resolving
 references with asset and host manifests can be found at
 [namespace.go](../go/common/namespace.go).
+
 
 ### Object Storage
 
@@ -921,11 +950,12 @@ that the storage bucket namespace isn't local to a GCP project. Hence the Host
 Environment needs to specify the GCP bucket to use. CEL does not attempt to
 create the bucket either. It must already exist.
 
-*** note **Note**: We should consider creating GCS buckets on demand. This would
-allow CEL to also control the location of the GCS bucket which should correspond
-to the zone/region configured in the Host Environment.
 
-********************************************************************************
+*** note
+**Note**: We should consider creating GCS buckets on demand. This would allow
+CEL to also control the location of the GCS bucket which should correspond to
+the zone/region configured in the Host Environment.
+***
 
 GCS isn't hierarchical. Instead it gives the appearance of hierarchy using name
 prefixes. We'll build on top of this by isolating a lab's storage space into a
@@ -942,12 +972,12 @@ If no prefix is specified, the default prefix is `cel-config`.
 
 Storing a blob object in our Object Storage service involves:
 
-*   Construct a SHA-256 digest of the content.
-*   Construct the name as `namespace-prefix + "/o/" + hex-encoded-digest` where
-    `namespace-prefix` would be the prefix from the Host Environment, and
-    `hex-encoded-digest` is the hex encoded SHA-256 digest of the content.
-*   If an object by that name exists, then there's nothing to do. Otherwise
-    store the object with that name.
+* Construct a SHA-256 digest of the content.
+* Construct the name as `namespace-prefix + "/o/" + hex-encoded-digest` where
+  `namespace-prefix` would be the prefix from the Host Environment, and
+  `hex-encoded-digest` is the hex encoded SHA-256 digest of the content.
+* If an object by that name exists, then there's nothing to do. Otherwise
+  store the object with that name.
 
 This results in an object with a name like
 `gs://my-test-gcp-bucket/some-lab-01/o/0edfd414c0ea0c7e8ff93433673ddf810e00210b`,
@@ -964,19 +994,18 @@ reference should treat it as opaque. The only exception is the API for resolving
 object references, which obviously needs to know how to fetch the object
 corresponding to the reference.
 
+
 ##### Permissions
 
-*   The credentials used for running `cel_ctl` needs the following GCS
-    permissions:
+* The credentials used for running `cel_ctl` needs the following GCS permissions:
+  * `storage.objects.create`
+  * `storage.objects.list`
+  * `storage.objects.getIamPolicy`
+  * `storage.objects.setIamPolicy`
 
-    *   `storage.objects.create`
-    *   `storage.objects.list`
-    *   `storage.objects.getIamPolicy`
-    *   `storage.objects.setIamPolicy`
+* The lab instance service account needs read access to the GCS bucket. I.e.
+  * `storage.objects.get`
 
-*   The lab instance service account needs read access to the GCS bucket. I.e.
-
-    *   `storage.objects.get`
 
 ##### Lifetime
 
@@ -991,31 +1020,31 @@ expected lifetime of the lab.
 In addition, when deleting a lab, all of its associated storage can also be
 safely deleted.
 
+
 ##### Choice Of Hash Function
 
-Initially the hash function will be SHA-384. Thus
-[subresource integrity](https://www.w3.org/TR/SRI/) strings generated for stored
-objects are also based on a SHA-384 digest.
+Initially the hash function will be SHA-384. Thus [subresource
+integrity](https://www.w3.org/TR/SRI/) strings generated for stored objects are
+also based on a SHA-384 digest.
 
 However, nothing in the API should rely on a specific choice of digest. There's
 no compatibility risk here since the object name is only meant to be meaningful
 to a single generation of the lab.
 
-*** aside **Why Content Addressed Storage?**
+*** aside
+**Why Content Addressed Storage?**
 
 Use of content addressed storage …
 
-*   … makes it easier to avoid storing the same object twice if the content
-    hasn't changed.
+* … makes it easier to avoid storing the same object twice if the content hasn't changed.
 
-*   … immutable references avoid the need to deal with version skew across
-    references.
+* … immutable references avoid the need to deal with version skew across references.
 
 The downside of this scheme is the need for garbage collection. Since objects
 are restricted to a namespace, we can simply remove all objects within that
 namespace when a lab instance needs to be discarded.
+***
 
-********************************************************************************
 
 ### File Resources
 
@@ -1111,7 +1140,6 @@ message FileReference {
   Type resolved_type = 6 [(v).type = OUTPUT];
 }
 ```
-```
 
 The `source` field could refer to a file or a directory.
 
@@ -1119,51 +1147,51 @@ In the former case we can simply upload the contents of the file as a object to
 Object Storage and then stick the resulting object reference in the
 `object_reference` field and set type `resolved_type` field to `FILE`.
 
-In the latter case (i.e. uploading an entire directory tree), we construct a Zip
-archive containing all the files in the directory tree, upload the zip file to
-Object storage, and then stick the resulting object reference in the
+In the latter case (i.e. uploading an entire directory tree), we construct a
+Zip archive containing all the files in the directory tree, upload the zip file
+to Object storage, and then stick the resulting object reference in the
 `object_reference` field. The `resolved_type` is then set to `ZIP_ARCHIVE`.
 
 ### Runtime Configuration
 
-Based on the Runtime Configurator support in GCP
-[documented here](https://cloud.google.com/deployment-manager/runtime-configurator/create-and-delete-runtimeconfig-resources).
+Based on the Runtime Configurator support in GCP [documented
+here](https://cloud.google.com/deployment-manager/runtime-configurator/create-and-delete-runtimeconfig-resources).
 The basic concepts applicable to CEL are:
 
-*   `RuntimeConfig` (the name given to a single set of configuration settings)
-    objects are named. A GCP project hosting a CEL deployment contains exactly
-    one `RuntimeConfig` and it is named `cel-config`.
+* `RuntimeConfig` (the name given to a single set of configuration settings)
+  objects are named. A GCP project hosting a CEL deployment contains exactly one
+  `RuntimeConfig` and it is named `cel-config`.
 
-*   Every top level asset has a namespace in the `RuntimeConfig` corresponding
-    to its Reference Path (see [Inline References][] below).
+* Every top level asset has a namespace in the `RuntimeConfig` corresponding
+  to its Reference Path (see [Inline References][] below).
 
-    E.g. a `WindowsMachine` asset with the name `ad` has the namespace
-    `asset/windows_machine/ad`. The name components follow the path components
-    for its Reference Path.
+  E.g. a `WindowsMachine` asset with the name `ad` has the namespace
+  `asset/windows_machine/ad`. The name components follow the path components for
+  its Reference Path.
 
-*   Every asset has a `status` variable on the top level of the namespace which
-    is one of `init`, `in-progress`, `ready`, or `error`. In order, these mean
-    that the associated resource is in its initial state (e.g. not deployed
-    yet), in the process of being deployed, completed deploying, or there was
-    some sort of error during deployment.
+* Every asset has a `status` variable on the top level of the namespace which
+  is one of `init`, `in-progress`, `ready`, or  `error`. In order, these mean
+  that the associated resource is in its initial state (e.g. not deployed yet),
+  in the process of being deployed, completed deploying, or there was some sort
+  of error during deployment.
 
-    E.g. The status of the `WindowsMachine` named `ad` is in the variable named
-    `asset/windows_machine/ad/status`.
+  E.g. The status of the `WindowsMachine` named `ad` is in the variable named
+  `asset/windows_machine/ad/status`.
 
-*   All other `RUNTIME` fields contained have corresponding variables. For
-    example, the `addresses` runtime field of a `WindowsMachine` named `ad` is
-    in the variable named `asset/windows_machine/ad/addresses`.
+* All other `RUNTIME` fields contained have corresponding variables. For
+  example, the `addresses` runtime field of a `WindowsMachine` named `ad` is in
+  the variable named `asset/windows_machine/ad/addresses`.
 
-    Due to restrictions on the hierarchy and naming of variables, once we create
-    a variable named `foo/bar/baz`, we can't store anything in a variable named
-    `foo/bar`. Therefore, `RUNTIME` fields can only be defined in top-level
-    assets.
+  Due to restrictions on the hierarchy and naming of variables, once we create a
+  variable named `foo/bar/baz`, we can't store anything in a variable named
+  `foo/bar`. Therefore, `RUNTIME` fields can only be defined in top-level
+  assets.
 
 The Runtime Configuration API allows for watching and waiting for changes to a
-variable. (Watching is
-[documented here](https://cloud.google.com/deployment-manager/runtime-configurator/watching-a-variable).
-Waiting is
-[documented here](https://cloud.google.com/deployment-manager/runtime-configurator/creating-a-waiter)).
+variable. (Watching is [documented
+here](https://cloud.google.com/deployment-manager/runtime-configurator/watching-a-variable).
+Waiting is [documented
+here](https://cloud.google.com/deployment-manager/runtime-configurator/creating-a-waiter)).
 When a configuration step requires waiting for one or more other assets to
 complete, they can wait for the `status` variable corresponding to those assets
 to switch to either `ready` or `error`.
@@ -1171,15 +1199,18 @@ to switch to either `ready` or `error`.
 One caveat with the API is that watching a variable is restricted to 60 seconds
 at a time after which we'd need to issue another watch request.
 
-*** note **Note**: It is possible that the Runtime Configurator API doesn't give
-us the performance characteristics we'd like.
+
+*** note
+**Note**: It is possible that the Runtime Configurator API doesn't give us the
+performance characteristics we'd like.
 
 If there's too much latency between a variable being updated and watchers being
 notified we may need to consider switching over to Pub/Sub + Cloud Datastore
 based approach. This latency can be measured by adding log entries at the time
 the variable is updated and when the variable change is observed.
+***
 
-********************************************************************************
+
 
 ### Logging
 
@@ -1187,7 +1218,7 @@ Logging from CEL deployment and from within labs is done using the Stackdriver
 Logging API ([Documentation](https://cloud.google.com/logging/docs/)).
 
 `cel_ctl` and instances use the log named in the Host Environment under the
-`log_settings.admin_log` field ([Host Environment Schema][]). Stackdriver
+`log_settings.admin_log` field ([Host Environment Schema][]).  Stackdriver
 differentiates between sources, so logs generated on different instances can
 easily be differentiated.
 
@@ -1196,15 +1227,17 @@ where every entry contains a `gid` specifying the Generation ID of the last
 loaded configuration. An unknown generation ID can be represented using `0`
 since that is not a valid ID.
 
+
 ### Key Management
 
 See the [Key Management][] document.
 
-### Validation {#asset-validation}
+
+### Validation                                               {#asset-validation}
 
 Skipping this part. Please comment if this needs to be expanded.
 
-### Service Account {#service-account}
+### Service Account                                           {#service-account}
 
 All VM instances in a lab use the same IAM service account. This account is
 distinct from the default GCE instance service account to prevent accidental
@@ -1213,7 +1246,8 @@ misconfiguration on projects that are also being handled manually.
 The name of the service account is `cel-instance-service`. The full address of
 the account will depend on the project name and is determined at runtime.
 
-### Completed Asset Manifest {#completed-asset-manifest}
+
+### Completed Asset Manifest                         {#completed-asset-manifest}
 
 A "Completed Asset Manifest" is the combined asset manifest with all the
 `OUTPUT` fields filled in.
@@ -1231,7 +1265,8 @@ project metadata. The choice for the encoding of the manifest is arbitrary since
 we control both the encoding and decoding logic, but `textpb` makes it easy to
 diagnose what's going on and is easier on the eyes compared to JSON or binary.
 
-### Coding Patterns For Resolvers {#coding-patterns-for-resolvers}
+
+### Coding Patterns For Resolvers               {#coding-patterns-for-resolvers}
 
 A Resolver is something that can visit relevant assets and do whatever is
 necessary to get that asset into a _"resolved"_ state. The actual meaning of
@@ -1246,7 +1281,7 @@ Internally, the `cel` codebase uses ProtoBufs to define the asset schema. The
 `proto` files that define the schema are also used to generate Go code. Each
 asset type results in a Go type generated that looks like this:
 
-```go
+``` go
 // A Windows machine.
 type WindowsMachine struct {
    // Elided
@@ -1315,19 +1350,18 @@ func ExampleResolverKind() {
 	// registration in init().
 }
 ```
-```
 
 The assets support a topological visit function which asserts that when visiting
 asset A, all assets that A depends on have been visited successfully. As
 implied, any asset that depends on A will not be visited until A's visit has
 been successfully completed.
 
-### Use Of GCP Deployment Manager {#use-of-gcp-deployment-manager}
 
-The Google Cloud Deployment Manager is
-[documented here](https://cloud.google.com/deployment-manager/docs/). It can be
-used to manage the deployment of a collection of a growing inventory of
-resources.
+### Use Of GCP Deployment Manager               {#use-of-gcp-deployment-manager}
+
+The Google Cloud Deployment Manager is [documented
+here](https://cloud.google.com/deployment-manager/docs/). It can be used to
+manage the deployment of a collection of a growing inventory of resources.
 
 CEL uses it as middleware for deploying supported GCP assets. Without this, CEL
 would need to manually deploy each GCP asset individually. Instead CEL can now
@@ -1336,31 +1370,32 @@ generate a Deployment Configuration and push it out without further oversight.
 In addition to what's covered in the Deployment Manager, the quirks as
 applicable to Chrome Enterprise Lab are:
 
-*   **No colons in project ID**. This is a bit surprising, and is internally
-    tracked as a bug. Bug essentially, the project ID cannot have a colon. This
-    excludes projects that are created within an organization since such
-    projects will look like `organization.org:project-name`.
+* **No colons in project ID**. This is a bit surprising, and is internally
+  tracked as a bug. Bug essentially, the project ID cannot have a colon. This
+  excludes projects that are created within an organization since such projects
+  will look like `organization.org:project-name`.
 
-*   **Limit of one deployment per GCP project**. While Deployment Manager
-    supports multiple deployments within a single GCP project, this
-    functionality is not currently considered to be useful for the CEL use case.
-    In addition, the use of project level metadata to guide the deployment and
-    configuration of assets within the project imply that only a single CEL
-    deployment can exist within a single project.
+* **Limit of one deployment per GCP project**. While Deployment Manager
+  supports multiple deployments within a single GCP project, this
+  functionality is not currently considered to be useful for the CEL use case.
+  In addition, the use of project level metadata to guide the deployment and
+  configuration of assets within the project imply that only a single CEL
+  deployment can exist within a single project.
 
-    Since only one deployment is possible, we can give it a well known name like
-    `cel-deploy`. Having a consistent name means that edit-deploy cycles can
-    make use of the `UPDATE` functionality in a Deployment Manager
-    ([documented here](https://cloud.google.com/deployment-manager/docs/deployments/updating-deployments))
-    to minimize the work that needs to be done.
+  Since only one deployment is possible, we can give it a well known name like
+  `cel-deploy`. Having a consistent name means that edit-deploy cycles can make
+  use of the `UPDATE` functionality in a Deployment Manager ([documented
+  here](https://cloud.google.com/deployment-manager/docs/deployments/updating-deployments))
+  to minimize the work that needs to be done.
 
-*   **Creating the DM deployment has to be the last step of a CEL deployment**.
-    This ensures that once the Deployment Manager is invoked, we can use the GCP
-    UI to oversee and manage the deployment if necessary including previewing
-    and debugging. The CEL toolchain is thus constructing cloud deployment and
-    allowing the GCP logic to take over.
+* **Creating the DM deployment has to be the last step of a CEL deployment**.
+  This ensures that once the Deployment Manager is invoked, we can use the GCP
+  UI to oversee and manage the deployment if necessary including previewing and
+  debugging. The CEL toolchain is thus constructing cloud deployment and
+  allowing the GCP logic to take over.
 
-### Windows Instances {#windows-instances}
+
+### Windows Instances                                       {#windows-instances}
 
 Windows VMs running inside the lab are considered to be based on vanilla public
 images. Custom images should ensure that the GCE Windows Agent is installed and
@@ -1369,57 +1404,59 @@ by GCE.
 
 Every instance has:
 
-*   A GCP IAM service account. All instances share the `cel-instance-service`
-    account.
-*   Local configuration.
-*   A startup script.
+* A GCP IAM service account. All instances share the `cel-instance-service`
+  account.
+* Local configuration.
+* A startup script.
+
 
 #### Local Configuration
 
 Local configuration information for a Windows VM instance is kept in the
-registry key under `HKLM\Software\CEL`. Typically the stored values are mapping
-from a well known string to a JSON blob. I.e. data type is `REG_SZ`.
+registry key under `HKLM\Software\CEL`. Typically the stored values are
+mapping from a well known string to a JSON blob. I.e. data type is `REG_SZ`.
+
 
 #### Startup Script
 
-Instance startup is handled primarily by the
-[GCE Windows agent](https://github.com/GoogleCloudPlatform/compute-image-windows),
-a CEL specific Windows PowerShell instance startup script, and then by the CEL
-agent as started by the script.
+Instance startup is handled primarily by the [GCE Windows
+agent](https://github.com/GoogleCloudPlatform/compute-image-windows), a CEL
+specific Windows PowerShell instance startup script, and then by the CEL agent
+as started by the script.
 
 The PowerShell script is responsible for the following:
 
-1.  Lookup `cel-admin-log` project metadata via `Invoke-RestMethod`. This is the
-    name of the log to use during startup script execution. Log entries can be
-    added, once again, via `Invoke-RestMethod`.
+1. Lookup `cel-admin-log` project metadata via `Invoke-RestMethod`. This is the
+   name of the log to use during startup script execution. Log entries can be
+   added, once again, via `Invoke-RestMethod`.
 
-1.  Log an entry indicating that the startup script is executing. All metadata
-    that's looked up must be recorded in the log. For clarity, logging is elided
-    from the rest of this description.
+1. Log an entry indicating that the startup script is executing. All metadata
+   that's looked up must be recorded in the log. For clarity, logging is elided
+   from the rest of this description.
 
-1.  Download and register the CEL agent binary.
+1. Download and register the CEL agent binary.
+   1.  Lookup `cel-agent` project metadata via `Invoke-RestMethod`. The
+       resulting dictionary has keys for `<goos>-<goarch>` corresponding to
+       current platform.
+   1.  Lookup the GCS path for the CEL agent binary corresponding to current
+       platform.
+   1.  Lookup GCS path for installed `cel-agent` in local configuration under
+       `cel-agent`. If the paths match, then skip CEL agent installation.
+   1.  Calculate the SHA256 hash of the binary using `Get-FileHash`. The hex
+       encoding of the digest should match the last component of the GCS path.
+   1.  Use `gsutil` to copy the CEL agent binary to
+       `C:\CEL\agent\<sha256-hash>\cel_agent.exe`.
+   1.  Invoke `cel_agent.exe --install` which will remove the existing service
+       registration if there was one, and will install the current version.
+   1.  Write the GCS path of the downloaded binary to `cel-agent` value under
+       local configuration.
 
-    1.  Lookup `cel-agent` project metadata via `Invoke-RestMethod`. The
-        resulting dictionary has keys for `<goos>-<goarch>` corresponding to
-        current platform.
-    1.  Lookup the GCS path for the CEL agent binary corresponding to current
-        platform.
-    1.  Lookup GCS path for installed `cel-agent` in local configuration under
-        `cel-agent`. If the paths match, then skip CEL agent installation.
-    1.  Calculate the SHA256 hash of the binary using `Get-FileHash`. The hex
-        encoding of the digest should match the last component of the GCS path.
-    1.  Use `gsutil` to copy the CEL agent binary to
-        `C:\CEL\agent\<sha256-hash>\cel_agent.exe`.
-    1.  Invoke `cel_agent.exe --install` which will remove the existing service
-        registration if there was one, and will install the current version.
-    1.  Write the GCS path of the downloaded binary to `cel-agent` value under
-        local configuration.
+1. Synchronize time if necessary setting the time server to `time.google.com`.
 
-1.  Synchronize time if necessary setting the time server to `time.google.com`.
+1. At this point the `CelAgent` service should be installed. Start the service
+   if it isn't already running. The rest of the configuration will be guided by
+   the `cel_agent` binary.
 
-1.  At this point the `CelAgent` service should be installed. Start the service
-    if it isn't already running. The rest of the configuration will be guided by
-    the `cel_agent` binary.
 
 #### CEL Agent (Windows)
 
@@ -1432,82 +1469,83 @@ The CEL agent performs the following tasks on startup. Note all steps are to be
 implemented in an idempotent manner. It should be cheap to run through the steps
 if the work has already been done previously.
 
-1.  Look up `cel-manifest` in project metadata. This is the GCP path the
-    Completed Asset Manifest.
 
-1.  Download and parse the Completed Asset Manifest.
+1. Look up `cel-manifest` in project metadata. This is the GCP path the
+   Completed Asset Manifest.
 
-1.  Log an entry indicating that the per-instance configuration is starting.
+1. Download and parse the Completed Asset Manifest.
 
-1.  Publish the `status` variable with a value of `in-progress`. Note that the
-    status prior to this point is not necessarily `init` since configuring an
-    instance may involve multiple reboots. If the status is `ready`, then it
-    should be safe to assume that the machine configuration is current.
-    Deployers always reset the runtime configuration.
+1. Log an entry indicating that the per-instance configuration is starting.
 
-1.  Ensure that base configuration is a match. This involves verifying that the
-    network / CPU / OS matches configuration. If there's a mismatch, log an
-    error, publish a status value of `error` and quit.
+1. Publish the `status` variable with a value of `in-progress`. Note that the
+   status prior to this point is not necessarily `init` since configuring an
+   instance may involve multiple reboots. If the status is `ready`, then it
+   should be safe to assume that the machine configuration is current. Deployers
+   always reset the runtime configuration.
 
-1.  Iterate over the asset graph and pick out the assets that are assigned to be
-    resolved on this instance.
+1. Ensure that base configuration is a match. This involves verifying that the
+   network / CPU / OS matches configuration. If there's a mismatch, log an
+   error, publish a status value of `error` and quit.
 
-1.  Copy over dependent file references from Object Storage that needs to be
-    resolved locally.
+1. Iterate over the asset graph and pick out the assets that are assigned to be
+   resolved on this instance.
 
-1.  Ensure PowerShell version and install the new one if necessary.
+1. Copy over dependent file references from Object Storage that needs to be
+   resolved locally.
 
-1.  Download and install PowerShell modules if they need updating.
+1. Ensure PowerShell version and install the new one if necessary.
 
-1.  Acquire and install pre-issued certificates.
+1. Download and install PowerShell modules if they need updating.
 
-1.  Go through and aggregate the list of Windows features that must be installed
-    on this instance.
+1. Acquire and install pre-issued certificates.
 
-1.  Install Windows features.
+1. Go through and aggregate the list of Windows features that must be installed
+   on this instance.
 
-1.  Create local users and groups. Publish `state` for newly created user and
-    group assets.
+1. Install Windows features.
 
-1.  Wait for parent AD domains if necessary using Runtime Configurator.
+1. Create local users and groups. Publish `state` for newly created user and
+   group assets.
 
-1.  Installs ADDS and ADFS (promote). This step will involves a reboot. Once
-    rebooted the process will proceed up to this point.
+1. Wait for parent AD domains if necessary using Runtime Configurator.
 
-1.  Create OUs
+1. Installs ADDS and ADFS (promote). This step will involves a reboot. Once
+   rebooted the process will proceed up to this point.
 
-1.  Create domain users and groups.
+1. Create OUs
 
-1.  Wait for peer AD domains / forests.
+1. Create domain users and groups.
 
-1.  Establish domain and forest trusts.
+1. Wait for peer AD domains / forests.
 
-1.  Waits for AD if necessary.
+1. Establish domain and forest trusts.
 
-1.  Domain-Join.
+1. Waits for AD if necessary.
 
-1.  Installs certificate services.
+1. Domain-Join.
 
-1.  Issues and publishes certificates.
+1. Installs certificate services.
 
-1.  Waits for certificate services.
+1. Issues and publishes certificates.
 
-1.  Installs enrolled certificates.
+1. Waits for certificate services.
 
-1.  Installs websites and applications.
+1. Installs enrolled certificates.
 
-1.  Publish all `RUNTIME` variables.
+1. Installs websites and applications.
 
-1.  Publishes `status` value of `ready`. This needs to be done last since once
-    the status value is updated, any watchers or waiters will be notified that
-    this asset is ready.
+1. Publish all `RUNTIME` variables.
+
+1. Publishes `status` value of `ready`. This needs to be done last since once
+   the status value is updated, any watchers or waiters will be notified that
+   this asset is ready.
 
 The Go code doesn't really need to do all the work here, and instead can
 delegate to PowerShell scripts or DSC invocations. All the work must complete
 silently, and should generate log entries indicating shell invocations and
 results for debugging.
 
-<!-- INCLUDE index.md (55 lines) -->
+<!-- INCLUDE index.md (56 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -1563,3 +1601,5 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
+
+
