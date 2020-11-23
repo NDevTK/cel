@@ -1,8 +1,10 @@
 # Chrome Enterprise Lab
 
-Chrome Enterprise Lab is an inaccurately named set of tools for building
-enterprise labs quickly and easily. The labs so built can be used for system
-level end-to-end testing of Google Chrome/Chromium.
+Chrome Enterprise Lab is a set of tools for building enterprise experimental
+labs quickly and easily. The labs so built can be used for system level
+end-to-end testing of Google Chrome/Chromium. These system tests are required to
+avoid enteprise regression under some complex enterprise software & networking
+configurations, such as Microsoft Active Directory.
 
 Have a peek at the [Design](/docs/design-overview.md) document.
 
@@ -24,19 +26,20 @@ head start on the code in this repository.
     wranging all the data that needs to be shuttled around. Run `protoc --version` to
     check the protoc version. The protoc version should be at least 3.5.1. If
     protoc is not installed, or if the version is less than 3.5.1, download it from
-    https://github.com/protocolbuffers/protobuf/releases.
+    <https://github.com/protocolbuffers/protobuf/releases>.
 
     Remember that you need to copy the contents of the `include`
     directory of the zip file into `/usr/local/include/` as well, i.e.
-    ```
+
+    ```sh
     >> cd tmp
-    >> wget https://github.com/protocolbuffers/protobuf/releases/download/v3.13.0/protoc-3.13.0-linux-x86_64.zip
-    >> unzip protoc-3.13.0-linux-x86_64.zip -d protoc
+    >> wget https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-linux-x86_64.zip
+    >> unzip protoc-3.14.0-linux-x86_64.zip -d protoc
     >> sudo cp protoc/bin/protoc /usr/local/bin/protoc
     >> sudo chmod 751 /usr/local/bin/protoc
     >> cp protoc/
     >> sudo mv include/* /usr/local/include/
-    >> rm -rf protoc3 protoc-3.13.0-linux-x86_64.zip
+    >> rm -rf protoc3 protoc-3.14.0-linux-x86_64.zip
     ```
 
 * [Dep][] : Used for Go depedency management. This can be installed
@@ -64,7 +67,15 @@ is to use plain `go get`. The latter workflow doesn't quite work yet due to this
 repository not being integrated with `go.chromium.org`. So this page only
 mentions the managed dependency workflow.
 
-1. Clone this repository:
+1. Setting GO environment variables by adding below lines into ~/.bashrc file
+
+    ```sh
+    export GOPATH=$HOME/go
+    export GOBIN=$GOPATH/bin
+    export PATH=$PATH:$GOBIN
+    ```
+
+2. Clone this repository:
 
    Assumes that `$GOPATH` is a single path and not a `:` delimited list.
 
@@ -75,11 +86,12 @@ mentions the managed dependency workflow.
    cd cel
    ```
 
-2. Get the dependencies:
+3. Get the dependencies:
 
    ``` sh
    python build.py deps --install
    ```
+
    If you see an error message complaining about protoc missing, see the protoc
    prerequisites above.
 
@@ -106,10 +118,11 @@ See [CONTRIBUTING](./CONTRIBUTING.md).
 
 ## Release
 
-The framework is uploaded into [CIPD](https://github.com/luci/luci-go/tree/master/cipd) as a package.
+The CELab deployment binary and its Python test framework is uploaded into [CIPD](https://github.com/luci/luci-go/tree/master/cipd) as a package.
 
 Here are the general steps to release the package.
+
 1. After the code review, merge in the change
-2. Wait for windows CI build finished (https://ci.chromium.org/p/celab/g/main/console)
-3. Run upload_to_cipd with the link to binaries in the CI build (instructions here: https://chromium.googlesource.com/enterprise/cel/+/refs/heads/master/scripts/cipd)
+2. Wait for windows CI build finished (<https://ci.chromium.org/p/celab/g/main/console>)
+3. Run upload_to_cipd with the link to binaries in the CI build (instructions here: <https://chromium.googlesource.com/enterprise/cel/+/refs/heads/master/scripts/cipd>)
 4. (Optional) Check the output of that command and update the infra version in the .vpython file for your app

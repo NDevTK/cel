@@ -7,4 +7,3 @@
 
 [logo]: /docs/images/chrome-logo.png
 [home]: /README.md
-
