@@ -1,4 +1,4 @@
-## Scalability
+# Scalability
 
 Enterprise system tests are resource intensive. So much so that a single test
 suite takes over an entire GCP project while running. Assuming we manage to
@@ -31,7 +31,7 @@ the availability of physical resources as described in [On-Premise Fixtures][].
 Each instance of the lab must have a set of identically configured physical
 devices for tests to be reliable.
 
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -87,4 +87,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-

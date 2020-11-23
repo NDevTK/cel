@@ -1,8 +1,6 @@
-## Source Code Locations
-
+# Source Code Locations
 
 Proposed locations for source code is as follows:
-
 
 *   `//chrome/test/enterprise/system_tests`: Is the "home" of system tests in
     the Chromium code base. It contains:
@@ -58,7 +56,7 @@ are used only during the DEPLOY phase.
 ***
 
 
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -114,4 +112,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-

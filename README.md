@@ -79,7 +79,7 @@ mentions the managed dependency workflow.
 
    Assumes that `$GOPATH` is a single path and not a `:` delimited list.
 
-   ``` sh
+   ```sh
    mkdir -p ${GOPATH}/src/chromium.googlesource.com/enterprise
    cd ${GOPATH}/src/chromium.googlesource.com/enterprise
    git clone https://chromium.googlesource.com/enterprise/cel
@@ -88,7 +88,7 @@ mentions the managed dependency workflow.
 
 3. Get the dependencies:
 
-   ``` sh
+   ```sh
    python build.py deps --install
    ```
 
@@ -99,7 +99,7 @@ mentions the managed dependency workflow.
 
 1. Use the build script:
 
-   ``` sh
+   ```sh
    python build.py build
    ```
 
@@ -108,7 +108,7 @@ mentions the managed dependency workflow.
 
 2. Also make sure that all unit tests for the Go source files are passing.
 
-   ``` sh
+   ```sh
    python build.py test
    ```
 

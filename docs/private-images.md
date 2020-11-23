@@ -10,9 +10,8 @@ are not congruent to the server editions available in the GCE public images.
 
 The private images we need to support are:
 
-*   Windows 7
-*   Windows 10
-
+* Windows 7
+* Windows 10
 
 ## Substitutions
 
@@ -35,7 +34,6 @@ server editions. Testing with AV enabled would be one case where supporting
 client images would be a blocking requirement.
 ***
 
-
 ### Windows 8.1 ≈ Windows Server 2012 R2
 
 Windows 8.1 is functionally equivalent to Windows Server 2012 R2 with the
@@ -49,7 +47,6 @@ oriented features that are not expected to interfere with desktop functionality.
 Windows Server 2012 R2 is currently a [public
 image](https://cloud.google.com/compute/docs/images#os-compute-support)
 supported on GCE.
-
 
 ### Windows 7 ≈ Windows Server 2008 R2
 
@@ -67,7 +64,6 @@ Windows Server 2008 R2 is currently a [public
 image](https://cloud.google.com/compute/docs/images#os-compute-support)
 supported on GCE.
 
-
 ### Windows 10 ≈ Windows Server 2016
 
 GCE currently includes two Windows Server 2016 flavors: Server 2016 Core and
@@ -83,7 +79,7 @@ supported on GCE.
 
 Windows Server 2019 is the latest supported Windows Server based on Windows 10.
 
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -139,4 +135,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-

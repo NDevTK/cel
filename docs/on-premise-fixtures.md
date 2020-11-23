@@ -8,7 +8,6 @@ On-premise middleboxes are the cause of multiple compatibility issues over the
 years. As such, we have identified testing against them to be an important use
 case for the enterprise lab.
 
-
 ### About SSL Interception
 
 A middlebox that intercepts SSL traffic is referred to here as a SSL Proxy.
@@ -280,7 +279,7 @@ physical resources which the [DEPLOYER][] can resolve against.
 In the case of virtual appliances, the deployment details are TBD since some of
 the components may need to be deployed manually due to licensing restrictions.
 
-<!-- INCLUDE index.md (56 lines) -->
+<!-- INCLUDE index.md (55 lines) -->
 <!--
 Index of tags used throughout the documentation. This list lives in
 /docs/index.md and is included in all documents that depend on these tags.
@@ -336,4 +335,3 @@ Keep the tags below sorted.
 [Workflows]: workflows.md
 [cel_bot]: design-summary.md#cel_bot
 [cel_py]: design-summary.md#cel_py
-
