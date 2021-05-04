@@ -285,34 +285,31 @@ argument string '$^' expands to |inp|.
       pass
 
 
-def _InstallDep(args):
+def _InitializeGoModules(args):
+  # Print go env for debugging.
+  _RunCommand(['go', 'env'])
+
   if (not hasattr(args, 'install')) or not args.install:
+    _RunCommand(['ls', '-l', 'go.mod'], cwd=SOURCE_PATH)
+    _RunCommand(['cat', 'go.mod'], cwd=SOURCE_PATH)
     raise Exception(
         textwrap.dedent('''\
-            "dep" command not found.
+            Go modules is not initialized.
 
-            The CEL project uses "deps" to manage dependencies. You can get it
-            by following the instructions at :
+            Go uses Go modules to manage dependencies. The first time
+            compiling a project, one needs to initialize Go modules
+            by running 'go mod init' at the <CEL src>/go directory.
 
-                https://github.com/golang/dep#setup
-
-            A quick and portable way to get it is to run the following:
-
-                go get -u github.com/golang/dep/cmd/dep
-
-            Rerun as 'build.py deps --install' to install dependencies
+            Rerun as 'build.py deps --install' to initialize Go modules
             automatically. If you've already done so, it may be that the GOBIN
             path is not in the system PATH.
             '''))
 
-  verbose_flag = []
-  if hasattr(args, 'verbose') and args.verbose:
-    verbose_flag += ["-v"]
-
-  _RunCommand(
-      ['go', 'get', '-u'] + verbose_flag + ['github.com/golang/dep/cmd/dep'],
-      env=_MergeEnv(args, target_host=True),
-      cwd=SOURCE_PATH)
+  _RunCommand(['go', 'env', '-w', 'GO111MODULE=on'])
+  _RunCommand(['go', 'mod', 'init'],
+              env=_MergeEnv(args, target_host=True),
+              cwd=SOURCE_PATH)
+  _RunCommand(['cat', 'go.mod'], cwd=SOURCE_PATH)
 
 
 def _InstallGoProtoc(args):
@@ -390,7 +387,8 @@ def _Deps(args):
   # Max number of times we are going to retry if a component installation fails.
   MAX_RETRY_COUNT = 3
 
-  def _CheckAndInstall(command, installer, **kwargs):
+  def _CheckAndInstall(command, installer, trigger_installer_exceptions,
+                       ignored_exceptions, **kwargs):
     succeeded = False
     for x in range(MAX_RETRY_COUNT):
       try:
@@ -400,9 +398,10 @@ def _Deps(args):
           installer(args)
           continue
         raise e
-      except subprocess.CalledProcessError:
-        # protoc-gen-go can fail with 'error:no files to generate' which we
-        # consider a success
+      except trigger_installer_exceptions:
+        installer(args)
+        continue
+      except ignored_exceptions:
         pass
       succeeded = True
       break
@@ -419,13 +418,18 @@ def _Deps(args):
     verbose_flag += ["-v"]
 
   with open(os.devnull, 'r+') as f:
-    _CheckAndInstall(['protoc', '--version'],
-                     _InstallProtoc,
-                     env=_MergeEnv(args, target_host=True),
-                     cwd=SOURCE_PATH,
-                     stdin=f,
-                     stdout=f,
-                     stderr=f)
+    _CheckAndInstall(
+        ['protoc', '--version'],
+        _InstallProtoc,
+        (),
+        # protoc-gen-go can fail with 'error:no files to generate'
+        # which we consider a success
+        subprocess.CalledProcessError,
+        env=_MergeEnv(args, target_host=True),
+        cwd=SOURCE_PATH,
+        stdin=f,
+        stdout=f,
+        stderr=f)
 
   o = subprocess.check_output(['protoc', '--version']).decode().strip()
   if o.startswith('libprotoc '):
@@ -452,8 +456,9 @@ def _Deps(args):
     Expected something like "libprotoc 1.2.3"
     '''.format(o)))
 
-  # Using a sentinel file to make sure we only run 'dep' if either the last run
-  # was unsuccessful or if there has been a change to Gopkg.* files.
+  # Using a sentinel file to make sure we only run 'go mod ...' if either the
+  # last run was unsuccessful or if there has been a change to the go.mod or
+  # go.sum files.
   _EnsureDir(STAMP_PATH)
   if not os.path.exists(os.path.join(STAMP_PATH, 'README')):
     with open(os.path.join(STAMP_PATH, 'README'), 'w') as f:
@@ -464,28 +469,41 @@ def _Deps(args):
                   Feel free to delete these. The only visible effect would be
                   that the build might take a bit longer to run.'''))
 
-  update_deps = hasattr(args, 'update') and args.update
+  update_modules = hasattr(args, 'update') and args.update
 
-  sentinel = os.path.join(STAMP_PATH, 'deps.stamp')
-  if not update_deps and _IsTimestampNewer(
-      sentinel, os.path.join(SOURCE_PATH, 'Gopkg.toml'),
-      os.path.join(SOURCE_PATH, 'Gopkg.lock')):
-    return
-
-  update_flag = ['-update'] if update_deps else ['-vendor-only']
+  # Constructs a directory named vendor in the main module's root directory
+  # that contains copies of all packages needed to support builds and tests
+  # of packages in the main module.
+  _RunCommand(['go', 'env'], cwd=SOURCE_PATH)
 
   _CheckAndInstall(
-      ['dep', 'ensure'] + verbose_flag + update_flag,
-      _InstallDep,
+      ['go', 'mod', 'vendor', '-e'] + verbose_flag,
+      _InitializeGoModules,
+      # If one calls 'go mod vendor' the first time before initializing
+      # Go Modules (one-time only per repo), go will fail, which should
+      # trigger the script to initialize Go Modules.
+      subprocess.CalledProcessError,
+      (),
       env=_MergeEnv(args),
       cwd=SOURCE_PATH)
 
-  if update_deps:
-    subprocess.check_call(['dep', 'prune'])
+  sentinel = os.path.join(STAMP_PATH, 'deps.stamp')
+  if not update_modules and _IsTimestampNewer(
+      sentinel, os.path.join(SOURCE_PATH, 'go.mod'),
+      os.path.join(SOURCE_PATH, 'go.sum')):
+    return
+
+  if update_modules:
+    # Adds any missing module requirements necessary to build the current
+    # module's packages and dependencies, and removes requirements on modules
+    # that don't provide any relevant packages.
+    _RunCommand(['go', 'mod', 'tidy'], cwd=SOURCE_PATH)
+    # Re-sync the dependencies.
+    _RunCommand(['go', 'mod', 'vendor'], cwd=SOURCE_PATH)
 
   with open(os.devnull, 'r+') as f:
     _CheckAndInstall(['protoc-gen-go'],
-                     _InstallGoProtoc,
+                     _InstallGoProtoc, (), (),
                      env=_MergeEnv(args, target_host=True),
                      cwd=SOURCE_PATH,
                      stdin=f,
@@ -502,7 +520,7 @@ def _Deps(args):
     subprocess.check_call(
         ['git', 'clone', 'https://github.com/googleapis/googleapis.git'],
         cwd=THIRD_PARTY_DIR)
-  if update_deps:
+  if update_modules:
     subprocess.check_call(['git', 'pull', 'origin', 'master'],
                           cwd=GOOGLEAPIS_DIR)
 
@@ -924,8 +942,8 @@ Check for and ensure build dependencies.
 Ensures that required build tools and Go packages are installed and ready to
 use. Use the '--install' option to attempt to install missing build tools.
 
-Developers can use the '--update' option as shorthand for invoking 'dep ensure
--update && dep prune'.
+Developers can use the '--update' option as shorthand for invoking 'go mod tidy
+&& go mod vendor'.
 '''
   _Deps(args)
 
