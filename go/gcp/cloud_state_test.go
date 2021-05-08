@@ -15,27 +15,27 @@ func TestQueryGceState(t *testing.T) {
 	f := th.NewResponseFaker(t)
 
 	f.Expect(
-		th.RestRequest{Url: "https://compute.googleapis.com/compute/v1/projects/test-project/zones"},
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/zones"},
 		th.RestResponse{BodyPath: "./testdata/compute_zoneList.json"})
 
 	f.Expect(
-		th.RestRequest{Url: "https://compute.googleapis.com/compute/v1/projects/test-project/aggregated/instances"},
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/aggregated/instances"},
 		th.RestResponse{BodyPath: "./testdata/compute_instanceAggregatedList.json"})
 
 	f.Expect(
-		th.RestRequest{Url: "https://compute.googleapis.com/compute/v1/projects/test-project/global/firewalls"},
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/global/firewalls"},
 		th.RestResponse{BodyPath: "./testdata/compute_firewallList.json"})
 
 	f.Expect(
-		th.RestRequest{Url: "https://compute.googleapis.com/compute/v1/projects/test-project/global/networks"},
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/global/networks"},
 		th.RestResponse{BodyPath: "./testdata/compute_networkList.json"})
 
 	f.Expect(
-		th.RestRequest{Url: "https://compute.googleapis.com/compute/v1/projects/test-project/aggregated/addresses"},
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/aggregated/addresses"},
 		th.RestResponse{BodyPath: "./testdata/compute_addressAggregatedList.json"})
 
 	f.Expect(
-		th.RestRequest{Url: "https://compute.googleapis.com/compute/v1/projects/test-project/aggregated/subnetworks"},
+		th.RestRequest{Url: "https://www.googleapis.com/compute/v1/projects/test-project/aggregated/subnetworks"},
 		th.RestResponse{BodyPath: "./testdata/compute_subnetworkAggregatedList.json"})
 
 	f.Expect(

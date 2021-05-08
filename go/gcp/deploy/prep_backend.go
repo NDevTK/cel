@@ -21,7 +21,6 @@ import (
 	"google.golang.org/api/cloudresourcemanager/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 	servicemanagement "google.golang.org/api/servicemanagement/v1"
-	serviceusage "google.golang.org/api/serviceusage/v1"
 	adminpb "google.golang.org/genproto/googleapis/iam/admin/v1"
 )
 
@@ -33,11 +32,6 @@ func enableRequiredAPIs(ctx common.Context, s *gcp.Session) (err error) {
 		"Enabling required services for GCP project \"%s\"", s.GetProject())()
 
 	sm, err := servicemanagement.New(s.GetHttpClient())
-	if err != nil {
-		return err
-	}
-
-	su, err := serviceusage.New(s.GetHttpClient())
 	if err != nil {
 		return err
 	}
@@ -76,9 +70,10 @@ func enableRequiredAPIs(ctx common.Context, s *gcp.Session) (err error) {
 		j.Go(func() error {
 			s.Logger.Debug(common.MakeStringer("Enabling service %s", a))
 
-			req := &serviceusage.EnableServiceRequest{}
-			svc := fmt.Sprintf("projects/%s/services/%s", s.GetProject(), a)
-			op, err := su.Services.Enable(svc, req).Context(ctx).Do()
+			req := &servicemanagement.EnableServiceRequest{
+				ConsumerId: fmt.Sprintf("project:%s", s.GetProject()),
+			}
+			op, err := sm.Services.Enable(a, req).Context(ctx).Do()
 			if err != nil {
 				return err
 			}

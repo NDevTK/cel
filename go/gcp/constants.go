@@ -13,7 +13,6 @@ const (
 	CloudKmsServiceName             = "cloudkms.googleapis.com"
 	MonitoringServiceName           = "monitoring.googleapis.com"
 	ServiceManagementServiceName    = "servicemanagement.googleapis.com"
-	ServiceUsageServiceName         = "serviceusage.googleapis.com"
 	CloudResourceManagerServiceName = "cloudresourcemanager.googleapis.com"
 	RuntimeConfigServiceName        = "runtimeconfig.googleapis.com"
 )
