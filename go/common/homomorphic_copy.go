@@ -71,7 +71,7 @@ func homomorphicCopy(from reflect.Value, to reflect.Value) (err error) {
 	//
 	//   While generating protobuf messages from discovery document schema, it
 	//   turned out that some fields that are optional in the Google API client
-	//   libraries can't be marked as optional in the generated proto files.
+	//   libraries can't be marked as opetional in the generated proto files.
 	//   It just so happens that there are no distinguishing attributes for
 	//   such fields.
 	//
@@ -100,9 +100,6 @@ func homomorphicCopy(from reflect.Value, to reflect.Value) (err error) {
 	switch from.Kind() {
 	case reflect.Ptr:
 		to.Set(reflect.New(to.Type().Elem()))
-		if from.IsNil() {
-			return nil
-		}
 		return homomorphicCopy(from.Elem(), to.Elem())
 
 	case reflect.Slice:

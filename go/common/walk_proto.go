@@ -236,10 +236,6 @@ func constructFieldToDescriptorMap(av reflect.Value) (m map[string]*pd.FieldDesc
 	// m is a map from generated Go field name to FieldDescriptoProto
 	m = make(map[string]*pd.FieldDescriptorProto)
 
-	if !av.Addr().CanInterface() {
-		return
-	}
-
 	// First make sure we are dealing with a proto message. pd.Message is
 	// proto.Message + Descriptor().
 	msg, ok := av.Addr().Interface().(descriptor.Message)
