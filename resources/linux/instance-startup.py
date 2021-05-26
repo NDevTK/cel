@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -20,12 +20,12 @@ def get_metadata(name):
 
 
 cel_agent = json.loads(get_metadata('cel-agent'))
-print 'cel_agent is {0}'.format(cel_agent)
+print('cel_agent is {0}'.format(cel_agent))
 cel_agent_path = cel_agent['linux_agent_x64']['abs_path']
 cel_ui_agent_path = cel_agent['win_ui_agent_x64']['abs_path']
 
 cel_manifest = get_metadata('cel-manifest')
-print 'cel_manifest is {0}'.format(cel_manifest)
+print('cel_manifest is {0}'.format(cel_manifest))
 sys.stdout.flush()
 
 cwd = os.getcwd()
