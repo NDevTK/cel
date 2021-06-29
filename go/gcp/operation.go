@@ -13,6 +13,7 @@ import (
 	compute "google.golang.org/api/compute/v1"
 	deploymentmanager "google.golang.org/api/deploymentmanager/v2beta"
 	servicemanagement "google.golang.org/api/servicemanagement/v1"
+	serviceusage "google.golang.org/api/serviceusage/v1"
 )
 
 // Amount of time to wait for next round of polling for an operation.
@@ -48,6 +49,9 @@ func joinOperation(s *Session, oi interface{}, desc string, maxRetries int) erro
 
 	case *servicemanagement.Operation:
 		return joinServiceManagementOperation(s, o, desc, maxRetries)
+
+	case *serviceusage.Operation:
+		return joinServiceUsageOperation(s, o, desc, maxRetries)
 	}
 
 	return ErrUnknownOperationType
@@ -191,6 +195,49 @@ func joinServiceManagementOperation(s *Session, op *servicemanagement.Operation,
 		time.Sleep(pollDuration)
 
 		nop, err := sm.Operations.Get(op.Name).Context(s.GetContext()).Do()
+		if err == nil {
+			op = nop
+			continue
+		}
+
+		if IsNotFoundError(err) {
+			continue
+		}
+
+		return err
+	}
+
+	if op.Done {
+		return nil
+	}
+
+	if op.Error == nil {
+		return ErrOperationTimedOut
+	}
+
+	if m, err := json.Marshal(op.Error.Details); err == nil {
+		return errors.Errorf("operation failed: %s. Details: %s", op.Error.Message, string(m))
+	} else {
+		return errors.Errorf("operation failed (%d, %s)", op.Error.Code, op.Error.Message)
+	}
+}
+
+func joinServiceUsageOperation(s *Session, op *serviceusage.Operation, desc string, maxRetries int) (err error) {
+	defer GcpLoggedServiceAction(s, ServiceUsageServiceName, &err, "%s", desc)()
+
+	su, err := serviceusage.New(s.client)
+	if err != nil {
+		return err
+	}
+
+	for retriesLeft := maxRetries; !op.Done; retriesLeft-- {
+		if metadata, err := json.Marshal(op.Metadata); err == nil {
+			s.Logger.Debug(common.MakeStringer("Metadata: %s, %s", op.Name, string(metadata)))
+		}
+
+		time.Sleep(pollDuration)
+
+		nop, err := su.Operations.Get(op.Name).Context(s.GetContext()).Do()
 		if err == nil {
 			op = nop
 			continue
