@@ -160,7 +160,7 @@ def _RunCommandOutput(args, **kwargs):
                kwargs.get('cwd', os.getcwd()),
                kwargs.get('env', os.environ).get('GOOS', HOST_GOOS))
 
-  return subprocess.check_output(args, **kwargs)
+  return subprocess.check_output(args, encoding='UTF-8', **kwargs)
 
 
 def _GetDependents(fn):
@@ -735,10 +735,12 @@ This is $SOURCE_PATH/$GOOS_$GOARCH/bin.
 '''
   goos = subprocess.check_output(['go', 'env', 'GOOS'],
                                  env=build_env,
-                                 cwd=SOURCE_PATH).strip()
+                                 cwd=SOURCE_PATH,
+                                 encoding='UTF-8').strip()
   goarch = subprocess.check_output(['go', 'env', 'GOARCH'],
                                    env=build_env,
-                                   cwd=SOURCE_PATH).strip()
+                                   cwd=SOURCE_PATH,
+                                   encoding='UTF-8').strip()
   return os.path.join(OUT_PATH, '{}_{}'.format(goos, goarch), 'bin')
 
 
@@ -1185,7 +1187,8 @@ Problems with 'clang-format'?
 
   o = subprocess.check_output([git_command, 'ls-files'],
                               cwd=SOURCE_PATH,
-                              env=_MergeEnv(args))
+                              env=_MergeEnv(args),
+                              encoding='UTF-8')
   all_files = [os.path.join(SOURCE_PATH, p) for p in o.splitlines()]
 
   logging.info("checking .proto files")
@@ -1397,8 +1400,8 @@ def main():
       '--check',
       '-n',
       action='store_true',
-      help='check if files are correctly formatted, but don\'t modify files on disk'
-  )
+      help=("check if files are correctly formatted, but don\'t modify files "
+            "on disk"))
   format_command.set_defaults(closure=FormatCommand)
 
   # ----------------------------------------------------------------------------

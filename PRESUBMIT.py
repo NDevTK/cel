@@ -5,6 +5,7 @@
 import os
 import sys
 
+USE_PYTHON3 = True
 _EXCLUDED_PATHS = (r"^test[\\\/]infra[\\\/]proto[\\\/].*",)
 
 
@@ -94,7 +95,8 @@ def RunGoVet(input_api, output_api):
       cmd,
       cwd=input_api.PresubmitLocalPath(),
       stdout=input_api.subprocess.PIPE,
-      stderr=input_api.subprocess.PIPE)
+      stderr=input_api.subprocess.PIPE,
+      encoding='UTF-8')
   output, err = p.communicate()
 
   failures = []
