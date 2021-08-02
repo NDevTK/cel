@@ -37,6 +37,8 @@ directories as follows:
 * **`vendor`**: Directory containing external dependencies that were pulled down
   by the [Go Dep](https://golang.github.io/dep/) tool.
 
+  NOTE: Go dep is deprecrated, we're migrating towards go modules.
+
 * **`third_party`**: Additional dependencies that are not managed by the Go
   toolchain.
 
