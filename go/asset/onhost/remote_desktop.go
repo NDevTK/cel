@@ -43,7 +43,7 @@ func (*RemoteDesktopHostResolver) ResolveAdditionalDependencies(ctx common.Conte
 		return errors.New("ctx is not Deployer")
 	}
 
-	manifest := &d.configuration.AssetManifest
+	manifest := d.configuration.AssetManifest
 	machine, err := asset.FindWindowsMachine(manifest, rd.WindowsMachine)
 	if err != nil {
 		return errors.New("Couldn't find WindowsMachine in RemoteDesktopHost.")

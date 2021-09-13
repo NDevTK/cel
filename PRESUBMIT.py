@@ -90,7 +90,7 @@ def RunGoTests(input_api, output_api):
 
 def RunGoVet(input_api, output_api):
   results = []
-  cmd = ['go', 'vet', '-copylocks=false', './go/...']
+  cmd = ['go', 'vet', './go/...']
   p = input_api.subprocess.Popen(
       cmd,
       cwd=input_api.PresubmitLocalPath(),

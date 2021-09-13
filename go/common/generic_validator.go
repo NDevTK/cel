@@ -12,6 +12,7 @@ import (
 	commonpb "chromium.googlesource.com/enterprise/cel/go/schema/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const kNoMethodFoundError = `No "Validate" method found for type %s.
@@ -252,6 +253,10 @@ func VerifyValidatableType(at reflect.Type) error {
 	case reflect.Struct:
 		fpm := constructFieldToDescriptorMap(reflect.New(at).Elem())
 		for i := 0; i < at.NumField(); i++ {
+			// avoid stack overflow exception. "messageinfo" circularly  declared, MessageInfo->coderMessageInfo->coderFieldInfo->MessageInfo.
+			if at.Field(i).Type == reflect.TypeOf(protoimpl.MessageState{}) {
+				continue
+			}
 			if fd, ok := fpm[at.Field(i).Name]; ok {
 				v := GetValidationForField(fd)
 				if IsOutput(v) {

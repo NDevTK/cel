@@ -48,7 +48,7 @@ func RunCommandOnInstance(ctx context.Context, c *Application, session *deploy.S
 	if err != nil {
 		return err
 	}
-	state := gcp.CloudState{HostEnvironment: &session.GetConfiguration().HostEnvironment}
+	state := gcp.CloudState{HostEnvironment: session.GetConfiguration().HostEnvironment}
 	err = state.FetchInstances(ctx, cs)
 	if err != nil {
 		return err

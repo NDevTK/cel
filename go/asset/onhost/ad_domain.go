@@ -30,7 +30,7 @@ func (*AdDomainResolver) ResolveOnHost(ctx common.Context, ad *assetpb.ActiveDir
 }
 
 func setupADDomain(d *deployer, ad *assetpb.ActiveDirectoryDomain) error {
-	d.Logf("Configuring Ad Domain: %+v\n", *ad)
+	d.Logf("Configuring Ad Domain: %+v\n", ad.Name)
 
 	configVar := onhost.GetActiveDirectoryRuntimeConfigVariableName(ad.Name)
 	status := d.getRuntimeConfigVariableValue(configVar)

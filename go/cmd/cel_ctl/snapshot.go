@@ -7,10 +7,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/spf13/cobra"
 
 	"chromium.googlesource.com/enterprise/cel/go/cel"
 	"chromium.googlesource.com/enterprise/cel/go/cel/deploy"

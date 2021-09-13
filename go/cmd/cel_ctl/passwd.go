@@ -35,7 +35,7 @@ func (p *PasswdCommand) Run(ctx context.Context, c *Application, cmd *cobra.Comm
 	if err != nil {
 		return err
 	}
-	state := gcp.CloudState{HostEnvironment: &session.GetConfiguration().HostEnvironment}
+	state := gcp.CloudState{HostEnvironment: session.GetConfiguration().HostEnvironment}
 	err = state.FetchInstances(ctx, cs)
 	if err != nil {
 		return err

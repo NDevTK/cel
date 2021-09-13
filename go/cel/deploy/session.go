@@ -50,12 +50,12 @@ func NewSession(ctx context.Context, client *http.Client, clientOption option.Cl
 		return nil, err
 	}
 
-	b, err := gcp.NewSession(ctx, client, clientOption, &c.HostEnvironment, gen)
+	b, err := gcp.NewSession(ctx, client, clientOption, c.HostEnvironment, gen)
 	if err != nil {
 		return nil, err
 	}
 
-	o, err := gcp.NewObjectStore(b.GetContext(), client, &c.HostEnvironment)
+	o, err := gcp.NewObjectStore(b.GetContext(), client, c.HostEnvironment)
 	if err != nil {
 		return nil, err
 	}

@@ -66,10 +66,10 @@ type Configuration struct {
 	// The combined asset manifest. Note that unfortunately using the asset
 	// manifest in this manner loses valuable information about which source
 	// files introduced the asset.
-	AssetManifest assetpb.AssetManifest `json:"asset"`
+	AssetManifest *assetpb.AssetManifest `json:"asset"`
 
 	// The combined host environment.
-	HostEnvironment hostpb.HostEnvironment `json:"host"`
+	HostEnvironment *hostpb.HostEnvironment `json:"host"`
 
 	// Lab. Lab? Lab!
 	Lab labpb.Lab `json:"-"`
@@ -133,8 +133,10 @@ func (c *Configuration) mergeAssets(filename string, data []byte) error {
 	if err != nil {
 		return err
 	}
-
-	proto.Merge(&c.AssetManifest, &a)
+	if c.AssetManifest == nil {
+		c.AssetManifest = &assetpb.AssetManifest{}
+	}
+	proto.Merge(c.AssetManifest, &a)
 	c.assetSources[filename] = &a
 
 	return nil
@@ -159,8 +161,10 @@ func (c *Configuration) mergeHost(filename string, data []byte) error {
 	if err != nil {
 		return err
 	}
-
-	proto.Merge(&c.HostEnvironment, &h)
+	if c.HostEnvironment == nil {
+		c.HostEnvironment = &hostpb.HostEnvironment{}
+	}
+	proto.Merge(c.HostEnvironment, &h)
 	c.hostSources[filename] = &h
 	return nil
 }
@@ -211,8 +215,8 @@ func (c *Configuration) MergeContents(name string, data []byte) (err error) {
 func (c *Configuration) GenerateCompletedManifest() (data []byte, err error) {
 	defer common.Action(&err, "generating completed asset manifest")
 
-	c.Lab.HostEnvironment = &c.HostEnvironment
-	c.Lab.AssetManifest = &c.AssetManifest
+	c.Lab.HostEnvironment = c.HostEnvironment
+	c.Lab.AssetManifest = c.AssetManifest
 
 	// TODO(asanka): Remove elements from the tree that are no longer part of
 	// the namespace.
@@ -229,13 +233,13 @@ func (c *Configuration) Validate() error {
 
 	c.Resources.Startup = &c.Startup
 	c.HostEnvironment.Resources = &c.Resources
-	c.references.Graft(&c.AssetManifest, AssetRootPath)
-	c.references.Graft(&c.HostEnvironment, HostRootPath)
+	c.references.Graft(c.AssetManifest, AssetRootPath)
+	c.references.Graft(c.HostEnvironment, HostRootPath)
 	c.references.Graft(&c.Lab, LabRootPath)
 
 	errList := []error{
-		common.ValidateProto(&c.AssetManifest, AssetRootPath),
-		common.ValidateProto(&c.HostEnvironment, HostRootPath),
+		common.ValidateProto(c.AssetManifest, AssetRootPath),
+		common.ValidateProto(c.HostEnvironment, HostRootPath),
 	}
 
 	c.references.VisitUnresolved(common.EmptyPath, func(v common.UnresolvedValue) bool {

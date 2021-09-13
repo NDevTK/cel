@@ -275,8 +275,8 @@ func (d *deployer) Deploy(manifestFile string) {
 		return
 	}
 
-	d.configuration.AssetManifest = *d.configuration.Lab.AssetManifest
-	d.configuration.HostEnvironment = *d.configuration.Lab.HostEnvironment
+	d.configuration.AssetManifest = d.configuration.Lab.AssetManifest
+	d.configuration.HostEnvironment = d.configuration.Lab.HostEnvironment
 	d.configuration.Lab = labpb.Lab{}
 
 	if err := d.configuration.Validate(); err != nil {
@@ -380,7 +380,7 @@ func (d *deployer) getWindowsMachine() *assetpb.WindowsMachine {
 func (d *deployer) getActiveDirectoryDomain() *assetpb.ActiveDirectoryDomain {
 	m := d.getWindowsMachine()
 
-	ad, err := asset.FindActiveDirectoryDomainFor(&d.configuration.AssetManifest, m)
+	ad, err := asset.FindActiveDirectoryDomainFor(d.configuration.AssetManifest, m)
 	if err == nil {
 		return ad
 	}
@@ -573,7 +573,7 @@ func (d *deployer) IsWindows2008() bool {
 
 // getAdDomainAsset returns the ActiveDirectoryDomain asset of the given domain.
 func (d *deployer) getAdDomainAsset(domainName string) (*assetpb.ActiveDirectoryDomain, error) {
-	return asset.FindActiveDirectoryDomain(&d.configuration.AssetManifest, domainName)
+	return asset.FindActiveDirectoryDomain(d.configuration.AssetManifest, domainName)
 }
 
 // waitForDependency waits for the dependency to be ready.

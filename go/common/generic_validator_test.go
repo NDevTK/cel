@@ -303,9 +303,9 @@ func TestValidateOptions(t *testing.T) {
 
 	t.Run("LabelWithInvalidChar", func(t *testing.T) {
 		// Label is annotated to require validation.
-		w := v
-		w.Label = "?"
-		err = ValidateProto(&w, p)
+		v.Label = "?"
+		defer func() { v.Label = "Label" }() //reset value
+		err = ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -316,9 +316,9 @@ func TestValidateOptions(t *testing.T) {
 
 	t.Run("EmptyLabel", func(t *testing.T) {
 		// It can't be empty either.
-		w := v
-		w.Label = ""
-		err = ValidateProto(&w, p)
+		v.Label = ""
+		defer func() { v.Label = "Label" }() //reset value
+		err = ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -329,9 +329,9 @@ func TestValidateOptions(t *testing.T) {
 
 	t.Run("ForeignKeyRequired", func(t *testing.T) {
 		// Key is a foreign key and hence is required.
-		w := v
-		w.Key = ""
-		err = ValidateProto(&w, p)
+		v.Key = ""
+		defer func() { v.Key = "Key" }() //reset value
+		err = ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -342,9 +342,9 @@ func TestValidateOptions(t *testing.T) {
 
 	t.Run("OptionalForeignKey", func(t *testing.T) {
 		// OptionalKey is also a foreign key, but is annotated to be optional.
-		w := v
-		w.OptionalKey = ""
-		err = ValidateProto(&w, p)
+		v.OptionalKey = ""
+		defer func() { v.OptionalKey = "Key" }() //reset value
+		err = ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -352,9 +352,9 @@ func TestValidateOptions(t *testing.T) {
 
 	t.Run("OptionalString", func(t *testing.T) {
 		// Optional string has an extended field option, but not a validation option.
-		w := v
-		w.OptionalString = ""
-		err = ValidateProto(&w, p)
+		v.OptionalString = ""
+		defer func() { v.OptionalString = "x" }() //reset value
+		err = ValidateProto(&v, p)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -363,9 +363,9 @@ func TestValidateOptions(t *testing.T) {
 	t.Run("FieldCalledName", func(t *testing.T) {
 		// Name is not annotated, but is required and must validate as a label by
 		// virtue of it being called 'name'.
-		w := v
-		w.Name = ""
-		err = ValidateProto(&w, p)
+		v.Name = ""
+		defer func() { v.Name = "Foo" }() //reset value
+		err = ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -376,9 +376,9 @@ func TestValidateOptions(t *testing.T) {
 
 	t.Run("FqdnInvalid", func(t *testing.T) {
 		// FQDN is annotated as requiring validation as a domain name.
-		w := v
-		w.Fqdn = "a.b.c.?"
-		err = ValidateProto(&w, p)
+		v.Fqdn = "a.b.c.?"
+		defer func() { v.Fqdn = "foo.bar.baz" }() //reset value
+		err = ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
@@ -389,9 +389,9 @@ func TestValidateOptions(t *testing.T) {
 
 	t.Run("ReqdEmpty", func(t *testing.T) {
 		// Reqd is annotated as required.
-		w := v
-		w.Reqd = ""
-		err = ValidateProto(&w, p)
+		v.Reqd = ""
+		defer func() { v.Reqd = "S" }() //reset value
+		err = ValidateProto(&v, p)
 		if err == nil {
 			t.Fatalf("invalid value succeeded validation")
 		}
