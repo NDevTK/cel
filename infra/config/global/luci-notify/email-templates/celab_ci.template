@@ -1,7 +1,7 @@
 [Build Status] Builder "{{ .Build.Builder | formatBuilderID }}"
 
 luci-notify detected a status change for CELab builder "{{ .Build.Builder | formatBuilderID }}"
-at {{ .Build.EndTime | time }}.
+at {{ .Build.EndTime | time }}. 
 
 <br/><br/>
 
