@@ -6,8 +6,10 @@ RECIPE_BUNDLE = "infra/recipe_bundles/chromium.googlesource.com/chromium/tools/b
 
 lucicfg.check_version("1.27.0", "Please update depot_tools")
 
-# Enable LUCI Realms support.
+# Enable LUCI Realms support and launch 100% of Swarming tasks for builds in
+# "realms-aware mode".
 lucicfg.enable_experiment("crbug.com/1085650")
+luci.builder.defaults.experiments.set({"luci.use_realms": 100})
 
 # Enable v2 bucket names in LUCI Scheduler config.
 lucicfg.enable_experiment("crbug.com/1182002")
