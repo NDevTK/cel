@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from __future__ import print_function
 import inspect
 import logging
 import os
@@ -101,12 +102,12 @@ class SingleTestController:
       try:
         logging.info("Running test %s" % test)
         test(self=testCaseInstance)
-        print("PASSED   %s" % test.func_name)
+        print("PASSED   %s" % test.__name__)
         passes += 1
       except KeyboardInterrupt:
         raise
       except:
-        print("FAILED   %s" % test.func_name)
+        print("FAILED   %s" % test.__name__)
         print(traceback.format_exc())
 
     success = (passes == test_count)

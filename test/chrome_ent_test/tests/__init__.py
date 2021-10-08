@@ -2,9 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from active_directory import *
-from iis_sites import *
-from machine_registry import *
-from nested_vms import *
-from remote_desktop import *
-from ui_test import *
+from __future__ import absolute_import
+from .active_directory import *
+from .iis_sites import *
+from .machine_registry import *
+from .nested_vms import *
+from .remote_desktop import *
+from .ui_test import *

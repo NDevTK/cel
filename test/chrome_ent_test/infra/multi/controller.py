@@ -27,7 +27,7 @@ Here are the different threads running in a multi-test run:
     That thread doesn't access anything significant and only outputs to stdout
     using the main print lock that other threads use.
 """
-
+from __future__ import print_function
 from chrome_ent_test.infra.multi.host_pool import HostPool
 from chrome_ent_test.infra.multi.threads import TestWorkerThread, DisplayProgressThread
 import json

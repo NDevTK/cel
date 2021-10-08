@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from test_case import EnterpriseTestCase
-from test_registry import TestRegistry
+from __future__ import absolute_import
+from .test_case import EnterpriseTestCase
+from .test_registry import TestRegistry
 
 
 class environment(object):
