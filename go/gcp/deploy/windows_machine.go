@@ -99,7 +99,7 @@ func resolveNestedVM(ctx common.Context, m *assetpb.WindowsMachine, nestedVm *ho
 	if err := d.Emit(nil, &computepb.Disk{
 		Name:        m.Name + "-disk",
 		Zone:        p.Zone,
-		SourceImage: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1604-lts",
+		SourceImage: "projects/ubuntu-os-cloud/global/images/family/ubuntu-1804-lts",
 		SizeGb:      strconv.FormatUint(diskSizeGb, 10),
 		Licenses: []string{
 			"https://www.googleapis.com/compute/v1/projects/vm-options/global/licenses/enable-vmx",
